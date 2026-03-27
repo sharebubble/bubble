@@ -1,0 +1,19 @@
+{{- if .Values.isbnLookup.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "bubble.isbnLookup.fullname" . }}
+  labels:
+    {{- include "bubble.labels" . | nindent 4 }}
+    app.kubernetes.io/component: isbn-search
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.isbnLookup.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "bubble.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: isbn-search
+{{- end }}

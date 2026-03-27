@@ -1,9 +1,37 @@
-1. Get the application URL by running these commands:
-{{- if .Values.frontend.ingress.enabled }}
-{{- range $host := .Values.frontend.ingress.hosts }}
-  {{- range .paths }}
-  http{{ if $.Values.frontend.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
-  {{- end }}
+1. Accessing the application:
+{{- if not .Values.frontend.enabled }}
+   - The frontend component is disabled in this release.
+{{- else if .Values.frontend.ingress.enabled }}
+   - Ingress: {{ include "bubble.frontend.fullname" . }} (namespace {{ .Release.Namespace }})
+{{- if .Values.frontend.ingress.tls }}
+   - URL(s):
+{{- range .Values.frontend.ingress.hosts }}
+     * https://{{ .host }}
+{{- end }}
+{{- else }}
+   - URL(s):
+{{- range .Values.frontend.ingress.hosts }}
+     * http://{{ .host }}
+{{- end }}
+{{- end }}
+{{- else if .Values.frontend.httpRoute.enabled }}
+   - HTTPRoute: {{ include "bubble.frontend.fullname" . }} (namespace {{ .Release.Namespace }})
+{{- if .Values.frontend.httpRoute.parentRefs }}
+   - Attached Gateway reference(s):
+{{- range .Values.frontend.httpRoute.parentRefs }}
+     * name={{ .name }}{{- if .namespace }}, namespace={{ .namespace }}{{- end }}{{- if .sectionName }}, section={{ .sectionName }}{{- end }}
+{{- end }}
+{{- else if .Values.frontend.gateway.enabled }}
+   - Attached Gateway: {{ include "bubble.frontend.gateway.fullname" . }} (namespace {{ .Release.Namespace }})
+     kubectl get gateway {{ include "bubble.frontend.gateway.fullname" . }} -n {{ .Release.Namespace }}
+{{- end }}
+{{- if .Values.frontend.httpRoute.hostnames }}
+   - Hostnames:
+{{- range .Values.frontend.httpRoute.hostnames }}
+     * {{ . }}
+{{- end }}
+{{- else }}
+   - Hostnames follow the listener configuration on the parent Gateway.
 {{- end }}
 {{- else if contains "NodePort" .Values.frontend.service.type }}
   export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "bubble.frontend.fullname" . }})
@@ -11,7 +39,7 @@
   echo http://$NODE_IP:$NODE_PORT
 {{- else if contains "LoadBalancer" .Values.frontend.service.type }}
      NOTE: It may take a few minutes for the LoadBalancer IP to be available.
-           You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "bubble.frontend.fullname" . }}'
+           You can watch the status by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "bubble.frontend.fullname" . }}'
   export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "bubble.frontend.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
   echo http://$SERVICE_IP:{{ .Values.frontend.service.port }}
 {{- else if contains "ClusterIP" .Values.frontend.service.type }}
@@ -29,10 +57,7 @@
    - Backend: {{ include "bubble.backend.fullname" . }}
 {{- end }}
 {{- if .Values.worker.enabled }}
-   - Celery Worker: {{ include "bubble.worker.fullname" . }}
-{{- end }}
-{{- if .Values.beat.enabled }}
-   - Celery Beat: {{ include "bubble.beat.fullname" . }}
+   - Huey Worker: {{ include "bubble.worker.fullname" . }}
 {{- end }}
 {{- if .Values.postgresql.enabled }}
    - PostgreSQL: {{ include "bubble.postgresql.fullname" . }} (internal)
@@ -40,12 +65,16 @@
    - PostgreSQL: {{ .Values.externalPostgresql.host }}:{{ .Values.externalPostgresql.port }} (external)
 {{- end }}
 {{- if .Values.redis.enabled }}
-   - Redis (DragonflyDB): {{ include "bubble.redis.fullname" . }} (internal)
+   - Redis: {{ include "bubble.redis.fullname" . }} (internal)
 {{- else }}
    - Redis: {{ .Values.externalRedis.host }}:{{ .Values.externalRedis.port }} (external)
 {{- end }}
 
 3. Important notes:
    - Make sure to set proper secrets in values.yaml or use external secret management
-   - For production, enable TLS on ingress and set proper hostnames
+{{- if .Values.frontend.ingress.enabled }}
+   - For production, configure TLS in frontend.ingress.tls and set a real hostname in frontend.ingress.hosts
+{{- else if .Values.frontend.httpRoute.enabled }}
+   - For production, terminate TLS on the Gateway listener and set proper hostnames
+{{- end }}
    - Consider using external PostgreSQL and Redis for production workloads

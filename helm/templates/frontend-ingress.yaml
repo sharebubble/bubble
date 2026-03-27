@@ -16,27 +16,31 @@ spec:
   {{- end }}
   {{- if .Values.frontend.ingress.tls }}
   tls:
-    {{- range .Values.frontend.ingress.tls }}
-    - hosts:
-        {{- range .hosts }}
-        - {{ . | quote }}
-        {{- end }}
-      secretName: {{ .secretName }}
-    {{- end }}
+    {{- toYaml .Values.frontend.ingress.tls | nindent 4 }}
   {{- end }}
   rules:
     {{- range .Values.frontend.ingress.hosts }}
-    - host: {{ .host | quote }}
+    {{- $host := .host }}
+    - host: {{ $host | quote }}
       http:
         paths:
-          {{- range .paths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
+          {{- if $.Values.backend.enabled }}
+          {{- range $.Values.frontend.ingress.backendPrefixes }}
+          - path: {{ . }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "bubble.backend.fullname" $ }}
+                port:
+                  number: {{ $.Values.backend.service.port }}
+          {{- end }}
+          {{- end }}
+          - path: /
+            pathType: Prefix
             backend:
               service:
                 name: {{ include "bubble.frontend.fullname" $ }}
                 port:
                   number: {{ $.Values.frontend.service.port }}
-          {{- end }}
     {{- end }}
 {{- end }}

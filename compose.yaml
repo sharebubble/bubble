@@ -79,8 +79,8 @@ services:
     ports: []
     command: sh -c "watchfiles --filter python 'python manage.py run_huey' bubble"
 
-  isbn-lookup:
-    image: ghcr.io/treibhausdonaufeld/isbn-lookup:latest
+  isbn-search:
+    image: ghcr.io/sharebubble/isbn-search:latest
     environment:
       - PYTHONUNBUFFERED=1
       - DEBUG=1 # Uncomment to enable verbose logging
