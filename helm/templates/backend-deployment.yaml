@@ -1,0 +1,147 @@
+{{- if .Values.backend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "bubble.backend.fullname" . }}
+  labels:
+    {{- include "bubble.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  {{- if not .Values.backend.autoscaling.enabled }}
+  replicas: {{ .Values.backend.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "bubble.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        {{- include "bubble.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+    spec:
+      {{- include "bubble.imagePullSecrets" . | nindent 6 }}
+      serviceAccountName: {{ include "bubble.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z {{ include "bubble.postgresql.host" . }} {{ include "bubble.postgresql.port" . }}; do echo waiting for db; sleep 2; done;']
+        - name: collectstatic
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ['python', 'manage.py', 'collectstatic', '--noinput']
+          envFrom:
+            - configMapRef:
+                name: {{ include "bubble.fullname" . }}-backend
+            - secretRef:
+                name: {{ include "bubble.fullname" . }}-backend
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "bubble.postgresql.secretName" . }}
+                  key: {{ include "bubble.postgresql.secretKey" . }}
+            - name: DATABASE_URL
+              value: {{ include "bubble.database.url" . | quote }}
+          volumeMounts:
+            - name: staticfiles
+              mountPath: /app/staticfiles
+        - name: migrate
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ['python', 'manage.py', 'migrate', '--noinput']
+          envFrom:
+            - configMapRef:
+                name: {{ include "bubble.fullname" . }}-backend
+            - secretRef:
+                name: {{ include "bubble.fullname" . }}-backend
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "bubble.postgresql.secretName" . }}
+                  key: {{ include "bubble.postgresql.secretKey" . }}
+            - name: DATABASE_URL
+              value: {{ include "bubble.database.url" . | quote }}
+      containers:
+        - name: backend
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          command: ["/start"]
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ include "bubble.fullname" . }}-backend
+            - secretRef:
+                name: {{ include "bubble.fullname" . }}-backend
+          env:
+            - name: DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "bubble.postgresql.secretName" . }}
+                  key: {{ include "bubble.postgresql.secretKey" . }}
+            - name: DATABASE_URL
+              value: {{ include "bubble.database.url" . | quote }}
+            {{- if and (not .Values.redis.enabled) .Values.externalRedis.password }}
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalRedis.existingSecret | default (printf "%s-external-redis" (include "bubble.fullname" .)) }}
+                  key: {{ .Values.externalRedis.existingSecretPasswordKey | default "password" }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /api/health/
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /api/health/
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+          resources:
+            {{- toYaml .Values.backend.resources | nindent 12 }}
+          volumeMounts:
+            - name: media
+              mountPath: /app/bubble/media
+            - name: staticfiles
+              mountPath: /app/staticfiles
+      volumes:
+        - name: media
+          {{- if .Values.backend.persistence.media.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "bubble.fullname" . }}-media
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        - name: staticfiles
+          {{- if .Values.backend.persistence.staticfiles.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "bubble.fullname" . }}-staticfiles
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      {{- with .Values.backend.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.backend.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.backend.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

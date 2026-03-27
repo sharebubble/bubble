@@ -1,0 +1,51 @@
+1. Get the application URL by running these commands:
+{{- if .Values.frontend.ingress.enabled }}
+{{- range $host := .Values.frontend.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.frontend.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.frontend.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "bubble.frontend.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.frontend.service.type }}
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+           You can watch the status of by running 'kubectl get --namespace {{ .Release.Namespace }} svc -w {{ include "bubble.frontend.fullname" . }}'
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ include "bubble.frontend.fullname" . }} --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.frontend.service.port }}
+{{- else if contains "ClusterIP" .Values.frontend.service.type }}
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "bubble.name" . }},app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=frontend" -o jsonpath="{.items[0].metadata.name}")
+  export CONTAINER_PORT=$(kubectl get pod --namespace {{ .Release.Namespace }} $POD_NAME -o jsonpath="{.spec.containers[0].ports[0].containerPort}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
+{{- end }}
+
+2. Deployed components:
+{{- if .Values.frontend.enabled }}
+   - Frontend: {{ include "bubble.frontend.fullname" . }}
+{{- end }}
+{{- if .Values.backend.enabled }}
+   - Backend: {{ include "bubble.backend.fullname" . }}
+{{- end }}
+{{- if .Values.worker.enabled }}
+   - Celery Worker: {{ include "bubble.worker.fullname" . }}
+{{- end }}
+{{- if .Values.beat.enabled }}
+   - Celery Beat: {{ include "bubble.beat.fullname" . }}
+{{- end }}
+{{- if .Values.postgresql.enabled }}
+   - PostgreSQL: {{ include "bubble.postgresql.fullname" . }} (internal)
+{{- else }}
+   - PostgreSQL: {{ .Values.externalPostgresql.host }}:{{ .Values.externalPostgresql.port }} (external)
+{{- end }}
+{{- if .Values.redis.enabled }}
+   - Redis (DragonflyDB): {{ include "bubble.redis.fullname" . }} (internal)
+{{- else }}
+   - Redis: {{ .Values.externalRedis.host }}:{{ .Values.externalRedis.port }} (external)
+{{- end }}
+
+3. Important notes:
+   - Make sure to set proper secrets in values.yaml or use external secret management
+   - For production, enable TLS on ingress and set proper hostnames
+   - Consider using external PostgreSQL and Redis for production workloads

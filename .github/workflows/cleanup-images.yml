@@ -1,0 +1,31 @@
+name: Delete old container images
+
+on:
+  workflow_dispatch: # Allow manual runs
+  schedule:
+    - cron: '0 0 * * 0' # Run weekly at midnight (Sunday)
+
+jobs:
+  delete-old-images:
+    name: Delete old container images
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Delete old versions of bubble-backend
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: 'bubble-backend'
+          package-type: 'container'
+          ignore-versions: '^(latest|main|develop)$'
+          min-versions-to-keep: 10
+
+      - name: Delete old versions of bubble-frontend
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: 'bubble-frontend'
+          package-type: 'container'
+          ignore-versions: '^(latest|main|develop)$'
+          min-versions-to-keep: 10

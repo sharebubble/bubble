@@ -1,0 +1,25 @@
+{% load static i18n %}
+
+<!DOCTYPE html>
+{% get_current_language as LANGUAGE_CODE %}
+<html lang="{{ LANGUAGE_CODE }}"{% if data_bs_theme %} data-bs-theme="{{ data_bs_theme }}"{% endif %}>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <title>
+      {% block title %}
+        Thd Bubble
+      {% endblock title %}
+    </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Treibhaus donaufeld sharing platform" />
+    <meta name="csrf-token" content="{{ csrf_token }}" />
+    <meta name="theme-preference" content="{{ current_theme }}" />
+  </head>
+  <body class="{% block bodyclass %}{% endblock bodyclass %}">
+    {% block body %}
+      <!-- Your stuff: Main page HTML goes here -->
+      {% block content %}{% endblock content %}
+    {% endblock body %}
+  </body>
+</html>

@@ -1,0 +1,105 @@
+x-backend: &backend
+  build:
+    context: ./backend/
+    dockerfile: Dockerfile
+    target: dev
+  image: bubble-backend
+  restart: unless-stopped
+  depends_on:
+    - postgres
+    - redis
+    - mailpit
+  volumes:
+    - ./backend:/app:z
+  env_file:
+    - ./backend/.env-docker.local
+  environment:
+    - GEMINI_API_KEY=${GEMINI_API_KEY:-not_set}
+    - FRONTEND_URL=http://localhost:8080
+
+volumes:
+  bubble_local_postgres_data: {}
+  bubble_local_redis_data: {}
+
+services:
+  frontend:
+    build:
+      context: ./frontend/
+      dockerfile: Dockerfile.dev
+    image: bubble-frontend
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-}
+      - VITE_PROXY_URL=${VITE_PROXY_URL:-http://backend:8000}
+      - VITE_SENTRY_DSN=${VITE_SENTRY_DSN:-}
+      - VITE_SENTRY_ENVIRONMENT=${VITE_SENTRY_ENVIRONMENT:-local}
+    volumes:
+      - ./frontend/src:/app/src:z
+    ports:
+      - '127.0.0.1:8080:8080'
+
+  backend:
+    <<: *backend
+    command: sh -c "python3 manage.py migrate && uvicorn config.asgi:application --host 0.0.0.0 --reload"
+
+  postgres:
+    image: docker.io/pgvector/pgvector:pg17
+    restart: always
+    volumes:
+      - bubble_local_postgres_data:/var/lib/postgresql/data
+    env_file:
+      - ./backend/.env-docker.local
+
+  mailpit:
+    image: docker.io/axllent/mailpit:latest
+
+  redis:
+    image: ghcr.io/dragonflydb/dragonfly:latest
+    restart: always
+    command: >
+      dragonfly
+        --maxmemory 2gb
+        --proactor_threads 4
+        --cache_mode
+    environment:
+      # required to work with django-channels
+      # https://github.com/dragonflydb/dragonfly/issues/182#issuecomment-1241624150
+      DFLY_default_lua_flags: 'allow-undeclared-keys disable-atomicity'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  huey:
+    <<: *backend
+    depends_on:
+      - redis
+      - postgres
+      - mailpit
+    ports: []
+    command: sh -c "watchfiles --filter python 'python manage.py run_huey' bubble"
+
+  isbn-lookup:
+    image: ghcr.io/treibhausdonaufeld/isbn-lookup:latest
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DEBUG=1 # Uncomment to enable verbose logging
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+    restart: unless-stopped

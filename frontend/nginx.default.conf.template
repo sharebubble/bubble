@@ -1,0 +1,97 @@
+upstream backend {
+    server ${BACKEND_HOST};
+}
+
+server {
+    include mime.types;
+    types {
+        text/javascript js mjs;
+    }
+
+    listen 8888 default_server;
+    listen [::]:8888 default_server;
+
+    server_name  "~^(?<subdomain>[^\.]*)\.?(?<domain>.*)$";
+
+    client_max_body_size 500m;
+    index index.html index.htm;
+
+    server_tokens off;
+
+    # add default headers
+    # Basic secure Content Security Policy: blocks all by default, allows self for scripts/styles/images/fonts, disallows inline JS, no external frames
+    # add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval'; script-src-elem 'self'; style-src 'self'; style-src-elem 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; connect-src 'self' https://*.sentry.io https://*.ingest.*.sentry.io" always;
+    add_header Content-Security-Policy "default-src 'self' https://*.sentry.io https://*.ingest.*.sentry.io; script-src 'self' 'unsafe-eval'; script-src-elem 'self'; style-src 'self'; style-src-elem 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; object-src 'none'; base-uri 'self'" always;
+    add_header X-XSS-Protection "1; mode=block";
+    add_header Referrer-Policy 'strict-origin-when-cross-origin';
+    add_header Permissions-Policy "geolocation=(),midi=(),sync-xhr=(),microphone=(self),camera=(self),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()";
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+    add_header X-Content-Type-Options  "nosniff";
+    add_header Cache-Control "no-cache, no-store, max-age=0, must-revalidate";
+    add_header Expires "0";
+    add_header Pragma "no-cache";
+
+    root /usr/share/nginx/html;
+
+    location / {
+        index index.html index.htm;
+        try_files $uri $uri/ /index.html;
+    }
+
+    location ~ ^/sentry-tunnel/(?<sentry_project_id>\d+)/ {
+        proxy_ssl_server_name on;
+        proxy_ssl_name o4511038158209024.ingest.sentry.io;
+
+        resolver 8.8.8.8 ipv6=off;
+        set $sentry_host "o4511038158209024.ingest.de.sentry.io";
+
+        proxy_set_header Host $sentry_host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_pass https://$sentry_host/api/$sentry_project_id/envelope/;
+
+        # Buffering tweaks for better performance
+        proxy_http_version 1.1;
+        proxy_buffering off;
+    }
+
+    # Cache static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location ~* /(api|accounts|admin) {
+        proxy_pass http://backend;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $host;
+        proxy_redirect off;
+
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        client_max_body_size 100M;
+    }
+
+    # Environment configuration endpoint
+    location = /env-config.js {
+        add_header Content-Type "application/javascript";
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+        return 200 'window._env_ = {
+  VITE_SENTRY_DSN: "${VITE_SENTRY_DSN}",
+  VITE_SENTRY_ENVIRONMENT: "${VITE_SENTRY_ENVIRONMENT}"
+};';
+    }
+
+    location /static/ {
+        alias /usr/share/nginx/static/;
+    }
+    location /media/ {
+        alias /usr/share/nginx/media/;
+    }
+    location /healthz {
+        return 200 "OK";
+    }
+}

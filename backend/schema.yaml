@@ -1,0 +1,5035 @@
+openapi: 3.0.3
+info:
+  title: bubble API
+  version: 1.0.0
+  description: Documentation of API endpoints of bubble
+paths:
+  /api/auth-token/:
+    post:
+      operationId: auth_token_create
+      tags:
+        - auth-token
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthToken'
+          description: ''
+  /api/bookings/:
+    get:
+      operationId: bookings_list
+      description: ViewSet for bookings with filtering and permissions.
+      parameters:
+        - name: ordering
+          required: false
+          in: query
+          description: Which field to use when ordering the results.
+          schema:
+            type: string
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+        - name: search
+          required: false
+          in: query
+          description: A search term.
+          schema:
+            type: string
+      tags:
+        - bookings
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBookingListList'
+          description: ''
+    post:
+      operationId: bookings_create
+      description: ViewSet for bookings with filtering and permissions.
+      tags:
+        - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Booking'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Booking'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Booking'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+  /api/bookings/{id}/:
+    get:
+      operationId: bookings_retrieve
+      description: ViewSet for bookings with filtering and permissions.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      tags:
+        - bookings
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+    put:
+      operationId: bookings_update
+      description: ViewSet for bookings with filtering and permissions.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      tags:
+        - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Booking'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Booking'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Booking'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+    patch:
+      operationId: bookings_partial_update
+      description: ViewSet for bookings with filtering and permissions.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      tags:
+        - bookings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBooking'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBooking'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBooking'
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+    delete:
+      operationId: bookings_destroy
+      description: ViewSet for bookings with filtering and permissions.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      tags:
+        - bookings
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/books/:
+    get:
+      operationId: books_list
+      description: |-
+        ViewSet for managing books (Items with category='books').
+
+        list: Get all books
+        retrieve: Get a specific book by UUID
+        create: Create a new book
+        update: Update a book
+        partial_update: Partially update a book
+        destroy: Delete a book
+      parameters:
+        - in: query
+          name: author_name
+          schema:
+            type: string
+        - in: query
+          name: genre_name
+          schema:
+            type: string
+        - in: query
+          name: isbn
+          schema:
+            type: string
+        - in: query
+          name: language
+          schema:
+            type: string
+        - name: ordering
+          required: false
+          in: query
+          description: Which field to use when ordering the results.
+          schema:
+            type: string
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+        - in: query
+          name: publisher_name
+          schema:
+            type: string
+        - name: search
+          required: false
+          in: query
+          description: A search term.
+          schema:
+            type: string
+        - in: query
+          name: shelf_name
+          schema:
+            type: string
+        - in: query
+          name: topic
+          schema:
+            type: string
+        - in: query
+          name: year
+          schema:
+            type: number
+        - in: query
+          name: year_max
+          schema:
+            type: number
+        - in: query
+          name: year_min
+          schema:
+            type: number
+      tags:
+        - books
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBookListList'
+          description: ''
+    post:
+      operationId: books_create
+      description: |-
+        ViewSet for managing books (Items with category='books').
+
+        list: Get all books
+        retrieve: Get a specific book by UUID
+        create: Create a new book
+        update: Update a book
+        partial_update: Partially update a book
+        destroy: Delete a book
+      tags:
+        - books
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Book'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Book'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Book'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+          description: ''
+  /api/books/{id}/:
+    get:
+      operationId: books_retrieve
+      description: |-
+        ViewSet for managing books (Items with category='books').
+
+        list: Get all books
+        retrieve: Get a specific book by UUID
+        create: Create a new book
+        update: Update a book
+        partial_update: Partially update a book
+        destroy: Delete a book
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - books
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+          description: ''
+    put:
+      operationId: books_update
+      description: |-
+        ViewSet for managing books (Items with category='books').
+
+        list: Get all books
+        retrieve: Get a specific book by UUID
+        create: Create a new book
+        update: Update a book
+        partial_update: Partially update a book
+        destroy: Delete a book
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - books
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Book'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Book'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Book'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+          description: ''
+    patch:
+      operationId: books_partial_update
+      description: |-
+        ViewSet for managing books (Items with category='books').
+
+        list: Get all books
+        retrieve: Get a specific book by UUID
+        create: Create a new book
+        update: Update a book
+        partial_update: Partially update a book
+        destroy: Delete a book
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - books
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBook'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBook'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBook'
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+          description: ''
+    delete:
+      operationId: books_destroy
+      description: |-
+        ViewSet for managing books (Items with category='books').
+
+        list: Get all books
+        retrieve: Get a specific book by UUID
+        create: Create a new book
+        update: Update a book
+        partial_update: Partially update a book
+        destroy: Delete a book
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - books
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/books/{id}/isbn_update/:
+    put:
+      operationId: books_isbn_update_update
+      description: |-
+        Update book details from OpenLibrary based on ISBN.
+
+        Optionally provide an ISBN in the request body to update the book with
+        data from OpenLibrary. If no ISBN is provided, the book's existing ISBN
+        will be used.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - books
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                isbn:
+                  type: string
+                  description: ISBN number to fetch book details from OpenLibrary
+                    API. If not provided, uses the book's existing ISBN.
+                  example: '9780980200447'
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+          description: ''
+  /api/collection-items/:
+    get:
+      operationId: collection_items_list
+      description: |-
+        ViewSet for managing items within collections.
+
+        Provides CRUD operations for collection items.
+      parameters:
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+      tags:
+        - collection-items
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCollectionItemList'
+          description: ''
+    post:
+      operationId: collection_items_create
+      description: |-
+        ViewSet for managing items within collections.
+
+        Provides CRUD operations for collection items.
+      tags:
+        - collection-items
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectionItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CollectionItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CollectionItem'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionItem'
+          description: ''
+  /api/collection-items/{id}/:
+    get:
+      operationId: collection_items_retrieve
+      description: |-
+        ViewSet for managing items within collections.
+
+        Provides CRUD operations for collection items.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection item.
+          required: true
+      tags:
+        - collection-items
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionItem'
+          description: ''
+    put:
+      operationId: collection_items_update
+      description: |-
+        ViewSet for managing items within collections.
+
+        Provides CRUD operations for collection items.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection item.
+          required: true
+      tags:
+        - collection-items
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CollectionItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CollectionItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CollectionItem'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionItem'
+          description: ''
+    patch:
+      operationId: collection_items_partial_update
+      description: |-
+        ViewSet for managing items within collections.
+
+        Provides CRUD operations for collection items.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection item.
+          required: true
+      tags:
+        - collection-items
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCollectionItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCollectionItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCollectionItem'
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionItem'
+          description: ''
+    delete:
+      operationId: collection_items_destroy
+      description: |-
+        ViewSet for managing items within collections.
+
+        Provides CRUD operations for collection items.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection item.
+          required: true
+      tags:
+        - collection-items
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/collections/:
+    get:
+      operationId: collections_list
+      description: |-
+        ViewSet for managing collections.
+
+        Provides CRUD operations for collections with object-level permissions.
+      parameters:
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+      tags:
+        - collections
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCollectionListList'
+          description: ''
+    post:
+      operationId: collections_create
+      description: |-
+        ViewSet for managing collections.
+
+        Provides CRUD operations for collections with object-level permissions.
+      tags:
+        - collections
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Collection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Collection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Collection'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+          description: ''
+  /api/collections/{id}/:
+    get:
+      operationId: collections_retrieve
+      description: |-
+        ViewSet for managing collections.
+
+        Provides CRUD operations for collections with object-level permissions.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection.
+          required: true
+      tags:
+        - collections
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+          description: ''
+    put:
+      operationId: collections_update
+      description: |-
+        ViewSet for managing collections.
+
+        Provides CRUD operations for collections with object-level permissions.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection.
+          required: true
+      tags:
+        - collections
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Collection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Collection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Collection'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+          description: ''
+    patch:
+      operationId: collections_partial_update
+      description: |-
+        ViewSet for managing collections.
+
+        Provides CRUD operations for collections with object-level permissions.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection.
+          required: true
+      tags:
+        - collections
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCollection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCollection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCollection'
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+          description: ''
+    delete:
+      operationId: collections_destroy
+      description: |-
+        ViewSet for managing collections.
+
+        Provides CRUD operations for collections with object-level permissions.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection.
+          required: true
+      tags:
+        - collections
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/collections/{id}/add-item/:
+    post:
+      operationId: collections_add_item_create
+      description: Add an item to the collection.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection.
+          required: true
+      tags:
+        - collections
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Collection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Collection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Collection'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+          description: ''
+  /api/collections/{id}/bulk-add-items/:
+    post:
+      operationId: collections_bulk_add_items_create
+      description: Add multiple items to the collection.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection.
+          required: true
+      tags:
+        - collections
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Collection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Collection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Collection'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+          description: ''
+  /api/collections/{id}/bulk-remove-items/:
+    post:
+      operationId: collections_bulk_remove_items_create
+      description: Remove multiple items from the collection.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection.
+          required: true
+      tags:
+        - collections
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Collection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Collection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Collection'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+          description: ''
+  /api/collections/{id}/history/:
+    get:
+      operationId: collections_history_list
+      description: Return full event history for a collection (no pagination).
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection.
+          required: true
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+      tags:
+        - collections
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCollectionEventList'
+          description: ''
+  /api/collections/{id}/manage_permissions/:
+    post:
+      operationId: collections_manage_permissions_create
+      description: |-
+        Manage permissions for a collection.
+
+        Only the owner can manage permissions.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection.
+          required: true
+      tags:
+        - collections
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Collection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Collection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Collection'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+          description: ''
+  /api/collections/{id}/permissions/:
+    get:
+      operationId: collections_permissions_list
+      description: |-
+        Return all current permission grants for a collection (owner only).
+
+        Returns one entry per subject with a computed role name.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection.
+          required: true
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+      tags:
+        - collections
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCollectionGrantList'
+          description: ''
+  /api/collections/{id}/remove-item/{item_id}/:
+    post:
+      operationId: collections_remove_item_create
+      description: Remove an item from the collection.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this collection.
+          required: true
+        - in: path
+          name: item_id
+          schema:
+            type: string
+          required: true
+      tags:
+        - collections
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Collection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Collection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Collection'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+          description: ''
+  /api/collections/for-item/{item_id}/:
+    get:
+      operationId: collections_for_item_list
+      description: Return all collections visible to the current user that contain
+        the item.
+      parameters:
+        - in: path
+          name: item_id
+          schema:
+            type: string
+          required: true
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+      tags:
+        - collections
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCollectionListList'
+          description: ''
+  /api/collections/my-collections/:
+    get:
+      operationId: collections_my_collections_list
+      description: Get all collections owned by the current user.
+      parameters:
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+      tags:
+        - collections
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCollectionListList'
+          description: ''
+  /api/config/:
+    get:
+      operationId: config_retrieve
+      description: API endpoint that returns the current Constance configuration.
+      tags:
+        - config
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+        - {}
+      responses:
+        '200':
+          description: No response body
+  /api/groups/:
+    get:
+      operationId: groups_list
+      description: |-
+        Read-only viewset for listing and retrieving auth groups.
+        Used by the frontend group picker when managing item co-owners/viewers.
+        Only accessible to authenticated users.
+      parameters:
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+      tags:
+        - groups
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedGroupList'
+          description: ''
+  /api/groups/{id}/:
+    get:
+      operationId: groups_retrieve
+      description: |-
+        Read-only viewset for listing and retrieving auth groups.
+        Used by the frontend group picker when managing item co-owners/viewers.
+        Only accessible to authenticated users.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          description: A unique integer value identifying this group.
+          required: true
+      tags:
+        - groups
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Group'
+          description: ''
+  /api/images/:
+    get:
+      operationId: images_list
+      description: |-
+        ViewSet for retrieving images.
+        Only authenticated users can access images.
+        Users can only see images of items they have access to.
+      parameters:
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+      tags:
+        - images
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedImageList'
+          description: ''
+    post:
+      operationId: images_create
+      description: |-
+        ViewSet for retrieving images.
+        Only authenticated users can access images.
+        Users can only see images of items they have access to.
+      tags:
+        - images
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Image'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Image'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Image'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+          description: ''
+  /api/images/{id}/:
+    get:
+      operationId: images_retrieve
+      description: |-
+        ViewSet for retrieving images.
+        Only authenticated users can access images.
+        Users can only see images of items they have access to.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this image.
+          required: true
+      tags:
+        - images
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+          description: ''
+    put:
+      operationId: images_update
+      description: |-
+        ViewSet for retrieving images.
+        Only authenticated users can access images.
+        Users can only see images of items they have access to.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this image.
+          required: true
+      tags:
+        - images
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Image'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Image'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Image'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+          description: ''
+    patch:
+      operationId: images_partial_update
+      description: |-
+        ViewSet for retrieving images.
+        Only authenticated users can access images.
+        Users can only see images of items they have access to.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this image.
+          required: true
+      tags:
+        - images
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedImage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedImage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedImage'
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+          description: ''
+    delete:
+      operationId: images_destroy
+      description: |-
+        ViewSet for retrieving images.
+        Only authenticated users can access images.
+        Users can only see images of items they have access to.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this image.
+          required: true
+      tags:
+        - images
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/items/:
+    get:
+      operationId: items_list
+      description: ViewSet for retrieving, creating, updating, and deleting items.
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum:
+              - books
+              - clothing
+              - electronics
+              - furniture
+              - garden
+              - kitchen
+              - other
+              - rooms
+              - sports
+              - tools
+              - toys
+              - vehicles
+          description: |-
+            Category of the item
+
+            * `books` - Books
+            * `clothing` - Clothing
+            * `electronics` - Electronics
+            * `furniture` - Furniture
+            * `garden` - Garden
+            * `kitchen` - Kitchen
+            * `other` - Other
+            * `rooms` - Rooms
+            * `sports` - Sports
+            * `tools` - Tools
+            * `toys` - Toys
+            * `vehicles` - Vehicles
+        - in: query
+          name: conditions
+          schema:
+            type: array
+            items:
+              type: integer
+              enum:
+                - 0
+                - 1
+                - 2
+          description: |-
+            Condition of the item
+
+            * `0` - New
+            * `1` - Used
+            * `2` - Broken
+          explode: true
+          style: form
+        - in: query
+          name: created_after
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: created_before
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: max_price
+          schema:
+            type: number
+        - in: query
+          name: min_price
+          schema:
+            type: number
+        - name: ordering
+          required: false
+          in: query
+          description: Which field to use when ordering the results.
+          schema:
+            type: string
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+        - in: query
+          name: published
+          schema:
+            type: boolean
+        - in: query
+          name: sales_type
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - borrow
+                - donate
+                - rent
+                - sell
+                - want_buy
+                - want_rent
+          description: |-
+            How the item is offered: Sell, Donate, Rent, Borrow, Want to Buy, or Want to Rent.
+
+            * `sell` - Sell
+            * `donate` - Donate
+            * `rent` - Rent
+            * `borrow` - Borrow
+            * `want_buy` - Want to Buy
+            * `want_rent` - Want to Rent
+          explode: true
+          style: form
+        - name: search
+          required: false
+          in: query
+          description: A search term.
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: array
+            items:
+              type: integer
+              enum:
+                - 0
+                - 1
+                - 2
+                - 3
+                - 4
+                - 5
+          description: |-
+            * `0` - Draft
+            * `1` - Processing
+            * `2` - Available
+            * `3` - Reserved
+            * `4` - Rented
+            * `5` - Sold
+          explode: true
+          style: form
+        - in: query
+          name: user
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - items
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedItemListList'
+          description: ''
+    post:
+      operationId: items_create
+      description: ViewSet for retrieving, creating, updating, and deleting items.
+      tags:
+        - items
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Item'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Item'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+          description: ''
+  /api/items/{id}/:
+    get:
+      operationId: items_retrieve
+      description: ViewSet for retrieving, creating, updating, and deleting items.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - items
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+          description: ''
+    put:
+      operationId: items_update
+      description: ViewSet for retrieving, creating, updating, and deleting items.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - items
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Item'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Item'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+          description: ''
+    patch:
+      operationId: items_partial_update
+      description: ViewSet for retrieving, creating, updating, and deleting items.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - items
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedItem'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedItem'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedItem'
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+          description: ''
+    delete:
+      operationId: items_destroy
+      description: ViewSet for retrieving, creating, updating, and deleting items.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - items
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/items/{id}/ai_describe/:
+    put:
+      operationId: items_ai_describe_update
+      description: Ai describe the item and populate fields.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - items
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Item'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Item'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+          description: ''
+  /api/items/{id}/ai_image/:
+    put:
+      operationId: items_ai_image_update
+      description: |-
+        Generate an image from the item's name and description and attach it.
+
+        The generated image is created by a small Google image model and saved
+        as a new Image.original file for the item. Returns the created image
+        data via ImageSerializer.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - items
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Item'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Item'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+          description: ''
+  /api/items/{id}/co-owners/:
+    get:
+      operationId: items_co_owners_retrieve
+      description: |-
+        Manage co-owners of an item.
+
+        GET  — list current co-owners (users and groups with change_item).
+        POST — grant co-ownership. Body: {"user": <id>} or {"group": <id>}.
+        DELETE — revoke co-ownership. Body: {"user": <id>} or {"group": <id>}.
+
+        Only the item owner can call this endpoint.
+        Co-owners receive view_item + change_item. delete_item is never granted.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - items
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+          description: ''
+    post:
+      operationId: items_co_owners_create
+      description: |-
+        Manage co-owners of an item.
+
+        GET  — list current co-owners (users and groups with change_item).
+        POST — grant co-ownership. Body: {"user": <id>} or {"group": <id>}.
+        DELETE — revoke co-ownership. Body: {"user": <id>} or {"group": <id>}.
+
+        Only the item owner can call this endpoint.
+        Co-owners receive view_item + change_item. delete_item is never granted.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - items
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Item'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Item'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+          description: ''
+    delete:
+      operationId: items_co_owners_destroy
+      description: |-
+        Manage co-owners of an item.
+
+        GET  — list current co-owners (users and groups with change_item).
+        POST — grant co-ownership. Body: {"user": <id>} or {"group": <id>}.
+        DELETE — revoke co-ownership. Body: {"user": <id>} or {"group": <id>}.
+
+        Only the item owner can call this endpoint.
+        Co-owners receive view_item + change_item. delete_item is never granted.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - items
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/items/{id}/reorder_images/:
+    put:
+      operationId: items_reorder_images_update
+      description: Reorder images for an item.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - items
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Item'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Item'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+          description: ''
+  /api/items/{id}/viewers/:
+    get:
+      operationId: items_viewers_retrieve
+      description: |-
+        Manage specific viewers of an item (SPECIFIC visibility).
+
+        GET  — list users and groups with view_item but NOT change_item.
+        POST — grant view_item only. Body: {"user": <id>} or {"group": <id>}.
+        DELETE — revoke view_item. Body: {"user": <id>} or {"group": <id>}.
+
+        Only the item owner can call this endpoint.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - items
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+          description: ''
+    post:
+      operationId: items_viewers_create
+      description: |-
+        Manage specific viewers of an item (SPECIFIC visibility).
+
+        GET  — list users and groups with view_item but NOT change_item.
+        POST — grant view_item only. Body: {"user": <id>} or {"group": <id>}.
+        DELETE — revoke view_item. Body: {"user": <id>} or {"group": <id>}.
+
+        Only the item owner can call this endpoint.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - items
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Item'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Item'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+          description: ''
+    delete:
+      operationId: items_viewers_destroy
+      description: |-
+        Manage specific viewers of an item (SPECIFIC visibility).
+
+        GET  — list users and groups with view_item but NOT change_item.
+        POST — grant view_item only. Body: {"user": <id>} or {"group": <id>}.
+        DELETE — revoke view_item. Body: {"user": <id>} or {"group": <id>}.
+
+        Only the item owner can call this endpoint.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - items
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/messages/:
+    get:
+      operationId: messages_list
+      description: |-
+        ViewSet for messages related to bookings.
+
+        List requires either `booking` (booking-uuid) or `user` (user id) query param
+        to be provided to avoid returning global message lists.
+      parameters:
+        - in: query
+          name: booking
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: created_at_after
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: created_at_before
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: is_read
+          schema:
+            type: boolean
+        - name: ordering
+          required: false
+          in: query
+          description: Which field to use when ordering the results.
+          schema:
+            type: string
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+        - in: query
+          name: sender
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: unread_received
+          schema:
+            type: boolean
+          description: Unread messages received by current user
+      tags:
+        - messages
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMessageList'
+          description: ''
+    post:
+      operationId: messages_create
+      description: |-
+        ViewSet for messages related to bookings.
+
+        List requires either `booking` (booking-uuid) or `user` (user id) query param
+        to be provided to avoid returning global message lists.
+      tags:
+        - messages
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Message'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Message'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+  /api/messages/{id}/:
+    get:
+      operationId: messages_retrieve
+      description: |-
+        ViewSet for messages related to bookings.
+
+        List requires either `booking` (booking-uuid) or `user` (user id) query param
+        to be provided to avoid returning global message lists.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this message.
+          required: true
+      tags:
+        - messages
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+    put:
+      operationId: messages_update
+      description: |-
+        ViewSet for messages related to bookings.
+
+        List requires either `booking` (booking-uuid) or `user` (user id) query param
+        to be provided to avoid returning global message lists.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this message.
+          required: true
+      tags:
+        - messages
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Message'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Message'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+    patch:
+      operationId: messages_partial_update
+      description: |-
+        ViewSet for messages related to bookings.
+
+        List requires either `booking` (booking-uuid) or `user` (user id) query param
+        to be provided to avoid returning global message lists.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this message.
+          required: true
+      tags:
+        - messages
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMessage'
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+    delete:
+      operationId: messages_destroy
+      description: |-
+        ViewSet for messages related to bookings.
+
+        List requires either `booking` (booking-uuid) or `user` (user id) query param
+        to be provided to avoid returning global message lists.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this message.
+          required: true
+      tags:
+        - messages
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/profiles/:
+    get:
+      operationId: profiles_list
+      description: ViewSet for retrieving and updating user profiles.
+      parameters:
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+      tags:
+        - profiles
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProfileList'
+          description: ''
+  /api/profiles/{id}/:
+    get:
+      operationId: profiles_retrieve
+      description: ViewSet for retrieving and updating user profiles.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+      tags:
+        - profiles
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+  /api/profiles/me/:
+    get:
+      operationId: profiles_me_retrieve
+      description: Get or update the current user's profile.
+      tags:
+        - profiles
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+    patch:
+      operationId: profiles_me_partial_update
+      description: Get or update the current user's profile.
+      tags:
+        - profiles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProfile'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProfile'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProfile'
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+          description: ''
+  /api/public-bookings/:
+    get:
+      operationId: public_bookings_list
+      description: |-
+        Public read-only ViewSet for confirmed bookings.
+
+        This viewset only returns bookings with CONFIRMED status and is read-only.
+        Supports filtering via BookingFilter.
+      parameters:
+        - in: query
+          name: created_at_after
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: created_at_before
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: item
+          schema:
+            type: string
+            format: uuid
+        - name: ordering
+          required: false
+          in: query
+          description: Which field to use when ordering the results.
+          schema:
+            type: string
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+        - name: search
+          required: false
+          in: query
+          description: A search term.
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: array
+            items:
+              type: integer
+              enum:
+                - 1
+                - 2
+                - 3
+                - 4
+                - 5
+          description: |-
+            * `1` - Pending
+            * `2` - Cancelled
+            * `3` - Confirmed
+            * `4` - Completed
+            * `5` - Rejected
+          explode: true
+          style: form
+        - in: query
+          name: user
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - public-bookings
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+        - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBookingListList'
+          description: ''
+  /api/public-bookings/{id}/:
+    get:
+      operationId: public_bookings_retrieve
+      description: |-
+        Public read-only ViewSet for confirmed bookings.
+
+        This viewset only returns bookings with CONFIRMED status and is read-only.
+        Supports filtering via BookingFilter.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this booking.
+          required: true
+      tags:
+        - public-bookings
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+        - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+          description: ''
+  /api/public-items/:
+    get:
+      operationId: public_items_list
+      description: |-
+        ViewSet for retrieving published items.
+        This viewset is read-only and only returns items with a published status.
+
+        Visibility rules:
+        - PUBLIC (0): visible to everyone including anonymous users.
+        - AUTHENTICATED (1): visible to any logged-in user.
+        - SPECIFIC (2): visible only to users/groups explicitly granted view_item.
+        - PRIVATE (3): visible only to the owner and co-owners (change_item holders).
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+            enum:
+              - books
+              - clothing
+              - electronics
+              - furniture
+              - garden
+              - kitchen
+              - other
+              - rooms
+              - sports
+              - tools
+              - toys
+              - vehicles
+          description: |-
+            Category of the item
+
+            * `books` - Books
+            * `clothing` - Clothing
+            * `electronics` - Electronics
+            * `furniture` - Furniture
+            * `garden` - Garden
+            * `kitchen` - Kitchen
+            * `other` - Other
+            * `rooms` - Rooms
+            * `sports` - Sports
+            * `tools` - Tools
+            * `toys` - Toys
+            * `vehicles` - Vehicles
+        - in: query
+          name: conditions
+          schema:
+            type: array
+            items:
+              type: integer
+              enum:
+                - 0
+                - 1
+                - 2
+          description: |-
+            Condition of the item
+
+            * `0` - New
+            * `1` - Used
+            * `2` - Broken
+          explode: true
+          style: form
+        - in: query
+          name: created_after
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: created_before
+          schema:
+            type: string
+            format: date-time
+        - in: query
+          name: max_price
+          schema:
+            type: number
+        - in: query
+          name: min_price
+          schema:
+            type: number
+        - name: ordering
+          required: false
+          in: query
+          description: Which field to use when ordering the results.
+          schema:
+            type: string
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+        - in: query
+          name: published
+          schema:
+            type: boolean
+        - in: query
+          name: sales_type
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - borrow
+                - donate
+                - rent
+                - sell
+                - want_buy
+                - want_rent
+          description: |-
+            How the item is offered: Sell, Donate, Rent, Borrow, Want to Buy, or Want to Rent.
+
+            * `sell` - Sell
+            * `donate` - Donate
+            * `rent` - Rent
+            * `borrow` - Borrow
+            * `want_buy` - Want to Buy
+            * `want_rent` - Want to Rent
+          explode: true
+          style: form
+        - name: search
+          required: false
+          in: query
+          description: A search term.
+          schema:
+            type: string
+        - in: query
+          name: status
+          schema:
+            type: array
+            items:
+              type: integer
+              enum:
+                - 0
+                - 1
+                - 2
+                - 3
+                - 4
+                - 5
+          description: |-
+            * `0` - Draft
+            * `1` - Processing
+            * `2` - Available
+            * `3` - Reserved
+            * `4` - Rented
+            * `5` - Sold
+          explode: true
+          style: form
+        - in: query
+          name: user
+          schema:
+            type: string
+            format: uuid
+      tags:
+        - public-items
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+        - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedItemListList'
+          description: ''
+  /api/public-items/{id}/:
+    get:
+      operationId: public_items_retrieve
+      description: |-
+        ViewSet for retrieving published items.
+        This viewset is read-only and only returns items with a published status.
+
+        Visibility rules:
+        - PUBLIC (0): visible to everyone including anonymous users.
+        - AUTHENTICATED (1): visible to any logged-in user.
+        - SPECIFIC (2): visible only to users/groups explicitly granted view_item.
+        - PRIVATE (3): visible only to the owner and co-owners (change_item holders).
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this item.
+          required: true
+      tags:
+        - public-items
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+        - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Item'
+          description: ''
+  /api/schema/:
+    get:
+      operationId: schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum:
+              - json
+              - yaml
+        - in: query
+          name: lang
+          schema:
+            type: string
+            enum:
+              - de
+              - en
+      tags:
+        - schema
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+        - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/users/:
+    get:
+      operationId: users_list
+      parameters:
+        - name: page
+          required: false
+          in: query
+          description: A page number within the paginated result set.
+          schema:
+            type: integer
+      tags:
+        - users
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedUserList'
+          description: ''
+  /api/users/{id}/:
+    get:
+      operationId: users_retrieve
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this user.
+          required: true
+      tags:
+        - users
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: users_update
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this user.
+          required: true
+      tags:
+        - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: users_partial_update
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          description: A UUID string identifying this user.
+          required: true
+      tags:
+        - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/users/me/:
+    get:
+      operationId: users_me_retrieve
+      tags:
+        - users
+      security:
+        - cookieAuth: []
+        - tokenAuth: []
+        - XSessionTokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+components:
+  schemas:
+    ActionEnum:
+      enum:
+        - item_added
+        - item_removed
+      type: string
+      description: |-
+        * `item_added` - Item added
+        * `item_removed` - Item removed
+    AuthToken:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        token:
+          type: string
+          readOnly: true
+      required:
+        - password
+        - token
+        - username
+    BlankEnum:
+      enum:
+        - ''
+    Book:
+      type: object
+      description: |-
+        Full serializer for Book detail view.
+
+        Read-side: exposes isbn, language, year, topic, metadata, authors,
+        genres, verlag (publisher name), shelf from Item.properties.
+
+        Write-side: accepts authors (list of strings), genres (list of strings),
+        publisher (string), shelf (string), isbn, language, year, topic,
+        metadata.  The old UUID-based author_ids / genre_ids / verlag_id /
+        shelf_id fields are no longer accepted.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Image'
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        first_image:
+          type: string
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        co_owners:
+          type: string
+          readOnly: true
+        isbn:
+          type: string
+          readOnly: true
+        language:
+          type: string
+          readOnly: true
+        year:
+          type: string
+          readOnly: true
+        topic:
+          type: string
+          readOnly: true
+        metadata:
+          type: string
+          readOnly: true
+        authors:
+          type: string
+          readOnly: true
+        genres:
+          type: string
+          readOnly: true
+        verlag:
+          type: string
+          readOnly: true
+        shelf:
+          type: string
+          readOnly: true
+        isbn_write:
+          type: string
+          writeOnly: true
+        language_write:
+          type: string
+          writeOnly: true
+        year_write:
+          type: integer
+          writeOnly: true
+          nullable: true
+        topic_write:
+          type: string
+          writeOnly: true
+        metadata_write:
+          writeOnly: true
+          nullable: true
+        authors_write:
+          type: array
+          items:
+            type: string
+          writeOnly: true
+        genres_write:
+          type: array
+          items:
+            type: string
+          writeOnly: true
+        publisher:
+          type: string
+          writeOnly: true
+        shelf_write:
+          type: string
+          writeOnly: true
+        category:
+          description: |-
+            Category of the item
+
+            * `books` - Books
+            * `clothing` - Clothing
+            * `electronics` - Electronics
+            * `furniture` - Furniture
+            * `garden` - Garden
+            * `kitchen` - Kitchen
+            * `other` - Other
+            * `rooms` - Rooms
+            * `sports` - Sports
+            * `tools` - Tools
+            * `toys` - Toys
+            * `vehicles` - Vehicles
+          oneOf:
+            - $ref: '#/components/schemas/CategoryEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        name:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 200
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        internal:
+          type: boolean
+          description: Internal item, not for public display
+        display_contact:
+          type: boolean
+          description: Display your contact information public
+        sales_type:
+          allOf:
+            - $ref: '#/components/schemas/SalesTypeEnum'
+          description: |-
+            How the item is offered: Sell, Donate, Rent, Borrow, Want to Buy, or Want to Rent.
+
+            * `sell` - Sell
+            * `donate` - Donate
+            * `rent` - Rent
+            * `borrow` - Borrow
+            * `want_buy` - Want to Buy
+            * `want_rent` - Want to Rent
+        price_currency:
+          type: string
+          readOnly: true
+          nullable: true
+        rental_period:
+          description: |-
+            Only used for formatting, price must always be per hour for rental items
+
+            * `h` - Hourly
+            * `d` - Daily
+            * `w` - Weekly
+          oneOf:
+            - $ref: '#/components/schemas/RentalPeriodEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        rental_self_service:
+          type: boolean
+          description: Allow self-service rental without owner approval
+        rental_open_end:
+          type: boolean
+          description: Allow open-ended rentals without a return date
+        payment_enabled:
+          type: boolean
+          description: Enable payment via internal payment system
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        condition:
+          allOf:
+            - $ref: '#/components/schemas/ConditionEnum'
+          description: |-
+            Condition of the item
+
+            * `0` - New
+            * `1` - Used
+            * `2` - Broken
+          minimum: -2147483648
+          maximum: 2147483647
+        active:
+          type: boolean
+        status:
+          allOf:
+            - $ref: '#/components/schemas/Status402Enum'
+          minimum: -2147483648
+          maximum: 2147483647
+        visibility:
+          allOf:
+            - $ref: '#/components/schemas/VisibilityEnum'
+          description: |-
+            Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
+
+            * `0` - Public
+            * `1` - Authenticated
+            * `2` - Specific
+            * `3` - Private
+          minimum: -2147483648
+          maximum: 2147483647
+        properties:
+          nullable: true
+          description: 'Category-specific properties stored as JSONB. For books: isbn,
+            language, year, topic, metadata, authors, genres, publisher, shelf.'
+      required:
+        - authors
+        - co_owners
+        - created_at
+        - first_image
+        - genres
+        - id
+        - images
+        - isbn
+        - language
+        - metadata
+        - price_currency
+        - sales_type
+        - shelf
+        - topic
+        - updated_at
+        - user
+        - verlag
+        - year
+    BookList:
+      type: object
+      description: Lightweight serializer for Book list view.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        first_image:
+          type: string
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        isbn:
+          type: string
+          readOnly: true
+        language:
+          type: string
+          readOnly: true
+        year:
+          type: string
+          readOnly: true
+        topic:
+          type: string
+          readOnly: true
+        authors:
+          type: string
+          readOnly: true
+        genres:
+          type: string
+          readOnly: true
+        verlag_name:
+          type: string
+          readOnly: true
+        shelf_name:
+          type: string
+          readOnly: true
+        category:
+          description: |-
+            Category of the item
+
+            * `books` - Books
+            * `clothing` - Clothing
+            * `electronics` - Electronics
+            * `furniture` - Furniture
+            * `garden` - Garden
+            * `kitchen` - Kitchen
+            * `other` - Other
+            * `rooms` - Rooms
+            * `sports` - Sports
+            * `tools` - Tools
+            * `toys` - Toys
+            * `vehicles` - Vehicles
+          oneOf:
+            - $ref: '#/components/schemas/CategoryEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        name:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 200
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        internal:
+          type: boolean
+          description: Internal item, not for public display
+        display_contact:
+          type: boolean
+          description: Display your contact information public
+        sales_type:
+          allOf:
+            - $ref: '#/components/schemas/SalesTypeEnum'
+          description: |-
+            How the item is offered: Sell, Donate, Rent, Borrow, Want to Buy, or Want to Rent.
+
+            * `sell` - Sell
+            * `donate` - Donate
+            * `rent` - Rent
+            * `borrow` - Borrow
+            * `want_buy` - Want to Buy
+            * `want_rent` - Want to Rent
+        price_currency:
+          type: string
+          readOnly: true
+          nullable: true
+        rental_period:
+          description: |-
+            Only used for formatting, price must always be per hour for rental items
+
+            * `h` - Hourly
+            * `d` - Daily
+            * `w` - Weekly
+          oneOf:
+            - $ref: '#/components/schemas/RentalPeriodEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        rental_self_service:
+          type: boolean
+          description: Allow self-service rental without owner approval
+        rental_open_end:
+          type: boolean
+          description: Allow open-ended rentals without a return date
+        payment_enabled:
+          type: boolean
+          description: Enable payment via internal payment system
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        condition:
+          allOf:
+            - $ref: '#/components/schemas/ConditionEnum'
+          description: |-
+            Condition of the item
+
+            * `0` - New
+            * `1` - Used
+            * `2` - Broken
+          minimum: -2147483648
+          maximum: 2147483647
+        active:
+          type: boolean
+        status:
+          allOf:
+            - $ref: '#/components/schemas/Status402Enum'
+          minimum: -2147483648
+          maximum: 2147483647
+        visibility:
+          allOf:
+            - $ref: '#/components/schemas/VisibilityEnum'
+          description: |-
+            Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
+
+            * `0` - Public
+            * `1` - Authenticated
+            * `2` - Specific
+            * `3` - Private
+          minimum: -2147483648
+          maximum: 2147483647
+        properties:
+          nullable: true
+          description: 'Category-specific properties stored as JSONB. For books: isbn,
+            language, year, topic, metadata, authors, genres, publisher, shelf.'
+      required:
+        - authors
+        - created_at
+        - first_image
+        - genres
+        - id
+        - isbn
+        - language
+        - price_currency
+        - sales_type
+        - shelf_name
+        - topic
+        - updated_at
+        - user
+        - verlag_name
+        - year
+    Booking:
+      type: object
+      description: Detailed serializer for Booking where `item` is represented only
+        by UUID.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+            - $ref: '#/components/schemas/StatusE2dEnum'
+          minimum: -2147483648
+          maximum: 2147483647
+        item:
+          type: string
+          format: uuid
+        item_details:
+          allOf:
+            - $ref: '#/components/schemas/ItemMinimal'
+          readOnly: true
+        user:
+          allOf:
+            - $ref: '#/components/schemas/User'
+          readOnly: true
+        time_from:
+          type: string
+          format: date-time
+          nullable: true
+        time_to:
+          type: string
+          format: date-time
+          nullable: true
+        offer:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Offered price for the booking
+        counter_offer:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Counter offer price for the booking
+        accepted_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        unread_messages_count:
+          type: integer
+          nullable: true
+          description: Return unread_messages_count if it exists as an annotated field.
+          readOnly: true
+      required:
+        - created_at
+        - id
+        - item
+        - item_details
+        - unread_messages_count
+        - updated_at
+        - user
+    BookingList:
+      type: object
+      description: Detailed serializer for Booking where `item` is represented only
+        by UUID.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+            - $ref: '#/components/schemas/StatusE2dEnum'
+          minimum: -2147483648
+          maximum: 2147483647
+        item:
+          type: string
+          format: uuid
+          readOnly: true
+        item_details:
+          allOf:
+            - $ref: '#/components/schemas/ItemMinimal'
+          readOnly: true
+        user:
+          allOf:
+            - $ref: '#/components/schemas/User'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        time_from:
+          type: string
+          format: date-time
+          nullable: true
+        time_to:
+          type: string
+          format: date-time
+          nullable: true
+        unread_messages_count:
+          type: integer
+          nullable: true
+          description: Return unread_messages_count if it exists as an annotated field.
+          readOnly: true
+      required:
+        - created_at
+        - id
+        - item
+        - item_details
+        - unread_messages_count
+        - user
+    CategoryEnum:
+      enum:
+        - books
+        - clothing
+        - electronics
+        - furniture
+        - garden
+        - kitchen
+        - other
+        - rooms
+        - sports
+        - tools
+        - toys
+        - vehicles
+      type: string
+      description: |-
+        * `books` - Books
+        * `clothing` - Clothing
+        * `electronics` - Electronics
+        * `furniture` - Furniture
+        * `garden` - Garden
+        * `kitchen` - Kitchen
+        * `other` - Other
+        * `rooms` - Rooms
+        * `sports` - Sports
+        * `tools` - Tools
+        * `toys` - Toys
+        * `vehicles` - Vehicles
+    Collection:
+      type: object
+      description: Serializer for Collection model.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        owner:
+          type: string
+          readOnly: true
+        items_count:
+          type: string
+          readOnly: true
+        can_remove_items:
+          type: string
+          readOnly: true
+        collection_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectionItem'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - can_remove_items
+        - collection_items
+        - created_at
+        - id
+        - items_count
+        - name
+        - owner
+        - updated_at
+    CollectionEvent:
+      type: object
+      description: Read-only serializer for CollectionEvent audit log entries.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        item_id:
+          type: string
+          format: uuid
+          readOnly: true
+        item_name:
+          type: string
+          readOnly: true
+          description: Snapshot of item name at event time
+        actor:
+          type: string
+          readOnly: true
+        action:
+          allOf:
+            - $ref: '#/components/schemas/ActionEnum'
+          readOnly: true
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - action
+        - actor
+        - id
+        - item_id
+        - item_name
+        - timestamp
+    CollectionGrant:
+      type: object
+      description: |-
+        Read-only serializer for a single aggregated permission grant on a collection.
+
+        Expects pre-aggregated dicts with keys:
+          subject_type, subject_id, subject_name, role
+      properties:
+        subject_type:
+          type: string
+        subject_id:
+          type: string
+        subject_name:
+          type: string
+        permission:
+          type: string
+      required:
+        - permission
+        - subject_id
+        - subject_name
+        - subject_type
+    CollectionItem:
+      type: object
+      description: Serializer for CollectionItem model.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        collection:
+          type: string
+          format: uuid
+        item:
+          allOf:
+            - $ref: '#/components/schemas/ItemMinimal'
+          readOnly: true
+        item_id:
+          type: string
+          format: uuid
+          writeOnly: true
+        added_at:
+          type: string
+          format: date-time
+          readOnly: true
+        added_by:
+          type: string
+          readOnly: true
+        note:
+          type: string
+          description: Optional note about this item
+        ordering:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+      required:
+        - added_at
+        - added_by
+        - collection
+        - id
+        - item
+        - item_id
+    CollectionList:
+      type: object
+      description: Lightweight serializer for collection lists.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        owner:
+          type: string
+          readOnly: true
+        items_count:
+          type: string
+          readOnly: true
+        can_add_items:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - can_add_items
+        - created_at
+        - id
+        - items_count
+        - name
+        - owner
+        - updated_at
+    ConditionEnum:
+      enum:
+        - 0
+        - 1
+        - 2
+      type: integer
+      description: |-
+        * `0` - New
+        * `1` - Used
+        * `2` - Broken
+    Group:
+      type: object
+      description: Serializer for auth Group model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 150
+      required:
+        - id
+        - name
+    Image:
+      type: object
+      description: Serializer for Image model.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        original:
+          type: string
+          format: uri
+        ordering:
+          type: integer
+          nullable: true
+        thumbnail:
+          type: string
+          format: uri
+          readOnly: true
+        preview:
+          type: string
+          format: uri
+          readOnly: true
+        item:
+          type: string
+          format: uuid
+      required:
+        - id
+        - item
+        - original
+        - preview
+        - thumbnail
+    Item:
+      type: object
+      description: Serializer for Item model.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Image'
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        first_image:
+          type: string
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        co_owners:
+          type: string
+          readOnly: true
+        category:
+          description: |-
+            Category of the item
+
+            * `books` - Books
+            * `clothing` - Clothing
+            * `electronics` - Electronics
+            * `furniture` - Furniture
+            * `garden` - Garden
+            * `kitchen` - Kitchen
+            * `other` - Other
+            * `rooms` - Rooms
+            * `sports` - Sports
+            * `tools` - Tools
+            * `toys` - Toys
+            * `vehicles` - Vehicles
+          oneOf:
+            - $ref: '#/components/schemas/CategoryEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        name:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 200
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        internal:
+          type: boolean
+          description: Internal item, not for public display
+        display_contact:
+          type: boolean
+          description: Display your contact information public
+        sales_type:
+          allOf:
+            - $ref: '#/components/schemas/SalesTypeEnum'
+          description: |-
+            How the item is offered: Sell, Donate, Rent, Borrow, Want to Buy, or Want to Rent.
+
+            * `sell` - Sell
+            * `donate` - Donate
+            * `rent` - Rent
+            * `borrow` - Borrow
+            * `want_buy` - Want to Buy
+            * `want_rent` - Want to Rent
+        price_currency:
+          type: string
+          readOnly: true
+          nullable: true
+        rental_period:
+          description: |-
+            Only used for formatting, price must always be per hour for rental items
+
+            * `h` - Hourly
+            * `d` - Daily
+            * `w` - Weekly
+          oneOf:
+            - $ref: '#/components/schemas/RentalPeriodEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        rental_self_service:
+          type: boolean
+          description: Allow self-service rental without owner approval
+        rental_open_end:
+          type: boolean
+          description: Allow open-ended rentals without a return date
+        payment_enabled:
+          type: boolean
+          description: Enable payment via internal payment system
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        condition:
+          allOf:
+            - $ref: '#/components/schemas/ConditionEnum'
+          description: |-
+            Condition of the item
+
+            * `0` - New
+            * `1` - Used
+            * `2` - Broken
+          minimum: -2147483648
+          maximum: 2147483647
+        active:
+          type: boolean
+        status:
+          allOf:
+            - $ref: '#/components/schemas/Status402Enum'
+          minimum: -2147483648
+          maximum: 2147483647
+        visibility:
+          allOf:
+            - $ref: '#/components/schemas/VisibilityEnum'
+          description: |-
+            Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
+
+            * `0` - Public
+            * `1` - Authenticated
+            * `2` - Specific
+            * `3` - Private
+          minimum: -2147483648
+          maximum: 2147483647
+        properties:
+          nullable: true
+          description: 'Category-specific properties stored as JSONB. For books: isbn,
+            language, year, topic, metadata, authors, genres, publisher, shelf.'
+      required:
+        - co_owners
+        - created_at
+        - first_image
+        - id
+        - images
+        - price_currency
+        - sales_type
+        - updated_at
+        - user
+    ItemList:
+      type: object
+      description: Lightweight serializer for item lists.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        first_image:
+          type: string
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        category:
+          description: |-
+            Category of the item
+
+            * `books` - Books
+            * `clothing` - Clothing
+            * `electronics` - Electronics
+            * `furniture` - Furniture
+            * `garden` - Garden
+            * `kitchen` - Kitchen
+            * `other` - Other
+            * `rooms` - Rooms
+            * `sports` - Sports
+            * `tools` - Tools
+            * `toys` - Toys
+            * `vehicles` - Vehicles
+          oneOf:
+            - $ref: '#/components/schemas/CategoryEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        name:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 200
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        internal:
+          type: boolean
+          description: Internal item, not for public display
+        display_contact:
+          type: boolean
+          description: Display your contact information public
+        sales_type:
+          allOf:
+            - $ref: '#/components/schemas/SalesTypeEnum'
+          description: |-
+            How the item is offered: Sell, Donate, Rent, Borrow, Want to Buy, or Want to Rent.
+
+            * `sell` - Sell
+            * `donate` - Donate
+            * `rent` - Rent
+            * `borrow` - Borrow
+            * `want_buy` - Want to Buy
+            * `want_rent` - Want to Rent
+        price_currency:
+          type: string
+          readOnly: true
+          nullable: true
+        rental_period:
+          description: |-
+            Only used for formatting, price must always be per hour for rental items
+
+            * `h` - Hourly
+            * `d` - Daily
+            * `w` - Weekly
+          oneOf:
+            - $ref: '#/components/schemas/RentalPeriodEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        rental_self_service:
+          type: boolean
+          description: Allow self-service rental without owner approval
+        rental_open_end:
+          type: boolean
+          description: Allow open-ended rentals without a return date
+        payment_enabled:
+          type: boolean
+          description: Enable payment via internal payment system
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        condition:
+          allOf:
+            - $ref: '#/components/schemas/ConditionEnum'
+          description: |-
+            Condition of the item
+
+            * `0` - New
+            * `1` - Used
+            * `2` - Broken
+          minimum: -2147483648
+          maximum: 2147483647
+        active:
+          type: boolean
+        status:
+          allOf:
+            - $ref: '#/components/schemas/Status402Enum'
+          minimum: -2147483648
+          maximum: 2147483647
+        visibility:
+          allOf:
+            - $ref: '#/components/schemas/VisibilityEnum'
+          description: |-
+            Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
+
+            * `0` - Public
+            * `1` - Authenticated
+            * `2` - Specific
+            * `3` - Private
+          minimum: -2147483648
+          maximum: 2147483647
+        properties:
+          nullable: true
+          description: 'Category-specific properties stored as JSONB. For books: isbn,
+            language, year, topic, metadata, authors, genres, publisher, shelf.'
+      required:
+        - created_at
+        - first_image
+        - id
+        - price_currency
+        - sales_type
+        - updated_at
+        - user
+    ItemMinimal:
+      type: object
+      description: Lightweight serializer for item lists.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        first_image:
+          type: string
+          readOnly: true
+        sales_type:
+          allOf:
+            - $ref: '#/components/schemas/SalesTypeEnum'
+          description: |-
+            How the item is offered: Sell, Donate, Rent, Borrow, Want to Buy, or Want to Rent.
+
+            * `sell` - Sell
+            * `donate` - Donate
+            * `rent` - Rent
+            * `borrow` - Borrow
+            * `want_buy` - Want to Buy
+            * `want_rent` - Want to Rent
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        price_currency:
+          type: string
+          readOnly: true
+          nullable: true
+      required:
+        - first_image
+        - id
+        - price_currency
+        - sales_type
+    Message:
+      type: object
+      description: Serializer for Message model. Booking is referenced by UUID.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        booking:
+          type: string
+          format: uuid
+        sender:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        message:
+          type: string
+        is_read:
+          type: boolean
+      required:
+        - booking
+        - created_at
+        - id
+        - message
+        - sender
+    PaginatedBookListList:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookList'
+    PaginatedBookingListList:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookingList'
+    PaginatedCollectionEventList:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectionEvent'
+    PaginatedCollectionGrantList:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectionGrant'
+    PaginatedCollectionItemList:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectionItem'
+    PaginatedCollectionListList:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectionList'
+    PaginatedGroupList:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Group'
+    PaginatedImageList:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Image'
+    PaginatedItemListList:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemList'
+    PaginatedMessageList:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+    PaginatedProfileList:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Profile'
+    PaginatedUserList:
+      type: object
+      required:
+        - count
+        - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+    PatchedBook:
+      type: object
+      description: |-
+        Full serializer for Book detail view.
+
+        Read-side: exposes isbn, language, year, topic, metadata, authors,
+        genres, verlag (publisher name), shelf from Item.properties.
+
+        Write-side: accepts authors (list of strings), genres (list of strings),
+        publisher (string), shelf (string), isbn, language, year, topic,
+        metadata.  The old UUID-based author_ids / genre_ids / verlag_id /
+        shelf_id fields are no longer accepted.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Image'
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        first_image:
+          type: string
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        co_owners:
+          type: string
+          readOnly: true
+        isbn:
+          type: string
+          readOnly: true
+        language:
+          type: string
+          readOnly: true
+        year:
+          type: string
+          readOnly: true
+        topic:
+          type: string
+          readOnly: true
+        metadata:
+          type: string
+          readOnly: true
+        authors:
+          type: string
+          readOnly: true
+        genres:
+          type: string
+          readOnly: true
+        verlag:
+          type: string
+          readOnly: true
+        shelf:
+          type: string
+          readOnly: true
+        isbn_write:
+          type: string
+          writeOnly: true
+        language_write:
+          type: string
+          writeOnly: true
+        year_write:
+          type: integer
+          writeOnly: true
+          nullable: true
+        topic_write:
+          type: string
+          writeOnly: true
+        metadata_write:
+          writeOnly: true
+          nullable: true
+        authors_write:
+          type: array
+          items:
+            type: string
+          writeOnly: true
+        genres_write:
+          type: array
+          items:
+            type: string
+          writeOnly: true
+        publisher:
+          type: string
+          writeOnly: true
+        shelf_write:
+          type: string
+          writeOnly: true
+        category:
+          description: |-
+            Category of the item
+
+            * `books` - Books
+            * `clothing` - Clothing
+            * `electronics` - Electronics
+            * `furniture` - Furniture
+            * `garden` - Garden
+            * `kitchen` - Kitchen
+            * `other` - Other
+            * `rooms` - Rooms
+            * `sports` - Sports
+            * `tools` - Tools
+            * `toys` - Toys
+            * `vehicles` - Vehicles
+          oneOf:
+            - $ref: '#/components/schemas/CategoryEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        name:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 200
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        internal:
+          type: boolean
+          description: Internal item, not for public display
+        display_contact:
+          type: boolean
+          description: Display your contact information public
+        sales_type:
+          allOf:
+            - $ref: '#/components/schemas/SalesTypeEnum'
+          description: |-
+            How the item is offered: Sell, Donate, Rent, Borrow, Want to Buy, or Want to Rent.
+
+            * `sell` - Sell
+            * `donate` - Donate
+            * `rent` - Rent
+            * `borrow` - Borrow
+            * `want_buy` - Want to Buy
+            * `want_rent` - Want to Rent
+        price_currency:
+          type: string
+          readOnly: true
+          nullable: true
+        rental_period:
+          description: |-
+            Only used for formatting, price must always be per hour for rental items
+
+            * `h` - Hourly
+            * `d` - Daily
+            * `w` - Weekly
+          oneOf:
+            - $ref: '#/components/schemas/RentalPeriodEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        rental_self_service:
+          type: boolean
+          description: Allow self-service rental without owner approval
+        rental_open_end:
+          type: boolean
+          description: Allow open-ended rentals without a return date
+        payment_enabled:
+          type: boolean
+          description: Enable payment via internal payment system
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        condition:
+          allOf:
+            - $ref: '#/components/schemas/ConditionEnum'
+          description: |-
+            Condition of the item
+
+            * `0` - New
+            * `1` - Used
+            * `2` - Broken
+          minimum: -2147483648
+          maximum: 2147483647
+        active:
+          type: boolean
+        status:
+          allOf:
+            - $ref: '#/components/schemas/Status402Enum'
+          minimum: -2147483648
+          maximum: 2147483647
+        visibility:
+          allOf:
+            - $ref: '#/components/schemas/VisibilityEnum'
+          description: |-
+            Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
+
+            * `0` - Public
+            * `1` - Authenticated
+            * `2` - Specific
+            * `3` - Private
+          minimum: -2147483648
+          maximum: 2147483647
+        properties:
+          nullable: true
+          description: 'Category-specific properties stored as JSONB. For books: isbn,
+            language, year, topic, metadata, authors, genres, publisher, shelf.'
+    PatchedBooking:
+      type: object
+      description: Detailed serializer for Booking where `item` is represented only
+        by UUID.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+            - $ref: '#/components/schemas/StatusE2dEnum'
+          minimum: -2147483648
+          maximum: 2147483647
+        item:
+          type: string
+          format: uuid
+        item_details:
+          allOf:
+            - $ref: '#/components/schemas/ItemMinimal'
+          readOnly: true
+        user:
+          allOf:
+            - $ref: '#/components/schemas/User'
+          readOnly: true
+        time_from:
+          type: string
+          format: date-time
+          nullable: true
+        time_to:
+          type: string
+          format: date-time
+          nullable: true
+        offer:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Offered price for the booking
+        counter_offer:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Counter offer price for the booking
+        accepted_by:
+          type: string
+          format: uuid
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        unread_messages_count:
+          type: integer
+          nullable: true
+          description: Return unread_messages_count if it exists as an annotated field.
+          readOnly: true
+    PatchedCollection:
+      type: object
+      description: Serializer for Collection model.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        owner:
+          type: string
+          readOnly: true
+        items_count:
+          type: string
+          readOnly: true
+        can_remove_items:
+          type: string
+          readOnly: true
+        collection_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CollectionItem'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedCollectionItem:
+      type: object
+      description: Serializer for CollectionItem model.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        collection:
+          type: string
+          format: uuid
+        item:
+          allOf:
+            - $ref: '#/components/schemas/ItemMinimal'
+          readOnly: true
+        item_id:
+          type: string
+          format: uuid
+          writeOnly: true
+        added_at:
+          type: string
+          format: date-time
+          readOnly: true
+        added_by:
+          type: string
+          readOnly: true
+        note:
+          type: string
+          description: Optional note about this item
+        ordering:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+    PatchedImage:
+      type: object
+      description: Serializer for Image model.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        original:
+          type: string
+          format: uri
+        ordering:
+          type: integer
+          nullable: true
+        thumbnail:
+          type: string
+          format: uri
+          readOnly: true
+        preview:
+          type: string
+          format: uri
+          readOnly: true
+        item:
+          type: string
+          format: uuid
+    PatchedItem:
+      type: object
+      description: Serializer for Item model.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Image'
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        first_image:
+          type: string
+          readOnly: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        co_owners:
+          type: string
+          readOnly: true
+        category:
+          description: |-
+            Category of the item
+
+            * `books` - Books
+            * `clothing` - Clothing
+            * `electronics` - Electronics
+            * `furniture` - Furniture
+            * `garden` - Garden
+            * `kitchen` - Kitchen
+            * `other` - Other
+            * `rooms` - Rooms
+            * `sports` - Sports
+            * `tools` - Tools
+            * `toys` - Toys
+            * `vehicles` - Vehicles
+          oneOf:
+            - $ref: '#/components/schemas/CategoryEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        name:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 200
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        internal:
+          type: boolean
+          description: Internal item, not for public display
+        display_contact:
+          type: boolean
+          description: Display your contact information public
+        sales_type:
+          allOf:
+            - $ref: '#/components/schemas/SalesTypeEnum'
+          description: |-
+            How the item is offered: Sell, Donate, Rent, Borrow, Want to Buy, or Want to Rent.
+
+            * `sell` - Sell
+            * `donate` - Donate
+            * `rent` - Rent
+            * `borrow` - Borrow
+            * `want_buy` - Want to Buy
+            * `want_rent` - Want to Rent
+        price_currency:
+          type: string
+          readOnly: true
+          nullable: true
+        rental_period:
+          description: |-
+            Only used for formatting, price must always be per hour for rental items
+
+            * `h` - Hourly
+            * `d` - Daily
+            * `w` - Weekly
+          oneOf:
+            - $ref: '#/components/schemas/RentalPeriodEnum'
+            - $ref: '#/components/schemas/BlankEnum'
+        rental_self_service:
+          type: boolean
+          description: Allow self-service rental without owner approval
+        rental_open_end:
+          type: boolean
+          description: Allow open-ended rentals without a return date
+        payment_enabled:
+          type: boolean
+          description: Enable payment via internal payment system
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        condition:
+          allOf:
+            - $ref: '#/components/schemas/ConditionEnum'
+          description: |-
+            Condition of the item
+
+            * `0` - New
+            * `1` - Used
+            * `2` - Broken
+          minimum: -2147483648
+          maximum: 2147483647
+        active:
+          type: boolean
+        status:
+          allOf:
+            - $ref: '#/components/schemas/Status402Enum'
+          minimum: -2147483648
+          maximum: 2147483647
+        visibility:
+          allOf:
+            - $ref: '#/components/schemas/VisibilityEnum'
+          description: |-
+            Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
+
+            * `0` - Public
+            * `1` - Authenticated
+            * `2` - Specific
+            * `3` - Private
+          minimum: -2147483648
+          maximum: 2147483647
+        properties:
+          nullable: true
+          description: 'Category-specific properties stored as JSONB. For books: isbn,
+            language, year, topic, metadata, authors, genres, publisher, shelf.'
+    PatchedMessage:
+      type: object
+      description: Serializer for Message model. Booking is referenced by UUID.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        booking:
+          type: string
+          format: uuid
+        sender:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        message:
+          type: string
+        is_read:
+          type: boolean
+    PatchedProfile:
+      type: object
+      properties:
+        username:
+          type: string
+          readOnly: true
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+          readOnly: true
+        phone:
+          type: string
+          maxLength: 15
+        bio:
+          type: string
+        address:
+          type: string
+        email_reminder:
+          type: boolean
+        profile_image:
+          type: string
+          format: uri
+          nullable: true
+    PatchedUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        name:
+          type: string
+          title: Name of User
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+    Profile:
+      type: object
+      properties:
+        username:
+          type: string
+          readOnly: true
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+          readOnly: true
+        phone:
+          type: string
+          maxLength: 15
+        bio:
+          type: string
+        address:
+          type: string
+        email_reminder:
+          type: boolean
+        profile_image:
+          type: string
+          format: uri
+          nullable: true
+      required:
+        - email
+        - username
+    RentalPeriodEnum:
+      enum:
+        - h
+        - d
+        - w
+      type: string
+      description: |-
+        * `h` - Hourly
+        * `d` - Daily
+        * `w` - Weekly
+    SalesTypeEnum:
+      enum:
+        - sell
+        - donate
+        - rent
+        - borrow
+        - want_buy
+        - want_rent
+      type: string
+      description: |-
+        * `sell` - Sell
+        * `donate` - Donate
+        * `rent` - Rent
+        * `borrow` - Borrow
+        * `want_buy` - Want to Buy
+        * `want_rent` - Want to Rent
+    Status402Enum:
+      enum:
+        - 0
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+      type: integer
+      description: |-
+        * `0` - Draft
+        * `1` - Processing
+        * `2` - Available
+        * `3` - Reserved
+        * `4` - Rented
+        * `5` - Sold
+    StatusE2dEnum:
+      enum:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+      type: integer
+      description: |-
+        * `1` - Pending
+        * `2` - Cancelled
+        * `3` - Confirmed
+        * `4` - Completed
+        * `5` - Rejected
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        name:
+          type: string
+          title: Name of User
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+      required:
+        - id
+        - username
+    VisibilityEnum:
+      enum:
+        - 0
+        - 1
+        - 2
+        - 3
+      type: integer
+      description: |-
+        * `0` - Public
+        * `1` - Authenticated
+        * `2` - Specific
+        * `3` - Private
+  securitySchemes:
+    XSessionTokenAuth:
+      type: apiKey
+      in: header
+      name: X-Session-Token
+      description: X-Session-Token authentication
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"

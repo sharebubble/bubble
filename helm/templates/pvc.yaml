@@ -1,0 +1,55 @@
+{{- if .Values.backend.persistence.media.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "bubble.fullname" . }}-media
+  labels:
+    {{- include "bubble.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.backend.persistence.media.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.backend.persistence.media.size }}
+  {{- if or .Values.backend.persistence.media.storageClass .Values.global.storageClass }}
+  storageClassName: {{ .Values.backend.persistence.media.storageClass | default .Values.global.storageClass }}
+  {{- end }}
+{{- end }}
+---
+{{- if .Values.backend.persistence.staticfiles.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "bubble.fullname" . }}-staticfiles
+  labels:
+    {{- include "bubble.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.backend.persistence.staticfiles.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.backend.persistence.staticfiles.size }}
+  {{- if or .Values.backend.persistence.staticfiles.storageClass .Values.global.storageClass }}
+  storageClassName: {{ .Values.backend.persistence.staticfiles.storageClass | default .Values.global.storageClass }}
+  {{- end }}
+{{- end }}
+---
+{{- if .Values.postgresql.enabled }}
+{{- if .Values.postgresql.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "bubble.postgresql.fullname" . }}-data
+  labels:
+    {{- include "bubble.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - {{ .Values.postgresql.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.postgresql.persistence.size }}
+  {{- if or .Values.postgresql.persistence.storageClass .Values.global.storageClass }}
+  storageClassName: {{ .Values.postgresql.persistence.storageClass | default .Values.global.storageClass }}
+  {{- end }}
+{{- end }}
+{{- end }}

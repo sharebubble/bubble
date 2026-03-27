@@ -1,0 +1,23 @@
+apiVersion: v2
+name: bubble
+description: A Helm chart for Bubble - Community Network application
+type: application
+version: 0.1.0
+appVersion: '0.1.0'
+
+keywords:
+  - bubble
+  - community
+  - django
+  - celery
+  - nginx
+
+maintainers:
+  - name: Treibhaus Donaufeld
+    url: https://github.com/treibhausdonaufeld
+
+home: https://github.com/treibhausdonaufeld/bubble
+sources:
+  - https://github.com/treibhausdonaufeld/bubble
+
+dependencies: []

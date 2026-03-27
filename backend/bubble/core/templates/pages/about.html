@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% load static i18n %}
+
+{% block title %}
+  {% trans "About" %}
+{% endblock title %}
+{% block content %}
+  <div class="container">
+    <div class="row justify-content-center text-center mb-5">
+      <div class="col-lg-8">
+        <img src="{% static 'images/bubble_logo.png' %}"
+             alt="{% trans 'Bubble Logo' %}"
+             class="mb-3 w-25" />
+        <h1 class="display-4 mb-3">{% trans "Welcome in the bubble" %}</h1>
+        <p class="lead">{% trans "Your platform for sharing items and services in your local community" %}</p>
+      </div>
+    </div>
+
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
+        <h2 class="h3 mb-4">{% trans "About bubble" %}</h2>
+        <p>{% trans "bubble is a platform for sharing items and services within the local community." %}</p>
+
+        <h3 class="h4 mb-3 mt-4">{% trans "About Treibhaus Donaufeld" %}</h3>
+        <p>{% trans "bubble is part of the Treibhaus Donaufeld community platform and promotes sustainable sharing and neighborly connections." %}</p>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

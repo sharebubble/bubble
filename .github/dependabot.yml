@@ -1,0 +1,48 @@
+# Config for Dependabot updates. See Documentation here:
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Update GitHub actions in workflows
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    # Every weekday
+    schedule:
+      interval: 'daily'
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+
+  # Enable version updates for Docker
+  - package-ecosystem: 'docker'
+    directories:
+      - 'frontend/'
+      - 'backend/'
+    # Every weekday
+    schedule:
+      interval: 'daily'
+    # Ignore minor version updates (3.10 -> 3.11) but update patch versions
+    ignore:
+      - dependency-name: '*'
+        update-types:
+          - 'version-update:semver-major'
+          - 'version-update:semver-minor'
+    groups:
+      docker-python:
+        patterns:
+          - '*'
+
+  # Enable version updates for Python/Pip - Production
+  - package-ecosystem: 'pip'
+    # Look for a `requirements.txt` in the `root` directory
+    # also 'setup.cfg', '.python-version' and 'requirements/*.txt'
+    directory: '/backend/'
+    # Every weekday
+    schedule:
+      interval: 'daily'
+    groups:
+      python:
+        update-types:
+          - 'minor'
+          - 'patch'

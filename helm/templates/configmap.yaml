@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "bubble.fullname" . }}-backend
+  labels:
+    {{- include "bubble.labels" . | nindent 4 }}
+data:
+  DJANGO_SETTINGS_MODULE: {{ .Values.backend.django.settingsModule | quote }}
+  DJANGO_ALLOWED_HOSTS: {{ .Values.backend.django.allowedHosts | quote }}
+  DJANGO_ADMIN_URL: {{ .Values.backend.django.adminUrl | quote }}
+  DJANGO_DEBUG: {{ .Values.backend.django.debug | quote }}
+  DJANGO_LOG_LEVEL: {{ .Values.backend.django.logLevel | quote }}
+  DJANGO_SECURE_SSL_REDIRECT: {{ .Values.backend.django.secureSSLRedirect | quote }}
+  DJANGO_SESSION_COOKIE_SECURE: {{ .Values.backend.django.sessionCookieSecure | quote }}
+  HTTP_X_FORWARDED_PROTO: {{ .Values.backend.django.httpXForwardedProto | quote }}
+  ACCOUNT_EMAIL_VERIFICATION: {{ .Values.backend.django.accountEmailVerification | quote }}
+  ALLOWED_CIDR_NETS: {{ .Values.backend.allowedCidrNets | quote }}
+  CELERY_BROKER_URL: {{ include "bubble.redis.url" . | quote }}
+  REDIS_URL: {{ include "bubble.redis.url" . | quote }}

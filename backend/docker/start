@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+if [[ "${AUTO_MIGRATE:-}" == "true" ]]; then
+    python /app/manage.py migrate
+fi
+
+if [[ "${AUTO_COLLECTSTATIC:-}" == "true" ]]; then
+    python /app/manage.py collectstatic --noinput
+fi
+
+exec gunicorn config.asgi --bind 0.0.0.0:8000 --chdir=/app -k uvicorn_worker.UvicornWorker

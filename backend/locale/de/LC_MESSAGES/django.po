@@ -1,0 +1,1522 @@
+# Django translation file for German
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-10-17 15:09+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: bubble/books/services.py
+msgid "Invalid ISBN format: %(isbn)s"
+msgstr "Ungültiges ISBN-Format: %(isbn)s"
+
+#: bubble/bookings/api/serializers.py:72
+msgid "You already have a pending booking request for this item."
+msgstr "Sie haben bereits eine ausstehende Buchungsanfrage für diesen Artikel."
+
+#: bubble/bookings/api/serializers.py:86
+msgid "Offer can only be set for pending bookings."
+msgstr "Ein Angebot kann nur für ausstehende Buchungen gesetzt werden."
+
+#: bubble/bookings/api/serializers.py:97
+msgid "Counter-offer can only be set for pending bookings."
+msgstr "Ein Gegenangebot kann nur für ausstehende Buchungen gesetzt werden."
+
+#: bubble/bookings/api/serializers.py:113
+msgid "Invalid status change."
+msgstr "Ungültige Statusänderung."
+
+#: bubble/bookings/api/serializers.py:123
+msgid "You cannot set an offer if you're not the owner."
+msgstr "Sie können kein Angebot setzen, wenn Sie nicht der Eigentümer sind."
+
+#: bubble/bookings/api/serializers.py:133
+msgid "You cannot set a counter-offer on your own booking."
+msgstr "Sie können kein Gegenangebot für Ihre eigene Buchung setzen."
+
+#: bubble/bookings/api/views.py:87
+#, python-brace-format
+msgid "Booking request created for {offer}"
+msgstr "Buchungsanfrage erstellt für {offer}"
+
+#: bubble/bookings/api/views.py:98
+#| msgid "Booking updated: {fields_updated}"
+msgid "Booking status updated to {status}"
+msgstr "Buchungs-Status aktualisiert: {status}"
+
+#: bubble/bookings/api/views.py:102
+#, python-brace-format
+msgid "Booking updated: {fields_updated}"
+msgstr "Buchung aktualisiert: {fields_updated}"
+
+#: bubble/bookings/api/views.py:145
+msgid "Only 'is_read' field can be updated."
+msgstr "Nur das Feld 'is_read' kann aktualisiert werden."
+
+#: bubble/bookings/models.py:16
+msgid "Pending"
+msgstr "Ausstehend"
+
+#: bubble/bookings/models.py:17
+msgid "Cancelled"
+msgstr "Abgebrochen"
+
+#: bubble/bookings/models.py:18
+msgid "Confirmed"
+msgstr "Bestätigt"
+
+#: bubble/bookings/models.py:19
+msgid "Completed"
+msgstr "Abgeschlossen"
+
+#: bubble/bookings/models.py:20
+msgid "Rejected"
+msgstr "Abgelehnt"
+
+#: bubble/bookings/models.py:41
+msgid "Status"
+msgstr "Status"
+
+#: bubble/bookings/models.py:51
+msgid "Time From"
+msgstr "Von"
+
+#: bubble/bookings/models.py:53
+msgid "Time To"
+msgstr "Bis"
+
+#: bubble/bookings/models.py:60
+msgid "Offer"
+msgstr "Angebot"
+
+#: bubble/bookings/models.py:61
+msgid "Offered price for the booking"
+msgstr "Angebotener Preis für die Buchung"
+
+#: bubble/bookings/models.py:68
+msgid "Counter Offer"
+msgstr "Gegenangebot"
+
+#: bubble/bookings/models.py:69
+msgid "Counter offer price for the booking"
+msgstr "Gegenangebotspreis für die Buchung"
+
+#: bubble/bookings/signals.py:75
+msgid "A new booking has been created for your item."
+msgstr "Eine neue Buchung wurde für Ihren Artikel erstellt."
+
+#: bubble/books/models.py:17
+msgid "Author"
+msgstr "Autor"
+
+#: bubble/books/models.py:18
+msgid "Authors"
+msgstr "Autoren"
+
+#: bubble/books/models.py:38
+msgid "Genre"
+msgstr "Genre"
+
+#: bubble/books/models.py:39
+msgid "Genres"
+msgstr "Genres"
+
+#: bubble/books/models.py:60 bubble/books/models.py:102
+#, fuzzy
+#| msgid "Published"
+msgid "Publisher"
+msgstr "Veröffentlicht"
+
+#: bubble/books/models.py:61
+#, fuzzy
+#| msgid "Published"
+msgid "Publishers"
+msgstr "Veröffentlicht"
+
+#: bubble/books/models.py:76
+msgid "Shelf"
+msgstr "Regal"
+
+#: bubble/books/models.py:77
+msgid "Shelves"
+msgstr "Regale"
+
+#: bubble/books/models.py:88
+msgid "Book authors"
+msgstr "Buchautoren"
+
+#: bubble/books/models.py:91
+#, fuzzy
+#| msgid "Name of User"
+msgid "Language of the book"
+msgstr "Name des Benutzers"
+
+#: bubble/books/models.py:94
+msgid "Publication year"
+msgstr "Erscheinungsjahr"
+
+#: bubble/books/models.py:105
+msgid "Main topic or subject"
+msgstr "Hauptthema oder Gegenstand"
+
+#: bubble/books/models.py:108
+msgid "Book genres"
+msgstr "Buchgenres"
+
+#: bubble/books/models.py:114
+msgid "Raw metadata fetched from external sources like ISBN databases"
+msgstr ""
+"Rohmetadaten, die aus externen Quellen wie ISBN-Datenbanken abgerufen wurden"
+
+#: bubble/books/models.py:124
+msgid "Shelf location"
+msgstr "Regalstandort"
+
+#: bubble/core/templates/allauth/layouts/entrance.html:13
+msgid "Sign In"
+msgstr "Anmelden"
+
+#: bubble/core/templates/pages/about.html:6
+msgid "About"
+msgstr "Über uns"
+
+#: bubble/core/templates/pages/about.html:13
+msgid "Bubble Logo"
+msgstr "Bubble-Logo"
+
+#: bubble/core/templates/pages/about.html:15
+msgid "Welcome in the bubble"
+msgstr "Willkommen in der bubble"
+
+#: bubble/core/templates/pages/about.html:16
+msgid "Your platform for sharing items and services in your local community"
+msgstr ""
+"Die Plattform für das Teilen von Dingen und Dienstleistungen in der lokalen "
+"Gemeinschaft"
+
+#: bubble/core/templates/pages/about.html:22
+msgid "About bubble"
+msgstr "Über bubble"
+
+#: bubble/core/templates/pages/about.html:23
+msgid ""
+"bubble is a platform for sharing items and services within the local "
+"community."
+msgstr ""
+"bubble ist eine Plattform für das Teilen von Sachen und Dienstleistungen in "
+"der lokalen Gemeinschaft."
+
+#: bubble/core/templates/pages/about.html:25
+msgid "About Treibhaus Donaufeld"
+msgstr "Über Treibhaus Donaufeld"
+
+#: bubble/core/templates/pages/about.html:26
+msgid ""
+"bubble is part of the Treibhaus Donaufeld community platform and promotes "
+"sustainable sharing and neighborly connections."
+msgstr ""
+"bubble ist Teil der Treibhaus Donaufeld Gemeinschaftsplattform und fördert "
+"nachhaltiges Teilen und nachbarschaftliche Verbindungen."
+
+#: bubble/core/templates/users/user_detail.html:22
+msgid "Edit"
+msgstr "Bearbeiten"
+
+#: bubble/core/templates/users/user_detail.html:25
+msgid "Logout"
+msgstr "Abmelden"
+
+#: bubble/core/templates/users/user_detail.html:33
+#: bubble/favorites/templates/favorites/user_favorites.html:6
+#: bubble/favorites/templates/favorites/user_favorites.html:13
+msgid "Favorites"
+msgstr "Favoriten"
+
+#: bubble/core/templates/users/user_detail.html:37
+msgid "View all favorites"
+msgstr "Alle Favoriten anzeigen"
+
+#: bubble/core/templates/users/user_list.html:6
+#: bubble/core/templates/users/user_list.html:12
+msgid "Community Members"
+msgstr "Mitglieder"
+
+#: bubble/core/templates/users/user_list.html:13
+msgid "Discover the members of our community"
+msgstr "Entdecke die Mitglieder unserer Gemeinschaft"
+
+#: bubble/core/templates/users/user_list.html:28
+msgid "Internal"
+msgstr "Intern"
+
+#: bubble/core/templates/users/user_list.html:34
+msgid "Member since"
+msgstr "Mitglied seit"
+
+#: bubble/core/templates/users/user_list.html:41
+msgid "View profile"
+msgstr "Profil anzeigen"
+
+#: bubble/core/templates/users/user_list.html:55
+#: bubble/favorites/templates/favorites/user_favorites.html:47
+#: bubble/rooms/templates/rooms/room_list.html:91
+msgid "First"
+msgstr "Erste"
+
+#: bubble/core/templates/users/user_list.html:60
+#: bubble/favorites/templates/favorites/user_favorites.html:50
+#: bubble/rooms/templates/rooms/room_list.html:96
+msgid "Previous"
+msgstr "Vorherige"
+
+#: bubble/core/templates/users/user_list.html:66
+#: bubble/favorites/templates/favorites/user_favorites.html:55
+#: bubble/rooms/templates/rooms/room_list.html:103
+msgid "Page"
+msgstr "Seite"
+
+#: bubble/core/templates/users/user_list.html:66
+#: bubble/favorites/templates/favorites/user_favorites.html:55
+#: bubble/rooms/templates/rooms/room_list.html:103
+msgid "of"
+msgstr "von"
+
+#: bubble/core/templates/users/user_list.html:72
+#: bubble/favorites/templates/favorites/user_favorites.html:60
+#: bubble/rooms/templates/rooms/room_list.html:110
+msgid "Next"
+msgstr "Nächste"
+
+#: bubble/core/templates/users/user_list.html:77
+#: bubble/favorites/templates/favorites/user_favorites.html:63
+#: bubble/rooms/templates/rooms/room_list.html:115
+msgid "Last"
+msgstr "Letzte"
+
+#: bubble/core/templates/users/user_list.html:87
+msgid "No members found"
+msgstr "Keine Mitglieder gefunden"
+
+#: bubble/core/templates/users/user_list.html:88
+msgid "There are no members in the community yet."
+msgstr "Es gibt noch keine Mitglieder in der Gemeinschaft."
+
+#: bubble/core/views.py:30
+#, fuzzy
+#| msgid "Item updated successfully!"
+msgid "Theme updated successfully"
+msgstr "Artikel erfolgreich aktualisiert!"
+
+#: bubble/favorites/templates/favorites/user_favorites.html:15
+msgid "My Favorites"
+msgstr "Meine Favoriten"
+
+#: bubble/favorites/templates/favorites/user_favorites.html:29
+#: bubble/rooms/templates/rooms/room_detail.html:55
+msgid "Added on"
+msgstr "Hinzugefügt am"
+
+#: bubble/favorites/templates/favorites/user_favorites.html:35
+#: bubble/favorites/templates/favorites/user_favorites.html:36
+#: bubble/favorites/templates/favorites/user_favorites.html:104
+msgid "Delete"
+msgstr "Löschen"
+
+#: bubble/favorites/templates/favorites/user_favorites.html:43
+msgid "Page navigation"
+msgstr "Seitennavigation"
+
+#: bubble/favorites/templates/favorites/user_favorites.html:72
+msgid "You haven't added any favorites yet."
+msgstr "Sie haben noch keine Favoriten hinzugefügt."
+
+#: bubble/favorites/templates/favorites/user_favorites.html:74
+msgid "No favorites to display."
+msgstr "Keine Favoriten zum Anzeigen."
+
+#: bubble/favorites/templates/favorites/user_favorites.html:93
+msgid "Delete Favorite"
+msgstr "Favorit löschen"
+
+#: bubble/favorites/templates/favorites/user_favorites.html:97
+msgid "Close"
+msgstr "Schließen"
+
+#: bubble/favorites/templates/favorites/user_favorites.html:103
+msgid "Cancel"
+msgstr "Abbrechen"
+
+#: bubble/favorites/templates/favorites/user_favorites.html:136
+msgid "Error deleting favorite. Please try again."
+msgstr "Fehler beim Löschen des Favoriten. Bitte versuchen Sie es erneut."
+
+#: bubble/favorites/templates/favorites/user_favorites.html:140
+msgid "Network error. Please try again."
+msgstr "Netzwerkfehler. Bitte versuchen Sie es erneut."
+
+#: bubble/favorites/templates/favorites/user_favorites.html:170
+msgid "Are you sure you want to delete this favorite?"
+msgstr "Sind Sie sicher, dass Sie diesen Favoriten löschen möchten?"
+
+#: bubble/favorites/views.py:23 bubble/favorites/views.py:39
+msgid "URL is required"
+msgstr "URL ist erforderlich"
+
+#: bubble/favorites/views.py:50
+msgid "Favorite updated"
+msgstr "Favorit aktualisiert"
+
+#: bubble/favorites/views.py:60 bubble/favorites/views.py:85
+msgid "Added to favorites"
+msgstr "Zu Favoriten hinzugefügt"
+
+#: bubble/favorites/views.py:77
+msgid "Remove from favorites"
+msgstr "Aus Favoriten entfernen"
+
+#: bubble/favorites/views.py:118
+msgid "Favorite deleted successfully"
+msgstr "Favorit erfolgreich gelöscht!"
+
+#: bubble/items/admin.py:49
+msgid "Item Details"
+msgstr "Artikel-Details"
+
+#: bubble/items/admin.py:60
+msgid "Internal Options"
+msgstr "Interne Optionen"
+
+#: bubble/items/admin.py:67 bubble/rooms/admin.py:30
+msgid "Timestamps"
+msgstr "Zeitstempel"
+
+#: bubble/items/api/serializers.py:12
+msgid "You can only create images for items you own."
+msgstr "Sie können nur Bilder für Artikel erstellen, die Sie besitzen."
+
+#: bubble/items/api/serializers.py:102 bubble/items/api/serializers.py:105
+msgid "Cannot set both sale_price and rental_price. Choose one."
+msgstr ""
+"Sie können nicht sowohl Verkaufspreis als auch Mietpreis festlegen. Wählen "
+"Sie eines von beiden."
+
+#: bubble/items/api/views.py:111
+msgid "Item has no images to analyze."
+msgstr "Der Artikel hat keine Bilder zur Analyse."
+
+#: bubble/items/models.py:26
+msgid "New"
+msgstr "Neu"
+
+#: bubble/items/models.py:27
+msgid "Used"
+msgstr "Gebraucht"
+
+#: bubble/items/models.py:28
+msgid "Broken"
+msgstr "Kaputt"
+
+#: bubble/items/models.py:32
+msgid "Draft"
+msgstr "Entwurf"
+
+#: bubble/items/models.py:33
+msgid "Processing"
+msgstr "Verarbeitung"
+
+#: bubble/items/models.py:34
+msgid "Available"
+msgstr "Verfügbar"
+
+#: bubble/items/models.py:35
+msgid "Reserved"
+msgstr "Reserviert"
+
+#: bubble/items/models.py:36
+#, fuzzy
+#| msgid "Rent"
+msgid "Rented"
+msgstr "Vermietet"
+
+#: bubble/items/models.py:37
+msgid "Sold"
+msgstr "Verkauft"
+
+#: bubble/items/models.py:45
+msgid "Hourly"
+msgstr "Stündlich"
+
+#: bubble/items/models.py:46
+msgid "Daily"
+msgstr "Täglich"
+
+#: bubble/items/models.py:47
+msgid "Weekly"
+msgstr "Wöchentlich"
+
+#: bubble/items/models.py:51
+msgid "Books"
+msgstr "Bücher"
+
+#: bubble/items/models.py:52
+msgid "Clothing"
+msgstr "Kleidung"
+
+#: bubble/items/models.py:53
+msgid "Electronics"
+msgstr "Elektronik"
+
+#: bubble/items/models.py:54
+msgid "Furniture"
+msgstr "Möbel"
+
+#: bubble/items/models.py:55
+msgid "Garden"
+msgstr "Garten"
+
+#: bubble/items/models.py:56
+msgid "Kitchen"
+msgstr "Küche"
+
+#: bubble/items/models.py:57
+msgid "Other"
+msgstr "Andere"
+
+#: bubble/items/models.py:58 bubble/rooms/models.py:39
+#: bubble/rooms/templates/rooms/room_list.html:6
+#: bubble/rooms/templates/rooms/room_list.html:57
+msgid "Rooms"
+msgstr "Räume"
+
+#: bubble/items/models.py:59
+msgid "Sports"
+msgstr "Sport"
+
+#: bubble/items/models.py:60
+msgid "Tools"
+msgstr "Werkzeuge"
+
+#: bubble/items/models.py:61
+msgid "Toys"
+msgstr "Spielzeug"
+
+#: bubble/items/models.py:62
+msgid "Vehicles"
+msgstr "Fahrzeuge"
+
+#: bubble/items/models.py:116
+#, fuzzy
+#| msgid "Create New Item"
+msgid "Category of the item"
+msgstr "Neuen Artikel erstellen"
+
+#: bubble/items/models.py:123
+msgid "Internal item, not for public display"
+msgstr "Interner Artikel, nicht für öffentliche Anzeige"
+
+#: bubble/items/models.py:127
+msgid "Display your contact information public"
+msgstr "Kontaktinformationen öffentlich anzeigen"
+
+#: bubble/items/models.py:139
+msgid "Price per hour for rental items"
+msgstr "Preis pro Stunde für Mietartikel"
+
+#: bubble/items/models.py:151
+msgid "Allow self-service rental without owner approval"
+msgstr "Selbstbedienungsvermietung ohne Zustimmung des Eigentümers erlauben"
+
+#: bubble/items/models.py:155
+msgid "Allow open-ended rentals without a return date"
+msgstr "Unbefristete Vermietungen ohne Rückgabedatum erlauben"
+
+#: bubble/items/models.py:160
+msgid "Enable payment via internal payment system"
+msgstr "Zahlung über internes Zahlungssystem aktivieren"
+
+#: bubble/items/models.py:169
+#, fuzzy
+#| msgid "Condition"
+msgid "Condition of the item"
+msgstr "Zustand"
+
+#: bubble/items/models.py:248
+msgid "Embedding vector for semantic search"
+msgstr "Embedding-Vektor für semantische Suche"
+
+#: bubble/rooms/admin.py:24 bubble/rooms/admin.py:38 bubble/rooms/models.py:22
+msgid "Photo"
+msgstr "Foto"
+
+#: bubble/rooms/admin.py:47
+msgid "Current Photo"
+msgstr "Aktuelles Foto"
+
+#: bubble/rooms/admin.py:55
+msgid "No photo uploaded"
+msgstr "Kein Foto hochgeladen"
+
+#: bubble/rooms/models.py:13 bubble/users/forms.py:53
+msgid "Name"
+msgstr "Name"
+
+#: bubble/rooms/models.py:15
+#, fuzzy
+#| msgid "Name of User"
+msgid "Name of the room"
+msgstr "Name des Benutzers"
+
+#: bubble/rooms/models.py:18 bubble/rooms/templates/rooms/room_detail.html:72
+msgid "Description"
+msgstr "Beschreibung"
+
+#: bubble/rooms/models.py:19
+msgid "Detailed description of the room"
+msgstr "Detaillierte Beschreibung des Raums"
+
+#: bubble/rooms/models.py:26
+msgid "Photo of the room"
+msgstr "Foto des Raums"
+
+#: bubble/rooms/models.py:29
+#, fuzzy
+#| msgid "Created"
+msgid "Created at"
+msgstr "Erstellt"
+
+#: bubble/rooms/models.py:33
+#, fuzzy
+#| msgid "Updated:"
+msgid "Updated at"
+msgstr "Aktualisiert:"
+
+#: bubble/rooms/models.py:38
+msgid "Room"
+msgstr "Raum"
+
+#: bubble/rooms/templates/rooms/room_detail.html:80
+msgid "Room Information"
+msgstr "Rauminformationen"
+
+#: bubble/rooms/templates/rooms/room_detail.html:84
+#, fuzzy
+#| msgid "Name"
+msgid "Name:"
+msgstr "Name"
+
+#: bubble/rooms/templates/rooms/room_detail.html:90
+#, fuzzy
+#| msgid "Added on"
+msgid "Added:"
+msgstr "Hinzugefügt am"
+
+#: bubble/rooms/templates/rooms/room_detail.html:97
+#, fuzzy
+#| msgid "Updated:"
+msgid "Last Updated:"
+msgstr "Aktualisiert:"
+
+#: bubble/rooms/templates/rooms/room_detail.html:110
+msgid "Back to Rooms"
+msgstr "Zurück zu Räume"
+
+#: bubble/rooms/templates/rooms/room_list.html:58
+msgid "Explore our available rooms"
+msgstr "Erkunden Sie unsere verfügbaren Räume"
+
+#: bubble/rooms/templates/rooms/room_list.html:86
+msgid "Rooms pagination"
+msgstr "Räume Seitennummerierung"
+
+#: bubble/rooms/templates/rooms/room_list.html:125
+msgid "No rooms available"
+msgstr "Keine Räume verfügbar"
+
+#: bubble/rooms/templates/rooms/room_list.html:126
+msgid "Check back later for new rooms."
+msgstr "Schauen Sie später wieder vorbei für neue Räume."
+
+#: bubble/users/admin.py:23
+msgid "Personal info"
+msgstr "Persönliche Informationen"
+
+#: bubble/users/admin.py:25
+msgid "Permissions"
+msgstr "Berechtigungen"
+
+#: bubble/users/admin.py:36
+msgid "Important dates"
+msgstr "Wichtige Daten"
+
+#: bubble/users/apps.py:7
+msgid "Users"
+msgstr "Benutzer"
+
+#: bubble/users/forms.py:24 bubble/users/tests/test_forms.py:35
+msgid "This username has already been taken."
+msgstr "Dieser Benutzername ist bereits vergeben."
+
+#: bubble/users/forms.py:58
+msgid "E-Mail"
+msgstr "E-Mail"
+
+#: bubble/users/forms.py:65
+msgid "Adresse"
+msgstr "Adresse"
+
+#: bubble/users/forms.py:71
+msgid "Telefon"
+msgstr "Telefon"
+
+#: bubble/users/models.py:23
+msgid "Name of User"
+msgstr "Name des Benutzers"
+
+#: config/settings/base.py:38
+msgid "Deutsch"
+msgstr "Deutsch"
+
+#: config/settings/base.py:39
+msgid "English"
+msgstr "Englisch"
+
+#~ msgid "Monday"
+#~ msgstr "Montag"
+
+#~ msgid "Tuesday"
+#~ msgstr "Dienstag"
+
+#~ msgid "Wednesday"
+#~ msgstr "Mittwoch"
+
+#~ msgid "Thursday"
+#~ msgstr "Donnerstag"
+
+#~ msgid "Friday"
+#~ msgstr "Freitag"
+
+#~ msgid "Saturday"
+#~ msgstr "Samstag"
+
+#~ msgid "Sunday"
+#~ msgstr "Sonntag"
+
+#~ msgid "Order of display in navigation menu (lower numbers appear first)"
+#~ msgstr ""
+#~ "Reihenfolge der Anzeige im Navigationsmenü (niedrigere Zahlen erscheinen "
+#~ "zuerst)"
+
+#~ msgid "Item Categories"
+#~ msgstr "Artikel-Kategorien"
+
+#~ msgid "Confirm Email"
+#~ msgstr "E-Mail bestätigen"
+
+#~ msgid "Confirm Email Address"
+#~ msgstr "E-Mail-Adresse bestätigen"
+
+#, python-format
+#~ msgid ""
+#~ "Please confirm that <strong>%(confirmation.email_address.email)s</strong> "
+#~ "is an email address for user %(user_display)s."
+#~ msgstr ""
+#~ "Bitte bestätigen Sie, dass <strong>%(confirmation.email_address.email)s</"
+#~ "strong> eine E-Mail-Adresse für den Benutzer %(user_display)s ist."
+
+#~ msgid "Invalid Confirmation Link"
+#~ msgstr "Ungültiger Bestätigungslink"
+
+#~ msgid "This email confirmation link is invalid or has already been used."
+#~ msgstr ""
+#~ "Dieser E-Mail-Bestätigungslink ist ungültig oder wurde bereits verwendet."
+
+#~ msgid "Manage Email Settings"
+#~ msgstr "E-Mail-Einstellungen verwalten"
+
+#~ msgid "Log in"
+#~ msgstr "Anmelden"
+
+#~ msgid "Back to Home"
+#~ msgstr "Zurück zur Startseite"
+
+#~ msgid "Sign in to share and find items."
+#~ msgstr "Melden Sie sich an, um Sachen zu teilen und zu finden."
+
+#~ msgid "Sign in with:"
+#~ msgstr "Anmelden mit:"
+
+#~ msgid "Username"
+#~ msgstr "Benutzername"
+
+#~ msgid "Your username"
+#~ msgstr "Ihr Benutzername"
+
+#~ msgid "Password"
+#~ msgstr "Passwort"
+
+#~ msgid "Your password"
+#~ msgstr "Ihr Passwort"
+
+#~ msgid "Stay signed in"
+#~ msgstr "Angemeldet bleiben"
+
+#~ msgid "Forgot password?"
+#~ msgstr "Passwort vergessen?"
+
+#~ msgid "Don't have an account yet?"
+#~ msgstr "Noch kein Konto?"
+
+#~ msgid "Sign Up"
+#~ msgstr "Registrieren"
+
+#~ msgid "Reset Password"
+#~ msgstr "Passwort zurücksetzen"
+
+#~ msgid ""
+#~ "Enter your email address and we will send you a link to reset your "
+#~ "password."
+#~ msgstr ""
+#~ "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Link zum "
+#~ "Zurücksetzen Ihres Passworts."
+
+#~ msgid "Email address"
+#~ msgstr "E-Mail-Adresse"
+
+#~ msgid "your@email.com"
+#~ msgstr "ihre@email.com"
+
+#~ msgid "Send reset email"
+#~ msgstr "Zurücksetzungs-E-Mail senden"
+
+#~ msgid "Remember your password?"
+#~ msgstr "Passwort wieder eingefallen?"
+
+#~ msgid ""
+#~ "Create an account to become part of the Treibhaus Donaufeld community."
+#~ msgstr ""
+#~ "Erstellen Sie ein Konto, um Teil der Treibhaus Donaufeld Gemeinschaft zu "
+#~ "werden."
+
+#~ msgid "Sign up with:"
+#~ msgstr "Registrieren mit:"
+
+#~ msgid "or"
+#~ msgstr "oder"
+
+#~ msgid "Choose a username"
+#~ msgstr "Wählen Sie einen Benutzernamen"
+
+#~ msgid "Create a secure password"
+#~ msgstr "Sicheres Passwort erstellen"
+
+#~ msgid "Confirm password"
+#~ msgstr "Passwort bestätigen"
+
+#~ msgid "Repeat password"
+#~ msgstr "Passwort wiederholen"
+
+#~ msgid "Note:"
+#~ msgstr "Hinweis:"
+
+#~ msgid ""
+#~ "After registration, you will receive an email to confirm your email "
+#~ "address."
+#~ msgstr ""
+#~ "Nach der Registrierung erhalten Sie eine E-Mail zur Bestätigung Ihrer E-"
+#~ "Mail-Adresse."
+
+#~ msgid "Create account"
+#~ msgstr "Konto erstellen"
+
+#~ msgid "Already have an account?"
+#~ msgstr "Haben Sie bereits ein Konto?"
+
+#~ msgid "Confirmation Email Sent"
+#~ msgstr "Bestätigungs-E-Mail gesendet"
+
+#~ msgid "Email Sent"
+#~ msgstr "E-Mail gesendet"
+
+#~ msgid "Confirmation Email Sent!"
+#~ msgstr "Bestätigungs-E-Mail gesendet!"
+
+#~ msgid ""
+#~ "We have sent you an email to confirm your email address. Please check "
+#~ "your inbox and click the confirmation link."
+#~ msgstr ""
+#~ "Wir haben Ihnen eine E-Mail zur Bestätigung Ihrer E-Mail-Adresse "
+#~ "gesendet. Bitte überprüfen Sie Ihr Postfach und klicken Sie auf den "
+#~ "Bestätigungslink."
+
+#~ msgid "Important Notes:"
+#~ msgstr "Wichtige Hinweise:"
+
+#~ msgid "Also check your spam folder"
+#~ msgstr "Überprüfen Sie auch Ihren Spam-Ordner"
+
+#~ msgid "The confirmation link is valid for 3 days"
+#~ msgstr "Der Bestätigungslink ist 3 Tage gültig"
+
+#~ msgid "You cannot log in without confirming your email"
+#~ msgstr "Ohne Bestätigung können Sie sich nicht anmelden"
+
+#~ msgid "Didn't receive an email?"
+#~ msgstr "Keine E-Mail erhalten?"
+
+#~ msgid "Resend Email"
+#~ msgstr "E-Mail erneut senden"
+
+#~ msgid "Create New Item"
+#~ msgstr "Neuen Artikel erstellen"
+
+#~ msgid "Add to favorites"
+#~ msgstr "Zu Favoriten hinzufügen"
+
+#~ msgid "Things"
+#~ msgstr "Zeug"
+
+#~ msgid "Community"
+#~ msgstr "Gemeinschaft"
+
+#~ msgid "For Sale"
+#~ msgstr "Zu verkaufen"
+
+#~ msgid "Give Away"
+#~ msgstr "Verschenken"
+
+#~ msgid "Borrow"
+#~ msgstr "Ausleihen"
+
+#~ msgid "Need"
+#~ msgstr "Benötigt"
+
+#~ msgid "Old"
+#~ msgstr "Alt"
+
+#~ msgid "All conditions"
+#~ msgstr "Alle Zustände"
+
+#~ msgid "View"
+#~ msgstr "Ansehen"
+
+#~ msgid "All Users"
+#~ msgstr "Alle Benutzer"
+
+#~ msgid "About Us"
+#~ msgstr "Über uns"
+
+#~ msgid "My Items"
+#~ msgstr "Meine Artikel"
+
+#~ msgid "Create Item"
+#~ msgstr "Artikel erstellen"
+
+#~ msgid "My Profile"
+#~ msgstr "Mein Profil"
+
+#~ msgid "Media"
+#~ msgstr "Medien"
+
+#~ msgid "Search and select a category..."
+#~ msgstr "Kategorie suchen und auswählen..."
+
+#~ msgid "Category"
+#~ msgstr "Kategorie"
+
+#~ msgid "Item name"
+#~ msgstr "Artikelname"
+
+#~ msgid "Describe your item..."
+#~ msgstr "Beschreiben Sie Ihren Artikel..."
+
+#~ msgid "Price in Euro"
+#~ msgstr "Preis in Euro"
+
+#~ msgid "Type"
+#~ msgstr "Typ"
+
+#~ msgid "Price"
+#~ msgstr "Preis"
+
+#~ msgid "Show contact"
+#~ msgstr "Kontakt anzeigen"
+
+#~ msgid "Check to display your contact information"
+#~ msgstr "Ankreuzen, um Ihre Kontaktinformationen anzuzeigen"
+
+#~ msgid "Check if this item is for internal use only"
+#~ msgstr "Ankreuzen, wenn dieser Artikel nur für internen Gebrauch ist"
+
+#~ msgid "Treibhaus payment"
+#~ msgstr "Treibhaus-Zahlung"
+
+#~ msgid "Accept Treibhaus payment method"
+#~ msgstr "Treibhaus-Zahlungsmethode akzeptieren"
+
+#, python-format
+#~ msgid "Item name must be at least %(min_length)d characters long."
+#~ msgstr "Artikelname muss mindestens %(min_length)d Zeichen lang sein."
+
+#~ msgid "Please select a specific category (not a general category)."
+#~ msgstr ""
+#~ "Bitte wählen Sie eine spezifische Kategorie (keine allgemeine Kategorie)."
+
+#~ msgid "Search items, tags, categories..."
+#~ msgstr "Artikel, Tags, Kategorien suchen..."
+
+#~ msgid "All categories"
+#~ msgstr "Alle Kategorien"
+
+#~ msgid "All subcategories"
+#~ msgstr "Alle Unterkategorien"
+
+#~ msgid "All types"
+#~ msgstr "Alle Typen"
+
+#~ msgid "Newest first"
+#~ msgstr "Neueste zuerst"
+
+#~ msgid "Oldest first"
+#~ msgstr "Älteste zuerst"
+
+#~ msgid "Price: Low to High"
+#~ msgstr "Preis: Niedrig zu Hoch"
+
+#~ msgid "Price: High to Low"
+#~ msgstr "Preis: Hoch zu Niedrig"
+
+#~ msgid "Name A-Z"
+#~ msgstr "Name A-Z"
+
+#~ msgid "Grid"
+#~ msgstr "Raster"
+
+#~ msgid "List"
+#~ msgstr "Liste"
+
+#~ msgid "Upload Images"
+#~ msgstr "Bilder hochladen"
+
+#~ msgid "Select one or more images for your item"
+#~ msgstr "Wählen Sie ein oder mehrere Bilder für Ihren Artikel"
+
+#~ msgid "Failed"
+#~ msgstr "Fehlgeschlagen"
+
+#~ msgid "Unique identifier for the item"
+#~ msgstr "Eindeutige Kennung für den Artikel"
+
+#~ msgid "Item created successfully!"
+#~ msgstr "Artikel erfolgreich erstellt!"
+
+#~ msgid "Item deleted successfully!"
+#~ msgstr "Artikel erfolgreich gelöscht!"
+
+#, python-format
+#~ msgid "Item '%(name)s' has been activated."
+#~ msgstr "Artikel '%(name)s' wurde aktiviert."
+
+#, python-format
+#~ msgid "Item '%(name)s' has been deactivated."
+#~ msgstr "Artikel '%(name)s' wurde deaktiviert."
+
+#~ msgid "AI processing skipped. You can now edit the item details below."
+#~ msgstr ""
+#~ "KI-Verarbeitung übersprungen. Sie können die Artikeldetails unten "
+#~ "bearbeiten."
+
+#~ msgid ""
+#~ "Images uploaded! We're analyzing them to suggest a title and description. "
+#~ "You can continue editing below."
+#~ msgstr ""
+#~ "Bilder hochgeladen! Wir analysieren sie, um einen Titel und eine "
+#~ "Beschreibung vorzuschlagen. Sie können die Bearbeitung unten fortsetzen."
+
+#~ msgid "Your message..."
+#~ msgstr "Ihre Nachricht..."
+
+#~ msgid "Message"
+#~ msgstr "Nachricht"
+
+#~ msgid "Your request has been sent!"
+#~ msgstr "Ihre Anfrage wurde gesendet!"
+
+#~ msgid "Refunded"
+#~ msgstr "Erstattet"
+
+#~ msgid "Item Tags"
+#~ msgstr "Sachen Tags"
+
+#, fuzzy
+#~| msgid "Edit Item"
+#~ msgid "Edit item"
+#~ msgstr "Artikel bearbeiten"
+
+#, fuzzy
+#~| msgid "Create Item"
+#~ msgid "Create item"
+#~ msgstr "Artikel erstellen"
+
+#~ msgid "Breadcrumb"
+#~ msgstr "Breadcrumb"
+
+#~ msgid "Home"
+#~ msgstr "Startseite"
+
+#~ msgid "Items"
+#~ msgstr "Artikel"
+
+#, fuzzy
+#~| msgid "Created"
+#~ msgid "Create"
+#~ msgstr "Erstellt"
+
+#~ msgid "Delete Item"
+#~ msgstr "Artikel löschen"
+
+#~ msgid "Warning:"
+#~ msgstr "Warnung:"
+
+#~ msgid ""
+#~ "Are you sure you want to delete this item? This action cannot be undone."
+#~ msgstr ""
+#~ "Sind Sie sicher, dass Sie diesen Artikel löschen möchten? Diese Aktion "
+#~ "kann nicht rückgängig gemacht werden."
+
+#~ msgid "Category:"
+#~ msgstr "Kategorie:"
+
+#~ msgid "Type:"
+#~ msgstr "Typ:"
+
+#~ msgid "Posted:"
+#~ msgstr "Veröffentlicht:"
+
+#~ msgid "Tags:"
+#~ msgstr "Schlagwörter:"
+
+#~ msgid "Create Item - Step 1"
+#~ msgstr "Artikel erstellen - Schritt 1"
+
+#~ msgid ""
+#~ "Upload images of your item. Our AI will analyze them and suggest a title "
+#~ "and description for you!"
+#~ msgstr ""
+#~ "Laden Sie Bilder Ihres Artikels hoch. Unsere KI wird sie analysieren und "
+#~ "einen Titel und eine Beschreibung für Sie vorschlagen!"
+
+#~ msgid "Drop your images here"
+#~ msgstr "Bilder hier ablegen"
+
+#~ msgid "JPG, PNG, GIF • Max 10MB each"
+#~ msgstr "JPG, PNG, GIF • Max. 10MB je Datei"
+
+#~ msgid "Select Images"
+#~ msgstr "Bilder auswählen"
+
+#, fuzzy
+#~| msgid "new files selected"
+#~ msgid "files selected"
+#~ msgstr "neue Dateien ausgewählt"
+
+#, fuzzy
+#~| msgid "total"
+#~ msgid "MB total"
+#~ msgstr "gesamt"
+
+#~ msgid "Clear All"
+#~ msgstr "Alle löschen"
+
+#~ msgid "Selected Images:"
+#~ msgstr "Ausgewählte Bilder:"
+
+#~ msgid ""
+#~ "JavaScript is disabled. You can still upload images using the file input "
+#~ "below."
+#~ msgstr ""
+#~ "JavaScript ist deaktiviert. Sie können Bilder weiterhin über die "
+#~ "Dateieingabe unten hochladen."
+
+#~ msgid "Skip & Add Details Manually"
+#~ msgstr "Überspringen & Details manuell hinzufügen"
+
+#~ msgid "Continue"
+#~ msgstr "Weiter"
+
+#~ msgid "File"
+#~ msgstr "Datei"
+
+#~ msgid "is too large. Maximum size is 10MB."
+#~ msgstr "ist zu groß. Maximale Größe ist 10MB."
+
+#~ msgid "Maximum"
+#~ msgstr "Maximal"
+
+#~ msgid "Remove image"
+#~ msgstr "Bild entfernen"
+
+#, fuzzy
+#~| msgid "View all favorites"
+#~ msgid "View full size"
+#~ msgstr "Alle Favoriten anzeigen"
+
+#~ msgid "Upload & Process Images"
+#~ msgstr "Bilder hochladen & verarbeiten"
+
+#~ msgid "Uploading..."
+#~ msgstr "Hochladen..."
+
+#~ msgid "Processing..."
+#~ msgstr "Verarbeitung..."
+
+#~ msgid "Actions"
+#~ msgstr "Aktionen"
+
+#~ msgid "Deactivate"
+#~ msgstr "Deaktivieren"
+
+#~ msgid "Activate"
+#~ msgstr "Aktivieren"
+
+#~ msgid "Free"
+#~ msgstr "Kostenlos"
+
+#~ msgid "Condition:"
+#~ msgstr "Zustand:"
+
+#~ msgid "Created:"
+#~ msgstr "Erstellt:"
+
+#~ msgid "Updated:"
+#~ msgstr "Aktualisiert:"
+
+#~ msgid "Contact"
+#~ msgstr "Kontakt"
+
+#~ msgid "Contact information is not displayed"
+#~ msgstr "Kontaktinformationen werden nicht angezeigt"
+
+#~ msgid "to see all contact details"
+#~ msgstr "um alle Kontaktdaten zu sehen"
+
+#, fuzzy
+#~| msgid "Back to Home"
+#~ msgid "Back to Items"
+#~ msgstr "Zurück zur Startseite"
+
+#~ msgid "Edit Item"
+#~ msgstr "Artikel bearbeiten"
+
+#~ msgid "Add New Item"
+#~ msgstr "Neuen Artikel hinzufügen"
+
+#~ msgid "Loading..."
+#~ msgstr "Lädt..."
+
+#~ msgid "AI Processing in Progress"
+#~ msgstr "KI-Verarbeitung läuft"
+
+#~ msgid ""
+#~ "We're analyzing your images to suggest a title and description. This will "
+#~ "appear automatically when ready."
+#~ msgstr ""
+#~ "Wir analysieren Ihre Bilder, um einen Titel und eine Beschreibung "
+#~ "vorzuschlagen. Diese erscheinen automatisch, wenn sie bereit sind."
+
+#~ msgid "AI Actions"
+#~ msgstr "KI-Aktionen"
+
+#, fuzzy
+#~| msgid "AI Processing in Progress"
+#~ msgid "Run AI Processing Again"
+#~ msgstr "KI-Verarbeitung neu starten"
+
+#~ msgid "Current Images"
+#~ msgstr "Aktuelle Bilder"
+
+#~ msgid "Select Files"
+#~ msgstr "Dateien auswählen"
+
+#~ msgid "new files selected"
+#~ msgstr "neue Dateien ausgewählt"
+
+#, fuzzy
+#~| msgid "Select Images"
+#~ msgid "Select new images"
+#~ msgstr "Bilder auswählen"
+
+#~ msgid "AI suggestion will appear here"
+#~ msgstr "KI-Vorschlag erscheint hier"
+
+#~ msgid "Settings"
+#~ msgstr "Einstellungen"
+
+#~ msgid "Save draft"
+#~ msgstr "Entwurf speichern"
+
+#~ msgid "Publish"
+#~ msgstr "Veröffentlichen"
+
+#~ msgid "Confirm Action"
+#~ msgstr "Aktion bestätigen"
+
+#~ msgid "Confirm"
+#~ msgstr "Bestätigen"
+
+#~ msgid "Information"
+#~ msgstr "Information"
+
+#~ msgid "OK"
+#~ msgstr "OK"
+
+#~ msgid "Error"
+#~ msgstr "Fehler"
+
+#~ msgid "Item ID not found"
+#~ msgstr "Artikel-ID nicht gefunden"
+
+#~ msgid "Cancel AI Processing"
+#~ msgstr "KI-Verarbeitung abbrechen"
+
+#~ msgid ""
+#~ "Are you sure you want to cancel the AI processing? You can still edit the "
+#~ "item manually."
+#~ msgstr ""
+#~ "Sind Sie sicher, dass Sie die KI-Verarbeitung abbrechen möchten? Sie "
+#~ "können den Artikel weiterhin manuell bearbeiten."
+
+#~ msgid "Cancelling..."
+#~ msgstr "Wird abgebrochen..."
+
+#~ msgid "Error:"
+#~ msgstr "Fehler:"
+
+#~ msgid "An error occurred while cancelling processing. Please try again."
+#~ msgstr ""
+#~ "Beim Abbrechen der Verarbeitung ist ein Fehler aufgetreten. Bitte "
+#~ "versuchen Sie es erneut."
+
+#~ msgid ""
+#~ "Are you sure you want to run AI processing again? This will overwrite any "
+#~ "manual changes to the title and description."
+#~ msgstr ""
+#~ "Sind Sie sicher, dass Sie die KI-Verarbeitung erneut ausführen möchten? "
+#~ "Dies überschreibt alle manuellen Änderungen am Titel und der Beschreibung."
+
+#~ msgid "Starting..."
+#~ msgstr "Wird gestartet..."
+
+#~ msgid "An error occurred while starting AI processing. Please try again."
+#~ msgstr ""
+#~ "Beim Starten der KI-Verarbeitung ist ein Fehler aufgetreten. Bitte "
+#~ "versuchen Sie es erneut."
+
+#~ msgid "images allowed."
+#~ msgstr "Bilder erlaubt."
+
+#~ msgid "Delete Image"
+#~ msgstr "Bild löschen"
+
+#~ msgid "Are you sure you want to delete this image?"
+#~ msgstr "Sind Sie sicher, dass Sie dieses Bild löschen möchten?"
+
+#~ msgid "Error deleting image: "
+#~ msgstr "Fehler beim Löschen des Bildes: "
+
+#~ msgid "Unknown error"
+#~ msgstr "Unbekannter Fehler"
+
+#~ msgid "Error deleting image"
+#~ msgstr "Fehler beim Löschen des Bildes"
+
+#~ msgid "Filters"
+#~ msgstr "Filter"
+
+#~ msgid "Active Filters"
+#~ msgstr "Aktive Filter"
+
+#~ msgid "Search"
+#~ msgstr "Suchen"
+
+#~ msgid "Search items..."
+#~ msgstr "Artikel suchen..."
+
+#~ msgid "All Categories"
+#~ msgstr "Alle Kategorien"
+
+#~ msgid "Zustand"
+#~ msgstr "Zustand"
+
+#~ msgid "Sort by"
+#~ msgstr "Sortieren nach"
+
+#~ msgid "Filter"
+#~ msgstr "Filter"
+
+#~ msgid "Reset filter"
+#~ msgstr "Filter zurücksetzen"
+
+#~ msgid "No items found"
+#~ msgstr "Keine Artikel gefunden"
+
+#~ msgid "Try adjusting your filters or search terms."
+#~ msgstr "Versuchen Sie, Ihre Filter oder Suchbegriffe anzupassen."
+
+#~ msgid "Add the first item"
+#~ msgstr "Den ersten Artikel hinzufügen"
+
+#~ msgid "Active Items"
+#~ msgstr "Aktive Artikel"
+
+#~ msgid "Inactive Items"
+#~ msgstr "Inaktive Artikel"
+
+#~ msgid "Total Items"
+#~ msgstr "Artikel insgesamt"
+
+#~ msgid "Your Items"
+#~ msgstr "Ihre Artikel"
+
+#~ msgid "Item"
+#~ msgstr "Artikel"
+
+#~ msgid "Active"
+#~ msgstr "Aktiv"
+
+#~ msgid "Created"
+#~ msgstr "Erstellt"
+
+#~ msgid "Inactive"
+#~ msgstr "Inaktiv"
+
+#~ msgid "No items yet"
+#~ msgstr "Noch keine Artikel"
+
+#~ msgid "You haven't created any items yet. Add your first item!"
+#~ msgstr ""
+#~ "Sie haben noch keine Artikel erstellt. Fügen Sie Ihren ersten Artikel "
+#~ "hinzu!"
+
+#~ msgid "Add your first item"
+#~ msgstr "Ihren ersten Artikel hinzufügen"
+
+#~ msgid "No messages available yet."
+#~ msgstr "Noch keine Nachrichten vorhanden."
+
+#~ msgid "Send Request"
+#~ msgstr "Anfrage senden"
+
+#~ msgid "Item:"
+#~ msgstr "Artikel:"
+
+#~ msgid "Back"
+#~ msgstr "Zurück"
+
+#~ msgid "Thd Bubble"
+#~ msgstr "Thd Bubble"
+
+#~ msgid "Browse and share physical items in our community"
+#~ msgstr "Stöbern und teilen Sie physische Dinge in unserer Gemeinschaft"
+
+#~ msgid "Browse All Items"
+#~ msgstr "Alle Artikel durchsuchen"
+
+#~ msgid "Your Account"
+#~ msgstr "Ihr Konto"
+
+#, python-format
+#~ msgid "Welcome back, %(username)s!"
+#~ msgstr "Willkommen zurück, %(username)s!"
+
+#~ msgid "Internal User"
+#~ msgstr "Interner Benutzer"
+
+#, python-format
+#~ msgid "Member since %(date)s"
+#~ msgstr "Mitglied seit %(date)s"
+
+#~ msgid "View Profile"
+#~ msgstr "Profil anzeigen"
+
+#~ msgid "Edit Profile"
+#~ msgstr "Profil bearbeiten"
+
+#~ msgid "Join our community!"
+#~ msgstr "Treten Sie unserer Gemeinschaft bei!"
+
+#~ msgid ""
+#~ "Create an account to start sharing items and connecting with neighbors"
+#~ msgstr ""
+#~ "Erstellen Sie ein Konto, um mit dem Teilen von Sachen und dem Kontakt zu "
+#~ "Nachbarn zu beginnen"
+
+#~ msgid "Your active items"
+#~ msgstr "Ihre aktiven Artikel"
+
+#~ msgid "Browse"
+#~ msgstr "Stöbern"
+
+#~ msgid "Discover community items"
+#~ msgstr "Gemeinschaftsartikel entdecken"
+
+#~ msgid "Connect"
+#~ msgstr "Verbinden"
+
+#~ msgid "Get to know your neighbors"
+#~ msgstr "Lernen Sie Ihre Nachbarn kennen"
+
+#~ msgid "Profil erfolgreich aktualisiert"
+#~ msgstr "Profil erfolgreich aktualisiert"
+
+#~ msgid "URL path for this content type (e.g., 'sachen', 'events')"
+#~ msgstr "URL-Pfad für diesen Inhaltstyp (z.B. 'sachen', 'events')"
+
+#~ msgid ""
+#~ "JSON schema for custom fields specific to this category. Format: "
+#~ "{'field_name': {'type': 'choice', 'label': 'Size', 'choices': ['S', 'M', "
+#~ "'L'], 'required': true}}"
+#~ msgstr ""
+#~ "JSON-Schema für benutzerdefinierte Felder spezifisch für diese Kategorie. "
+#~ "Format: {'field_name': {'type': 'choice', 'label': 'Größe', 'choices': "
+#~ "['S', 'M', 'L'], 'required': true}}"
+
+#~ msgid "Custom Fields"
+#~ msgstr "Benutzerdefinierte Felder"
+
+#~ msgid "Category-specific additional fields stored as JSON"
+#~ msgstr "Kategorie-spezifische zusätzliche Felder gespeichert als JSON"
+
+#~ msgid "Item type"
+#~ msgstr "Artikel-Typ"
+
+#~ msgid "Additional fields specific to the item's category"
+#~ msgstr "Zusätzliche Felder spezifisch für die Kategorie des Artikels"
+
+#~ msgid "Additional Information"
+#~ msgstr "Zusätzliche Informationen"
+
+#~ msgid "Create new"
+#~ msgstr "Neu erstellen"
+
+#~ msgid ""
+#~ "Select one or more images (JPG, PNG, GIF). Hold Ctrl/Cmd to select "
+#~ "multiple files."
+#~ msgstr ""
+#~ "Wählen Sie ein oder mehrere Bilder (JPG, PNG, GIF). Halten Sie Strg/Cmd "
+#~ "gedrückt, um mehrere Dateien auszuwählen."
+
+#~ msgid "Drop new images here or"
+#~ msgstr "Neue Bilder hier ablegen oder"
+
+#~ msgid "Add"
+#~ msgstr "Hinzufügen"

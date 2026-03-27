@@ -1,0 +1,194 @@
+- model: items.itemcategory
+  fields:
+    name: Dinge
+    description: ''
+    emoji: "\U0001F9FA"
+    parent_category: null
+    ordering: 1
+
+# Subcategories for Dinge
+- model: items.itemcategory
+  fields:
+    name: Antiquitäten / Kunst
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 1
+- model: items.itemcategory
+  fields:
+    name: Baby / Kind
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 2
+- model: items.itemcategory
+  fields:
+    name: Beauty / Gesundheit / Wellness
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 3
+- model: items.itemcategory
+  fields:
+    name: Boote / Yachten / Jetskis
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 4
+- model: items.itemcategory
+  fields:
+    name: Bücher / Filme / Musik
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 5
+- model: items.itemcategory
+  fields:
+    name: Computer / Software
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 6
+- model: items.itemcategory
+  fields:
+    name: Dienstleistungen
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 7
+- model: items.itemcategory
+  fields:
+    name: Freizeit / Instrumente / Kulinarik
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 8
+- model: items.itemcategory
+  fields:
+    name: Games / Konsolen
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 9
+- model: items.itemcategory
+  fields:
+    name: Haus / Garten / Werkstatt
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 10
+- model: items.itemcategory
+  fields:
+    name: Kameras / TV / Multimedia
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 11
+- model: items.itemcategory
+  fields:
+    name: KFZ-Zubehör / Motorradteile
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 12
+- model: items.itemcategory
+  fields:
+    name: Mode / Accessoires
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 13
+- model: items.itemcategory
+  fields:
+    name: Smartphones / Telefonie
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 14
+- model: items.itemcategory
+  fields:
+    name: Spielen / Spielzeug
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 15
+- model: items.itemcategory
+  fields:
+    name: Sport / Sportgeräte
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 16
+- model: items.itemcategory
+  fields:
+    name: Tiere / Tierbedarf
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 17
+- model: items.itemcategory
+  fields:
+    name: Uhren / Schmuck
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 18
+- model: items.itemcategory
+  fields:
+    name: Wohnen / Haushalt / Gastronomie
+    description: ''
+    emoji: ''
+    parent_category:
+      - Dinge
+    ordering: 19
+
+# Räume
+- model: items.itemcategory
+  fields:
+    name: Räume
+    description: ''
+    emoji: "\U0001F6CB️"
+    parent_category: null
+    ordering: 3
+- model: items.itemcategory
+  fields:
+    name: Spielen
+    description: ''
+    emoji: ''
+    parent_category:
+      - Räume
+    ordering: 1
+- model: items.itemcategory
+  fields:
+    name: Schlafen
+    description: ''
+    emoji: ''
+    parent_category:
+      - Räume
+    ordering: 1
+- model: items.itemcategory
+  fields:
+    name: Waschen
+    description: ''
+    emoji: ''
+    parent_category:
+      - Räume
+    ordering: 1

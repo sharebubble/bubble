@@ -1,0 +1,240 @@
+[project]
+name = "bubble"
+version = "0.1.0"
+description = "Treibhaus donaufeld sharing platform"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "anthropic>=0.57.1",
+    "argon2-cffi",
+    "channels-redis",
+    "channels[daphne]",
+    "django",
+    "django-allauth[mfa,socialaccount]",
+    "django-allow-cidr>=0.8.0",
+    "django-anymail[mailgun]",
+    "django-constance[redis]>=4.3.4",
+    "django-cors-headers",
+    "django-environ",
+    "django-filter>=25.1",
+    "django-guardian>=3.2.0",
+    "django-imagekit>=5.0.0",
+    "django-model-utils",
+    "django-money>=3.5.4",
+    "django-redis",
+    "django-simple-history>=3.10.1",
+    "huey>=2.5",
+    "djangorestframework",
+    "drf-orjson-renderer>=1.7.3",
+    "drf-spectacular",
+    "fido2",
+    "google-genai>=1.39.1",
+    "gunicorn",
+    "hiredis",
+    "httpx>=0.28.1",
+    "pillow",
+    "psycopg[binary]",
+    "python-slugify",
+    "redis",
+    "sentry-sdk",
+    "uvicorn-worker",
+    "uvicorn[standard]",
+    "whitenoise",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu" },
+]
+torchvision = [
+  { index = "pytorch-cpu" },
+]
+
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools-scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["bubble*"]
+
+# ==== pytest ====
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--ds=config.settings.test --reuse-db --import-mode=importlib"
+python_files = [
+    "tests.py",
+    "test_*.py",
+]
+
+# ==== Coverage ====
+[tool.coverage.run]
+include = ["bubble/**"]
+omit = ["*/migrations/*", "*/tests/*"]
+plugins = ["django_coverage_plugin"]
+
+# ==== mypy ====
+[tool.mypy]
+python_version = "3.14"
+check_untyped_defs = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+plugins = [
+    "mypy_django_plugin.main",
+    "mypy_drf_plugin.main",
+]
+
+[[tool.mypy.overrides]]
+# Django migrations should not produce any errors:
+module = "*.migrations.*"
+ignore_errors = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+# ==== djLint ====
+[tool.djlint]
+blank_line_after_tag = "load,extends"
+close_void_tags = true
+format_css = true
+format_js = true
+# TODO: remove T002 when fixed https://github.com/djlint/djLint/issues/687
+ignore = "H006,H030,H031,T002"
+include = "H017,H035"
+indent = 2
+max_line_length = 119
+profile = "django"
+
+[tool.djlint.css]
+indent_size = 2
+
+[tool.djlint.js]
+indent_size = 2
+
+[tool.ruff]
+target-version = "py312"
+# Exclude a variety of commonly ignored directories.
+extend-exclude = [
+    "*/migrations/*.py",
+    "staticfiles/*",
+]
+
+[tool.ruff.lint]
+select = [
+  "F",
+  "E",
+  "W",
+  "C90",
+  "I",
+  "N",
+  "UP",
+  "YTT",
+  # "ANN", # flake8-annotations: we should support this in the future but 100+ errors atm
+  "ASYNC",
+  "S",
+  "BLE",
+  "FBT",
+  "B",
+  "A",
+  "COM",
+  "C4",
+  "DTZ",
+  "T10",
+  "DJ",
+  "EM",
+  "EXE",
+  "FA",
+  'ISC',
+  "ICN",
+  "G",
+  'INP',
+  'PIE',
+  "T20",
+  'PYI',
+  'PT',
+  "Q",
+  "RSE",
+  "RET",
+  "SLF",
+  "SLOT",
+  "SIM",
+  "TID",
+  "TC",
+  "INT",
+  # "ARG", # Unused function argument
+  "PTH",
+  "ERA",
+  "PD",
+  "PGH",
+  "PL",
+  "TRY",
+  "FLY",
+  # "NPY",
+  # "AIR",
+  "PERF",
+  # "FURB",
+  # "LOG",
+  "RUF",
+]
+ignore = [
+  "S101", # Use of assert detected https://docs.astral.sh/ruff/rules/assert/
+  "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
+  "SIM102", # sometimes it's better to nest
+  "PLR0915",  # Too many statements in function
+  "C901",  # Function is too complex
+  "COM812",  # Use of `assert` in a test function
+]
+
+[tool.ruff.lint.isort]
+force-single-line = false
+
+[dependency-groups]
+dev = [
+    "argon2-cffi",
+    "coverage",
+    "django",
+    "django-allauth[mfa,socialaccount]",
+    "django-anymail[mailgun]",
+    "django-cors-headers",
+    "django-coverage-plugin",
+    "django-debug-toolbar",
+    "django-environ",
+    "django-extensions",
+    "django-model-utils",
+    "django-redis",
+    "django-stubs[compatible-mypy]",
+    "huey>=2.5",
+    "django-webpack-loader",
+    "djangorestframework",
+    "djangorestframework-stubs",
+    "djlint",
+    "drf-spectacular",
+    "factory-boy",
+    "fido2",
+    "gunicorn",
+    "hiredis",
+    "ipdb",
+    "mypy",
+    "pillow",
+    "pre-commit",
+    "psycopg",
+    "pytest",
+    "pytest-django",
+    "pytest-sugar",
+    "python-slugify",
+    "redis",
+    "ruff",
+    "sphinx",
+    "sphinx-autobuild",
+    "uvicorn-worker",
+    "uvicorn[standard]",
+    "watchfiles",
+    "werkzeug[watchdog]",
+    "whitenoise",
+]

@@ -1,0 +1,296 @@
+name: CI
+
+# Enable Buildkit and let compose use it to speed up image building
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+on:
+  pull_request:
+    branches: ['**']
+    paths-ignore: ['docs/**']
+
+  push:
+    branches: ['**']
+    tags: ['v*.*.*']
+    paths-ignore: ['docs/**']
+
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  linter:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: '.python-version'
+          cache: 'pip'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci --prefix frontend
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+          restore-keys: |
+            pre-commit-
+
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.1
+        with:
+          extra_args: --config .pre-commit-config.yaml --all-files
+
+  # With no caching at all the entire ci process takes 3m to complete!
+  pytest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and cache local backend
+        uses: docker/bake-action@v7
+        with:
+          push: false
+          load: true
+          files: compose.yaml,compose.test.yaml
+          targets: backend
+          set: |
+            backend.cache-from=type=gha,scope=backend-cached-tests
+            backend.cache-to=type=gha,scope=backend-cached-tests,mode=max
+
+      # - name: Build and cache docs
+      #   uses: docker/bake-action@v7
+      #   with:
+      #     push: false
+      #     load: true
+      #     files: docker-compose.docs.yml
+      #     set: |
+      #       docs.cache-from=type=gha,scope=cached-docs
+      #       docs.cache-to=type=gha,scope=cached-docs,mode=max
+
+      - name: Check DB Migrations
+        run: docker compose run --rm -e DJANGO_SETTINGS_MODULE=config.settings.test backend python manage.py makemigrations --check
+
+      - name: Run DB Migrations
+        run: docker compose run --rm -e DJANGO_SETTINGS_MODULE=config.settings.test backend python manage.py migrate
+
+      - name: Run Django Tests
+        run: docker compose run --rm -e DJANGO_SETTINGS_MODULE=config.settings.test backend pytest
+
+      - name: Tear down the Stack
+        run: docker compose down
+
+  build-backend:
+    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+    needs: [linter, pytest]
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract branch name
+        shell: bash
+        run: |
+          BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9._-]/-/g' | sed 's/^\-\+\|\-\+$//g' | sed 's/\-\+/-/g')
+          SANITIZED_BRANCH=$(echo "$SANITIZED_BRANCH" | sed 's/^[.-]//')
+          SANITIZED_BRANCH=$(echo "$SANITIZED_BRANCH" | cut -c1-128)
+          if [ -z "$SANITIZED_BRANCH" ]; then
+            SANITIZED_BRANCH="branch"
+          fi
+          echo "branch=$SANITIZED_BRANCH" >> $GITHUB_OUTPUT
+          echo "Original branch: $BRANCH_NAME"
+          echo "Sanitized branch: $SANITIZED_BRANCH"
+        id: extract_branch
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
+          tags: |
+            type=ref,event=branch,suffix=-{{sha}}
+            type=ref,event=pr
+            type=raw,value=${{ steps.extract_branch.outputs.branch }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Output backend image information
+        run: |
+          echo "Built and pushed backend images:"
+          echo "${{ steps.meta.outputs.tags }}" | while read -r tag; do
+            echo "  - $tag"
+          done
+          echo ""
+          echo "Backend image can be pulled with:"
+          echo "  docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.extract_branch.outputs.branch }}"
+
+  build-frontend:
+    if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main'
+    needs: [linter, pytest]
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract branch name
+        shell: bash
+        run: |
+          BRANCH_NAME="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9._-]/-/g' | sed 's/^\-\+\|\-\+$//g' | sed 's/\-\+/-/g')
+          SANITIZED_BRANCH=$(echo "$SANITIZED_BRANCH" | sed 's/^[.-]//')
+          SANITIZED_BRANCH=$(echo "$SANITIZED_BRANCH" | cut -c1-128)
+          if [ -z "$SANITIZED_BRANCH" ]; then
+            SANITIZED_BRANCH="branch"
+          fi
+          echo "branch=$SANITIZED_BRANCH" >> $GITHUB_OUTPUT
+          echo "Original branch: $BRANCH_NAME"
+          echo "Sanitized branch: $SANITIZED_BRANCH"
+        id: extract_branch
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend
+          tags: |
+            type=ref,event=branch,suffix=-{{sha}}
+            type=ref,event=pr
+            type=raw,value=${{ steps.extract_branch.outputs.branch }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
+
+      - name: Output frontend image information
+        run: |
+          echo "Built and pushed frontend images:"
+          echo "${{ steps.meta.outputs.tags }}" | while read -r tag; do
+            echo "  - $tag"
+          done
+          echo ""
+          echo "Frontend image can be pulled with:"
+          echo "  docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.extract_branch.outputs.branch }}"
+
+  promote:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Log in to Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Extract version tag
+        id: version
+        run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Promote backend image to latest and version tag
+        run: |
+          SOURCE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:main-${{ github.sha }}"
+          echo "Promoting $SOURCE"
+          docker buildx imagetools create \
+            --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.version.outputs.tag }}" \
+            --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest" \
+            "$SOURCE"
+
+      - name: Promote frontend image to latest and version tag
+        run: |
+          SOURCE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:main-${{ github.sha }}"
+          echo "Promoting $SOURCE"
+          docker buildx imagetools create \
+            --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.version.outputs.tag }}" \
+            --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest" \
+            "$SOURCE"
+
+      - name: Output promoted image information
+        run: |
+          echo "Promoted images to:"
+          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.version.outputs.tag }}"
+          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest"
+          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.version.outputs.tag }}"
+          echo "  - ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest"
