@@ -66,6 +66,8 @@ const translations = {
     'index.sortName': 'Name',
     'index.sortPrice': 'Price',
     'index.sortDate': 'Date',
+    'index.onlyAvailable': 'Only available',
+    'index.onlyAvailableTooltip': 'Show only available and reserved items',
 
     // Browse Nav
     'browse.buy': 'Marketplace',
@@ -573,6 +575,8 @@ const translations = {
     'index.sortName': 'Name',
     'index.sortPrice': 'Preis',
     'index.sortDate': 'Datum',
+    'index.onlyAvailable': 'Nur verfügbar',
+    'index.onlyAvailableTooltip': 'Nur verfügbare und reservierte Artikel anzeigen',
 
     // Browse Nav
     'browse.buy': 'Marktplatz',

@@ -35,6 +35,8 @@ type BrowseItemsPageFilters = {
 const PAGE_SIZE = 20;
 // by default, show 'new' and 'used' items, don't show 'broken' items
 const DEFAULT_CONDITIONS: ConditionEnum[] = [0, 1];
+// statuses that count as "available": Available (2) and Reserved (3)
+const AVAILABLE_STATUSES: Status402Enum[] = [2, 3];
 const LS_KEY = 'indexViewMode';
 
 const Index = () => {
@@ -58,6 +60,7 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<ItemCategoryFilter>('all');
   const [selectedConditions, setSelectedConditions] = useState<ConditionEnum[]>(DEFAULT_CONDITIONS);
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('cards');
+  const [onlyAvailable, setOnlyAvailable] = useState(true);
 
   type SortField = 'name' | 'price' | 'date';
   type SortDir = 'asc' | 'desc';
@@ -118,7 +121,7 @@ const Index = () => {
     conditions: conditions,
     search: searchQuery,
     page: currentPage,
-    status: itemFilters?.status,
+    status: itemFilters?.status ?? (onlyAvailable ? AVAILABLE_STATUSES : undefined),
     minPrice: itemFilters?.minPrice,
     maxPrice: itemFilters?.maxPrice,
     salesTypes: itemFilters?.salesTypes,
@@ -234,6 +237,8 @@ const Index = () => {
             sortField={sortField}
             sortDir={sortDir}
             onSortClick={handleSortClick}
+            onlyAvailable={onlyAvailable}
+            onOnlyAvailableChange={setOnlyAvailable}
           />
 
           <div className="flex items-center justify-between">

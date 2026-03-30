@@ -1,4 +1,6 @@
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ItemCategoryFilter } from '@/hooks/types';
 import { cn } from '@/lib/utils';
@@ -19,6 +21,8 @@ type BrowseNavProps = {
   sortField: SortField;
   sortDir: SortDir;
   onSortClick: (field: SortField) => void;
+  onlyAvailable: boolean;
+  onOnlyAvailableChange: (value: boolean) => void;
   className?: string;
 };
 
@@ -36,6 +40,8 @@ export const BrowseNav = ({
   sortField,
   sortDir,
   onSortClick,
+  onlyAvailable,
+  onOnlyAvailableChange,
   className,
 }: BrowseNavProps) => {
   const { t } = useLanguage();
@@ -124,6 +130,23 @@ export const BrowseNav = ({
             onConditionsChange={onSelectedConditionsChange}
           />
         )}
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors hover:bg-muted">
+                <Checkbox
+                  id="only-available"
+                  checked={onlyAvailable}
+                  onCheckedChange={checked => onOnlyAvailableChange(checked === true)}
+                />
+                <span>{t('index.onlyAvailable')}</span>
+              </label>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p>{t('index.onlyAvailableTooltip')}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     </form>
   );
