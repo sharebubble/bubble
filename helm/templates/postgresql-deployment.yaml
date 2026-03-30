@@ -26,10 +26,6 @@ spec:
         fsGroup: 999
       containers:
         - name: postgresql
-          securityContext:
-            runAsUser: 999
-            runAsGroup: 999
-            allowPrivilegeEscalation: false
           image: "{{ .Values.postgresql.image.repository }}:{{ .Values.postgresql.image.tag }}"
           imagePullPolicy: {{ .Values.postgresql.image.pullPolicy }}
           ports:

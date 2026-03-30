@@ -43,7 +43,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: '::',
     port: 8080,
-    allowedHosts: ['fabian-local-dev.treibhausdonaufeld.at'],
+    allowedHosts: ['local-dev.sharebubble.org'],
     // Proxy API requests to Django backend
     proxy: {
       '/api/ws/': {

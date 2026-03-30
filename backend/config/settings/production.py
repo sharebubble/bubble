@@ -96,7 +96,7 @@ STORAGES = {
 # https://docs.djangoproject.com/en/dev/ref/settings/#default-from-email
 DEFAULT_FROM_EMAIL = env(
     "DJANGO_DEFAULT_FROM_EMAIL",
-    default="bubble <noreply@share.treibhausdonaufeld.at>",
+    default="bubble <noreply@sharebubble.org>",
 )
 # https://docs.djangoproject.com/en/dev/ref/settings/#server-email
 SERVER_EMAIL = env("DJANGO_SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
@@ -131,7 +131,7 @@ ANYMAIL = {
 # Tools that generate code samples can use SERVERS to point to the correct domain
 SPECTACULAR_SETTINGS["SERVERS"] = [
     {
-        "url": "https://share.treibhausdonaufeld.at",
+        "url": "https://demo.sharebubble.org",
         "description": "Production server",
     },
 ]

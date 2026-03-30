@@ -37,6 +37,7 @@ spec:
                 name: {{ include "bubble.fullname" . }}-backend
             - secretRef:
                 name: {{ include "bubble.fullname" . }}-backend
+            {{- include "bubble.secretsFrom" . | nindent 12 }}
           env:
             - name: DATABASE_PASSWORD
               valueFrom:
@@ -57,6 +58,7 @@ spec:
                 name: {{ include "bubble.fullname" . }}-backend
             - secretRef:
                 name: {{ include "bubble.fullname" . }}-backend
+            {{- include "bubble.secretsFrom" . | nindent 12 }}
           env:
             - name: DATABASE_PASSWORD
               valueFrom:
@@ -81,7 +83,12 @@ spec:
                 name: {{ include "bubble.fullname" . }}-backend
             - secretRef:
                 name: {{ include "bubble.fullname" . }}-backend
+            {{- include "bubble.secretsFrom" . | nindent 12 }}
           env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
             - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -96,16 +103,20 @@ spec:
                   name: {{ .Values.externalRedis.existingSecret | default (printf "%s-external-redis" (include "bubble.fullname" .)) }}
                   key: {{ .Values.externalRedis.existingSecretPasswordKey | default "password" }}
             {{- end }}
+            {{- if .Values.isbnLookup.enabled }}
+            - name: ISBN_LOOKUP_BASE_URL
+              value: {{ include "bubble.isbnLookup.url" . | quote }}
+            {{- end }}
           livenessProbe:
             httpGet:
-              path: /api/health/
+              path: /{{ .Values.backend.django.DJANGO_ADMIN_URL | default "admin/" }}
               port: http
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
           readinessProbe:
             httpGet:
-              path: /api/health/
+              path: /{{ .Values.backend.django.DJANGO_ADMIN_URL | default "admin/" }}
               port: http
             initialDelaySeconds: 10
             periodSeconds: 5

@@ -1,4 +1,4 @@
-# Default values for bubble.
+# Default values for sharebubble.
 # This is a YAML-formatted file.
 
 # Global settings
@@ -6,7 +6,20 @@ global:
   # Image pull secrets for private registries
   imagePullSecrets: []
   # Storage class for persistent volumes
-  storageClass: ''
+  storageClass: ""
+
+# ============================================================================
+# Shared Secrets Configuration
+# Optionally load secrets from an existing Kubernetes Secret into all
+# backend, worker, and beat deployments. Leave existingSecret empty to
+# disable this feature.
+# ============================================================================
+secretsFrom:
+  # Name of an existing Kubernetes Secret to load into all app deployments.
+  existingSecret: ""
+  # Optional prefix applied to every environment variable sourced from the
+  # existing secret (e.g. "APP_" turns KEY into APP_KEY).
+  envPrefix: ""
 
 # ============================================================================
 # Frontend Configuration
@@ -16,36 +29,87 @@ frontend:
   replicaCount: 1
 
   image:
-    repository: ghcr.io/treibhausdonaufeld/bubble-frontend
-    tag: 'latest'
+    repository: ghcr.io/sharebubble/bubble-frontend
+    tag: "latest"
     pullPolicy: IfNotPresent
 
   service:
     type: ClusterIP
     port: 8888
 
+  # ---------------------------------------------------------------------------
+  # Ingress (networking.k8s.io/v1)
+  # Simple, widely supported. Enable this for clusters that use a traditional
+  # ingress controller (nginx, traefik in ingress mode, etc.).
+  # Routing mirrors the nginx config: /api, /accounts, /admin → backend;
+  # everything else → frontend.
+  # Only one of ingress or gateway/httpRoute should be enabled at a time.
+  # ---------------------------------------------------------------------------
   ingress:
     enabled: true
-    className: ''
+    # Which prefixes to route to backend service
+    backendPrefixes:
+      - /api
+      - /accounts
+      - /admin
+    className: ""
     annotations: {}
-      # kubernetes.io/ingress.class: nginx
       # cert-manager.io/cluster-issuer: letsencrypt-prod
+      # nginx.ingress.kubernetes.io/proxy-body-size: 500m
     hosts:
-      - host: bubble.local
+      - host: sharebubble.local
         paths:
           - path: /
             pathType: Prefix
     tls: []
-    #  - secretName: bubble-tls
-    #    hosts:
-    #      - bubble.local
+    # - secretName: sharebubble-tls
+    #   hosts:
+    #     - sharebubble.local
+
+  # ---------------------------------------------------------------------------
+  # Gateway API (gateway.networking.k8s.io/v1)
+  # More expressive, supports advanced traffic management. Enable this for
+  # clusters with a Gateway API-capable controller (traefik v3+, nginx gateway,
+  # istio, etc.).
+  # Requires Gateway API CRDs to be installed in the cluster.
+  # Only one of ingress or gateway/httpRoute should be enabled at a time.
+  # ---------------------------------------------------------------------------
+  gateway:
+    enabled: false
+    # GatewayClass name. Leave empty to use the cluster default GatewayClass.
+    gatewayClassName: ""
+    annotations: {}
+    labels: {}
+    addresses: []
+    listeners:
+      - name: web
+        protocol: HTTP
+        port: 80
+        hostname: sharebubble.local
+        allowedRoutes:
+          namespaces:
+            from: Same
+
+  httpRoute:
+    enabled: false
+    annotations: {}
+    # Explicit parentRefs. When empty and gateway.enabled=true the chart
+    # derives the ref automatically from the first gateway listener.
+    parentRefs: []
+    hostnames:
+      - sharebubble.local
+    # Path prefixes routed to the backend service.
+    backendPrefixes:
+      - /api
+      - /accounts
+      - /admin
+    # Catch-all prefix served by the frontend service.
+    frontendPrefix: /
+    additionalRules: []
 
   resources:
-    limits:
-      cpu: 200m
-      memory: 256Mi
     requests:
-      cpu: 100m
+      cpu: 50m
       memory: 128Mi
 
   autoscaling:
@@ -60,8 +124,8 @@ frontend:
 
   # Environment variables
   env:
-    BACKEND_HOST: 'backend:8000'
-    VITE_SENTRY_DSN: ''
+    VITE_SENTRY_DSN: ""
+    VITE_SENTRY_ENVIRONMENT: ""
 
 # ============================================================================
 # Backend Configuration
@@ -71,8 +135,8 @@ backend:
   replicaCount: 1
 
   image:
-    repository: ghcr.io/treibhausdonaufeld/bubble-backend
-    tag: 'latest'
+    repository: ghcr.io/sharebubble/bubble-backend
+    tag: "latest"
     pullPolicy: IfNotPresent
 
   service:
@@ -80,11 +144,8 @@ backend:
     port: 8000
 
   resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
     requests:
-      cpu: 250m
+      cpu: 50m
       memory: 256Mi
 
   autoscaling:
@@ -99,80 +160,79 @@ backend:
 
   # Django settings
   django:
-    settingsModule: 'config.settings.production'
-    allowedHosts: 'localhost'
-    adminUrl: 'admin/'
-    debug: 'false'
-    logLevel: 'INFO'
-    secureSSLRedirect: 'true'
-    sessionCookieSecure: 'true'
-    httpXForwardedProto: 'https'
-    accountEmailVerification: 'true'
+    DJANGO_SETTINGS_MODULE: "config.settings.production"
+    DJANGO_ALLOWED_HOSTS: "localhost"
+    DJANGO_ADMIN_URL: "admin/"
+    DJANGO_DEBUG: "false"
+    DJANGO_LOG_LEVEL: "INFO"
+    DJANGO_SECURE_SSL_REDIRECT: "false"
+    DJANGO_SESSION_COOKIE_SECURE: "true"
+    HTTP_X_FORWARDED_PROTO: "https"
+    ALLOWED_CIDR_NETS: "172.16.0.0/12,192.168.0.0/16,127.0.0.1/32,10.0.0.0/8"
 
-  # Secrets - should be provided via secrets or external secret management
+  # Secrets - should be provided via a values override or external secret management
   secrets:
-    # Django secret key - REQUIRED
-    secretKey: ''
-    # Gemini API key for AI features
-    geminiApiKey: ''
-    # Mailgun configuration
-    mailgunApiKey: ''
-    mailgunDomain: ''
-
-  # Allowed CIDR networks
-  allowedCidrNets: ''
+    # Django secret key - autogenerated
+    secretKey: ""
 
   # Persistent volumes
   persistence:
     media:
       enabled: true
-      size: 10Gi
-      accessMode: ReadWriteOnce
-      storageClass: ''
-    staticfiles:
-      enabled: true
       size: 1Gi
       accessMode: ReadWriteOnce
-      storageClass: ''
+      storageClass: ""
+    staticfiles:
+      enabled: true
+      size: 100Mi
+      accessMode: ReadWriteOnce
+      storageClass: ""
 
 # ============================================================================
-# RQ Worker Configuration
+# Huey Worker Configuration
 # ============================================================================
 worker:
   enabled: true
   replicaCount: 1
 
   resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
     requests:
-      cpu: 250m
-      memory: 256Mi
-
-  autoscaling:
-    enabled: false
-    minReplicas: 1
-    maxReplicas: 10
-    targetCPUUtilizationPercentage: 80
+      cpu: 50m
+      memory: 128Mi
 
   nodeSelector: {}
   tolerations: []
   affinity: {}
 
 # ============================================================================
-# RQ Scheduler Configuration
+# ISBN Lookup Service Configuration
 # ============================================================================
-scheduler:
+isbnLookup:
   enabled: true
+
+  image:
+    repository: ghcr.io/sharebubble/isbn-search
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  service:
+    port: 8000
+
+  # Corresponds to DEBUG=1 inside the container.
+  debug: false
+
+  # Container-level security context.
+  # Override if the image requires a specific UID / does not run as non-root.
+  securityContext: {}
+  #  runAsNonRoot: true
+  #  runAsUser: 1000
+  #  allowPrivilegeEscalation: false
 
   resources:
     limits:
-      cpu: 200m
-      memory: 256Mi
-    requests:
-      cpu: 100m
       memory: 128Mi
+    requests:
+      memory: 64Mi
 
   nodeSelector: {}
   tolerations: []
@@ -187,32 +247,29 @@ postgresql:
 
   image:
     repository: pgvector/pgvector
-    tag: 'pg17'
+    tag: "pg17"
     pullPolicy: IfNotPresent
 
   # PostgreSQL credentials
   auth:
     database: bubble
     username: bubble
-    password: '' # Should be set via secrets
-    postgresPassword: '' # Should be set via secrets
+    password: "" # Should be set via secrets
+    postgresPassword: "" # Should be set via secrets
 
   service:
     port: 5432
 
   persistence:
     enabled: true
-    size: 10Gi
+    size: 1Gi
     accessMode: ReadWriteOnce
-    storageClass: ''
+    storageClass: ""
 
   resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
     requests:
-      cpu: 250m
-      memory: 256Mi
+      cpu: 10m
+      memory: 128Mi
 
   nodeSelector: {}
   tolerations: []
@@ -220,41 +277,103 @@ postgresql:
 
 # External PostgreSQL configuration (used when postgresql.enabled=false)
 externalPostgresql:
-  host: ''
+  host: ""
   port: 5432
   database: bubble
   username: bubble
-  password: ''
+  password: ""
   # Use existing secret for password
-  existingSecret: ''
-  existingSecretPasswordKey: 'password'
+  existingSecret: ""
+  existingSecretPasswordKey: "password"
+
+# ============================================================================
+# PgBouncer Configuration
+# ============================================================================
+pgbouncer:
+  # Enable PgBouncer as a connection pooler in front of PostgreSQL.
+  # When enabled, the backend, workers and beat connect to PgBouncer instead of
+  # PostgreSQL directly. Works with both internal (postgresql.enabled=true)
+  # and external PostgreSQL.
+  enabled: true
+
+  image:
+    repository: edoburu/pgbouncer
+    # tag: "v1.25.1-p0"
+    tag: "latest"
+    pullPolicy: IfNotPresent
+
+  replicaCount: 1
+
+  service:
+    port: 5432
+
+  # Connection pooling mode: session | transaction | statement
+  poolMode: transaction
+
+  # Auth type: md5 | scram-sha-256 | plain
+  # Must match PostgreSQL's authentication method
+  authType: scram-sha-256
+
+  # Maximum number of client connections allowed
+  maxClientConn: 1000
+
+  # Default pool size per database/user pair
+  defaultPoolSize: 20
+
+  # Minimum number of server connections kept open
+  minPoolSize: 5
+
+  # Extra connections added to the pool on high load
+  reservePoolSize: 5
+
+  # How long a client can wait for a connection before getting an error (seconds)
+  reservePoolTimeout: 3
+
+  # Seconds before an idle server connection is closed
+  serverIdleTimeout: 600
+
+  # Log client connect/disconnect events (0 = off, 1 = on)
+  logConnections: 1
+  logDisconnections: 1
+
+  # Any additional environment variables to pass to the container.
+  # See https://github.com/edoburu/docker-pgbouncer for the full list.
+  # extraEnv:
+  #   - name: SERVER_RESET_QUERY
+  #     value: "DISCARD ALL"
+  extraEnv: []
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
 
 # ============================================================================
 # Redis Configuration
 # ============================================================================
 redis:
-  # Use internal Redis instance (DragonflyDB)
+  # Use internal Redis instance
   enabled: true
 
   image:
-    repository: ghcr.io/dragonflydb/dragonfly
-    tag: 'latest'
+    repository: redis
+    tag: "latest"
     pullPolicy: IfNotPresent
 
   service:
     port: 6379
 
-  # DragonflyDB specific settings
   env:
-    DFLY_default_lua_flags: 'allow-undeclared-keys disable-atomicity'
+    DFLY_default_lua_flags: "allow-undeclared-keys disable-atomicity"
 
   resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
     requests:
-      cpu: 250m
-      memory: 256Mi
+      cpu: 20m
+      memory: 64Mi
 
   nodeSelector: {}
   tolerations: []
@@ -262,12 +381,12 @@ redis:
 
 # External Redis configuration (used when redis.enabled=false)
 externalRedis:
-  host: ''
+  host: ""
   port: 6379
-  password: ''
+  password: ""
   # Use existing secret for password
-  existingSecret: ''
-  existingSecretPasswordKey: 'password'
+  existingSecret: ""
+  existingSecretPasswordKey: "password"
   # Database number
   db: 0
 
@@ -277,7 +396,7 @@ externalRedis:
 serviceAccount:
   create: true
   annotations: {}
-  name: ''
+  name: ""
 
 # ============================================================================
 # Pod Security

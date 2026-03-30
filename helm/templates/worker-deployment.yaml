@@ -7,9 +7,11 @@ metadata:
     {{- include "bubble.labels" . | nindent 4 }}
     app.kubernetes.io/component: worker
 spec:
-  {{- if not .Values.worker.autoscaling.enabled }}
   replicas: {{ .Values.worker.replicaCount }}
-  {{- end }}
+  # Huey runs as a single coordinated process — use Recreate to avoid
+  # two workers racing on the same queue during rollouts.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       {{- include "bubble.selectorLabels" . | nindent 6 }}
@@ -37,12 +39,13 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
           imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
-          command: ["/start-rqworker"]
+          command: ["python", "manage.py", "run_huey"]
           envFrom:
             - configMapRef:
                 name: {{ include "bubble.fullname" . }}-backend
             - secretRef:
                 name: {{ include "bubble.fullname" . }}-backend
+            {{- include "bubble.secretsFrom" . | nindent 12 }}
           env:
             - name: DATABASE_PASSWORD
               valueFrom:
@@ -57,6 +60,10 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.externalRedis.existingSecret | default (printf "%s-external-redis" (include "bubble.fullname" .)) }}
                   key: {{ .Values.externalRedis.existingSecretPasswordKey | default "password" }}
+            {{- end }}
+            {{- if .Values.isbnLookup.enabled }}
+            - name: ISBN_LOOKUP_BASE_URL
+              value: {{ include "bubble.isbnLookup.url" . | quote }}
             {{- end }}
           resources:
             {{- toYaml .Values.worker.resources | nindent 12 }}

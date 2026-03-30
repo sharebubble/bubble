@@ -1,23 +1,23 @@
 apiVersion: v2
-name: bubble
-description: A Helm chart for Bubble - Community Network application
+name: sharebubble
+description: A Helm chart for Sharebubble
 type: application
-version: 0.1.0
-appVersion: '0.1.0'
+version: 0.2.0
+appVersion: '0.2.0'
 
 keywords:
   - bubble
+  - sharebubble
   - community
   - django
-  - celery
   - nginx
 
 maintainers:
-  - name: Treibhaus Donaufeld
-    url: https://github.com/treibhausdonaufeld
+  - name: Sharebubble community
+    url: https://github.com/sharebubble
 
-home: https://github.com/treibhausdonaufeld/bubble
+home: https://github.com/sharebubble/bubble
 sources:
-  - https://github.com/treibhausdonaufeld/bubble
+  - https://github.com/sharebubble/bubble
 
 dependencies: []

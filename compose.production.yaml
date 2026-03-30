@@ -89,8 +89,8 @@ services:
     <<: *backend
     command: /start-huey
 
-  isbn-lookup:
-    image: ghcr.io/treibhausdonaufeld/isbn-lookup:latest
+  isbn-search:
+    image: ghcr.io/sharebubble/isbn-search:latest
     environment:
       - PYTHONUNBUFFERED=1
       - DEBUG=1 # Uncomment to enable verbose logging

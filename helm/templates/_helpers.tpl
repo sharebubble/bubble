@@ -67,6 +67,14 @@ Frontend fullname
 {{- end }}
 
 {{/*
+Frontend Gateway fullname
+*/}}
+{{- define "bubble.frontend.gateway.fullname" -}}
+{{- printf "%s-frontend-gateway" (include "bubble.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+
+{{/*
 Backend fullname
 */}}
 {{- define "bubble.backend.fullname" -}}
@@ -81,24 +89,17 @@ Worker fullname
 {{- end }}
 
 {{/*
-Beat fullname
-*/}}
-{{- define "bubble.beat.fullname" -}}
-{{- printf "%s-beat" (include "bubble.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
-Scheduler fullname
-*/}}
-{{- define "bubble.scheduler.fullname" -}}
-{{- printf "%s-scheduler" (include "bubble.fullname" .) | trunc 63 | trimSuffix "-" }}
-{{- end }}
-
-{{/*
 PostgreSQL fullname
 */}}
 {{- define "bubble.postgresql.fullname" -}}
 {{- printf "%s-postgresql" (include "bubble.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+PgBouncer fullname
+*/}}
+{{- define "bubble.pgbouncer.fullname" -}}
+{{- printf "%s-pgbouncer" (include "bubble.fullname" .) | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
@@ -109,10 +110,27 @@ Redis fullname
 {{- end }}
 
 {{/*
+ISBN Lookup fullname
+*/}}
+{{- define "bubble.isbnLookup.fullname" -}}
+{{- printf "%s-isbn-search" (include "bubble.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+ISBN Lookup internal base URL
+*/}}
+{{- define "bubble.isbnLookup.url" -}}
+http://{{ include "bubble.isbnLookup.fullname" . }}:{{ .Values.isbnLookup.service.port }}
+{{- end }}
+
+{{/*
 PostgreSQL host
+Returns PgBouncer host when pgbouncer is enabled, otherwise direct PostgreSQL/external host.
 */}}
 {{- define "bubble.postgresql.host" -}}
-{{- if .Values.postgresql.enabled }}
+{{- if .Values.pgbouncer.enabled }}
+{{- include "bubble.pgbouncer.fullname" . }}
+{{- else if .Values.postgresql.enabled }}
 {{- include "bubble.postgresql.fullname" . }}
 {{- else }}
 {{- .Values.externalPostgresql.host }}
@@ -121,8 +139,33 @@ PostgreSQL host
 
 {{/*
 PostgreSQL port
+Returns PgBouncer port when pgbouncer is enabled, otherwise direct PostgreSQL/external port.
 */}}
 {{- define "bubble.postgresql.port" -}}
+{{- if .Values.pgbouncer.enabled }}
+{{- .Values.pgbouncer.service.port }}
+{{- else if .Values.postgresql.enabled }}
+{{- .Values.postgresql.service.port }}
+{{- else }}
+{{- .Values.externalPostgresql.port }}
+{{- end }}
+{{- end }}
+
+{{/*
+PostgreSQL direct host (bypasses PgBouncer — used by PgBouncer itself to reach Postgres)
+*/}}
+{{- define "bubble.postgresql.direct.host" -}}
+{{- if .Values.postgresql.enabled }}
+{{- include "bubble.postgresql.fullname" . }}
+{{- else }}
+{{- .Values.externalPostgresql.host }}
+{{- end }}
+{{- end }}
+
+{{/*
+PostgreSQL direct port (bypasses PgBouncer — used by PgBouncer itself to reach Postgres)
+*/}}
+{{- define "bubble.postgresql.direct.port" -}}
 {{- if .Values.postgresql.enabled }}
 {{- .Values.postgresql.service.port }}
 {{- else }}
@@ -204,11 +247,11 @@ Redis port
 Redis URL
 */}}
 {{- define "bubble.redis.url" -}}
-{{- if .Values.redis.enabled }}
+{{- if .Values.redis.enabled -}}
 redis://{{ include "bubble.redis.fullname" . }}:{{ .Values.redis.service.port }}/0
-{{- else if .Values.externalRedis.password }}
+{{- else if .Values.externalRedis.password -}}
 redis://:$(REDIS_PASSWORD)@{{ .Values.externalRedis.host }}:{{ .Values.externalRedis.port }}/{{ .Values.externalRedis.db }}
-{{- else }}
+{{- else -}}
 redis://{{ .Values.externalRedis.host }}:{{ .Values.externalRedis.port }}/{{ .Values.externalRedis.db }}
 {{- end }}
 {{- end }}
@@ -227,5 +270,20 @@ Image pull secrets
 {{- with .Values.global.imagePullSecrets }}
 imagePullSecrets:
   {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}
+
+{{/*
+Optional envFrom entry for a shared existing secret.
+Renders a secretRef block when .Values.secretsFrom.existingSecret is non-empty.
+Usage: {{- include "bubble.secretsFrom" . | nindent <N> }}
+*/}}
+{{- define "bubble.secretsFrom" -}}
+{{- if .Values.secretsFrom.existingSecret }}
+- secretRef:
+    name: {{ .Values.secretsFrom.existingSecret }}
+  {{- if .Values.secretsFrom.envPrefix }}
+  prefix: {{ .Values.secretsFrom.envPrefix }}
+  {{- end }}
 {{- end }}
 {{- end }}

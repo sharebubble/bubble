@@ -39,7 +39,7 @@ def _canonicalize_isbn(isbn: str) -> str | None:
 
 
 class ISBNLookupService:
-    """Service for fetching book metadata from the local isbn-lookup service."""
+    """Service for fetching book metadata from the local isbn-search service."""
 
     def get_book_details(self, isbn: str) -> tuple[dict, str]:
         """
@@ -84,7 +84,7 @@ class ISBNLookupService:
 
     def update_book_from_isbn(self, item: Item, isbn: str | None = None) -> None:
         """
-        Update Item fields and properties with metadata from the isbn-lookup service.
+        Update Item fields and properties with metadata from the isbn-search service.
         """
         props = dict(item.properties or {})
         isbn_to_use = isbn or props.get("isbn", "")
@@ -103,7 +103,7 @@ class ISBNLookupService:
 
     def _update_item_from_details(self, item: Item, props: dict, details: dict) -> None:
         """
-        Update item fields and property dict from the isbn-lookup response.
+        Update item fields and property dict from the isbn-search response.
 
         The service returns a dict with keys:
         - 'isbn': canonical ISBN-13

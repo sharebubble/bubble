@@ -73,7 +73,7 @@ class TestBookViewSetISBNUpdate:
 
         assert response.status_code == status.HTTP_200_OK
         mock_get.assert_called_once_with(
-            "http://isbn-lookup:8000/book/9780980200447", timeout=10
+            "http://isbn-search:8000/book/9780980200447", timeout=10
         )
 
         self.book.refresh_from_db()
