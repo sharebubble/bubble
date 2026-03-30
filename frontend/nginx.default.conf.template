@@ -20,8 +20,7 @@ server {
 
     # add default headers
     # Basic secure Content Security Policy: blocks all by default, allows self for scripts/styles/images/fonts, disallows inline JS, no external frames
-    # add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval'; script-src-elem 'self'; style-src 'self'; style-src-elem 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; connect-src 'self' https://*.sentry.io https://*.ingest.*.sentry.io" always;
-    add_header Content-Security-Policy "default-src 'self' https://*.sentry.io https://*.ingest.*.sentry.io; script-src 'self' 'unsafe-eval'; script-src-elem 'self'; style-src 'self'; style-src-elem 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; object-src 'none'; base-uri 'self'" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval'; script-src-elem 'self'; style-src 'self'; style-src-elem 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; object-src 'none'; base-uri 'self'" always;
     add_header X-XSS-Protection "1; mode=block";
     add_header Referrer-Policy 'strict-origin-when-cross-origin';
     add_header Permissions-Policy "geolocation=(),midi=(),sync-xhr=(),microphone=(self),camera=(self),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()";
