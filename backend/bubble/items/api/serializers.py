@@ -5,7 +5,7 @@ from djmoney.contrib.django_rest_framework import MoneyField
 from guardian.shortcuts import get_groups_with_perms, get_users_with_perms
 from rest_framework import serializers, status
 
-from bubble.items.models import Image, Item, SalesType, money_defaults
+from bubble.items.models import Image, Item, ItemStatus, SalesType, money_defaults
 
 
 class ItemOwnerException(serializers.ValidationError):
@@ -111,6 +111,12 @@ class ItemSerializer(serializers.ModelSerializer):
         - donate / borrow:  price must be null (auto-cleared on sales_type change)
         - want_buy / want_rent: price is unconstrained (any value or null)
 
+        Enforces status restrictions per sales_type:
+        - sell / donate / want_buy:   Draft, Available, Reserved, Sold
+        - rent / borrow / want_rent:  Draft, Available, Rented
+
+        Processing (1) is not a valid status for any listing type.
+
         Respects partial updates: missing fields fall back to instance values.
         When sales_type changes to donate/borrow, price is automatically cleared.
         """
@@ -122,6 +128,10 @@ class ItemSerializer(serializers.ModelSerializer):
         price = attrs.get(
             "price",
             getattr(instance, "price", None) if instance else None,
+        )
+        item_status = attrs.get(
+            "status",
+            getattr(instance, "status", None) if instance else None,
         )
 
         # Check if sales_type is being changed in this request
@@ -149,6 +159,20 @@ class ItemSerializer(serializers.ModelSerializer):
                     )
 
         # want_buy / want_rent: no price constraint
+
+        # Validate status is allowed for the given sales_type
+        if item_status is not None and sales_type is not None:
+            allowed = ItemStatus.for_sales_type(sales_type)
+            if item_status not in allowed:
+                raise serializers.ValidationError(
+                    {
+                        "status": _(
+                            "Status '%(status)s' is not valid for listing type "
+                            "'%(sales_type)s'."
+                        )
+                        % {"status": item_status, "sales_type": sales_type}
+                    }
+                )
 
         return super().validate(attrs)
 

@@ -107,12 +107,45 @@ const MyItems = () => {
     updateStatusMutation.mutate({ itemId, status: statusEnum });
   };
 
+  /** Returns the SelectItem options appropriate for the given sales_type. */
+  const getStatusOptions = (salesType: SalesTypeEnum | undefined) => {
+    const sellDonate = ['sell', 'donate', 'want_buy'];
+    const rentBorrow = ['rent', 'borrow', 'want_rent'];
+    if (salesType && sellDonate.includes(salesType)) {
+      return (
+        <>
+          <SelectItem value="0">{t('status.draft')}</SelectItem>
+          <SelectItem value="2">{t('status.available')}</SelectItem>
+          <SelectItem value="3">{t('status.reserved')}</SelectItem>
+          <SelectItem value="5">{t('status.sold')}</SelectItem>
+        </>
+      );
+    }
+    if (salesType && rentBorrow.includes(salesType)) {
+      return (
+        <>
+          <SelectItem value="0">{t('status.draft')}</SelectItem>
+          <SelectItem value="2">{t('status.available')}</SelectItem>
+          <SelectItem value="4">{t('status.rented')}</SelectItem>
+        </>
+      );
+    }
+    // fallback: all options
+    return (
+      <>
+        <SelectItem value="0">{t('status.draft')}</SelectItem>
+        <SelectItem value="2">{t('status.available')}</SelectItem>
+        <SelectItem value="3">{t('status.reserved')}</SelectItem>
+        <SelectItem value="4">{t('status.rented')}</SelectItem>
+        <SelectItem value="5">{t('status.sold')}</SelectItem>
+      </>
+    );
+  };
+
   const getStatusColor = (status: Status402Enum) => {
     switch (status) {
       case 0:
         return 'bg-muted text-muted-foreground'; // draft
-      case 1:
-        return 'bg-info text-info-foreground'; // processing
       case 2:
         return 'bg-success text-success-foreground'; // available
       case 3:
@@ -120,7 +153,7 @@ const MyItems = () => {
       case 4:
         return 'bg-primary text-primary-foreground'; // rented
       case 5:
-        return 'bg-destructive text-destructive-foreground'; // sold
+        return 'bg-destructive text-destructive-foreground'; // sold/gone
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -130,8 +163,6 @@ const MyItems = () => {
     switch (status) {
       case 0:
         return t('status.draft');
-      case 1:
-        return t('status.processing');
       case 2:
         return t('status.available');
       case 3:
@@ -282,11 +313,7 @@ const MyItems = () => {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="0">{t('status.draft')}</SelectItem>
-                          <SelectItem value="2">{t('status.available')}</SelectItem>
-                          <SelectItem value="3">{t('status.reserved')}</SelectItem>
-                          <SelectItem value="4">{t('status.rented')}</SelectItem>
-                          <SelectItem value="5">{t('status.sold')}</SelectItem>
+                          {getStatusOptions(item.sales_type as SalesTypeEnum | undefined)}
                         </SelectContent>
                       </Select>
                     </TableCell>
@@ -537,11 +564,7 @@ const MyItems = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0">{t('status.draft')}</SelectItem>
-                        <SelectItem value="2">{t('status.available')}</SelectItem>
-                        <SelectItem value="3">{t('status.reserved')}</SelectItem>
-                        <SelectItem value="4">{t('status.rented')}</SelectItem>
-                        <SelectItem value="5">{t('status.sold')}</SelectItem>
+                        {getStatusOptions(item.sales_type as SalesTypeEnum | undefined)}
                       </SelectContent>
                     </Select>
                   </div>

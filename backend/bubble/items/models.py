@@ -28,7 +28,6 @@ class ConditionType(models.IntegerChoices):
 
 class ItemStatus(models.IntegerChoices):
     DRAFT = 0, _("Draft")
-    PROCESSING = 1, _("Processing")
     AVAILABLE = 2, _("Available")
     RESERVED = 3, _("Reserved")
     RENTED = 4, _("Rented")
@@ -37,6 +36,17 @@ class ItemStatus(models.IntegerChoices):
     @classmethod
     def published(cls):
         return (cls.AVAILABLE, cls.RESERVED, cls.RENTED, cls.SOLD)
+
+    @classmethod
+    def for_sales_type(cls, sales_type: str) -> tuple:
+        """Return the valid statuses for a given sales_type."""
+        sell_donate_types = ("sell", "donate", "want_buy")
+        rent_borrow_types = ("rent", "borrow", "want_rent")
+        if sales_type in sell_donate_types:
+            return (cls.DRAFT, cls.AVAILABLE, cls.RESERVED, cls.SOLD)
+        if sales_type in rent_borrow_types:
+            return (cls.DRAFT, cls.AVAILABLE, cls.RENTED)
+        return tuple(cls.values)
 
 
 class RentalPeriodType(models.TextChoices):

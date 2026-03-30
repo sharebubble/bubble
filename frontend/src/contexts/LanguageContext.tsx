@@ -381,7 +381,6 @@ const translations = {
 
     // Item Status
     'status.draft': 'Draft',
-    'status.processing': 'Processing',
     'status.available': 'Available',
     'status.reserved': 'Reserved',
     'status.rented': 'Rented',
@@ -900,7 +899,6 @@ const translations = {
 
     // Item Status
     'status.draft': 'Entwurf',
-    'status.processing': 'In Bearbeitung',
     'status.available': 'Verfügbar',
     'status.reserved': 'Reserviert',
     'status.rented': 'Vermietet',

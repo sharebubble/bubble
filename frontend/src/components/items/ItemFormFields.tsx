@@ -403,12 +403,44 @@ export const PricingFields = ({
 interface StatusFieldProps {
   formData: {
     status: Status402Enum | '';
+    sales_type?: SalesTypeEnum | '';
   };
   setFormData: (data: any) => void;
   disabled?: boolean;
   fieldStates?: FieldStates;
   onFieldChange?: (fieldName: string, value: unknown) => void;
 }
+
+const SELL_DONATE_STATUSES: { value: Status402Enum; label: string }[] = [
+  { value: 0, label: 'draft' },
+  { value: 2, label: 'available' },
+  { value: 3, label: 'reserved' },
+  { value: 5, label: 'sold' },
+];
+
+const RENT_BORROW_STATUSES: { value: Status402Enum; label: string }[] = [
+  { value: 0, label: 'draft' },
+  { value: 2, label: 'available' },
+  { value: 4, label: 'rented' },
+];
+
+const ALL_STATUSES: { value: Status402Enum; label: string }[] = [
+  { value: 0, label: 'draft' },
+  { value: 2, label: 'available' },
+  { value: 3, label: 'reserved' },
+  { value: 4, label: 'rented' },
+  { value: 5, label: 'sold' },
+];
+
+const getStatusesForSalesType = (salesType: SalesTypeEnum | '' | undefined) => {
+  if (salesType === 'sell' || salesType === 'donate' || salesType === 'want_buy') {
+    return SELL_DONATE_STATUSES;
+  }
+  if (salesType === 'rent' || salesType === 'borrow' || salesType === 'want_rent') {
+    return RENT_BORROW_STATUSES;
+  }
+  return ALL_STATUSES;
+};
 
 export const StatusField = ({
   formData,
@@ -419,14 +451,7 @@ export const StatusField = ({
 }: StatusFieldProps) => {
   const { t } = useLanguage();
 
-  const statuses = [
-    { value: 0, label: 'draft' },
-    { value: 1, label: 'processing' },
-    { value: 2, label: 'available' },
-    { value: 3, label: 'reserved' },
-    { value: 4, label: 'rented' },
-    { value: 5, label: 'sold' },
-  ];
+  const statuses = getStatusesForSalesType(formData.sales_type);
 
   return (
     <div className="flex-1 max-w-xs space-y-2">
@@ -455,7 +480,7 @@ export const StatusField = ({
           <SelectContent>
             {statuses.map(status => (
               <SelectItem key={status.value} value={status.value.toString()}>
-                {t(`status.${status.label.toLowerCase()}`)}
+                {t(`status.${status.label}`)}
               </SelectItem>
             ))}
           </SelectContent>
