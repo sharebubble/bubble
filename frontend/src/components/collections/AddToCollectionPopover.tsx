@@ -12,7 +12,7 @@ import {
   useItemCollections,
 } from '@/hooks/useCollections';
 import { cn } from '@/lib/utils';
-import { BookMarked, Check, Plus } from 'lucide-react';
+import { BookMarked, Check, Loader2, Plus } from 'lucide-react';
 import { useState } from 'react';
 
 interface AddToCollectionPopoverProps {
@@ -34,21 +34,25 @@ export const AddToCollectionPopover = ({
 }: AddToCollectionPopoverProps) => {
   const { user } = useAuth();
   const { t } = useLanguage();
-  const { data: allCollections, isLoading } = useAllCollections({ enabled: !!user });
-  const collections = (allCollections ?? []).filter(col => col.can_add_items);
-  const addMutation = useAddItemToCollection();
-  const removeMutation = useRemoveItemFromCollection();
-  const createMutation = useCreateCollection();
-  const { data: itemCollections } = useItemCollections(user ? itemId : undefined);
-  const itemCollectionIds = new Set((itemCollections ?? []).map(c => c.id));
 
   const [open, setOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const [showCreate, setShowCreate] = useState(false);
 
+  const { data: allCollections, isLoading } = useAllCollections({ enabled: !!user && open });
+  const collections = (allCollections ?? []).filter(col => col.can_add_items);
+  const addMutation = useAddItemToCollection();
+  const removeMutation = useRemoveItemFromCollection();
+  const createMutation = useCreateCollection();
+  const { data: itemCollections, isLoading: isLoadingItemCollections } = useItemCollections(
+    user && open ? itemId : undefined,
+  );
+  const itemCollectionIds = new Set((itemCollections ?? []).map(c => c.id));
+
   if (!user) return null;
 
   const collectionContainsItem = (collectionId: string) => itemCollectionIds.has(collectionId);
+  const isLoadingCollections = isLoading || isLoadingItemCollections;
 
   const handleToggle = (collectionId: string, alreadyIn: boolean) => {
     if (alreadyIn) {
@@ -93,9 +97,13 @@ export const AddToCollectionPopover = ({
       <PopoverContent className="w-64 p-3 space-y-2" align="end" onClick={e => e.stopPropagation()}>
         <p className="text-sm font-medium">{t('collections.myCollections')}</p>
 
-        {isLoading && <p className="text-xs text-muted-foreground">{t('common.loading')}</p>}
+        {isLoadingCollections && (
+          <div className="flex items-center justify-center py-2">
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          </div>
+        )}
 
-        {!isLoading && (!collections || collections.length === 0) && (
+        {!isLoadingCollections && (!collections || collections.length === 0) && (
           <p className="text-xs text-muted-foreground">{t('collections.noCollections')}</p>
         )}
 
