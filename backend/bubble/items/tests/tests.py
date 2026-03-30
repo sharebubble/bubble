@@ -509,7 +509,7 @@ class ItemFilterAPITestCase(TestCase):
             user=self.user,
             sales_type=SalesType.SELL,
             price=Decimal("7.00"),
-            status=1,  # assuming DRAFT
+            status=ItemStatus.DRAFT,
             category="tools",
         )
         self.item_available = Item.objects.create(
@@ -533,7 +533,7 @@ class ItemFilterAPITestCase(TestCase):
 
     def test_filter_by_status_multiple_params(self):
         # Test the recommended way with multiple status parameters
-        url = reverse("api:item-list") + "?status=1&status=2"
+        url = reverse("api:item-list") + "?status=0&status=2"
         response = self.client.get(url)
         assert response.status_code == status.HTTP_200_OK
         names = {i["name"] for i in response.json()["results"]}
@@ -609,7 +609,7 @@ class AnonymousUserItemAccessTestCase(TestCase):
             user=self.user,
             sales_type=SalesType.SELL,
             price=Decimal("10.00"),
-            status=ItemStatus.PROCESSING,  # Not published - not visible to anonymous
+            status=ItemStatus.DRAFT,  # Not published - not visible to anonymous
             visibility=VisibilityType.PUBLIC,
             category="TOOLS",
         )
