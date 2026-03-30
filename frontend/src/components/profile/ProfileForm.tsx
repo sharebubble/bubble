@@ -1,48 +1,47 @@
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
+import { useProfile } from '@/hooks/useProfile';
+import { useProfileFieldAutoSave } from '@/hooks/useProfileFieldAutoSave';
+import {
+  useNotificationPreferences,
+  useUpdateNotificationPreferences,
+} from '@/hooks/useNotificationPreferences';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { cn } from '@/lib/utils';
 
 const profileSchema = z.object({
   name: z.string().optional(),
-  bio: z.string().optional(),
   phone: z.string().optional(),
-  address: z.string().optional(),
-  email_reminder: z.boolean(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 export const ProfileForm = () => {
   const { data: profile, isLoading } = useProfile();
-  const updateProfile = useUpdateProfile();
+  const { fieldStates, saveField } = useProfileFieldAutoSave();
+  const { data: notifPrefs, isLoading: notifLoading } = useNotificationPreferences();
+  const updateNotifPrefs = useUpdateNotificationPreferences();
   const { t } = useLanguage();
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: '',
-      bio: '',
       phone: '',
-      address: '',
-      email_reminder: true,
     },
   });
 
@@ -50,16 +49,24 @@ export const ProfileForm = () => {
     if (profile) {
       form.reset({
         name: profile.name ?? '',
-        bio: profile.bio ?? '',
         phone: profile.phone ?? '',
-        address: profile.address ?? '',
-        email_reminder: profile.email_reminder ?? true,
       });
     }
   }, [profile, form]);
 
-  const onSubmit = (data: ProfileFormData) => {
-    updateProfile.mutate(data);
+  const getFieldBorderClass = (fieldName: string) => {
+    const status = fieldStates[fieldName]?.status;
+    if (status === 'success') return 'border-green-500 focus-visible:ring-green-500';
+    if (status === 'error') return 'border-destructive focus-visible:ring-destructive';
+    return '';
+  };
+
+  const FieldStatusIcon = ({ fieldName }: { fieldName: string }) => {
+    const status = fieldStates[fieldName]?.status;
+    if (status === 'saving')
+      return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
+    if (status === 'success') return <Check className="h-4 w-4 text-green-500" />;
+    return null;
   };
 
   if (isLoading) {
@@ -73,44 +80,54 @@ export const ProfileForm = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{t('profile.title')}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {/* Read-only account fields */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div className="space-y-1">
-            <p className="text-sm font-medium leading-none">{t('profile.username')}</p>
-            <p className="text-sm text-muted-foreground border rounded-md px-3 py-2 bg-muted/40">
-              {profile?.username ?? '—'}
-            </p>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('profile.title')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Read-only account fields */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div className="space-y-1">
+              <p className="text-sm font-medium leading-none">{t('profile.username')}</p>
+              <p className="text-sm text-muted-foreground border rounded-md px-3 py-2 bg-muted/40">
+                {profile?.username ?? '—'}
+              </p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium leading-none">{t('profile.email')}</p>
+              <p className="text-sm text-muted-foreground border rounded-md px-3 py-2 bg-muted/40">
+                {profile?.email ?? '—'}
+              </p>
+            </div>
           </div>
-          <div className="space-y-1">
-            <p className="text-sm font-medium leading-none">{t('profile.email')}</p>
-            <p className="text-sm text-muted-foreground border rounded-md px-3 py-2 bg-muted/40">
-              {profile?.email ?? '—'}
-            </p>
-          </div>
-        </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('profile.name')}</FormLabel>
-                  <FormControl>
-                    <Input placeholder={t('profile.name')} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+          <Form {...form}>
+            <form className="space-y-6">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('profile.name')}</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          placeholder={t('profile.name')}
+                          {...field}
+                          className={cn('pr-8', getFieldBorderClass('name'))}
+                          onBlur={() => saveField('name', field.value)}
+                        />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                          <FieldStatusIcon fieldName="name" />
+                        </div>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="phone"
@@ -118,69 +135,61 @@ export const ProfileForm = () => {
                   <FormItem>
                     <FormLabel>{t('profile.phone')}</FormLabel>
                     <FormControl>
-                      <Input placeholder={t('profile.phone')} {...field} />
+                      <div className="relative">
+                        <Input
+                          placeholder={t('profile.phone')}
+                          {...field}
+                          className={cn('pr-8', getFieldBorderClass('phone'))}
+                          onBlur={() => saveField('phone', field.value)}
+                        />
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                          <FieldStatusIcon fieldName="phone" />
+                        </div>
+                      </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+
+      {/* Notifications Card */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>{t('profile.notifications')}</CardTitle>
+          <p className="text-sm text-muted-foreground">{t('profile.notificationsDesc')}</p>
+        </CardHeader>
+        <CardContent>
+          {notifLoading ? (
+            <div className="flex justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin" />
             </div>
-
-            <FormField
-              control={form.control}
-              name="address"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('profile.address')}</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder={t('profile.address')}
-                      className="min-h-[80px]"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="bio"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('profile.bio')}</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder={t('profile.bio')} className="min-h-[100px]" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="email_reminder"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                  <FormControl>
-                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                  <div className="space-y-1 leading-none">
-                    <FormLabel>{t('profile.emailReminder')}</FormLabel>
-                    <FormDescription>{t('profile.emailReminderDesc')}</FormDescription>
-                  </div>
-                </FormItem>
-              )}
-            />
-
-            <Button type="submit" disabled={updateProfile.isPending} className="w-full">
-              {updateProfile.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {t('profile.update')}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <Checkbox
+                  checked={notifPrefs?.rocketchat_new_message ?? false}
+                  disabled={updateNotifPrefs.isPending}
+                  onCheckedChange={checked => {
+                    updateNotifPrefs.mutate({ rocketchat_new_message: !!checked });
+                  }}
+                />
+                <div className="space-y-1 leading-none">
+                  <p className="text-sm font-medium leading-none">
+                    {t('profile.rocketchatNewMessage')}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {t('profile.rocketchatNewMessageDesc')}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </>
   );
 };

@@ -7,6 +7,7 @@ from guardian.shortcuts import get_users_with_perms
 
 from bubble.core.websocket_signals import send_message_notification
 from bubble.items.models import Item, ItemStatus, SalesType
+from bubble.notifications.dispatch import dispatch_notification
 
 from .models import Booking, BookingStatus, Message
 
@@ -27,6 +28,11 @@ def notify_new_message(sender, instance: Message, created, **kwargs):
         item, only_with_perms_in=["change_item"], with_group_users=False
     )
 
+    notification_context = {
+        "message": instance.message,
+        "booking_uuid": str(instance.booking.id),
+    }
+
     if instance.booking.user != instance.sender:
         send_message_notification(
             instance.booking.user_id,  # type: ignore[union-attr]
@@ -37,6 +43,9 @@ def notify_new_message(sender, instance: Message, created, **kwargs):
             "Sent new message notification to user %s for message %s",
             instance.booking.user.username,
             instance.pk,
+        )
+        dispatch_notification(
+            instance.booking.user_id, "new_message", notification_context
         )
     else:
         # Send notification to each user with change permission (except the sender)
@@ -52,6 +61,7 @@ def notify_new_message(sender, instance: Message, created, **kwargs):
                     getattr(user, "username", str(user)),
                     instance.pk,
                 )
+                dispatch_notification(user.id, "new_message", notification_context)
 
 
 @receiver(post_save, sender=Booking)

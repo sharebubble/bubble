@@ -395,6 +395,11 @@ const translations = {
     'profile.address': 'Address',
     'profile.emailReminder': 'Email reminders',
     'profile.emailReminderDesc': 'Receive email reminders for bookings and messages',
+    'profile.notifications': 'Notifications',
+    'profile.notificationsDesc': 'Configure external notification channels',
+    'profile.rocketchatNewMessage': 'New message via RocketChat',
+    'profile.rocketchatNewMessageDesc':
+      'Receive a RocketChat notification when you get a new message in Bubble',
     'profile.username': 'Username',
     'profile.email': 'Email',
     'profile.readOnly': 'Read-only',
@@ -913,6 +918,11 @@ const translations = {
     'profile.address': 'Adresse',
     'profile.emailReminder': 'E-Mail-Erinnerungen',
     'profile.emailReminderDesc': 'E-Mail-Erinnerungen für Buchungen und Nachrichten erhalten',
+    'profile.notifications': 'Benachrichtigungen',
+    'profile.notificationsDesc': 'Externe Benachrichtigungskanäle konfigurieren',
+    'profile.rocketchatNewMessage': 'Neue Nachricht via RocketChat',
+    'profile.rocketchatNewMessageDesc':
+      'RocketChat-Benachrichtigung bei neuer Nachricht in Bubble erhalten',
     'profile.username': 'Benutzername',
     'profile.email': 'E-Mail',
     'profile.readOnly': 'Nur lesen',

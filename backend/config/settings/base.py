@@ -125,6 +125,7 @@ LOCAL_APPS = [
     "bubble.favorites.apps.FavoritesConfig",
     "bubble.books.apps.BooksConfig",
     "bubble.collections.apps.CollectionsConfig",
+    "bubble.notifications.apps.NotificationsConfig",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -483,6 +484,14 @@ CONSTANCE_CONFIG = {
         "authenticated",
         "Select default item visibility for new items. Options: public, authenticated, internal, hidden",
         "item_visibility",
+    ),
+    "ROCKETCHAT_WEBHOOK_URL": (
+        env("ROCKETCHAT_WEBHOOK_URL", default=""),
+        "RocketChat incoming webhook URL for external notifications",
+    ),
+    "ROCKETCHAT_CHANNEL": (
+        env("ROCKETCHAT_CHANNEL", default=""),
+        "RocketChat channel to post notifications into",
     ),
 }
 

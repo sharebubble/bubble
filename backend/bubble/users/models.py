@@ -1,5 +1,7 @@
+import logging
 import uuid
 
+from constance import config
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import CharField
@@ -8,6 +10,7 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
+from bubble.notifications.models import NotificationPreference
 from config.settings.base import AUTH_USER_MODEL
 
 
@@ -56,3 +59,23 @@ class Profile(models.Model):
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
+        _setup_default_notification_preferences(instance)
+
+
+def _setup_default_notification_preferences(user) -> None:
+    """Enable RocketChat new-message notifications by default.
+
+    Only enables the preference when the webhook URL is configured.
+    """
+    try:
+        webhook_configured = bool(config.ROCKETCHAT_WEBHOOK_URL)
+        NotificationPreference.objects.get_or_create(
+            user=user,
+            provider_type=NotificationPreference.ProviderType.ROCKETCHAT,
+            event_type=NotificationPreference.EventType.NEW_MESSAGE,
+            defaults={"enabled": webhook_configured},
+        )
+    except Exception:
+        logging.getLogger(__name__).exception(
+            "Failed to set up default notification preferences for user %s", user.pk
+        )
