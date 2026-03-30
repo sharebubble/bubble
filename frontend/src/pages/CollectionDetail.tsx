@@ -35,7 +35,7 @@ import {
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import { formatPrice } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
-import { ArrowLeft, BookMarked, Edit3, History, Trash2 } from 'lucide-react';
+import { ArrowLeft, BookMarked, Edit3, History, ShoppingCart, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 
