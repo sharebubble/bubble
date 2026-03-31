@@ -6,6 +6,9 @@ export type Language = (typeof LANGUAGES)[number];
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
+  /** Apply a language coming from an external source (e.g. profile API)
+   *  without triggering a save-back. */
+  syncLanguage: (lang: Language) => void;
   t: (key: string) => string;
 }
 
@@ -1078,12 +1081,17 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('bubble-language', lang);
   };
 
+  const syncLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('bubble-language', lang);
+  };
+
   const t = (key: string): string => {
     return translations[language][key as keyof (typeof translations)['en']] || key;
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, syncLanguage, t }}>
       {children}
     </LanguageContext.Provider>
   );

@@ -184,6 +184,12 @@ class Item(models.Model):
         default=ItemStatus.DRAFT,
     )
 
+    publish_notification_sent = models.BooleanField(
+        default=False,
+        editable=False,
+        help_text=_("Set to True after the first publish notification has been sent."),
+    )
+
     visibility = models.IntegerField(
         choices=VisibilityType,
         default=VisibilityType.AUTHENTICATED,

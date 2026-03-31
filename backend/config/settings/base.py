@@ -47,7 +47,7 @@ DEBUG = env.bool("DJANGO_DEBUG", False)
 # In Windows, this must be set to your system time zone.
 TIME_ZONE = "Europe/Vienna"
 # https://docs.djangoproject.com/en/dev/ref/settings/#language-code
-LANGUAGE_CODE = "en"
+LANGUAGE_CODE = env.str("LANGUAGE_CODE", default="en")
 
 LANGUAGES = [
     ("de", _("Deutsch")),
@@ -492,6 +492,10 @@ CONSTANCE_CONFIG = {
     "ROCKETCHAT_CHANNEL": (
         env("ROCKETCHAT_CHANNEL", default=""),
         "RocketChat channel to post notifications into",
+    ),
+    "ROCKETCHAT_USER_UNDERSCORES": (
+        env.bool("ROCKETCHAT_USER_UNDERSCORES", default=True),
+        "Replace dot in usernames with underscores for sending notification to rocketchat",
     ),
 }
 

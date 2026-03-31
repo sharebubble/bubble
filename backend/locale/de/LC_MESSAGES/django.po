@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-10-17 15:09+0200\n"
+"POT-Creation-Date: 2026-03-31 19:59+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,171 +16,205 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: bubble/books/services.py
-msgid "Invalid ISBN format: %(isbn)s"
-msgstr "Ungültiges ISBN-Format: %(isbn)s"
-
-#: bubble/bookings/api/serializers.py:72
+#: bubble/bookings/api/serializers.py:76
 msgid "You already have a pending booking request for this item."
 msgstr "Sie haben bereits eine ausstehende Buchungsanfrage für diesen Artikel."
 
-#: bubble/bookings/api/serializers.py:86
+#: bubble/bookings/api/serializers.py:90
 msgid "Offer can only be set for pending bookings."
 msgstr "Ein Angebot kann nur für ausstehende Buchungen gesetzt werden."
 
-#: bubble/bookings/api/serializers.py:97
+#: bubble/bookings/api/serializers.py:101
 msgid "Counter-offer can only be set for pending bookings."
 msgstr "Ein Gegenangebot kann nur für ausstehende Buchungen gesetzt werden."
 
-#: bubble/bookings/api/serializers.py:113
+#: bubble/bookings/api/serializers.py:117
 msgid "Invalid status change."
 msgstr "Ungültige Statusänderung."
 
-#: bubble/bookings/api/serializers.py:123
+#: bubble/bookings/api/serializers.py:127
 msgid "You cannot set an offer if you're not the owner."
 msgstr "Sie können kein Angebot setzen, wenn Sie nicht der Eigentümer sind."
 
-#: bubble/bookings/api/serializers.py:133
+#: bubble/bookings/api/serializers.py:137
 msgid "You cannot set a counter-offer on your own booking."
 msgstr "Sie können kein Gegenangebot für Ihre eigene Buchung setzen."
 
-#: bubble/bookings/api/views.py:87
+#: bubble/bookings/api/views.py:104
 #, python-brace-format
 msgid "Booking request created for {offer}"
 msgstr "Buchungsanfrage erstellt für {offer}"
 
-#: bubble/bookings/api/views.py:98
-#| msgid "Booking updated: {fields_updated}"
+#: bubble/bookings/api/views.py:115
+#, python-brace-format
 msgid "Booking status updated to {status}"
 msgstr "Buchungs-Status aktualisiert: {status}"
 
-#: bubble/bookings/api/views.py:102
+#: bubble/bookings/api/views.py:119
 #, python-brace-format
 msgid "Booking updated: {fields_updated}"
 msgstr "Buchung aktualisiert: {fields_updated}"
 
-#: bubble/bookings/api/views.py:145
+#: bubble/bookings/api/views.py:162
 msgid "Only 'is_read' field can be updated."
 msgstr "Nur das Feld 'is_read' kann aktualisiert werden."
 
-#: bubble/bookings/models.py:16
+#: bubble/bookings/models.py:20
 msgid "Pending"
 msgstr "Ausstehend"
 
-#: bubble/bookings/models.py:17
+#: bubble/bookings/models.py:21
 msgid "Cancelled"
 msgstr "Abgebrochen"
 
-#: bubble/bookings/models.py:18
+#: bubble/bookings/models.py:22
 msgid "Confirmed"
 msgstr "Bestätigt"
 
-#: bubble/bookings/models.py:19
+#: bubble/bookings/models.py:23
 msgid "Completed"
 msgstr "Abgeschlossen"
 
-#: bubble/bookings/models.py:20
+#: bubble/bookings/models.py:24
 msgid "Rejected"
 msgstr "Abgelehnt"
 
-#: bubble/bookings/models.py:41
+#: bubble/bookings/models.py:45
 msgid "Status"
 msgstr "Status"
 
-#: bubble/bookings/models.py:51
+#: bubble/bookings/models.py:55
 msgid "Time From"
 msgstr "Von"
 
-#: bubble/bookings/models.py:53
+#: bubble/bookings/models.py:57
 msgid "Time To"
 msgstr "Bis"
 
-#: bubble/bookings/models.py:60
+#: bubble/bookings/models.py:64
 msgid "Offer"
 msgstr "Angebot"
 
-#: bubble/bookings/models.py:61
+#: bubble/bookings/models.py:65
 msgid "Offered price for the booking"
 msgstr "Angebotener Preis für die Buchung"
 
-#: bubble/bookings/models.py:68
+#: bubble/bookings/models.py:72
 msgid "Counter Offer"
 msgstr "Gegenangebot"
 
-#: bubble/bookings/models.py:69
+#: bubble/bookings/models.py:73
 msgid "Counter offer price for the booking"
 msgstr "Gegenangebotspreis für die Buchung"
 
-#: bubble/bookings/signals.py:75
+#: bubble/bookings/signals.py:87
 msgid "A new booking has been created for your item."
 msgstr "Eine neue Buchung wurde für Ihren Artikel erstellt."
 
-#: bubble/books/models.py:17
-msgid "Author"
-msgstr "Autor"
+#: bubble/books/services.py:57
+#, python-format
+msgid "Invalid ISBN format: %(isbn)s"
+msgstr "Ungültiges ISBN-Format: %(isbn)s"
 
-#: bubble/books/models.py:18
-msgid "Authors"
-msgstr "Autoren"
-
-#: bubble/books/models.py:38
-msgid "Genre"
-msgstr "Genre"
-
-#: bubble/books/models.py:39
-msgid "Genres"
-msgstr "Genres"
-
-#: bubble/books/models.py:60 bubble/books/models.py:102
+#: bubble/collections/api/serializers.py:104
 #, fuzzy
-#| msgid "Published"
-msgid "Publisher"
-msgstr "Veröffentlicht"
+#| msgid "You already have a pending booking request for this item."
+msgid "You don't have permission to add this item."
+msgstr "Sie haben bereits eine ausstehende Buchungsanfrage für diesen Artikel."
 
-#: bubble/books/models.py:61
+#: bubble/collections/api/serializers.py:117 bubble/collections/models.py:105
 #, fuzzy
-#| msgid "Published"
-msgid "Publishers"
-msgstr "Veröffentlicht"
+#| msgid "This username has already been taken."
+msgid "This item is already in the collection."
+msgstr "Dieser Benutzername ist bereits vergeben."
 
-#: bubble/books/models.py:76
-msgid "Shelf"
-msgstr "Regal"
-
-#: bubble/books/models.py:77
-msgid "Shelves"
-msgstr "Regale"
-
-#: bubble/books/models.py:88
-msgid "Book authors"
-msgstr "Buchautoren"
-
-#: bubble/books/models.py:91
-#, fuzzy
-#| msgid "Name of User"
-msgid "Language of the book"
-msgstr "Name des Benutzers"
-
-#: bubble/books/models.py:94
-msgid "Publication year"
-msgstr "Erscheinungsjahr"
-
-#: bubble/books/models.py:105
-msgid "Main topic or subject"
-msgstr "Hauptthema oder Gegenstand"
-
-#: bubble/books/models.py:108
-msgid "Book genres"
-msgstr "Buchgenres"
-
-#: bubble/books/models.py:114
-msgid "Raw metadata fetched from external sources like ISBN databases"
+#: bubble/collections/api/serializers.py:212
+msgid "Either user_id or group_id must be provided."
 msgstr ""
-"Rohmetadaten, die aus externen Quellen wie ISBN-Datenbanken abgerufen wurden"
 
-#: bubble/books/models.py:124
-msgid "Shelf location"
-msgstr "Regalstandort"
+#: bubble/collections/api/serializers.py:217
+msgid "Cannot specify both user_id and group_id."
+msgstr ""
+
+#: bubble/collections/api/serializers.py:226
+#, fuzzy
+#| msgid "Item ID not found"
+msgid "User not found."
+msgstr "Artikel-ID nicht gefunden"
+
+#: bubble/collections/api/serializers.py:235
+#, fuzzy
+#| msgid "Item ID not found"
+msgid "Group not found."
+msgstr "Artikel-ID nicht gefunden"
+
+#: bubble/collections/api/serializers.py:247
+msgid "Cannot remove owner permissions from the collection creator."
+msgstr ""
+
+#: bubble/collections/api/views.py:96 bubble/collections/api/views.py:172
+#, fuzzy
+#| msgid "Item ID not found"
+msgid "Item not found"
+msgstr "Artikel-ID nicht gefunden"
+
+#: bubble/collections/api/views.py:115 bubble/collections/api/views.py:224
+msgid "item_ids must be a list"
+msgstr ""
+
+#: bubble/collections/api/views.py:133
+msgid "Invalid item ID"
+msgstr ""
+
+#: bubble/collections/api/views.py:140
+msgid "Item not found or not accessible"
+msgstr ""
+
+#: bubble/collections/api/views.py:153
+msgid "Item already in collection"
+msgstr ""
+
+#: bubble/collections/api/views.py:212
+#, fuzzy
+#| msgid "Item ID not found"
+msgid "Item not found in collection"
+msgstr "Artikel-ID nicht gefunden"
+
+#: bubble/collections/api/views.py:266
+#, fuzzy
+#| msgid "Item updated successfully!"
+msgid "Permission updated successfully"
+msgstr "Artikel erfolgreich aktualisiert!"
+
+#: bubble/collections/api/views.py:393
+msgid "You don't have permission to add items to this collection"
+msgstr ""
+
+#: bubble/collections/apps.py:8
+#, fuzzy
+#| msgid "Actions"
+msgid "Collections"
+msgstr "Aktionen"
+
+#: bubble/collections/models.py:96
+msgid "Optional note about this item"
+msgstr ""
+
+#: bubble/collections/models.py:117
+#, fuzzy
+#| msgid "Item name"
+msgid "Item added"
+msgstr "Artikelname"
+
+#: bubble/collections/models.py:118
+#, fuzzy
+#| msgid "Item name"
+msgid "Item removed"
+msgstr "Artikelname"
+
+#: bubble/collections/models.py:136
+msgid "Snapshot of item name at event time"
+msgstr ""
 
 #: bubble/core/templates/allauth/layouts/entrance.html:13
 msgid "Sign In"
@@ -269,37 +303,31 @@ msgstr "Profil anzeigen"
 
 #: bubble/core/templates/users/user_list.html:55
 #: bubble/favorites/templates/favorites/user_favorites.html:47
-#: bubble/rooms/templates/rooms/room_list.html:91
 msgid "First"
 msgstr "Erste"
 
 #: bubble/core/templates/users/user_list.html:60
 #: bubble/favorites/templates/favorites/user_favorites.html:50
-#: bubble/rooms/templates/rooms/room_list.html:96
 msgid "Previous"
 msgstr "Vorherige"
 
 #: bubble/core/templates/users/user_list.html:66
 #: bubble/favorites/templates/favorites/user_favorites.html:55
-#: bubble/rooms/templates/rooms/room_list.html:103
 msgid "Page"
 msgstr "Seite"
 
 #: bubble/core/templates/users/user_list.html:66
 #: bubble/favorites/templates/favorites/user_favorites.html:55
-#: bubble/rooms/templates/rooms/room_list.html:103
 msgid "of"
 msgstr "von"
 
 #: bubble/core/templates/users/user_list.html:72
 #: bubble/favorites/templates/favorites/user_favorites.html:60
-#: bubble/rooms/templates/rooms/room_list.html:110
 msgid "Next"
 msgstr "Nächste"
 
 #: bubble/core/templates/users/user_list.html:77
 #: bubble/favorites/templates/favorites/user_favorites.html:63
-#: bubble/rooms/templates/rooms/room_list.html:115
 msgid "Last"
 msgstr "Letzte"
 
@@ -322,7 +350,6 @@ msgid "My Favorites"
 msgstr "Meine Favoriten"
 
 #: bubble/favorites/templates/favorites/user_favorites.html:29
-#: bubble/rooms/templates/rooms/room_detail.html:55
 msgid "Added on"
 msgstr "Hinzugefügt am"
 
@@ -388,129 +415,198 @@ msgstr "Aus Favoriten entfernen"
 msgid "Favorite deleted successfully"
 msgstr "Favorit erfolgreich gelöscht!"
 
-#: bubble/items/admin.py:49
+#: bubble/items/admin.py:53
 msgid "Item Details"
 msgstr "Artikel-Details"
 
-#: bubble/items/admin.py:60
+#: bubble/items/admin.py:64
+#, fuzzy
+#| msgid "Internal Options"
+msgid "Rental Options"
+msgstr "Interne Optionen"
+
+#: bubble/items/admin.py:74
+#, fuzzy
+#| msgid "Additional Information"
+msgid "Additional Data"
+msgstr "Zusätzliche Informationen"
+
+#: bubble/items/admin.py:80
 msgid "Internal Options"
 msgstr "Interne Optionen"
 
-#: bubble/items/admin.py:67 bubble/rooms/admin.py:30
+#: bubble/items/admin.py:87
 msgid "Timestamps"
 msgstr "Zeitstempel"
 
-#: bubble/items/api/serializers.py:12
+#: bubble/items/api/serializers.py:13
 msgid "You can only create images for items you own."
 msgstr "Sie können nur Bilder für Artikel erstellen, die Sie besitzen."
 
-#: bubble/items/api/serializers.py:102 bubble/items/api/serializers.py:105
-msgid "Cannot set both sale_price and rental_price. Choose one."
+#: bubble/items/api/serializers.py:144
+msgid "Price must be greater than 0 if provided."
 msgstr ""
-"Sie können nicht sowohl Verkaufspreis als auch Mietpreis festlegen. Wählen "
-"Sie eines von beiden."
 
-#: bubble/items/api/views.py:111
+#: bubble/items/api/serializers.py:156
+#, python-format
+msgid "Price must be empty for '%(type)s' items."
+msgstr ""
+
+#: bubble/items/api/serializers.py:170
+#, python-format
+msgid "Status '%(status)s' is not valid for listing type '%(sales_type)s'."
+msgstr ""
+
+#: bubble/items/api/views.py:192
 msgid "Item has no images to analyze."
 msgstr "Der Artikel hat keine Bilder zur Analyse."
 
-#: bubble/items/models.py:26
+#: bubble/items/api/views.py:246
+msgid "Only the item owner can manage co-owners and viewers."
+msgstr ""
+
+#: bubble/items/api/views.py:294 bubble/items/api/views.py:309
+#: bubble/items/api/views.py:358 bubble/items/api/views.py:371
+msgid "Provide 'user' or 'group'."
+msgstr ""
+
+#: bubble/items/models.py:24
 msgid "New"
 msgstr "Neu"
 
-#: bubble/items/models.py:27
+#: bubble/items/models.py:25
 msgid "Used"
 msgstr "Gebraucht"
 
-#: bubble/items/models.py:28
+#: bubble/items/models.py:26
 msgid "Broken"
 msgstr "Kaputt"
 
-#: bubble/items/models.py:32
+#: bubble/items/models.py:30
 msgid "Draft"
 msgstr "Entwurf"
 
-#: bubble/items/models.py:33
-msgid "Processing"
-msgstr "Verarbeitung"
-
-#: bubble/items/models.py:34
+#: bubble/items/models.py:31
 msgid "Available"
 msgstr "Verfügbar"
 
-#: bubble/items/models.py:35
+#: bubble/items/models.py:32
 msgid "Reserved"
 msgstr "Reserviert"
 
-#: bubble/items/models.py:36
+#: bubble/items/models.py:33
 #, fuzzy
 #| msgid "Rent"
 msgid "Rented"
 msgstr "Vermietet"
 
-#: bubble/items/models.py:37
+#: bubble/items/models.py:34
 msgid "Sold"
 msgstr "Verkauft"
 
-#: bubble/items/models.py:45
+#: bubble/items/models.py:53
 msgid "Hourly"
 msgstr "Stündlich"
 
-#: bubble/items/models.py:46
+#: bubble/items/models.py:54
 msgid "Daily"
 msgstr "Täglich"
 
-#: bubble/items/models.py:47
+#: bubble/items/models.py:55
 msgid "Weekly"
 msgstr "Wöchentlich"
 
-#: bubble/items/models.py:51
+#: bubble/items/models.py:59
+#, fuzzy
+#| msgid "Publish"
+msgid "Public"
+msgstr "Veröffentlichen"
+
+#: bubble/items/models.py:60
+msgid "Authenticated"
+msgstr ""
+
+#: bubble/items/models.py:61
+msgid "Specific"
+msgstr ""
+
+#: bubble/items/models.py:62
+#, fuzzy
+#| msgid "Activate"
+msgid "Private"
+msgstr "Aktivieren"
+
+#: bubble/items/models.py:66
+msgid "Sell"
+msgstr ""
+
+#: bubble/items/models.py:67
+msgid "Donate"
+msgstr ""
+
+#: bubble/items/models.py:68
+#, fuzzy
+#| msgid "Rent"
+msgid "Rent"
+msgstr "Vermietet"
+
+#: bubble/items/models.py:69
+msgid "Borrow"
+msgstr "Ausleihen"
+
+#: bubble/items/models.py:70
+msgid "Want to Buy"
+msgstr ""
+
+#: bubble/items/models.py:71
+msgid "Want to Rent"
+msgstr ""
+
+#: bubble/items/models.py:75
 msgid "Books"
 msgstr "Bücher"
 
-#: bubble/items/models.py:52
+#: bubble/items/models.py:76
 msgid "Clothing"
 msgstr "Kleidung"
 
-#: bubble/items/models.py:53
+#: bubble/items/models.py:77
 msgid "Electronics"
 msgstr "Elektronik"
 
-#: bubble/items/models.py:54
+#: bubble/items/models.py:78
 msgid "Furniture"
 msgstr "Möbel"
 
-#: bubble/items/models.py:55
+#: bubble/items/models.py:79
 msgid "Garden"
 msgstr "Garten"
 
-#: bubble/items/models.py:56
+#: bubble/items/models.py:80
 msgid "Kitchen"
 msgstr "Küche"
 
-#: bubble/items/models.py:57
+#: bubble/items/models.py:81
 msgid "Other"
 msgstr "Andere"
 
-#: bubble/items/models.py:58 bubble/rooms/models.py:39
-#: bubble/rooms/templates/rooms/room_list.html:6
-#: bubble/rooms/templates/rooms/room_list.html:57
+#: bubble/items/models.py:82
 msgid "Rooms"
 msgstr "Räume"
 
-#: bubble/items/models.py:59
+#: bubble/items/models.py:83
 msgid "Sports"
 msgstr "Sport"
 
-#: bubble/items/models.py:60
+#: bubble/items/models.py:84
 msgid "Tools"
 msgstr "Werkzeuge"
 
-#: bubble/items/models.py:61
+#: bubble/items/models.py:85
 msgid "Toys"
 msgstr "Spielzeug"
 
-#: bubble/items/models.py:62
+#: bubble/items/models.py:86
 msgid "Vehicles"
 msgstr "Fahrzeuge"
 
@@ -528,123 +624,138 @@ msgstr "Interner Artikel, nicht für öffentliche Anzeige"
 msgid "Display your contact information public"
 msgstr "Kontaktinformationen öffentlich anzeigen"
 
-#: bubble/items/models.py:139
-msgid "Price per hour for rental items"
-msgstr "Preis pro Stunde für Mietartikel"
+#: bubble/items/models.py:133
+msgid ""
+"How the item is offered: Sell, Donate, Rent, Borrow, Want to Buy, or Want to "
+"Rent."
+msgstr ""
 
-#: bubble/items/models.py:151
+#: bubble/items/models.py:143
+msgid ""
+"Price for sell/rent items (must be > 0). Leave blank for donate/borrow "
+"items. Rental price per hour (when sales type is rent)."
+msgstr ""
+
+#: bubble/items/models.py:155
+msgid ""
+"Only used for formatting, price must always be per hour for rental items"
+msgstr ""
+
+#: bubble/items/models.py:160
 msgid "Allow self-service rental without owner approval"
 msgstr "Selbstbedienungsvermietung ohne Zustimmung des Eigentümers erlauben"
 
-#: bubble/items/models.py:155
+#: bubble/items/models.py:164
 msgid "Allow open-ended rentals without a return date"
 msgstr "Unbefristete Vermietungen ohne Rückgabedatum erlauben"
 
-#: bubble/items/models.py:160
+#: bubble/items/models.py:169
 msgid "Enable payment via internal payment system"
 msgstr "Zahlung über internes Zahlungssystem aktivieren"
 
-#: bubble/items/models.py:169
+#: bubble/items/models.py:178
 #, fuzzy
 #| msgid "Condition"
 msgid "Condition of the item"
 msgstr "Zustand"
 
-#: bubble/items/models.py:248
-msgid "Embedding vector for semantic search"
-msgstr "Embedding-Vektor für semantische Suche"
+#: bubble/items/models.py:190
+msgid "Set to True after the first publish notification has been sent."
+msgstr ""
 
-#: bubble/rooms/admin.py:24 bubble/rooms/admin.py:38 bubble/rooms/models.py:22
-msgid "Photo"
-msgstr "Foto"
+#: bubble/items/models.py:197
+msgid ""
+"Who can see this item: Public (everyone), Authenticated (logged-in users), "
+"Specific (selected users/groups), or Private (owner and co-owners only)."
+msgstr ""
 
-#: bubble/rooms/admin.py:47
-msgid "Current Photo"
-msgstr "Aktuelles Foto"
+#: bubble/items/models.py:208
+msgid ""
+"Category-specific properties stored as JSONB. For books: isbn, language, "
+"year, topic, metadata, authors, genres, publisher, shelf."
+msgstr ""
 
-#: bubble/rooms/admin.py:55
-msgid "No photo uploaded"
-msgstr "Kein Foto hochgeladen"
-
-#: bubble/rooms/models.py:13 bubble/users/forms.py:53
-msgid "Name"
-msgstr "Name"
-
-#: bubble/rooms/models.py:15
+#: bubble/notifications/models.py:13
 #, fuzzy
-#| msgid "Name of User"
-msgid "Name of the room"
-msgstr "Name des Benutzers"
+#| msgid "Message"
+msgid "New Message"
+msgstr "Nachricht"
 
-#: bubble/rooms/models.py:18 bubble/rooms/templates/rooms/room_detail.html:72
-msgid "Description"
-msgstr "Beschreibung"
+#: bubble/notifications/models.py:14
+#: bubble/notifications/providers/rocketchat.py:140
+msgid "New Item"
+msgstr "Neuer Artikel"
 
-#: bubble/rooms/models.py:19
-msgid "Detailed description of the room"
-msgstr "Detaillierte Beschreibung des Raums"
+#: bubble/notifications/models.py:23
+msgid "RocketChat"
+msgstr ""
 
-#: bubble/rooms/models.py:26
-msgid "Photo of the room"
-msgstr "Foto des Raums"
+#: bubble/notifications/models.py:24
+#, fuzzy
+#| msgid "Email Sent"
+msgid "Email"
+msgstr "E-Mail gesendet"
 
-#: bubble/rooms/models.py:29
+#: bubble/notifications/models.py:31
+msgid "user"
+msgstr ""
+
+#: bubble/notifications/models.py:36
+msgid "provider type"
+msgstr ""
+
+#: bubble/notifications/models.py:41
+#, fuzzy
+#| msgid "Item type"
+msgid "event type"
+msgstr "Artikel-Typ"
+
+#: bubble/notifications/models.py:43
+msgid "enabled"
+msgstr ""
+
+#: bubble/notifications/models.py:44
 #, fuzzy
 #| msgid "Created"
-msgid "Created at"
+msgid "created at"
 msgstr "Erstellt"
 
-#: bubble/rooms/models.py:33
+#: bubble/notifications/models.py:48
 #, fuzzy
-#| msgid "Updated:"
-msgid "Updated at"
-msgstr "Aktualisiert:"
+#| msgid "Notification: %(event_type)s"
+msgid "Notification Preference"
+msgstr "Benachrichtigung: %(event_type)s"
 
-#: bubble/rooms/models.py:38
-msgid "Room"
-msgstr "Raum"
-
-#: bubble/rooms/templates/rooms/room_detail.html:80
-msgid "Room Information"
-msgstr "Rauminformationen"
-
-#: bubble/rooms/templates/rooms/room_detail.html:84
+#: bubble/notifications/models.py:49
 #, fuzzy
-#| msgid "Name"
-msgid "Name:"
-msgstr "Name"
+#| msgid "Notification: %(event_type)s"
+msgid "Notification Preferences"
+msgstr "Benachrichtigung: %(event_type)s"
 
-#: bubble/rooms/templates/rooms/room_detail.html:90
-#, fuzzy
-#| msgid "Added on"
-msgid "Added:"
-msgstr "Hinzugefügt am"
+#: bubble/notifications/providers/rocketchat.py:126
+msgid ""
+":speech_balloon: New message in booking **%(item_title)s** "
+"`%(booking_uuid)s`:\n"
+"> %(message)s"
+msgstr ""
+":speech_balloon: Neue Nachricht in Buchung **%(item_title)s** "
+"`%(booking_uuid)s`:\n"
+"> %(message)s"
 
-#: bubble/rooms/templates/rooms/room_detail.html:97
-#, fuzzy
-#| msgid "Updated:"
-msgid "Last Updated:"
-msgstr "Aktualisiert:"
+#: bubble/notifications/providers/rocketchat.py:132
+#: bubble/notifications/providers/rocketchat.py:137
+#, python-format
+msgid "Notification: %(event_type)s"
+msgstr "Benachrichtigung: %(event_type)s"
 
-#: bubble/rooms/templates/rooms/room_detail.html:110
-msgid "Back to Rooms"
-msgstr "Zurück zu Räume"
+#: bubble/notifications/providers/rocketchat.py:155
+#, python-format
+msgid "New item created for %(sales_label)s"
+msgstr "Neuer Artikel erstellt für %(sales_label)s"
 
-#: bubble/rooms/templates/rooms/room_list.html:58
-msgid "Explore our available rooms"
-msgstr "Erkunden Sie unsere verfügbaren Räume"
-
-#: bubble/rooms/templates/rooms/room_list.html:86
-msgid "Rooms pagination"
-msgstr "Räume Seitennummerierung"
-
-#: bubble/rooms/templates/rooms/room_list.html:125
-msgid "No rooms available"
-msgstr "Keine Räume verfügbar"
-
-#: bubble/rooms/templates/rooms/room_list.html:126
-msgid "Check back later for new rooms."
-msgstr "Schauen Sie später wieder vorbei für neue Räume."
+#: bubble/notifications/providers/rocketchat.py:159
+msgid "New item created"
+msgstr "Neuer Artikel erstellt"
 
 #: bubble/users/admin.py:23
 msgid "Personal info"
@@ -666,6 +777,10 @@ msgstr "Benutzer"
 msgid "This username has already been taken."
 msgstr "Dieser Benutzername ist bereits vergeben."
 
+#: bubble/users/forms.py:53
+msgid "Name"
+msgstr "Name"
+
 #: bubble/users/forms.py:58
 msgid "E-Mail"
 msgstr "E-Mail"
@@ -678,17 +793,160 @@ msgstr "Adresse"
 msgid "Telefon"
 msgstr "Telefon"
 
-#: bubble/users/models.py:23
+#: bubble/users/models.py:26
 msgid "Name of User"
 msgstr "Name des Benutzers"
 
-#: config/settings/base.py:38
+#: bubble/users/models.py:41 config/settings/base.py:54
+msgid "English"
+msgstr "Englisch"
+
+#: bubble/users/models.py:42
+msgid "German"
+msgstr ""
+
+#: bubble/users/models.py:63
+msgid "preferred language"
+msgstr ""
+
+#: bubble/users/models.py:64
+msgid "UI language preference for this user."
+msgstr ""
+
+#: config/settings/base.py:53
 msgid "Deutsch"
 msgstr "Deutsch"
 
-#: config/settings/base.py:39
-msgid "English"
-msgstr "Englisch"
+#~ msgid "Author"
+#~ msgstr "Autor"
+
+#~ msgid "Authors"
+#~ msgstr "Autoren"
+
+#~ msgid "Genre"
+#~ msgstr "Genre"
+
+#~ msgid "Genres"
+#~ msgstr "Genres"
+
+#, fuzzy
+#~| msgid "Published"
+#~ msgid "Publisher"
+#~ msgstr "Veröffentlicht"
+
+#, fuzzy
+#~| msgid "Published"
+#~ msgid "Publishers"
+#~ msgstr "Veröffentlicht"
+
+#~ msgid "Shelf"
+#~ msgstr "Regal"
+
+#~ msgid "Shelves"
+#~ msgstr "Regale"
+
+#~ msgid "Book authors"
+#~ msgstr "Buchautoren"
+
+#, fuzzy
+#~| msgid "Name of User"
+#~ msgid "Language of the book"
+#~ msgstr "Name des Benutzers"
+
+#~ msgid "Publication year"
+#~ msgstr "Erscheinungsjahr"
+
+#~ msgid "Main topic or subject"
+#~ msgstr "Hauptthema oder Gegenstand"
+
+#~ msgid "Book genres"
+#~ msgstr "Buchgenres"
+
+#~ msgid "Raw metadata fetched from external sources like ISBN databases"
+#~ msgstr ""
+#~ "Rohmetadaten, die aus externen Quellen wie ISBN-Datenbanken abgerufen "
+#~ "wurden"
+
+#~ msgid "Shelf location"
+#~ msgstr "Regalstandort"
+
+#~ msgid "Cannot set both sale_price and rental_price. Choose one."
+#~ msgstr ""
+#~ "Sie können nicht sowohl Verkaufspreis als auch Mietpreis festlegen. "
+#~ "Wählen Sie eines von beiden."
+
+#~ msgid "Processing"
+#~ msgstr "Verarbeitung"
+
+#~ msgid "Price per hour for rental items"
+#~ msgstr "Preis pro Stunde für Mietartikel"
+
+#~ msgid "Embedding vector for semantic search"
+#~ msgstr "Embedding-Vektor für semantische Suche"
+
+#~ msgid "Photo"
+#~ msgstr "Foto"
+
+#~ msgid "Current Photo"
+#~ msgstr "Aktuelles Foto"
+
+#~ msgid "No photo uploaded"
+#~ msgstr "Kein Foto hochgeladen"
+
+#, fuzzy
+#~| msgid "Name of User"
+#~ msgid "Name of the room"
+#~ msgstr "Name des Benutzers"
+
+#~ msgid "Description"
+#~ msgstr "Beschreibung"
+
+#~ msgid "Detailed description of the room"
+#~ msgstr "Detaillierte Beschreibung des Raums"
+
+#~ msgid "Photo of the room"
+#~ msgstr "Foto des Raums"
+
+#, fuzzy
+#~| msgid "Updated:"
+#~ msgid "Updated at"
+#~ msgstr "Aktualisiert:"
+
+#~ msgid "Room"
+#~ msgstr "Raum"
+
+#~ msgid "Room Information"
+#~ msgstr "Rauminformationen"
+
+#, fuzzy
+#~| msgid "Name"
+#~ msgid "Name:"
+#~ msgstr "Name"
+
+#, fuzzy
+#~| msgid "Added on"
+#~ msgid "Added:"
+#~ msgstr "Hinzugefügt am"
+
+#, fuzzy
+#~| msgid "Updated:"
+#~ msgid "Last Updated:"
+#~ msgstr "Aktualisiert:"
+
+#~ msgid "Back to Rooms"
+#~ msgstr "Zurück zu Räume"
+
+#~ msgid "Explore our available rooms"
+#~ msgstr "Erkunden Sie unsere verfügbaren Räume"
+
+#~ msgid "Rooms pagination"
+#~ msgstr "Räume Seitennummerierung"
+
+#~ msgid "No rooms available"
+#~ msgstr "Keine Räume verfügbar"
+
+#~ msgid "Check back later for new rooms."
+#~ msgstr "Schauen Sie später wieder vorbei für neue Räume."
 
 #~ msgid "Monday"
 #~ msgstr "Montag"
@@ -844,9 +1102,6 @@ msgstr "Englisch"
 #~ msgid "Confirmation Email Sent"
 #~ msgstr "Bestätigungs-E-Mail gesendet"
 
-#~ msgid "Email Sent"
-#~ msgstr "E-Mail gesendet"
-
 #~ msgid "Confirmation Email Sent!"
 #~ msgstr "Bestätigungs-E-Mail gesendet!"
 
@@ -894,9 +1149,6 @@ msgstr "Englisch"
 #~ msgid "Give Away"
 #~ msgstr "Verschenken"
 
-#~ msgid "Borrow"
-#~ msgstr "Ausleihen"
-
 #~ msgid "Need"
 #~ msgstr "Benötigt"
 
@@ -932,9 +1184,6 @@ msgstr "Englisch"
 
 #~ msgid "Category"
 #~ msgstr "Kategorie"
-
-#~ msgid "Item name"
-#~ msgstr "Artikelname"
 
 #~ msgid "Describe your item..."
 #~ msgstr "Beschreiben Sie Ihren Artikel..."
@@ -1044,9 +1293,6 @@ msgstr "Englisch"
 
 #~ msgid "Your message..."
 #~ msgstr "Ihre Nachricht..."
-
-#~ msgid "Message"
-#~ msgstr "Nachricht"
 
 #~ msgid "Your request has been sent!"
 #~ msgstr "Ihre Anfrage wurde gesendet!"
@@ -1179,14 +1425,8 @@ msgstr "Englisch"
 #~ msgid "Processing..."
 #~ msgstr "Verarbeitung..."
 
-#~ msgid "Actions"
-#~ msgstr "Aktionen"
-
 #~ msgid "Deactivate"
 #~ msgstr "Deaktivieren"
-
-#~ msgid "Activate"
-#~ msgstr "Aktivieren"
 
 #~ msgid "Free"
 #~ msgstr "Kostenlos"
@@ -1264,9 +1504,6 @@ msgstr "Englisch"
 #~ msgid "Save draft"
 #~ msgstr "Entwurf speichern"
 
-#~ msgid "Publish"
-#~ msgstr "Veröffentlichen"
-
 #~ msgid "Confirm Action"
 #~ msgstr "Aktion bestätigen"
 
@@ -1281,9 +1518,6 @@ msgstr "Englisch"
 
 #~ msgid "Error"
 #~ msgstr "Fehler"
-
-#~ msgid "Item ID not found"
-#~ msgstr "Artikel-ID nicht gefunden"
 
 #~ msgid "Cancel AI Processing"
 #~ msgstr "KI-Verarbeitung abbrechen"
@@ -1496,14 +1730,8 @@ msgstr "Englisch"
 #~ msgid "Category-specific additional fields stored as JSON"
 #~ msgstr "Kategorie-spezifische zusätzliche Felder gespeichert als JSON"
 
-#~ msgid "Item type"
-#~ msgstr "Artikel-Typ"
-
 #~ msgid "Additional fields specific to the item's category"
 #~ msgstr "Zusätzliche Felder spezifisch für die Kategorie des Artikels"
-
-#~ msgid "Additional Information"
-#~ msgstr "Zusätzliche Informationen"
 
 #~ msgid "Create new"
 #~ msgstr "Neu erstellen"

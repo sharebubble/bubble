@@ -10,7 +10,7 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
-from bubble.notifications.models import NotificationPreference
+from bubble.notifications.models import EventType, NotificationPreference
 from config.settings.base import AUTH_USER_MODEL
 
 
@@ -37,6 +37,11 @@ class User(AbstractUser):
         return reverse("users:detail", kwargs={"username": self.username})
 
 
+class LanguageChoice(models.TextChoices):
+    EN = "en", _("English")
+    DE = "de", _("German")
+
+
 class Profile(models.Model):
     user = models.OneToOneField(
         AUTH_USER_MODEL,
@@ -50,6 +55,14 @@ class Profile(models.Model):
     bio = models.TextField(blank=True)
     profile_image = models.ImageField(upload_to="users/", blank=True, null=True)
     profile_image_alt = models.CharField(max_length=255, blank=True)
+    language = models.CharField(
+        max_length=10,
+        choices=LanguageChoice,
+        blank=True,
+        default="",
+        verbose_name=_("preferred language"),
+        help_text=_("UI language preference for this user."),
+    )
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
@@ -65,15 +78,17 @@ def create_user_profile(sender, instance, created, **kwargs):
 def _setup_default_notification_preferences(user) -> None:
     """Enable RocketChat new-message notifications by default.
 
-    Only enables the preference when the webhook URL is configured.
+    Only creates the preference row when the webhook URL is configured,
+    always with enabled=True.
     """
     try:
-        webhook_configured = bool(config.ROCKETCHAT_WEBHOOK_URL)
+        if not config.ROCKETCHAT_WEBHOOK_URL:
+            return
         NotificationPreference.objects.get_or_create(
             user=user,
             provider_type=NotificationPreference.ProviderType.ROCKETCHAT,
-            event_type=NotificationPreference.EventType.NEW_MESSAGE,
-            defaults={"enabled": webhook_configured},
+            event_type=EventType.NEW_MESSAGE,
+            defaults={"enabled": True},
         )
     except Exception:
         logging.getLogger(__name__).exception(

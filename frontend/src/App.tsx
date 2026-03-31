@@ -5,6 +5,7 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { useAppConfig } from '@/hooks/useAppConfig';
+import { useLanguageSync } from '@/hooks/useLanguageSync';
 import { NotificationProvider } from '@/providers/NotificationProvider';
 import { ThemeProvider } from '@/providers/theme-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -41,6 +42,7 @@ const AuthRequired = ({ children }: { children: React.ReactNode }) => {
 const ProtectedRoutes = () => {
   const { session, loading: authLoading } = useAuth();
   const { requireLogin, loading: configLoading } = useAppConfig();
+  useLanguageSync();
 
   // Wait for both the session check and the config fetch to resolve
   if (authLoading || configLoading) {

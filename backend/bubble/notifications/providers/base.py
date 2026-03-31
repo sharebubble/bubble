@@ -7,5 +7,9 @@ class BaseNotificationProvider:
     provider_type: str
 
     def send(self, user_id: str, event_type: str, context: dict) -> bool:
-        """Send a notification. Returns True on success, False otherwise."""
+        """Send a per-user notification. Returns True on success, False otherwise."""
+        raise NotImplementedError
+
+    def send_channel(self, event_type: str, context: dict) -> bool:
+        """Send a channel-broadcast notification. Returns True on success."""
         raise NotImplementedError
