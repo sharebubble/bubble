@@ -36,19 +36,6 @@ Also, this should usually be done when the _@hey-api/openapi-ts_ package in the 
 
 run `npm run types:openapi` to update the types
 
-## File system polling on Windows
-
-On containers that run on a Windows host, it is necessary to enable file system polling to detect file changes for the live dev server.
-
-You can enable this by creating _compose.override.yaml_ and setting an environment variable there:
-
-```yaml
-services:
-  frontend:
-    environment:
-      - VITE_USE_POLLING=true
-```
-
 # Backend stuff
 
 Everything in `backend` folder please.
@@ -79,26 +66,6 @@ To run the tests, check your test coverage, and generate an HTML coverage report
 
     $ pytest
 
-## Celery
-
-This app comes with Celery.
-
-To run a celery worker:
-
-```bash
-celery -A config.celery_app worker -l info
-```
-
-```bash
-celery -A config.celery_app beat
-```
-
-or you can embed the beat service inside a worker with the `-B` option (not recommended for production use):
-
-```bash
-celery -A config.celery_app worker -B -l info
-```
-
 ## Email Server
 
 In development, it is often nice to be able to see emails that are being sent from your application. For that reason local SMTP server [Mailpit](https://github.com/axllent/mailpit) with a web interface is available as docker container.
@@ -114,12 +81,3 @@ Sentry is an error logging aggregator service. You can sign up for a free accoun
 The system is set up with reasonable defaults, including 404 logging and integration with the WSGI application.
 
 You must set the DSN url in production.
-
-# Embeddings
-
-Suggested models:
-
-- all-MiniLM-L6-v2
-- paraphrase-multilingual-MiniLM-L12-v2 - Better multilingual support (German), slightly larger
-- all-mpnet-base-v2 - Higher quality (768 dims), slower but more accurate
-- paraphrase-multilingual-mpnet-base-v2 - lucas choice
