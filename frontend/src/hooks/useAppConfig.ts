@@ -4,10 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 interface AppConfig {
   REQUIRE_LOGIN: boolean;
   DEFAULT_ITEM_VISIBILITY: string;
+  ROCKETCHAT_ENABLED: boolean;
 }
 
 interface UseAppConfigResult {
   requireLogin: boolean;
+  rocketchatEnabled: boolean;
   loading: boolean;
 }
 
@@ -31,6 +33,7 @@ export const useAppConfig = (): UseAppConfigResult => {
   return {
     // Default to true (require login) while loading or on error — safe fallback
     requireLogin: data ? data.REQUIRE_LOGIN : true,
+    rocketchatEnabled: data ? (data.ROCKETCHAT_ENABLED ?? false) : false,
     loading: isLoading,
   };
 };

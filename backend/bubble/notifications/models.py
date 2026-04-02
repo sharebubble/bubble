@@ -7,13 +7,21 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
+class EventType(models.TextChoices):
+    """All supported notification event types."""
+
+    NEW_MESSAGE = "new_message", _("New Message")
+    NEW_ITEM = "new_item", _("New Item")
+
+
+# Events that are broadcast to a channel rather than per-user preferences.
+CHANNEL_EVENTS: frozenset[str] = frozenset({EventType.NEW_ITEM})
+
+
 class NotificationPreference(models.Model):
     class ProviderType(models.TextChoices):
         ROCKETCHAT = "rocketchat", _("RocketChat")
         EMAIL = "email", _("Email")
-
-    class EventType(models.TextChoices):
-        NEW_MESSAGE = "new_message", _("New Message")
 
     id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
     user = models.ForeignKey(
@@ -29,7 +37,7 @@ class NotificationPreference(models.Model):
     )
     event_type = models.CharField(
         max_length=50,
-        choices=EventType.choices,
+        choices=EventType,
         verbose_name=_("event type"),
     )
     enabled = models.BooleanField(default=False, verbose_name=_("enabled"))
@@ -39,6 +47,8 @@ class NotificationPreference(models.Model):
         unique_together = [("user", "provider_type", "event_type")]
         verbose_name = _("Notification Preference")
         verbose_name_plural = _("Notification Preferences")
+        # Only user-configurable events should appear as preferences.
+        # NEW_ITEM is a channel broadcast — not stored per user.
 
     def __str__(self):
         state = "on" if self.enabled else "off"

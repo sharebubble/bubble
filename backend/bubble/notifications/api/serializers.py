@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from bubble.notifications.models import NotificationPreference
+from bubble.notifications.models import EventType, NotificationPreference
 
 
 class NotificationPreferenceMeSerializer(serializers.Serializer):
@@ -18,7 +18,7 @@ class NotificationPreferenceMeSerializer(serializers.Serializer):
     FIELD_MAP = {
         "rocketchat_new_message": (
             NotificationPreference.ProviderType.ROCKETCHAT,
-            NotificationPreference.EventType.NEW_MESSAGE,
+            EventType.NEW_MESSAGE,
         ),
     }
 

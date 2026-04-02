@@ -28,6 +28,7 @@ class ProfileSerializer(serializers.ModelSerializer[Profile]):
             "address",
             "email_reminder",
             "profile_image",
+            "language",
         ]
 
     def update(self, instance, validated_data):

@@ -30,7 +30,8 @@ def notify_new_message(sender, instance: Message, created, **kwargs):
 
     notification_context = {
         "message": instance.message,
-        "booking_uuid": str(instance.booking.id),
+        "item_title": item.name,
+        "sender": instance.sender.name,
     }
 
     if instance.booking.user != instance.sender:
@@ -61,7 +62,7 @@ def notify_new_message(sender, instance: Message, created, **kwargs):
                     getattr(user, "username", str(user)),
                     instance.pk,
                 )
-                dispatch_notification(user.id, "new_message", notification_context)
+                dispatch_notification(user, "new_message", notification_context)
 
 
 @receiver(post_save, sender=Booking)

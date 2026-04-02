@@ -19,4 +19,8 @@ class ConfigView(APIView):
         constance_config = getattr(settings, "CONSTANCE_CONFIG_PUBLIC", []) or []
         config_values = {key: getattr(config, key) for key in constance_config}
 
+        # Derived flags — not stored in constance, computed from private settings
+        rocketchat_webhook_url = getattr(config, "ROCKETCHAT_WEBHOOK_URL", "") or ""
+        config_values["ROCKETCHAT_ENABLED"] = bool(rocketchat_webhook_url.strip())
+
         return Response(config_values, status=status.HTTP_200_OK)

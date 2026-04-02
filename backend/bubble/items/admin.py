@@ -30,7 +30,7 @@ class ItemAdmin(GuardedModelAdminMixin, SimpleHistoryAdmin):
     search_fields = ("name", "description", "user__username", "category__name")
     ordering = ("-created_at",)
     autocomplete_fields = ("user",)
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = ("created_at", "updated_at", "publish_notification_sent")
     inlines = [ImageInline]
 
     fieldsets = (
@@ -86,7 +86,7 @@ class ItemAdmin(GuardedModelAdminMixin, SimpleHistoryAdmin):
         (
             _("Timestamps"),
             {
-                "fields": ("created_at", "updated_at"),
+                "fields": ("created_at", "updated_at", "publish_notification_sent"),
                 "classes": ("collapse",),
             },
         ),
