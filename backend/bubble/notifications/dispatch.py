@@ -4,10 +4,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from bubble.notifications.models import CHANNEL_EVENTS, NotificationPreference
-from bubble.notifications.tasks import (
-    deliver_channel_notification,
-    deliver_notification,
-)
+from bubble.notifications.tasks import deliver_notification
 
 if TYPE_CHECKING:
     from bubble.users.models import User
@@ -35,7 +32,9 @@ def dispatch_notification(
             user,
             pref.provider_type,
         )
-        deliver_notification(pref.provider_type, user.username, event_type, context)
+        deliver_notification(
+            pref.provider_type, event_type, context, user_id=user.username
+        )
 
 
 def dispatch_channel_notification(event_type: str, context: dict) -> None:
@@ -54,4 +53,4 @@ def dispatch_channel_notification(event_type: str, context: dict) -> None:
             event_type,
             provider_type,
         )
-        deliver_channel_notification(str(provider_type), event_type, context)
+        deliver_notification(str(provider_type), event_type, context)

@@ -32,59 +32,54 @@ def _get_language_for_user(username: str | None) -> str:
 class RocketChatProvider(BaseNotificationProvider):
     provider_type = "rocketchat"
 
-    def send(self, user_id: str, event_type: str, context: dict) -> bool:
-        """Send a per-user notification via the RocketChat webhook."""
+    def send(
+        self,
+        event_type: str,
+        context: dict,
+        *,
+        user_id: str | None = None,
+    ) -> bool:
+        """Send a notification via the RocketChat webhook.
+
+        When *user_id* is given the message is directed to that user's DM channel
+        (``@<user_id>``).  When omitted the message is broadcast to the default
+        channel stored in ``config.ROCKETCHAT_CHANNEL``; if that is also unset the
+        notification is silently skipped.
+        """
 
         webhook_url: str = config.ROCKETCHAT_WEBHOOK_URL
-        channel: str = config.ROCKETCHAT_CHANNEL
-
         if not webhook_url:
             logger.debug(
                 "RocketChat webhook URL not configured, skipping notification."
             )
             return False
 
-        lang = _get_language_for_user(user_id)
-        with translation.override(lang):
-            text = self._format_message(event_type, context)
+        if user_id is not None:
+            # Per-user DM: translate into the recipient's preferred language.
+            lang = _get_language_for_user(user_id)
+            with translation.override(lang):
+                text = self._format_message(event_type, context)
 
-        payload: dict = {"text": text}
-        if channel:
+            if config.ROCKETCHAT_USER_UNDERSCORES:
+                user_id = user_id.replace(".", "_")
+
+            payload: dict = {"text": text, "channel": f"@{user_id}"}
+        else:
+            # Channel broadcast: use the configured default channel.
+            channel: str = config.ROCKETCHAT_CHANNEL
+            if not channel:
+                logger.debug(
+                    "ROCKETCHAT_CHANNEL not set, skipping channel notification for %s.",
+                    event_type,
+                )
+                return False
+
+            lang = settings.LANGUAGE_CODE
+            with translation.override(lang):
+                payload = self._build_channel_payload(event_type, context)
             payload["channel"] = channel
 
-        if config.ROCKETCHAT_USER_UNDERSCORES:
-            user_id = user_id.replace(".", "_")
-
         return self._post(webhook_url, payload, user_id=user_id, event_type=event_type)
-
-    def send_channel(self, event_type: str, context: dict) -> bool:
-        """Send a channel-broadcast notification via the RocketChat webhook.
-
-        Only posts when ROCKETCHAT_CHANNEL is non-empty.
-        """
-
-        webhook_url: str = config.ROCKETCHAT_WEBHOOK_URL
-        channel: str = config.ROCKETCHAT_CHANNEL
-
-        if not webhook_url:
-            logger.debug(
-                "RocketChat webhook URL not configured, skipping channel notification."
-            )
-            return False
-
-        if not channel:
-            logger.debug(
-                "ROCKETCHAT_CHANNEL not set, skipping channel notification for %s.",
-                event_type,
-            )
-            return False
-
-        lang = settings.LANGUAGE_CODE
-        with translation.override(lang):
-            payload = self._build_channel_payload(event_type, context)
-        payload["channel"] = channel
-
-        return self._post(webhook_url, payload, event_type=event_type)
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -119,16 +114,13 @@ class RocketChatProvider(BaseNotificationProvider):
 
     def _format_message(self, event_type: str, context: dict) -> str:
         if event_type == "new_message":
-            booking_uuid = context.get("booking_uuid", "")
-            message = context.get("message", "")
-            item_title = context.get("item_title", "")
             return _(
-                ":speech_balloon: New message in booking **%(item_title)s** "
-                "`%(booking_uuid)s`:\n> %(message)s"
+                ":speech_balloon: New message from **%(sender)s** in booking for "
+                "**%(item_title)s**:\n> %(message)s"
             ) % {
-                "booking_uuid": booking_uuid,
-                "message": message,
-                "item_title": item_title,
+                "sender": context.get("sender", ""),
+                "message": context.get("message", ""),
+                "item_title": context.get("item_title", ""),
             }
         return _("Notification: %(event_type)s") % {"event_type": event_type}
 

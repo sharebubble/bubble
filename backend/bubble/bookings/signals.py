@@ -31,7 +31,7 @@ def notify_new_message(sender, instance: Message, created, **kwargs):
     notification_context = {
         "message": instance.message,
         "item_title": item.name,
-        "booking_uuid": str(instance.booking.id),
+        "sender": instance.sender.name,
     }
 
     if instance.booking.user != instance.sender:

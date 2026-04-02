@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useProfileFieldAutoSave } from '@/hooks/useProfileFieldAutoSave';
+import { useAppConfig } from '@/hooks/useAppConfig';
 import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
@@ -35,6 +36,7 @@ export const ProfileForm = () => {
   const { fieldStates, saveField } = useProfileFieldAutoSave();
   const { data: notifPrefs, isLoading: notifLoading } = useNotificationPreferences();
   const updateNotifPrefs = useUpdateNotificationPreferences();
+  const { rocketchatEnabled } = useAppConfig();
   const { t } = useLanguage();
 
   const form = useForm<ProfileFormData>({
@@ -157,39 +159,41 @@ export const ProfileForm = () => {
       </Card>
 
       {/* Notifications Card */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>{t('profile.notifications')}</CardTitle>
-          <p className="text-sm text-muted-foreground">{t('profile.notificationsDesc')}</p>
-        </CardHeader>
-        <CardContent>
-          {notifLoading ? (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                <Checkbox
-                  checked={notifPrefs?.rocketchat_new_message ?? false}
-                  disabled={updateNotifPrefs.isPending}
-                  onCheckedChange={checked => {
-                    updateNotifPrefs.mutate({ rocketchat_new_message: !!checked });
-                  }}
-                />
-                <div className="space-y-1 leading-none">
-                  <p className="text-sm font-medium leading-none">
-                    {t('profile.rocketchatNewMessage')}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {t('profile.rocketchatNewMessageDesc')}
-                  </p>
+      {rocketchatEnabled && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>{t('profile.notifications')}</CardTitle>
+            <p className="text-sm text-muted-foreground">{t('profile.notificationsDesc')}</p>
+          </CardHeader>
+          <CardContent>
+            {notifLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                  <Checkbox
+                    checked={notifPrefs?.rocketchat_new_message ?? false}
+                    disabled={updateNotifPrefs.isPending}
+                    onCheckedChange={checked => {
+                      updateNotifPrefs.mutate({ rocketchat_new_message: !!checked });
+                    }}
+                  />
+                  <div className="space-y-1 leading-none">
+                    <p className="text-sm font-medium leading-none">
+                      {t('profile.rocketchatNewMessage')}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {t('profile.rocketchatNewMessageDesc')}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </>
   );
 };

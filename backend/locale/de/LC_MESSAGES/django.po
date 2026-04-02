@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-03-31 19:59+0000\n"
+"POT-Creation-Date: 2026-04-02 19:40+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -682,7 +682,7 @@ msgid "New Message"
 msgstr "Nachricht"
 
 #: bubble/notifications/models.py:14
-#: bubble/notifications/providers/rocketchat.py:140
+#: bubble/notifications/providers/rocketchat.py:132
 msgid "New Item"
 msgstr "Neuer Artikel"
 
@@ -732,28 +732,36 @@ msgstr "Benachrichtigung: %(event_type)s"
 msgid "Notification Preferences"
 msgstr "Benachrichtigung: %(event_type)s"
 
-#: bubble/notifications/providers/rocketchat.py:126
+#: bubble/notifications/providers/rocketchat.py:117
 msgid ""
-":speech_balloon: New message in booking **%(item_title)s** "
-"`%(booking_uuid)s`:\n"
+":speech_balloon: New message from **%(sender)s** in booking for "
+"**%(item_title)s**:\n"
 "> %(message)s"
 msgstr ""
-":speech_balloon: Neue Nachricht in Buchung **%(item_title)s** "
-"`%(booking_uuid)s`:\n"
+":speech_balloon: Neue Nachricht von **%(sender)s** in Buchung für "
+"**%(item_title)s**:\n"
 "> %(message)s"
 
-#: bubble/notifications/providers/rocketchat.py:132
-#: bubble/notifications/providers/rocketchat.py:137
+#: bubble/notifications/providers/rocketchat.py:124
+#: bubble/notifications/providers/rocketchat.py:129
 #, python-format
 msgid "Notification: %(event_type)s"
 msgstr "Benachrichtigung: %(event_type)s"
 
+<<<<<<< HEAD
 #: bubble/notifications/providers/rocketchat.py:155
+=======
+#: bubble/notifications/providers/rocketchat.py:147
+>>>>>>> 3c41a75 (add notification system)
 #, python-format
 msgid "New item created for %(sales_label)s"
 msgstr "Neuer Artikel erstellt für %(sales_label)s"
 
+<<<<<<< HEAD
 #: bubble/notifications/providers/rocketchat.py:159
+=======
+#: bubble/notifications/providers/rocketchat.py:151
+>>>>>>> 3c41a75 (add notification system)
 msgid "New item created"
 msgstr "Neuer Artikel erstellt"
 
