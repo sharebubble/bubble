@@ -18,7 +18,7 @@ import { getCategoryIcon } from '@/lib/categoryIcons';
 import { formatPrice } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import { cn } from '@/lib/utils';
-import { type Status402Enum, type SalesTypeEnum } from '@/services/django';
+import { type Status402Enum, type SalesTypeEnum, type CategoryEnum } from '@/services/django';
 import { type ConditionEnum } from '@/services/django';
 import { getStatusColor, getStatusLabel } from '@/components/items/status';
 import { ChevronLeft, ChevronRight, Grid3X3, List } from 'lucide-react';
@@ -57,10 +57,27 @@ const Index = () => {
     itemFilters = { salesTypes: ['want_buy', 'want_rent'] };
   }
 
-  const [selectedCategory, setSelectedCategory] = useState<ItemCategoryFilter>('all');
-  const [selectedConditions, setSelectedConditions] = useState<ConditionEnum[]>(DEFAULT_CONDITIONS);
+  const VALID_CATEGORIES: ItemCategoryFilter[] = [
+    'all', 'books', 'clothing', 'electronics', 'furniture', 'garden',
+    'kitchen', 'other', 'rooms', 'sports', 'tools', 'toys', 'vehicles',
+  ] satisfies (CategoryEnum | 'all')[];
+  const categoryParam = params.get('category') as ItemCategoryFilter | null;
+  const selectedCategory: ItemCategoryFilter =
+    categoryParam && VALID_CATEGORIES.includes(categoryParam) ? categoryParam : 'all';
+
+  const availableParam = params.get('available');
+  const onlyAvailable: boolean = availableParam === null ? true : availableParam !== '0';
+
+  const VALID_CONDITIONS: ConditionEnum[] = [0, 1, 2];
+  const conditionsParam = params.get('conditions');
+  const selectedConditions: ConditionEnum[] = conditionsParam !== null
+    ? conditionsParam
+        .split(',')
+        .map(Number)
+        .filter((n): n is ConditionEnum => (VALID_CONDITIONS as number[]).includes(n))
+    : DEFAULT_CONDITIONS;
+
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('cards');
-  const [onlyAvailable, setOnlyAvailable] = useState(true);
 
   type SortField = 'name' | 'price' | 'date';
   type SortDir = 'asc' | 'desc';
@@ -97,6 +114,40 @@ const Index = () => {
     const newParams = new URLSearchParams(location.search);
     newParams.set('sortField', field);
     newParams.set('sortDir', newDir);
+    newParams.delete('page');
+    navigate(`/?${newParams.toString()}`);
+  };
+
+  const handleCategoryChange = (category: ItemCategoryFilter) => {
+    const newParams = new URLSearchParams(location.search);
+    if (category === 'all') {
+      newParams.delete('category');
+    } else {
+      newParams.set('category', category);
+    }
+    newParams.delete('page');
+    navigate(`/?${newParams.toString()}`);
+  };
+
+  const handleOnlyAvailableChange = (value: boolean) => {
+    const newParams = new URLSearchParams(location.search);
+    if (value) {
+      newParams.delete('available');
+    } else {
+      newParams.set('available', '0');
+    }
+    newParams.delete('page');
+    navigate(`/?${newParams.toString()}`);
+  };
+
+  const handleConditionsChange = (conditions: ConditionEnum[]) => {
+    const newParams = new URLSearchParams(location.search);
+    const sorted = [...conditions].sort();
+    if (sorted.length === DEFAULT_CONDITIONS.length && sorted.every((v, i) => v === DEFAULT_CONDITIONS[i])) {
+      newParams.delete('conditions');
+    } else {
+      newParams.set('conditions', sorted.join(','));
+    }
     newParams.delete('page');
     navigate(`/?${newParams.toString()}`);
   };
@@ -232,13 +283,13 @@ const Index = () => {
           <BrowseNav
             selectedConditions={selectedConditions}
             selectedCategory={selectedCategory}
-            onSelectedConditionsChange={setSelectedConditions}
-            onSelectedCategoryChange={setSelectedCategory}
+            onSelectedConditionsChange={handleConditionsChange}
+            onSelectedCategoryChange={handleCategoryChange}
             sortField={sortField}
             sortDir={sortDir}
             onSortClick={handleSortClick}
             onlyAvailable={onlyAvailable}
-            onOnlyAvailableChange={setOnlyAvailable}
+            onOnlyAvailableChange={handleOnlyAvailableChange}
           />
 
           <div className="flex items-center justify-between">
