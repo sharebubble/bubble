@@ -46,7 +46,7 @@ def notify_new_message(sender, instance: Message, created, **kwargs):
             instance.pk,
         )
         dispatch_notification(
-            instance.booking.user_id, "new_message", notification_context
+            instance.booking.user, "new_message", notification_context
         )
     else:
         # Send notification to each user with change permission (except the sender)

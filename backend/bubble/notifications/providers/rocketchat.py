@@ -137,7 +137,7 @@ class RocketChatProvider(BaseNotificationProvider):
         image_url: str = context.get("image_url", "")
 
         frontend_url: str = settings.FRONTEND_URL.rstrip("/")
-        item_link = f"{frontend_url}/items/{item_id}" if frontend_url else ""
+        item_link = f"{frontend_url}/item/{item_id}" if frontend_url else ""
 
         # image_url from Django may be a relative /media/… path — make it absolute.
         if image_url and not image_url.startswith("http") and frontend_url:
