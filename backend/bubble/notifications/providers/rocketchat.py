@@ -8,6 +8,7 @@ from django.conf import settings
 from django.utils import translation
 from django.utils.translation import gettext as _
 
+from bubble.notifications.models import EventType
 from bubble.users.models import User
 
 from .base import BaseNotificationProvider
@@ -113,7 +114,7 @@ class RocketChatProvider(BaseNotificationProvider):
             return True
 
     def _format_message(self, event_type: str, context: dict) -> str:
-        if event_type == "new_message":
+        if event_type == EventType.NEW_MESSAGE:
             return _(
                 ":speech_balloon: New message from **%(sender)s** in booking for "
                 "**%(item_title)s**:\n> %(message)s"
@@ -125,7 +126,7 @@ class RocketChatProvider(BaseNotificationProvider):
         return _("Notification: %(event_type)s") % {"event_type": event_type}
 
     def _build_channel_payload(self, event_type: str, context: dict) -> dict:
-        if event_type == "new_item":
+        if event_type == EventType.NEW_ITEM:
             return self._new_item_payload(context)
         return {"text": _("Notification: %(event_type)s") % {"event_type": event_type}}
 

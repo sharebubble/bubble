@@ -6,6 +6,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 from bubble.notifications.dispatch import dispatch_channel_notification
+from bubble.notifications.models import EventType
 
 from .models import Item, ItemStatus
 
@@ -55,4 +56,4 @@ def notify_new_item(sender, instance: Item, **kwargs) -> None:
         instance.pk,
         instance.status,
     )
-    dispatch_channel_notification("new_item", context)
+    dispatch_channel_notification(EventType.NEW_ITEM, context)

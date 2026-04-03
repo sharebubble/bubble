@@ -1,4 +1,5 @@
 import logging
+from typing import TYPE_CHECKING, cast
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -8,8 +9,12 @@ from guardian.shortcuts import get_users_with_perms
 from bubble.core.websocket_signals import send_message_notification
 from bubble.items.models import Item, ItemStatus, SalesType
 from bubble.notifications.dispatch import dispatch_notification
+from bubble.notifications.models import EventType
 
 from .models import Booking, BookingStatus, Message
+
+if TYPE_CHECKING:
+    from bubble.users.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -46,23 +51,26 @@ def notify_new_message(sender, instance: Message, created, **kwargs):
             instance.pk,
         )
         dispatch_notification(
-            instance.booking.user, "new_message", notification_context
+            instance.booking.user, EventType.NEW_MESSAGE, notification_context
         )
     else:
         # Send notification to each user with change permission (except the sender)
         for user in users_with_perms:
-            if user.id != instance.sender_id:  # type: ignore[union-attr]
+            user_obj = cast("User", user)
+            if user_obj.id != instance.sender_id:  # type: ignore[union-attr]
                 send_message_notification(
-                    user.id,  # type: ignore[union-attr]
+                    user_obj.id,  # type: ignore[union-attr]
                     message=instance.message,
                     booking_uuid=str(instance.booking.id),
                 )
                 logger.info(
                     "Sent new message notification to user %s for message %s",
-                    getattr(user, "username", str(user)),
+                    user_obj.username,
                     instance.pk,
                 )
-                dispatch_notification(user, "new_message", notification_context)
+                dispatch_notification(
+                    user_obj, EventType.NEW_MESSAGE, notification_context
+                )
 
 
 @receiver(post_save, sender=Booking)
