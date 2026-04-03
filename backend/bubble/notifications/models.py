@@ -27,7 +27,7 @@ class NotificationPreference(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="notificaction_preferences",
+        related_name="notification_preferences",
         verbose_name=_("user"),
     )
     provider_type = models.CharField(
