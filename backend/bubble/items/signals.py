@@ -16,17 +16,26 @@ logger = logging.getLogger(__name__)
 def notify_new_item(sender, instance: Item, **kwargs) -> None:
     """Dispatch a channel notification the first time an item becomes published.
 
-    Guarded by ``publish_notification_sent`` so the notification fires exactly
-    once per item, even if the item is moved back to draft and re-published.
+    Uses an atomic compare-and-set on ``publish_notification_sent`` so that only
+    one concurrent signal handler can enqueue the notification.
     """
 
-    if instance.publish_notification_sent:
-        return
-
     is_published = instance.status in ItemStatus.published()
-
     if not is_published:
         return
+
+    # Atomic guard: only one process/thread can flip False -> True.
+    updated = Item.objects.filter(
+        pk=instance.pk,
+        publish_notification_sent=False,
+    ).update(publish_notification_sent=True)
+
+    if updated == 0:
+        # Already notified (or item no longer exists).
+        instance.publish_notification_sent = True
+        return
+
+    instance.publish_notification_sent = True
 
     first_image = instance.get_first_image()
     image_url = ""
@@ -47,7 +56,3 @@ def notify_new_item(sender, instance: Item, **kwargs) -> None:
         instance.status,
     )
     dispatch_channel_notification("new_item", context)
-
-    # Mark as notified — skip the signal to avoid recursion.
-    Item.objects.filter(pk=instance.pk).update(publish_notification_sent=True)
-    instance.publish_notification_sent = True
