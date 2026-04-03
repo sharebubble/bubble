@@ -58,8 +58,19 @@ const Index = () => {
   }
 
   const VALID_CATEGORIES: ItemCategoryFilter[] = [
-    'all', 'books', 'clothing', 'electronics', 'furniture', 'garden',
-    'kitchen', 'other', 'rooms', 'sports', 'tools', 'toys', 'vehicles',
+    'all',
+    'books',
+    'clothing',
+    'electronics',
+    'furniture',
+    'garden',
+    'kitchen',
+    'other',
+    'rooms',
+    'sports',
+    'tools',
+    'toys',
+    'vehicles',
   ] satisfies (CategoryEnum | 'all')[];
   const categoryParam = params.get('category') as ItemCategoryFilter | null;
   const selectedCategory: ItemCategoryFilter =
@@ -70,12 +81,13 @@ const Index = () => {
 
   const VALID_CONDITIONS: ConditionEnum[] = [0, 1, 2];
   const conditionsParam = params.get('conditions');
-  const selectedConditions: ConditionEnum[] = conditionsParam !== null
-    ? conditionsParam
-        .split(',')
-        .map(Number)
-        .filter((n): n is ConditionEnum => (VALID_CONDITIONS as number[]).includes(n))
-    : DEFAULT_CONDITIONS;
+  const selectedConditions: ConditionEnum[] =
+    conditionsParam !== null
+      ? conditionsParam
+          .split(',')
+          .map(Number)
+          .filter((n): n is ConditionEnum => (VALID_CONDITIONS as number[]).includes(n))
+      : DEFAULT_CONDITIONS;
 
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('cards');
 
@@ -143,7 +155,10 @@ const Index = () => {
   const handleConditionsChange = (conditions: ConditionEnum[]) => {
     const newParams = new URLSearchParams(location.search);
     const sorted = [...conditions].sort();
-    if (sorted.length === DEFAULT_CONDITIONS.length && sorted.every((v, i) => v === DEFAULT_CONDITIONS[i])) {
+    if (
+      sorted.length === DEFAULT_CONDITIONS.length &&
+      sorted.every((v, i) => v === DEFAULT_CONDITIONS[i])
+    ) {
       newParams.delete('conditions');
     } else {
       newParams.set('conditions', sorted.join(','));
