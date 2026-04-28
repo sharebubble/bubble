@@ -21,8 +21,8 @@ const translations = {
     'header.shareItem': 'Share Item',
     'header.signIn': 'Sign In',
     'header.myProfile': 'My Profile',
-    'header.myItems': 'My Items',
-    'header.myBookings': 'My Bookings',
+    'header.items': 'Items',
+    'header.bookings': 'Bookings',
     'header.signOut': 'Sign Out',
     'header.theme': 'Theme',
     'header.light': 'Light',
@@ -252,13 +252,13 @@ const translations = {
     'imageManager.deleteErrorTitle': 'Error',
     'imageManager.deleteErrorDescription': 'Failed to delete image',
 
-    // Messages
-    'messages.title': 'Messages',
-    'messages.noConversations': 'No conversations yet',
-    'messages.startConversation': 'Start a conversation by messaging someone about their item!',
-    'messages.typeMessage': 'Type a message...',
-    'messages.send': 'Send',
-    'messages.selectConversation': 'Select a conversation to start messaging',
+    // Bookings
+    'bookings.title': 'Bookings',
+    'bookings.noConversations': 'No conversations yet',
+    'bookings.startConversation': 'Start a conversation by messaging someone about their item!',
+    'bookings.typeMessage': 'Type a message...',
+    'bookings.send': 'Send',
+    'bookings.selectConversation': 'Select a conversation to start messaging',
 
     // Common
     'common.loading': 'Loading...',
@@ -310,7 +310,6 @@ const translations = {
     'calendar.month': 'Month',
 
     // Bookings Page
-    'bookings.title': 'My Bookings',
     'bookings.allBookings': 'All Bookings',
     'bookings.noBookings': 'No bookings yet',
     'bookings.selectBooking': 'Select a booking to view details',
@@ -403,6 +402,9 @@ const translations = {
     'profile.rocketchatNewMessage': 'New message via RocketChat',
     'profile.rocketchatNewMessageDesc':
       'Receive a RocketChat notification when you get a new message in Bubble',
+    'profile.appearance': 'Appearance',
+    'profile.themeAuto': 'Auto',
+    'profile.language': 'Language',
     'profile.username': 'Username',
     'profile.email': 'Email',
     'profile.readOnly': 'Read-only',
@@ -534,8 +536,8 @@ const translations = {
     'header.shareItem': 'Artikel teilen',
     'header.signIn': 'Anmelden',
     'header.myProfile': 'Mein Profil',
-    'header.myItems': 'Meine Artikel',
-    'header.myBookings': 'Meine Buchungen',
+    'header.items': 'Artikel',
+    'header.bookings': 'Buchungen',
     'header.signOut': 'Abmelden',
     'header.theme': 'Design',
     'header.light': 'Hell',
@@ -772,14 +774,14 @@ const translations = {
     'imageManager.deleteErrorTitle': 'Fehler',
     'imageManager.deleteErrorDescription': 'Bild konnte nicht gelöscht werden',
 
-    // Messages
-    'messages.title': 'Nachrichten',
-    'messages.noConversations': 'Noch keine Unterhaltungen',
-    'messages.startConversation':
+    // Bookings
+    'bookings.title': 'Buchungen',
+    'bookings.noConversations': 'Noch keine Unterhaltungen',
+    'bookings.startConversation':
       'Beginne eine Unterhaltung, indem du jemanden wegen seines Artikels anschreibst!',
-    'messages.typeMessage': 'Nachricht eingeben...',
-    'messages.send': 'Senden',
-    'messages.selectConversation': 'Wähle eine Unterhaltung aus, um zu chatten',
+    'bookings.typeMessage': 'Nachricht eingeben...',
+    'bookings.send': 'Senden',
+    'bookings.selectConversation': 'Wähle eine Unterhaltung aus, um zu chatten',
 
     // Common
     'common.loading': 'Lädt...',
@@ -832,7 +834,6 @@ const translations = {
     'calendar.month': 'Monat',
 
     // Bookings Page
-    'bookings.title': 'Meine Buchungen',
     'bookings.allBookings': 'Alle Buchungen',
     'bookings.noBookings': 'Noch keine Buchungen',
     'bookings.selectBooking': 'Wähle eine Buchung aus, um Details zu sehen',
@@ -926,6 +927,9 @@ const translations = {
     'profile.rocketchatNewMessage': 'Neue Nachricht via RocketChat',
     'profile.rocketchatNewMessageDesc':
       'RocketChat-Benachrichtigung bei neuer Nachricht in Bubble erhalten',
+    'profile.appearance': 'Erscheinungsbild',
+    'profile.themeAuto': 'Automatisch',
+    'profile.language': 'Sprache',
     'profile.username': 'Benutzername',
     'profile.email': 'E-Mail',
     'profile.readOnly': 'Nur lesen',

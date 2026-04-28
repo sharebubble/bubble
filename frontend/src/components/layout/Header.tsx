@@ -15,37 +15,20 @@ import { useUnreadMessages } from '@/hooks/useMessages';
 import * as Sentry from '@sentry/react';
 
 import { cn } from '@/lib/utils';
-import { useTheme } from '@/providers/theme-provider';
-import {
-  BookMarked,
-  Handshake,
-  Library,
-  LogIn,
-  LogOut,
-  Moon,
-  Plus,
-  Search,
-  Sun,
-  User,
-} from 'lucide-react';
+import { BookMarked, Handshake, Library, LogIn, LogOut, Plus, Search, User } from 'lucide-react';
 import { SubmitEvent, useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 export const Header = () => {
-  const { theme, setTheme } = useTheme();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { data: unreadMessages } = useUnreadMessages();
 
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
 
   const unreadCount = unreadMessages?.count || 0;
-
-  const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -163,10 +146,10 @@ export const Header = () => {
                 'relative gap-2',
                 location.pathname.startsWith('/bookings') && 'font-semibold',
               )}
-              title={t('header.myBookings')}
+              title={t('header.bookings')}
             >
               <Handshake className="h-5 w-5" />
-              <span className="hidden sm:inline">{t('messages.title')}</span>
+              <span className="hidden sm:inline">{t('bookings.title')}</span>
 
               {unreadCount > 0 && (
                 <Badge
@@ -185,26 +168,10 @@ export const Header = () => {
               onClick={() => navigate('/my-items')}
               aria-current={location.pathname.startsWith('/my-items') ? 'page' : undefined}
               className={cn('gap-2', location.pathname.startsWith('/my-items') && 'font-semibold')}
-              title={t('header.myItems')}
+              title={t('header.items')}
             >
               <Library className="h-5 w-5" />
               <span className="hidden sm:inline">{t('myItems.title')}</span>
-            </Button>
-
-            {/* Collections */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/collections')}
-              aria-current={location.pathname.startsWith('/collections') ? 'page' : undefined}
-              className={cn(
-                'gap-2',
-                location.pathname.startsWith('/collections') && 'font-semibold',
-              )}
-              title={t('collections.header.myCollections')}
-            >
-              <BookMarked className="h-5 w-5" />
-              <span className="hidden sm:inline">{t('collections.header.myCollections')}</span>
             </Button>
 
             {/* Add Item */}
@@ -235,46 +202,16 @@ export const Header = () => {
                 className="w-56 bg-background border border-border z-50"
               >
                 <DropdownMenuItem asChild className="flex items-center">
+                  <NavLink to="/collections">
+                    <BookMarked className="w-4 h-4 mr-2" />
+                    {t('collections.header.myCollections')}
+                  </NavLink>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="flex items-center">
                   <NavLink to="/profile">
                     <User className="w-4 h-4 mr-2" />
                     {t('header.myProfile')}
                   </NavLink>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="flex items-center justify-between"
-                  onClick={toggleTheme}
-                >
-                  <div className="flex items-center">
-                    {theme === 'dark' ? (
-                      <Moon className="w-4 h-4 mr-2" />
-                    ) : (
-                      <Sun className="w-4 h-4 mr-2" />
-                    )}
-                    {t('header.theme')}
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {theme === 'dark' ? t('header.dark') : t('header.light')}
-                  </span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={() => setLanguage('en')}
-                  className={cn(
-                    'flex items-center cursor-pointer',
-                    language === 'en' && 'bg-accent',
-                  )}
-                >
-                  🇺🇸 English
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setLanguage('de')}
-                  className={cn(
-                    'flex items-center cursor-pointer',
-                    language === 'de' && 'bg-accent',
-                  )}
-                >
-                  🇩🇪 Deutsch
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem

@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -17,8 +18,9 @@ import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
 } from '@/hooks/useNotificationPreferences';
+import { useTheme } from '@/providers/theme-provider';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, Monitor, Moon, Sun } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -37,7 +39,8 @@ export const ProfileForm = () => {
   const { data: notifPrefs, isLoading: notifLoading } = useNotificationPreferences();
   const updateNotifPrefs = useUpdateNotificationPreferences();
   const { rocketchatEnabled } = useAppConfig();
-  const { t } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
+  const { theme, setTheme } = useTheme();
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -194,6 +197,69 @@ export const ProfileForm = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Appearance Card */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>{t('profile.appearance')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Button
+              variant={theme === 'light' ? 'default' : 'outline'}
+              size="sm"
+              className="gap-2"
+              onClick={() => setTheme('light')}
+            >
+              <Sun className="h-4 w-4" />
+              {t('header.light')}
+            </Button>
+            <Button
+              variant={theme === 'dark' ? 'default' : 'outline'}
+              size="sm"
+              className="gap-2"
+              onClick={() => setTheme('dark')}
+            >
+              <Moon className="h-4 w-4" />
+              {t('header.dark')}
+            </Button>
+            <Button
+              variant={theme === 'system' ? 'default' : 'outline'}
+              size="sm"
+              className="gap-2"
+              onClick={() => setTheme('system')}
+            >
+              <Monitor className="h-4 w-4" />
+              {t('profile.themeAuto')}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Language Card */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>{t('profile.language')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-2">
+            <Button
+              variant={language === 'en' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setLanguage('en')}
+            >
+              🇺🇸 English
+            </Button>
+            <Button
+              variant={language === 'de' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setLanguage('de')}
+            >
+              🇩🇪 Deutsch
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </>
   );
 };
