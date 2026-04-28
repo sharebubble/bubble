@@ -119,21 +119,21 @@ const Bookings = () => {
   const getStatusBadge = (status?: number) => {
     switch (status) {
       case 1:
-        return <Badge variant="secondary">{t('bookings.status.pending')}</Badge>;
+        return <Badge variant="secondary">{t('requests.status.pending')}</Badge>;
       case 2:
-        return <Badge variant="outline">{t('bookings.status.cancelled')}</Badge>;
+        return <Badge variant="outline">{t('requests.status.cancelled')}</Badge>;
       case 3:
         return (
           <Badge variant="default" className="bg-green-500">
-            {t('bookings.status.confirmed')}
+            {t('requests.status.confirmed')}
           </Badge>
         );
       case 4:
-        return <Badge variant="outline">{t('bookings.status.completed')}</Badge>;
+        return <Badge variant="outline">{t('requests.status.completed')}</Badge>;
       case 5:
-        return <Badge variant="destructive">{t('bookings.status.rejected')}</Badge>;
+        return <Badge variant="destructive">{t('requests.status.rejected')}</Badge>;
       default:
-        return <Badge variant="secondary">{t('bookings.status.unknown')}</Badge>;
+        return <Badge variant="secondary">{t('requests.status.unknown')}</Badge>;
     }
   };
 
@@ -186,20 +186,20 @@ const Bookings = () => {
             </SheetTrigger>
             <SheetContent side="left" className="w-[90vw] sm:w-[400px] p-0">
               <SheetHeader className="p-4 border-b">
-                <SheetTitle>{t('bookings.allBookings')}</SheetTitle>
+                <SheetTitle>{t('requests.allBookings')}</SheetTitle>
               </SheetHeader>
               <ScrollArea className="h-[calc(100vh-5rem)]">
                 <div className="p-4">
                   {!bookings?.results || bookings.results.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>{t('bookings.noBookings')}</p>
+                      <p>{t('requests.noBookings')}</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
                       {bookings.results.map(booking => {
                         const isSelected = selectedBookingId === booking.id;
-                        const itemTitle = booking.item_details?.name || t('bookings.unknownItem');
+                        const itemTitle = booking.item_details?.name || t('requests.unknownItem');
                         const itemImage = booking.item_details?.first_image;
                         const itemUuid = booking.item_details?.id || booking.item;
 
@@ -251,7 +251,7 @@ const Bookings = () => {
                                   <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                                     <User className="h-3 w-3" />
                                     <span className="line-clamp-1">
-                                      {t('bookings.requestFrom')}{' '}
+                                      {t('requests.requestFrom')}{' '}
                                       {booking.user?.name || booking.user?.username || 'Unknown'}
                                     </span>
                                   </div>
@@ -273,7 +273,7 @@ const Bookings = () => {
               </ScrollArea>
             </SheetContent>
           </Sheet>
-          <h1 className="text-3xl font-bold">{t('bookings.title')}</h1>
+          <h1 className="text-3xl font-bold">{t('requests.title')}</h1>
         </div>
 
         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0">
@@ -281,17 +281,17 @@ const Bookings = () => {
           <Card className="hidden md:block col-span-1">
             <ScrollArea className="h-full">
               <div className="p-4">
-                <h2 className="text-lg font-semibold mb-4">{t('bookings.allBookings')}</h2>
+                <h2 className="text-lg font-semibold mb-4">{t('requests.allBookings')}</h2>
                 {!bookings?.results || bookings.results.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>{t('bookings.noBookings')}</p>
+                    <p>{t('requests.noBookings')}</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {bookings.results.map(booking => {
                       const isSelected = selectedBookingId === booking.id;
-                      const itemTitle = booking.item_details?.name || t('bookings.unknownItem');
+                      const itemTitle = booking.item_details?.name || t('requests.unknownItem');
                       const itemImage = booking.item_details?.first_image;
                       const itemUuid = booking.item_details?.id || booking.item;
 
@@ -343,7 +343,7 @@ const Bookings = () => {
                                 <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                                   <User className="h-3 w-3" />
                                   <span className="line-clamp-1">
-                                    {t('bookings.requestFrom')}{' '}
+                                    {t('requests.requestFrom')}{' '}
                                     {booking.user?.name || booking.user?.username || 'Unknown'}
                                   </span>
                                 </div>
@@ -398,13 +398,13 @@ const Bookings = () => {
                         href={`/item/${selectedBooking.item_details?.id || selectedBooking.item}`}
                         className="text-xl font-bold mb-2 hover:underline block"
                       >
-                        {selectedBooking.item_details?.name || t('bookings.unknownItem')}
+                        {selectedBooking.item_details?.name || t('requests.unknownItem')}
                       </a>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-sm">
                           <User className="h-4 w-4 text-muted-foreground" />
                           <span>
-                            {t('bookings.requestFrom')}{' '}
+                            {t('requests.requestFrom')}{' '}
                             <span className="font-medium">
                               {selectedBooking.user?.name ||
                                 selectedBooking.user?.username ||
@@ -448,7 +448,7 @@ const Bookings = () => {
                     )}
                     {selectedBooking.offer && (
                       <div>
-                        <p className="text-xs mb-1">{t('bookings.offerAmount')}</p>
+                        <p className="text-xs mb-1">{t('requests.offerAmount')}</p>
                         <p className="text-lg font-bold">
                           {formatPrice(selectedBooking.offer, 'EUR')}
                         </p>
@@ -456,7 +456,7 @@ const Bookings = () => {
                     )}
                     {selectedBooking.time_from && selectedBooking.time_to && (
                       <div>
-                        <p className="text-sm font-medium mb-1">{t('bookings.rentalPeriod')}</p>
+                        <p className="text-sm font-medium mb-1">{t('requests.rentalPeriod')}</p>
                         <p className="text-sm">
                           <Clock className="inline h-3 w-3 mr-1" />
                           {formatDateTime(selectedBooking.time_from)}
@@ -469,7 +469,7 @@ const Bookings = () => {
                     )}
                     {selectedBooking.counter_offer && (
                       <div>
-                        <p className="text-xs font-medium mb-1">{t('bookings.counterOffer')}</p>
+                        <p className="text-xs font-medium mb-1">{t('requests.counterOffer')}</p>
                         <p className="text-lg font-bold text-orange-500">
                           {formatPrice(selectedBooking.counter_offer, 'EUR')}
                         </p>
@@ -507,7 +507,7 @@ const Bookings = () => {
                                 >
                                   {updateBookingMutation.isPending
                                     ? t('common.submitting')
-                                    : t('bookings.acceptCounterOffer')}
+                                    : t('requests.acceptCounterOffer')}
                                 </Button>
                               )}
 
@@ -529,7 +529,7 @@ const Bookings = () => {
                             >
                               {updateBookingMutation.isPending
                                 ? t('common.submitting')
-                                : t('bookings.cancel')}
+                                : t('requests.cancel')}
                             </Button>
                           </>
                         ) : (
@@ -578,17 +578,17 @@ const Bookings = () => {
                                 >
                                   {updateBookingMutation.isPending
                                     ? t('common.submitting')
-                                    : t('bookings.accept')}
+                                    : t('requests.accept')}
                                 </Button>
                               </AlertDialogTrigger>
 
                               <AlertDialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>
-                                    {t('bookings.acceptWarningTitle')}
+                                    {t('requests.acceptWarningTitle')}
                                   </AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    {t('bookings.acceptWarningDescription')?.replace(
+                                    {t('requests.acceptWarningDescription')?.replace(
                                       '{amount}',
                                       String(selectedBooking.offer ?? ''),
                                     )}
@@ -615,7 +615,7 @@ const Bookings = () => {
                                       }
                                     }}
                                   >
-                                    {t('bookings.accept')}
+                                    {t('requests.accept')}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
@@ -637,7 +637,7 @@ const Bookings = () => {
                             >
                               {updateBookingMutation.isPending
                                 ? t('common.submitting')
-                                : t('bookings.reject')}
+                                : t('requests.reject')}
                             </Button>
                           </>
                         )}
@@ -649,7 +649,7 @@ const Bookings = () => {
                           variant="ghost"
                           onClick={handleRefreshMessages}
                           disabled={!selectedBookingId || isFetchingMessages}
-                          aria-label={t('bookings.refresh')}
+                          aria-label={t('requests.refresh')}
                         >
                           <RefreshCw
                             className={isFetchingMessages ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
@@ -679,7 +679,7 @@ const Bookings = () => {
                       >
                         {updateBookingMutation.isPending
                           ? t('common.submitting')
-                          : t('bookings.cancel')}
+                          : t('requests.cancel')}
                       </Button>
 
                       <div className="ml-auto">
@@ -688,7 +688,7 @@ const Bookings = () => {
                           variant="ghost"
                           onClick={handleRefreshMessages}
                           disabled={!selectedBookingId || isFetchingMessages}
-                          aria-label={t('bookings.refresh')}
+                          aria-label={t('requests.refresh')}
                         >
                           <RefreshCw
                             className={isFetchingMessages ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
@@ -705,8 +705,8 @@ const Bookings = () => {
                     <div className="space-y-4 p-4">
                       {messages.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
-                          <p className="text-sm">{t('bookings.noMessages')}</p>
-                          <p className="text-xs mt-2">{t('bookings.startConversation')}</p>
+                          <p className="text-sm">{t('requests.noMessages')}</p>
+                          <p className="text-xs mt-2">{t('requests.startConversation')}</p>
                         </div>
                       ) : (
                         <>
@@ -769,7 +769,7 @@ const Bookings = () => {
                   <div className="flex gap-2">
                     <Input
                       ref={messageInputRef}
-                      placeholder={t('bookings.typeMessage')}
+                      placeholder={t('requests.typeMessage')}
                       value={messageText}
                       onChange={e => setMessageText(e.target.value)}
                       onKeyDown={e => {
@@ -794,7 +794,7 @@ const Bookings = () => {
               <div className="flex-1 flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
                   <Calendar className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                  <p>{t('bookings.selectBooking')}</p>
+                  <p>{t('requests.selectBooking')}</p>
                 </div>
               </div>
             )}

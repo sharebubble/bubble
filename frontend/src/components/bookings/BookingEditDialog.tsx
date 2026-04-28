@@ -128,14 +128,14 @@ const BookingEditDialog = ({ booking }: Props) => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
-          {t('bookings.editBooking')}
+          {t('requests.editBooking')}
         </Button>
       </DialogTrigger>
       <DialogContent onPointerDownOutside={handleCancel} onEscapeKeyDown={handleCancel}>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{t('bookings.editBooking')}</DialogTitle>
-            <DialogDescription>{t('bookings.editBookingDescription')}</DialogDescription>
+            <DialogTitle>{t('requests.editBooking')}</DialogTitle>
+            <DialogDescription>{t('requests.editBookingDescription')}</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
@@ -179,7 +179,7 @@ const BookingEditDialog = ({ booking }: Props) => {
               {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={updateBooking.isPending}>
-              {t('bookings.update')}
+              {t('requests.update')}
             </Button>
           </DialogFooter>
         </form>

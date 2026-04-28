@@ -47,19 +47,19 @@ const BookingCounterOfferDialog = ({ booking }: Props) => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" variant="outline">
-          {t('bookings.counterOffer')}
+          {t('requests.counterOffer')}
         </Button>
       </DialogTrigger>
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{t('bookings.counterOfferDialogTitle')}</DialogTitle>
-            <DialogDescription>{t('bookings.counterOfferDialogDescription')}</DialogDescription>
+            <DialogTitle>{t('requests.counterOfferDialogTitle')}</DialogTitle>
+            <DialogDescription>{t('requests.counterOfferDialogDescription')}</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="counterOffer">{t('bookings.counterOffer')}</Label>
+              <Label htmlFor="counterOffer">{t('requests.counterOffer')}</Label>
               <Input
                 id="counterOffer"
                 type="number"
@@ -76,7 +76,7 @@ const BookingCounterOfferDialog = ({ booking }: Props) => {
               {t('common.cancel')}
             </Button>
             <Button type="submit" disabled={updateBooking.isPending}>
-              {t('bookings.counterOfferSubmit')}
+              {t('requests.counterOfferSubmit')}
             </Button>
           </DialogFooter>
         </form>

@@ -149,7 +149,7 @@ export const Header = () => {
               title={t('header.bookings')}
             >
               <Handshake className="h-5 w-5" />
-              <span className="hidden sm:inline">{t('bookings.title')}</span>
+              <span className="hidden sm:inline">{t('requests.title')}</span>
 
               {unreadCount > 0 && (
                 <Badge
