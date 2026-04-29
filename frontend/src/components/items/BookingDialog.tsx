@@ -16,6 +16,7 @@ import { formatPrice } from '@/lib/currency';
 import { SalesTypeEnum } from '@/services/django';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { DateHourPicker } from './DateHourPicker';
 
 interface BookingDialogProps {
   itemUuid: string;
@@ -34,15 +35,13 @@ interface BookingDialogProps {
   onControlledOpenChange?: (open: boolean) => void;
 }
 
-/** Format a Date as the YYYY-MM-DDTHH:mm string expected by datetime-local inputs.
- *  Uses local time (not UTC) so the value matches what the user sees. */
+/** Format a Date as the YYYY-MM-DDTHH:mm string used internally. */
 const formatDateLocal = (date: Date): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
+  return `${year}-${month}-${day}T${hours}:00`;
 };
 
 export const BookingDialog = ({
@@ -139,7 +138,6 @@ export const BookingDialog = ({
     e.preventDefault();
 
     // Allow empty / null values — backend accepts nulls for offer/time fields
-
     const booking = await createBookingMutation.mutateAsync({
       item: itemUuid,
       offer: offerPrice === '' ? null : offerPrice,
@@ -159,6 +157,7 @@ export const BookingDialog = ({
       navigate(`/bookings`);
     }
   };
+
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogTrigger asChild>
@@ -196,40 +195,34 @@ export const BookingDialog = ({
               ) : null}
             </div>
 
-            {/* Rental Duration - only show if item has rental price */}
+            {/* Rental Duration */}
             {isRental && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="timeFrom">
-                    {t('booking.rentalStart')} *
-                    <span className="ml-1 text-xs text-muted-foreground">(24h)</span>
-                  </Label>
-                  <Input
+                  <Label htmlFor="timeFrom">{t('booking.rentalStart')} *</Label>
+                  <DateHourPicker
                     id="timeFrom"
-                    type="datetime-local"
-                    step="3600"
                     value={timeFrom}
-                    onChange={e => setTimeFrom(e.target.value)}
+                    onChange={setTimeFrom}
+                    placeholder={t('booking.rentalStart')}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="timeTo">
                     {rentalOpenEnd ? t('booking.rentalEndOptional') : `${t('booking.rentalEnd')} *`}
-                    <span className="ml-1 text-xs text-muted-foreground">(24h)</span>
                   </Label>
                   {rentalOpenEnd && (
                     <p className="text-xs text-muted-foreground">
                       {t('booking.rentalEndOptionalNote')}
                     </p>
                   )}
-                  <Input
+                  <DateHourPicker
                     id="timeTo"
-                    type="datetime-local"
-                    step="3600"
                     value={timeTo}
-                    onChange={e => setTimeTo(e.target.value)}
+                    onChange={setTimeTo}
                     min={timeFrom}
+                    placeholder={t('booking.rentalEnd')}
                   />
                 </div>
               </>
