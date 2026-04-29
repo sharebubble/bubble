@@ -33,6 +33,7 @@ interface ItemCardProps {
   ownerId?: string;
   owner?: string;
   status?: Status402Enum | null;
+  rentalOpenEnd?: boolean;
 }
 
 export const ItemCard = ({
@@ -51,6 +52,7 @@ export const ItemCard = ({
   isFavorited = false,
   owner,
   status,
+  rentalOpenEnd = false,
 }: ItemCardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -229,6 +231,7 @@ export const ItemCard = ({
                         price={price?.toString()}
                         priceCurrency={priceCurrency || undefined}
                         salesType={salesType}
+                        rentalOpenEnd={rentalOpenEnd}
                         buttonSize="sm"
                         buttonClassName="w-full"
                         triggerLabel={getActionLabel(salesType)}
@@ -258,6 +261,7 @@ export const ItemCard = ({
                       price={price?.toString()}
                       priceCurrency={priceCurrency || undefined}
                       salesType={salesType}
+                      rentalOpenEnd={rentalOpenEnd}
                       buttonSize="sm"
                       buttonClassName="w-full"
                       triggerLabel={getActionLabel(salesType)}

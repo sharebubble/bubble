@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.db.models import Count, Q
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
@@ -99,7 +100,23 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
 
         if is_owner or self_service_at_listed_price:
             booking.status = BookingStatus.CONFIRMED
-            booking.save(update_fields=["status"])
+            try:
+                booking.save(update_fields=["status"])
+            except IntegrityError as exc:
+                exc_str = str(exc)
+                if "exclude_overlapping_confirmed_bookings" in exc_str:
+                    raise ValidationError(
+                        {
+                            "non_field_errors": [
+                                _(
+                                    "This item is already rented out or has an open"
+                                    " rental for the requested period."
+                                    " Please choose a different time."
+                                )
+                            ]
+                        }
+                    ) from exc
+                raise
 
         message = _("Booking request created for {offer}").format(offer=booking.offer)
         Message.objects.create(

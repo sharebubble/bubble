@@ -494,7 +494,7 @@ CONSTANCE_CONFIG = {
         "RocketChat channel to post notifications into",
     ),
     "ROCKETCHAT_USER_UNDERSCORES": (
-        env.bool("ROCKETCHAT_USER_UNDERSCORES", default=True),
+        env.bool("ROCKETCHAT_USER_UNDERSCORES", default=False),
         "Replace dot in usernames with underscores for sending notification to rocketchat",
     ),
 }

@@ -287,6 +287,8 @@ const translations = {
     'booking.enterYourOffer': 'Enter your offer amount',
     'booking.rentalStart': 'Rental Start Date & Time',
     'booking.rentalEnd': 'Rental End Date & Time',
+    'booking.rentalEndOptional': 'End Date & Time',
+    'booking.rentalEndOptionalNote': 'No end date required — leave blank for an open-ended rental.',
     'booking.submitRequest': 'Submit Request',
     'booking.successTitle': 'Success',
     'booking.successCreated': 'Booking request created successfully!',
@@ -810,6 +812,9 @@ const translations = {
     'booking.enterYourOffer': 'Gib deinen Angebotsbetrag ein',
     'booking.rentalStart': 'Mietbeginn Datum & Uhrzeit',
     'booking.rentalEnd': 'Mietende Datum & Uhrzeit',
+    'booking.rentalEndOptional': 'Enddatum & Uhrzeit',
+    'booking.rentalEndOptionalNote':
+      'Kein Enddatum erforderlich — leer lassen für unbegrenzte Miete.',
     'booking.submitRequest': 'Anfrage senden',
     'booking.successTitle': 'Erfolg',
     'booking.successCreated': 'Buchungsanfrage erfolgreich erstellt!',

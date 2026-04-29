@@ -23,6 +23,7 @@ interface BookingDialogProps {
   price?: string | null;
   priceCurrency?: string;
   salesType?: SalesTypeEnum;
+  rentalOpenEnd?: boolean;
   buttonSize?: 'default' | 'sm' | 'lg' | 'icon';
   buttonClassName?: string;
   triggerLabel?: string;
@@ -33,12 +34,24 @@ interface BookingDialogProps {
   onControlledOpenChange?: (open: boolean) => void;
 }
 
+/** Format a Date as the YYYY-MM-DDTHH:mm string expected by datetime-local inputs.
+ *  Uses local time (not UTC) so the value matches what the user sees. */
+const formatDateLocal = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 export const BookingDialog = ({
   itemUuid,
   itemName = '',
   price,
   priceCurrency,
   salesType,
+  rentalOpenEnd = false,
   buttonSize = 'lg',
   buttonClassName = 'w-full md:w-auto',
   preselectedStartDate,
@@ -94,25 +107,23 @@ export const BookingDialog = ({
     }
   }, [dialogOpen, isRental, price, timeFrom, timeTo]);
 
+  // Pre-populate timeFrom with current time (rounded down to the started hour)
+  // when no preselectedStartDate is provided and the dialog opens.
+  useEffect(() => {
+    if (dialogOpen && !preselectedStartDate && !timeFrom) {
+      const now = new Date();
+      now.setMinutes(0, 0, 0);
+      setTimeFrom(formatDateLocal(now));
+    }
+  }, [dialogOpen]);
+
   // Set preselected dates when they change
   useEffect(() => {
     if (preselectedStartDate) {
-      // Format date for datetime-local input (YYYY-MM-DDTHH:mm)
-      // This maintains the user's local timezone
-      const year = preselectedStartDate.getFullYear();
-      const month = String(preselectedStartDate.getMonth() + 1).padStart(2, '0');
-      const day = String(preselectedStartDate.getDate()).padStart(2, '0');
-      const hours = String(preselectedStartDate.getHours()).padStart(2, '0');
-      const minutes = String(preselectedStartDate.getMinutes()).padStart(2, '0');
-      setTimeFrom(`${year}-${month}-${day}T${hours}:${minutes}`);
+      setTimeFrom(formatDateLocal(preselectedStartDate));
     }
     if (preselectedEndDate) {
-      const year = preselectedEndDate.getFullYear();
-      const month = String(preselectedEndDate.getMonth() + 1).padStart(2, '0');
-      const day = String(preselectedEndDate.getDate()).padStart(2, '0');
-      const hours = String(preselectedEndDate.getHours()).padStart(2, '0');
-      const minutes = String(preselectedEndDate.getMinutes()).padStart(2, '0');
-      setTimeTo(`${year}-${month}-${day}T${hours}:${minutes}`);
+      setTimeTo(formatDateLocal(preselectedEndDate));
     }
   }, [preselectedStartDate, preselectedEndDate]);
 
@@ -204,9 +215,14 @@ export const BookingDialog = ({
 
                 <div className="space-y-2">
                   <Label htmlFor="timeTo">
-                    {t('booking.rentalEnd')} *
+                    {rentalOpenEnd ? t('booking.rentalEndOptional') : `${t('booking.rentalEnd')} *`}
                     <span className="ml-1 text-xs text-muted-foreground">(24h)</span>
                   </Label>
+                  {rentalOpenEnd && (
+                    <p className="text-xs text-muted-foreground">
+                      {t('booking.rentalEndOptionalNote')}
+                    </p>
+                  )}
                   <Input
                     id="timeTo"
                     type="datetime-local"

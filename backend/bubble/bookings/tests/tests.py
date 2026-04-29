@@ -865,3 +865,162 @@ class BookingAutoConfirmPriceCheckTestCase(APITestCase):
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["status"] == BookingStatus.CONFIRMED
+
+
+class BookingOpenEndRentalTestCase(APITestCase):
+    """
+    Test additional open-ended rental scenarios:
+
+    - Providing time_to for a rental_open_end=True item is still accepted.
+    - A BORROW item with rental_open_end=True can be booked without time_to.
+    - PATCHing an existing booking to remove time_to fails when the item does
+      not allow open-ended rentals.
+    - Explicitly sending time_to=null behaves identically to omitting the field
+      when rental_open_end=False (both must fail).
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+        self.default_group, _ = Group.objects.get_or_create(name=DefaultGroup.DEFAULT)
+
+        self.item_owner = UserFactory()
+        self.item_owner.groups.add(self.default_group)
+
+        self.booking_user = UserFactory()
+        self.booking_user.groups.add(self.default_group)
+
+        self.future_from = (timezone.now() + timedelta(days=1)).isoformat()
+        self.future_to = (timezone.now() + timedelta(days=2)).isoformat()
+
+        # Item that allows open-ended rentals (RENT)
+        self.open_end_rent_item = ItemFactory(
+            user=self.item_owner,
+            sales_type=SalesType.RENT,
+            price="10.00",
+            rental_open_end=True,
+        )
+
+        # Item that allows open-ended rentals (BORROW)
+        self.open_end_borrow_item = ItemFactory(
+            user=self.item_owner,
+            sales_type=SalesType.BORROW,
+            price=None,
+            rental_open_end=True,
+        )
+
+        # Item that requires an end time
+        self.closed_end_item = ItemFactory(
+            user=self.item_owner,
+            sales_type=SalesType.RENT,
+            price="10.00",
+            rental_open_end=False,
+        )
+
+    def test_time_to_provided_for_open_end_item_is_accepted(self):
+        """time_to is optional for rental_open_end=True items, but providing it is
+        valid."""
+        self.client.force_authenticate(user=self.booking_user)
+
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(self.open_end_rent_item.id),
+                "offer": "20.00",
+                "time_from": self.future_from,
+                "time_to": self.future_to,
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["time_to"] is not None
+        booking = Booking.objects.get(id=response.data["id"])
+        assert booking.time_to is not None
+
+    def test_borrow_item_with_open_end_can_be_booked_without_time_to(self):
+        """A BORROW item with rental_open_end=True must accept bookings without
+        time_to."""
+        self.client.force_authenticate(user=self.booking_user)
+
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(self.open_end_borrow_item.id),
+                "time_from": self.future_from,
+                # Intentionally no time_to
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["time_to"] is None
+        booking = Booking.objects.get(id=response.data["id"])
+        assert booking.time_to is None
+
+    def test_patch_removing_time_to_fails_when_open_end_not_allowed(self):
+        """PATCHing time_to to null on a closed-end item must be rejected."""
+        self.client.force_authenticate(user=self.booking_user)
+
+        # First create a valid booking with both times set
+        create_response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(self.closed_end_item.id),
+                "offer": "20.00",
+                "time_from": self.future_from,
+                "time_to": self.future_to,
+            },
+            format="json",
+        )
+        assert create_response.status_code == status.HTTP_201_CREATED
+        booking_id = create_response.data["id"]
+
+        # Now PATCH to remove the end time — must fail
+        patch_response = self.client.patch(
+            f"/api/bookings/{booking_id}/",
+            {"time_to": None},
+            format="json",
+        )
+
+        assert patch_response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "time_to" in patch_response.data
+        assert "required" in patch_response.data["time_to"][0].lower()
+
+    def test_explicit_null_time_to_same_as_omitting_when_open_end_not_allowed(self):
+        """
+        Explicitly sending time_to=null must raise the same 400 error as omitting
+        the field entirely when rental_open_end=False.
+        """
+        self.client.force_authenticate(user=self.booking_user)
+
+        # --- Field omitted ---
+        response_omitted = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(self.closed_end_item.id),
+                "offer": "20.00",
+                "time_from": self.future_from,
+            },
+            format="json",
+        )
+        assert response_omitted.status_code == status.HTTP_400_BAD_REQUEST
+        assert "time_to" in response_omitted.data
+
+        # Second user to avoid "duplicate pending booking" error
+        second_user = UserFactory()
+        second_user.groups.add(self.default_group)
+        self.client.force_authenticate(user=second_user)
+
+        # --- Explicit null ---
+        response_null = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(self.closed_end_item.id),
+                "offer": "20.00",
+                "time_from": self.future_from,
+                "time_to": None,
+            },
+            format="json",
+        )
+        assert response_null.status_code == status.HTTP_400_BAD_REQUEST
+        assert "time_to" in response_null.data

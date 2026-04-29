@@ -479,6 +479,7 @@ const ItemDetail = () => {
                           price={price}
                           priceCurrency={price_currency || undefined}
                           salesType={sales_type}
+                          rentalOpenEnd={item.rental_open_end ?? false}
                           preselectedStartDate={selectedStartDate}
                           preselectedEndDate={selectedEndDate}
                           controlledOpen={showBookingDialog}

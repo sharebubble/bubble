@@ -51,9 +51,14 @@ export const useCreateBooking = () => {
     },
     onError: (error: any) => {
       console.error('Error creating booking:', error);
+      const description =
+        error?.non_field_errors?.[0] ||
+        error?.detail ||
+        (typeof error === 'string' ? error : null) ||
+        t('booking.errorCreate');
       toast({
         title: t('common.error'),
-        description: error?.non_field_errors[0] || t('booking.errorCreate'),
+        description,
         variant: 'destructive',
       });
     },

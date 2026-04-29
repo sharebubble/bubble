@@ -42,8 +42,14 @@ class BookingSerializer(serializers.ModelSerializer):
         """
         Validate that if time_to is not set, the item must allow open-ended rentals.
         """
-        time_to = attrs.get("time_to")
-        item = attrs.get("item")
+        # On PATCH requests the item field may be absent from attrs; fall back to
+        # the existing instance's item so the check still applies.
+        time_to = (
+            attrs.get("time_to")
+            if "time_to" in attrs
+            else getattr(self.instance, "time_to", None)
+        )
+        item = attrs.get("item") or getattr(self.instance, "item", None)
 
         # If time_to is not provided and we're creating/updating
         # Allow missing time_to for items that are sale-only. Sale-type items

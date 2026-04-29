@@ -464,6 +464,7 @@ const Index = () => {
                   owner={item.user}
                   createdAt={item.created_at}
                   isFavorited={false}
+                  rentalOpenEnd={item.rental_open_end ?? false}
                 />
               ))}
             </div>
