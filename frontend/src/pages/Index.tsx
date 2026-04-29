@@ -465,6 +465,7 @@ const Index = () => {
                   createdAt={item.created_at}
                   isFavorited={false}
                   rentalOpenEnd={item.rental_open_end ?? false}
+                  rentalSelfService={item.rental_self_service ?? false}
                 />
               ))}
             </div>

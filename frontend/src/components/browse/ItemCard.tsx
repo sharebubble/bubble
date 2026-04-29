@@ -11,7 +11,7 @@ import { formatPrice } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import { cn } from '@/lib/utils';
 import { SalesTypeEnum, Status402Enum } from '@/services/django';
-import { Clock } from 'lucide-react';
+import { Clock, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getStatusColor, getStatusLabel } from '@/components/items/status';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
@@ -34,6 +34,7 @@ interface ItemCardProps {
   owner?: string;
   status?: Status402Enum | null;
   rentalOpenEnd?: boolean;
+  rentalSelfService?: boolean;
 }
 
 export const ItemCard = ({
@@ -53,6 +54,7 @@ export const ItemCard = ({
   owner,
   status,
   rentalOpenEnd = false,
+  rentalSelfService = false,
 }: ItemCardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -140,6 +142,27 @@ export const ItemCard = ({
             <Badge className={cn(salesTypeBadgeColor(salesType), 'text-xs shadow-medium')}>
               {t(`item.salesType.badge.${salesType}`)}
             </Badge>
+          </div>
+        )}
+
+        {/* Instant Rental badge (bottom-left) */}
+        {rentalSelfService && (
+          <div className="absolute bottom-3 left-3">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge className="gap-1 bg-amber-500 text-white text-xs shadow-medium hover:bg-amber-500 cursor-default">
+                    <Zap className="h-3 w-3 fill-current" />
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="font-medium">{t('item.instantRental')}</p>
+                  <p className="text-xs text-muted-foreground max-w-48">
+                    {t('item.instantRentalTooltip')}
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         )}
 

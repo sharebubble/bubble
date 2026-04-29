@@ -198,6 +198,9 @@ const translations = {
     'item.salesType.badge.borrow': 'Borrow',
     'item.salesType.badge.want_buy': 'Wanted',
     'item.salesType.badge.want_rent': 'Wanted (rent)',
+    'item.instantRental': 'Instant Rental',
+    'item.instantRentalTooltip':
+      'This item can be rented immediately without waiting for owner confirmation.',
     'item.price.sale': 'sale',
     'item.price.rent': 'rent',
     // Time
@@ -722,6 +725,9 @@ const translations = {
     'item.salesType.badge.borrow': 'Zum Ausleihen',
     'item.salesType.badge.want_buy': 'Gesucht',
     'item.salesType.badge.want_rent': 'Gesucht (Miete)',
+    'item.instantRental': 'Sofortmiete',
+    'item.instantRentalTooltip':
+      'Dieser Artikel kann sofort gemietet werden, ohne auf die Bestätigung des Besitzers zu warten.',
     'item.price.sale': 'Verkauf',
     'item.price.rent': 'Miete',
     // Time

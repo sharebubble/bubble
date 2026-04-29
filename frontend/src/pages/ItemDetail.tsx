@@ -38,6 +38,7 @@ import {
   Edit3,
   Trash2,
   X,
+  Zap,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -342,6 +343,23 @@ const ItemDetail = () => {
                   <Badge className={cn(getSalesTypeBadgeColor(sales_type), 'text-xs')}>
                     {t(`item.salesType.badge.${sales_type}`)}
                   </Badge>
+                )}
+                {item.rental_self_service && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge className="gap-1 bg-amber-500 text-white text-xs hover:bg-amber-500 cursor-default">
+                          <Zap className="h-3 w-3 fill-current" />
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="font-medium">{t('item.instantRental')}</p>
+                        <p className="text-xs text-muted-foreground max-w-56">
+                          {t('item.instantRentalTooltip')}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
               </div>
               <h1 className="text-3xl font-bold">{name}</h1>
