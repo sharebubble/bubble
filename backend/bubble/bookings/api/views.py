@@ -1,5 +1,5 @@
 from django.db import IntegrityError
-from django.db.models import Count, Q
+from django.db.models import Count, Max, Q
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
@@ -56,6 +56,7 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
     """ViewSet for bookings with filtering and permissions."""
 
     permission_classes = [DjangoModelPermissions]
+    ordering = ["-latest_message_at"]
 
     def get_queryset(self):
         return (
@@ -66,7 +67,8 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
                     "messages",
                     filter=Q(messages__is_read=False)
                     & ~Q(messages__sender=self.request.user),
-                )
+                ),
+                latest_message_at=Max("messages__created_at"),
             )
         )
 
