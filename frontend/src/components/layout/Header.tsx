@@ -161,19 +161,6 @@ export const Header = () => {
               )}
             </Button>
 
-            {/* My Items */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/my-items')}
-              aria-current={location.pathname.startsWith('/my-items') ? 'page' : undefined}
-              className={cn('gap-2', location.pathname.startsWith('/my-items') && 'font-semibold')}
-              title={t('header.items')}
-            >
-              <Library className="h-5 w-5" />
-              <span className="hidden sm:inline">{t('myItems.title')}</span>
-            </Button>
-
             {/* Add Item */}
             <Button
               variant="default"
@@ -202,9 +189,15 @@ export const Header = () => {
                 className="w-56 bg-background border border-border z-50"
               >
                 <DropdownMenuItem asChild className="flex items-center">
+                  <NavLink to="/my-items">
+                    <Library className="w-4 h-4 mr-2" />
+                    {t('header.items')}
+                  </NavLink>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="flex items-center">
                   <NavLink to="/collections">
                     <BookMarked className="w-4 h-4 mr-2" />
-                    {t('collections.header.myCollections')}
+                    {t('collections.title')}
                   </NavLink>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="flex items-center">

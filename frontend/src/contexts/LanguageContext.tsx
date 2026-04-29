@@ -20,7 +20,7 @@ const translations = {
     'header.search': 'Search items in your community...',
     'header.shareItem': 'Share Item',
     'header.signIn': 'Sign In',
-    'header.myProfile': 'My Profile',
+    'header.myProfile': 'Profile',
     'header.items': 'Items',
     'header.requests': 'Requests',
     'header.signOut': 'Sign Out',
@@ -378,7 +378,7 @@ const translations = {
     'itemDetail.properties': 'Properties',
 
     // My Items
-    'myItems.title': 'Items',
+    'myItems.title': 'My Items',
     'myItems.noItems': 'No items yet',
     'myItems.createFirst': 'Create your first item to get started!',
     'myItems.shareItem': 'Share Item',
@@ -503,7 +503,7 @@ const translations = {
     'collections.backToCollections': 'Back to Collections',
     'collections.owner': 'Owner',
     'collections.created': 'Created',
-    'collections.header.myCollections': 'Collections',
+    'collections.header.myCollections': 'My Collections',
     'collections.permissionsTab': 'Permissions',
     'collections.detailsTab': 'Details',
     'collections.subjectTypeUser': 'User',
@@ -540,7 +540,7 @@ const translations = {
     'header.search': 'Suche Artikel in deiner Community...',
     'header.shareItem': 'Artikel teilen',
     'header.signIn': 'Anmelden',
-    'header.myProfile': 'Mein Profil',
+    'header.myProfile': 'Profil',
     'header.items': 'Artikel',
     'header.requests': 'Anfragen',
     'header.signOut': 'Abmelden',
@@ -909,7 +909,7 @@ const translations = {
     'itemDetail.properties': 'Eigenschaften',
 
     // My Items
-    'myItems.title': 'Artikel',
+    'myItems.title': 'Meine Artikel',
     'myItems.noItems': 'Noch keine Artikel',
     'myItems.createFirst': 'Erstelle deinen ersten Artikel um loszulegen!',
     'myItems.shareItem': 'Artikel teilen',
@@ -1035,7 +1035,7 @@ const translations = {
     'collections.backToCollections': 'Zurück zu Sammlungen',
     'collections.owner': 'Besitzer',
     'collections.created': 'Erstellt',
-    'collections.header.myCollections': 'Sammlungen',
+    'collections.header.myCollections': 'Meine Sammlungen',
     'collections.permissionsTab': 'Berechtigungen',
     'collections.detailsTab': 'Details',
     'collections.subjectTypeUser': 'Benutzer',
