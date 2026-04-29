@@ -10,11 +10,36 @@ import {
 } from '@/services/django';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+// Extended filter params not yet reflected in the auto-generated BookingsListData type
+// (the authenticated BookingViewSet queryset fails schema introspection for anonymous users)
+export type BookingsFilterParams = {
+  status?: string[];
+  role?: 'owner' | 'renter';
+  time_from_after?: string;
+  time_from_before?: string;
+  time_to_after?: string;
+  time_to_before?: string;
+  time_to_isnull?: boolean;
+  ordering?: string;
+  page?: number;
+};
+
 export const useBookings = () => {
   return useQuery({
     queryKey: ['bookings'],
     queryFn: async () => {
       const response = await bookingsList();
+      return response.data;
+    },
+  });
+};
+
+export const useMyBookings = (params: BookingsFilterParams = {}) => {
+  return useQuery({
+    queryKey: ['bookings', 'filtered', params],
+    queryFn: async () => {
+      // Cast query to any to pass extra filter params not yet in the generated type
+      const response = await bookingsList({ query: params as any });
       return response.data;
     },
   });

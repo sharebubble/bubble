@@ -15,7 +15,17 @@ import { useUnreadMessages } from '@/hooks/useMessages';
 import * as Sentry from '@sentry/react';
 
 import { cn } from '@/lib/utils';
-import { BookMarked, Handshake, Library, LogIn, LogOut, Plus, Search, User } from 'lucide-react';
+import {
+  BookMarked,
+  CalendarCheck,
+  Handshake,
+  Library,
+  LogIn,
+  LogOut,
+  Plus,
+  Search,
+  User,
+} from 'lucide-react';
 import { SubmitEvent, useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -189,6 +199,12 @@ export const Header = () => {
                   <NavLink to="/my-items">
                     <Library className="w-4 h-4 mr-2" />
                     {t('header.items')}
+                  </NavLink>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="flex items-center">
+                  <NavLink to="/bookings">
+                    <CalendarCheck className="w-4 h-4 mr-2" />
+                    {t('header.bookings')}
                   </NavLink>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild className="flex items-center">

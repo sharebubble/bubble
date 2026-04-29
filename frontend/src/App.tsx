@@ -12,6 +12,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { configureApiClient } from './config/apiClient';
 import Auth from './pages/Auth';
+import Bookings from './pages/Bookings';
 import Requests from './pages/Requests';
 import Collections from './pages/Collections';
 import CollectionDetail from './pages/CollectionDetail';
@@ -107,7 +108,15 @@ const ProtectedRoutes = () => {
           }
         />
         <Route
-          path="/requests"
+          path="/bookings"
+          element={
+            <AuthRequired>
+              <Bookings />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path="/requests/:bookingId?"
           element={
             <AuthRequired>
               <Requests />

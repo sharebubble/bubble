@@ -28,16 +28,20 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Calendar, Clock, Menu, Package, RefreshCw, Send, User } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 const Requests = () => {
+  const navigate = useNavigate();
+  const { bookingId: bookingIdParam } = useParams<{ bookingId?: string }>();
+
   // CSP-compliant event handlers
   const handleBookingCardClick = (bookingUuid: string) => {
-    setSelectedBookingId(bookingUuid);
+    navigate(`/requests/${bookingUuid}`, { replace: true });
     setIsMenuOpen(false); // Close menu on selection (mobile)
   };
 
   const handleSelectBooking = (bookingUuid: string) => {
-    setSelectedBookingId(bookingUuid);
+    navigate(`/requests/${bookingUuid}`, { replace: true });
   };
 
   const handleRefreshMessages = () => {
@@ -46,7 +50,7 @@ const Requests = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { data: bookings, isLoading } = useBookings();
-  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(null);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(bookingIdParam ?? null);
   const { data: selectedBookingDetails } = useBooking(selectedBookingId || undefined);
   const { data: selectedItemDetails } = useItem(selectedBookingDetails?.item_details?.id);
   const [messageText, setMessageText] = useState('');
@@ -76,10 +80,19 @@ const Requests = () => {
   const messageInputRef = useRef<HTMLInputElement>(null);
   const markedAsReadRef = useRef<Set<string>>(new Set());
 
-  // Select first booking on load
+  // Sync local state when URL param changes (e.g. navigated from Bookings page)
+  useEffect(() => {
+    if (bookingIdParam) {
+      setSelectedBookingId(bookingIdParam);
+    }
+  }, [bookingIdParam]);
+
+  // Select first booking on load only when no booking is specified in the URL
   useMemo(() => {
     if (bookings?.results && bookings.results.length > 0 && !selectedBookingId) {
-      setSelectedBookingId(bookings.results[0].id!);
+      const firstId = bookings.results[0].id!;
+      setSelectedBookingId(firstId);
+      navigate(`/requests/${firstId}`, { replace: true });
     }
   }, [bookings, selectedBookingId]);
 

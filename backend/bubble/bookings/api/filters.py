@@ -1,4 +1,5 @@
 import django_filters
+from guardian.shortcuts import get_objects_for_user
 
 from bubble.bookings.models import Booking, BookingStatus, Message
 
@@ -16,10 +17,59 @@ class BookingFilter(django_filters.FilterSet):
     created_at_before = django_filters.IsoDateTimeFilter(
         field_name="created_at", lookup_expr="lte"
     )
+    time_from_after = django_filters.IsoDateTimeFilter(
+        field_name="time_from", lookup_expr="gte"
+    )
+    time_from_before = django_filters.IsoDateTimeFilter(
+        field_name="time_from", lookup_expr="lte"
+    )
+    time_to_after = django_filters.IsoDateTimeFilter(
+        field_name="time_to", lookup_expr="gte"
+    )
+    time_to_before = django_filters.IsoDateTimeFilter(
+        field_name="time_to", lookup_expr="lte"
+    )
+    time_to_isnull = django_filters.BooleanFilter(
+        field_name="time_to", lookup_expr="isnull"
+    )
+    # role=owner  → only bookings on items the current user owns (has change_item perm)
+    # role=renter → only bookings where the current user is the requester
+    role = django_filters.CharFilter(
+        method="filter_role", label="Role filter (owner/renter)"
+    )
 
     class Meta:
         model = Booking
-        fields = ["status", "item", "user", "created_at_after", "created_at_before"]
+        fields = [
+            "status",
+            "item",
+            "user",
+            "created_at_after",
+            "created_at_before",
+            "time_from_after",
+            "time_from_before",
+            "time_to_after",
+            "time_to_before",
+            "time_to_isnull",
+            "role",
+        ]
+
+    def filter_role(self, queryset, name, value):
+        request = self.request
+        if not request or not request.user or not request.user.is_authenticated:
+            return queryset.none()
+
+        if value == "owner":
+            # Items the current user has change_item permission on (guardian)
+            owned_items = get_objects_for_user(
+                request.user, "items.change_item", accept_global_perms=False
+            )
+            return queryset.filter(item__in=owned_items)
+        if value == "renter":
+            # Bookings where the current user is the requester
+            return queryset.filter(user=request.user)
+
+        return queryset
 
 
 class MessageFilter(django_filters.FilterSet):

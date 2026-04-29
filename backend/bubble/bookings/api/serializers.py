@@ -118,7 +118,12 @@ class BookingSerializer(serializers.ModelSerializer):
         if (
             self.instance
             and user == self.instance.user
-            and value not in (BookingStatus.CANCELLED, BookingStatus.PENDING)
+            and value
+            not in (
+                BookingStatus.CANCELLED,
+                BookingStatus.PENDING,
+                BookingStatus.COMPLETED,
+            )
         ):
             msg = _("Invalid status change.")
             raise serializers.ValidationError(msg)

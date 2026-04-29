@@ -44,3 +44,7 @@ run +args:
 # tests: run pytests
 tests:
     @docker compose run --rm backend pytest
+
+# openapi: Regenerate openapi schema in frontend container
+openapi:
+    @docker compose run --rm frontend npm run types:openapi

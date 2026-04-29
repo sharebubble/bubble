@@ -11,7 +11,13 @@ export type ClientOptions = {
 export type ActionEnum = 'item_added' | 'item_removed';
 
 export type AuthToken = {
+    /**
+     * Anmeldename
+     */
     username: string;
+    /**
+     * Passwort
+     */
     password: string;
     readonly token: string;
 };
@@ -48,29 +54,29 @@ export type Book = {
     /**
      * Category of the item
      *
-     * * `books` - Books
-     * * `clothing` - Clothing
-     * * `electronics` - Electronics
-     * * `furniture` - Furniture
-     * * `garden` - Garden
-     * * `kitchen` - Kitchen
-     * * `other` - Other
-     * * `rooms` - Rooms
-     * * `sports` - Sports
-     * * `tools` - Tools
-     * * `toys` - Toys
-     * * `vehicles` - Vehicles
+     * * `books` - Bücher
+     * * `clothing` - Kleidung
+     * * `electronics` - Elektronik
+     * * `furniture` - Möbel
+     * * `garden` - Garten
+     * * `kitchen` - Küche
+     * * `other` - Andere
+     * * `rooms` - Räume
+     * * `sports` - Sport
+     * * `tools` - Werkzeuge
+     * * `toys` - Spielzeug
+     * * `vehicles` - Fahrzeuge
      */
     category?: CategoryEnum | BlankEnum;
     name?: string;
     slug?: string;
     description?: string;
     /**
-     * Internal item, not for public display
+     * Interner Artikel, nicht für öffentliche Anzeige
      */
     internal?: boolean;
     /**
-     * Display your contact information public
+     * Kontaktinformationen öffentlich anzeigen
      */
     display_contact?: boolean;
     /**
@@ -79,7 +85,7 @@ export type Book = {
      * * `sell` - Sell
      * * `donate` - Donate
      * * `rent` - Rent
-     * * `borrow` - Borrow
+     * * `borrow` - Ausleihen
      * * `want_buy` - Want to Buy
      * * `want_rent` - Want to Rent
      */
@@ -88,21 +94,21 @@ export type Book = {
     /**
      * Only used for formatting, price must always be per hour for rental items
      *
-     * * `h` - Hourly
-     * * `d` - Daily
-     * * `w` - Weekly
+     * * `h` - Stündlich
+     * * `d` - Täglich
+     * * `w` - Wöchentlich
      */
     rental_period?: RentalPeriodEnum | BlankEnum;
     /**
-     * Allow self-service rental without owner approval
+     * Selbstbedienungsvermietung ohne Zustimmung des Eigentümers erlauben
      */
     rental_self_service?: boolean;
     /**
-     * Allow open-ended rentals without a return date
+     * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
     /**
-     * Enable payment via internal payment system
+     * Zahlung über internes Zahlungssystem aktivieren
      */
     payment_enabled?: boolean;
     readonly created_at: string;
@@ -110,13 +116,13 @@ export type Book = {
     /**
      * Condition of the item
      *
-     * * `0` - New
-     * * `1` - Used
-     * * `2` - Broken
+     * * `0` - Neu
+     * * `1` - Gebraucht
+     * * `2` - Kaputt
      */
     condition?: ConditionEnum;
     active?: boolean;
-    status?: StatusB0aEnum;
+    status?: Status873Enum;
     /**
      * Set to True after the first publish notification has been sent.
      */
@@ -124,7 +130,7 @@ export type Book = {
     /**
      * Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
      *
-     * * `0` - Public
+     * * `0` - Öffentlich
      * * `1` - Authenticated
      * * `2` - Specific
      * * `3` - Private
@@ -155,29 +161,29 @@ export type BookList = {
     /**
      * Category of the item
      *
-     * * `books` - Books
-     * * `clothing` - Clothing
-     * * `electronics` - Electronics
-     * * `furniture` - Furniture
-     * * `garden` - Garden
-     * * `kitchen` - Kitchen
-     * * `other` - Other
-     * * `rooms` - Rooms
-     * * `sports` - Sports
-     * * `tools` - Tools
-     * * `toys` - Toys
-     * * `vehicles` - Vehicles
+     * * `books` - Bücher
+     * * `clothing` - Kleidung
+     * * `electronics` - Elektronik
+     * * `furniture` - Möbel
+     * * `garden` - Garten
+     * * `kitchen` - Küche
+     * * `other` - Andere
+     * * `rooms` - Räume
+     * * `sports` - Sport
+     * * `tools` - Werkzeuge
+     * * `toys` - Spielzeug
+     * * `vehicles` - Fahrzeuge
      */
     category?: CategoryEnum | BlankEnum;
     name?: string;
     slug?: string;
     description?: string;
     /**
-     * Internal item, not for public display
+     * Interner Artikel, nicht für öffentliche Anzeige
      */
     internal?: boolean;
     /**
-     * Display your contact information public
+     * Kontaktinformationen öffentlich anzeigen
      */
     display_contact?: boolean;
     /**
@@ -186,7 +192,7 @@ export type BookList = {
      * * `sell` - Sell
      * * `donate` - Donate
      * * `rent` - Rent
-     * * `borrow` - Borrow
+     * * `borrow` - Ausleihen
      * * `want_buy` - Want to Buy
      * * `want_rent` - Want to Rent
      */
@@ -195,21 +201,21 @@ export type BookList = {
     /**
      * Only used for formatting, price must always be per hour for rental items
      *
-     * * `h` - Hourly
-     * * `d` - Daily
-     * * `w` - Weekly
+     * * `h` - Stündlich
+     * * `d` - Täglich
+     * * `w` - Wöchentlich
      */
     rental_period?: RentalPeriodEnum | BlankEnum;
     /**
-     * Allow self-service rental without owner approval
+     * Selbstbedienungsvermietung ohne Zustimmung des Eigentümers erlauben
      */
     rental_self_service?: boolean;
     /**
-     * Allow open-ended rentals without a return date
+     * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
     /**
-     * Enable payment via internal payment system
+     * Zahlung über internes Zahlungssystem aktivieren
      */
     payment_enabled?: boolean;
     readonly created_at: string;
@@ -217,13 +223,13 @@ export type BookList = {
     /**
      * Condition of the item
      *
-     * * `0` - New
-     * * `1` - Used
-     * * `2` - Broken
+     * * `0` - Neu
+     * * `1` - Gebraucht
+     * * `2` - Kaputt
      */
     condition?: ConditionEnum;
     active?: boolean;
-    status?: StatusB0aEnum;
+    status?: Status873Enum;
     /**
      * Set to True after the first publish notification has been sent.
      */
@@ -231,7 +237,7 @@ export type BookList = {
     /**
      * Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
      *
-     * * `0` - Public
+     * * `0` - Öffentlich
      * * `1` - Authenticated
      * * `2` - Specific
      * * `3` - Private
@@ -248,18 +254,28 @@ export type BookList = {
  */
 export type Booking = {
     readonly id: string;
-    status?: StatusE2dEnum;
+    status?: Status164Enum;
     item: string;
     item_details: ItemMinimal;
     user: User;
+    /**
+     * Von
+     */
     time_from?: string | null;
+    /**
+     * Bis
+     */
     time_to?: string | null;
     /**
-     * Offered price for the booking
+     * Angebot
+     *
+     * Angebotener Preis für die Buchung
      */
     offer?: string | null;
     /**
-     * Counter offer price for the booking
+     * Gegenangebot
+     *
+     * Gegenangebotspreis für die Buchung
      */
     counter_offer?: string | null;
     accepted_by?: string | null;
@@ -276,12 +292,18 @@ export type Booking = {
  */
 export type BookingList = {
     readonly id: string;
-    status?: StatusE2dEnum;
+    status?: Status164Enum;
     readonly item: string;
     item_details: ItemMinimal;
     user: User;
     readonly created_at: string;
+    /**
+     * Von
+     */
     time_from?: string | null;
+    /**
+     * Bis
+     */
     time_to?: string | null;
     /**
      * Return unread_messages_count if it exists as an annotated field.
@@ -290,18 +312,18 @@ export type BookingList = {
 };
 
 /**
- * * `books` - Books
- * * `clothing` - Clothing
- * * `electronics` - Electronics
- * * `furniture` - Furniture
- * * `garden` - Garden
- * * `kitchen` - Kitchen
- * * `other` - Other
- * * `rooms` - Rooms
- * * `sports` - Sports
- * * `tools` - Tools
- * * `toys` - Toys
- * * `vehicles` - Vehicles
+ * * `books` - Bücher
+ * * `clothing` - Kleidung
+ * * `electronics` - Elektronik
+ * * `furniture` - Möbel
+ * * `garden` - Garten
+ * * `kitchen` - Küche
+ * * `other` - Andere
+ * * `rooms` - Räume
+ * * `sports` - Sport
+ * * `tools` - Werkzeuge
+ * * `toys` - Spielzeug
+ * * `vehicles` - Fahrzeuge
  */
 export type CategoryEnum = 'books' | 'clothing' | 'electronics' | 'furniture' | 'garden' | 'kitchen' | 'other' | 'rooms' | 'sports' | 'tools' | 'toys' | 'vehicles';
 
@@ -379,9 +401,9 @@ export type CollectionList = {
 };
 
 /**
- * * `0` - New
- * * `1` - Used
- * * `2` - Broken
+ * * `0` - Neu
+ * * `1` - Gebraucht
+ * * `2` - Kaputt
  */
 export type ConditionEnum = 0 | 1 | 2;
 
@@ -418,29 +440,29 @@ export type Item = {
     /**
      * Category of the item
      *
-     * * `books` - Books
-     * * `clothing` - Clothing
-     * * `electronics` - Electronics
-     * * `furniture` - Furniture
-     * * `garden` - Garden
-     * * `kitchen` - Kitchen
-     * * `other` - Other
-     * * `rooms` - Rooms
-     * * `sports` - Sports
-     * * `tools` - Tools
-     * * `toys` - Toys
-     * * `vehicles` - Vehicles
+     * * `books` - Bücher
+     * * `clothing` - Kleidung
+     * * `electronics` - Elektronik
+     * * `furniture` - Möbel
+     * * `garden` - Garten
+     * * `kitchen` - Küche
+     * * `other` - Andere
+     * * `rooms` - Räume
+     * * `sports` - Sport
+     * * `tools` - Werkzeuge
+     * * `toys` - Spielzeug
+     * * `vehicles` - Fahrzeuge
      */
     category?: CategoryEnum | BlankEnum;
     name?: string;
     slug?: string;
     description?: string;
     /**
-     * Internal item, not for public display
+     * Interner Artikel, nicht für öffentliche Anzeige
      */
     internal?: boolean;
     /**
-     * Display your contact information public
+     * Kontaktinformationen öffentlich anzeigen
      */
     display_contact?: boolean;
     /**
@@ -449,7 +471,7 @@ export type Item = {
      * * `sell` - Sell
      * * `donate` - Donate
      * * `rent` - Rent
-     * * `borrow` - Borrow
+     * * `borrow` - Ausleihen
      * * `want_buy` - Want to Buy
      * * `want_rent` - Want to Rent
      */
@@ -458,21 +480,21 @@ export type Item = {
     /**
      * Only used for formatting, price must always be per hour for rental items
      *
-     * * `h` - Hourly
-     * * `d` - Daily
-     * * `w` - Weekly
+     * * `h` - Stündlich
+     * * `d` - Täglich
+     * * `w` - Wöchentlich
      */
     rental_period?: RentalPeriodEnum | BlankEnum;
     /**
-     * Allow self-service rental without owner approval
+     * Selbstbedienungsvermietung ohne Zustimmung des Eigentümers erlauben
      */
     rental_self_service?: boolean;
     /**
-     * Allow open-ended rentals without a return date
+     * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
     /**
-     * Enable payment via internal payment system
+     * Zahlung über internes Zahlungssystem aktivieren
      */
     payment_enabled?: boolean;
     readonly created_at: string;
@@ -480,13 +502,13 @@ export type Item = {
     /**
      * Condition of the item
      *
-     * * `0` - New
-     * * `1` - Used
-     * * `2` - Broken
+     * * `0` - Neu
+     * * `1` - Gebraucht
+     * * `2` - Kaputt
      */
     condition?: ConditionEnum;
     active?: boolean;
-    status?: StatusB0aEnum;
+    status?: Status873Enum;
     /**
      * Set to True after the first publish notification has been sent.
      */
@@ -494,7 +516,7 @@ export type Item = {
     /**
      * Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
      *
-     * * `0` - Public
+     * * `0` - Öffentlich
      * * `1` - Authenticated
      * * `2` - Specific
      * * `3` - Private
@@ -517,29 +539,29 @@ export type ItemList = {
     /**
      * Category of the item
      *
-     * * `books` - Books
-     * * `clothing` - Clothing
-     * * `electronics` - Electronics
-     * * `furniture` - Furniture
-     * * `garden` - Garden
-     * * `kitchen` - Kitchen
-     * * `other` - Other
-     * * `rooms` - Rooms
-     * * `sports` - Sports
-     * * `tools` - Tools
-     * * `toys` - Toys
-     * * `vehicles` - Vehicles
+     * * `books` - Bücher
+     * * `clothing` - Kleidung
+     * * `electronics` - Elektronik
+     * * `furniture` - Möbel
+     * * `garden` - Garten
+     * * `kitchen` - Küche
+     * * `other` - Andere
+     * * `rooms` - Räume
+     * * `sports` - Sport
+     * * `tools` - Werkzeuge
+     * * `toys` - Spielzeug
+     * * `vehicles` - Fahrzeuge
      */
     category?: CategoryEnum | BlankEnum;
     name?: string;
     slug?: string;
     description?: string;
     /**
-     * Internal item, not for public display
+     * Interner Artikel, nicht für öffentliche Anzeige
      */
     internal?: boolean;
     /**
-     * Display your contact information public
+     * Kontaktinformationen öffentlich anzeigen
      */
     display_contact?: boolean;
     /**
@@ -548,7 +570,7 @@ export type ItemList = {
      * * `sell` - Sell
      * * `donate` - Donate
      * * `rent` - Rent
-     * * `borrow` - Borrow
+     * * `borrow` - Ausleihen
      * * `want_buy` - Want to Buy
      * * `want_rent` - Want to Rent
      */
@@ -557,21 +579,21 @@ export type ItemList = {
     /**
      * Only used for formatting, price must always be per hour for rental items
      *
-     * * `h` - Hourly
-     * * `d` - Daily
-     * * `w` - Weekly
+     * * `h` - Stündlich
+     * * `d` - Täglich
+     * * `w` - Wöchentlich
      */
     rental_period?: RentalPeriodEnum | BlankEnum;
     /**
-     * Allow self-service rental without owner approval
+     * Selbstbedienungsvermietung ohne Zustimmung des Eigentümers erlauben
      */
     rental_self_service?: boolean;
     /**
-     * Allow open-ended rentals without a return date
+     * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
     /**
-     * Enable payment via internal payment system
+     * Zahlung über internes Zahlungssystem aktivieren
      */
     payment_enabled?: boolean;
     readonly created_at: string;
@@ -579,13 +601,13 @@ export type ItemList = {
     /**
      * Condition of the item
      *
-     * * `0` - New
-     * * `1` - Used
-     * * `2` - Broken
+     * * `0` - Neu
+     * * `1` - Gebraucht
+     * * `2` - Kaputt
      */
     condition?: ConditionEnum;
     active?: boolean;
-    status?: StatusB0aEnum;
+    status?: Status873Enum;
     /**
      * Set to True after the first publish notification has been sent.
      */
@@ -593,7 +615,7 @@ export type ItemList = {
     /**
      * Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
      *
-     * * `0` - Public
+     * * `0` - Öffentlich
      * * `1` - Authenticated
      * * `2` - Specific
      * * `3` - Private
@@ -618,7 +640,7 @@ export type ItemMinimal = {
      * * `sell` - Sell
      * * `donate` - Donate
      * * `rent` - Rent
-     * * `borrow` - Borrow
+     * * `borrow` - Ausleihen
      * * `want_buy` - Want to Buy
      * * `want_rent` - Want to Rent
      */
@@ -628,8 +650,8 @@ export type ItemMinimal = {
 };
 
 /**
- * * `en` - English
- * * `de` - German
+ * * `en` - Englisch
+ * * `de` - Deutsch
  */
 export type LanguageEnum = 'en' | 'de';
 
@@ -769,29 +791,29 @@ export type PatchedBook = {
     /**
      * Category of the item
      *
-     * * `books` - Books
-     * * `clothing` - Clothing
-     * * `electronics` - Electronics
-     * * `furniture` - Furniture
-     * * `garden` - Garden
-     * * `kitchen` - Kitchen
-     * * `other` - Other
-     * * `rooms` - Rooms
-     * * `sports` - Sports
-     * * `tools` - Tools
-     * * `toys` - Toys
-     * * `vehicles` - Vehicles
+     * * `books` - Bücher
+     * * `clothing` - Kleidung
+     * * `electronics` - Elektronik
+     * * `furniture` - Möbel
+     * * `garden` - Garten
+     * * `kitchen` - Küche
+     * * `other` - Andere
+     * * `rooms` - Räume
+     * * `sports` - Sport
+     * * `tools` - Werkzeuge
+     * * `toys` - Spielzeug
+     * * `vehicles` - Fahrzeuge
      */
     category?: CategoryEnum | BlankEnum;
     name?: string;
     slug?: string;
     description?: string;
     /**
-     * Internal item, not for public display
+     * Interner Artikel, nicht für öffentliche Anzeige
      */
     internal?: boolean;
     /**
-     * Display your contact information public
+     * Kontaktinformationen öffentlich anzeigen
      */
     display_contact?: boolean;
     /**
@@ -800,7 +822,7 @@ export type PatchedBook = {
      * * `sell` - Sell
      * * `donate` - Donate
      * * `rent` - Rent
-     * * `borrow` - Borrow
+     * * `borrow` - Ausleihen
      * * `want_buy` - Want to Buy
      * * `want_rent` - Want to Rent
      */
@@ -809,21 +831,21 @@ export type PatchedBook = {
     /**
      * Only used for formatting, price must always be per hour for rental items
      *
-     * * `h` - Hourly
-     * * `d` - Daily
-     * * `w` - Weekly
+     * * `h` - Stündlich
+     * * `d` - Täglich
+     * * `w` - Wöchentlich
      */
     rental_period?: RentalPeriodEnum | BlankEnum;
     /**
-     * Allow self-service rental without owner approval
+     * Selbstbedienungsvermietung ohne Zustimmung des Eigentümers erlauben
      */
     rental_self_service?: boolean;
     /**
-     * Allow open-ended rentals without a return date
+     * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
     /**
-     * Enable payment via internal payment system
+     * Zahlung über internes Zahlungssystem aktivieren
      */
     payment_enabled?: boolean;
     readonly created_at?: string;
@@ -831,13 +853,13 @@ export type PatchedBook = {
     /**
      * Condition of the item
      *
-     * * `0` - New
-     * * `1` - Used
-     * * `2` - Broken
+     * * `0` - Neu
+     * * `1` - Gebraucht
+     * * `2` - Kaputt
      */
     condition?: ConditionEnum;
     active?: boolean;
-    status?: StatusB0aEnum;
+    status?: Status873Enum;
     /**
      * Set to True after the first publish notification has been sent.
      */
@@ -845,7 +867,7 @@ export type PatchedBook = {
     /**
      * Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
      *
-     * * `0` - Public
+     * * `0` - Öffentlich
      * * `1` - Authenticated
      * * `2` - Specific
      * * `3` - Private
@@ -862,18 +884,28 @@ export type PatchedBook = {
  */
 export type PatchedBooking = {
     readonly id?: string;
-    status?: StatusE2dEnum;
+    status?: Status164Enum;
     item?: string;
     item_details?: ItemMinimal;
     user?: User;
+    /**
+     * Von
+     */
     time_from?: string | null;
+    /**
+     * Bis
+     */
     time_to?: string | null;
     /**
-     * Offered price for the booking
+     * Angebot
+     *
+     * Angebotener Preis für die Buchung
      */
     offer?: string | null;
     /**
-     * Counter offer price for the booking
+     * Gegenangebot
+     *
+     * Gegenangebotspreis für die Buchung
      */
     counter_offer?: string | null;
     accepted_by?: string | null;
@@ -941,29 +973,29 @@ export type PatchedItem = {
     /**
      * Category of the item
      *
-     * * `books` - Books
-     * * `clothing` - Clothing
-     * * `electronics` - Electronics
-     * * `furniture` - Furniture
-     * * `garden` - Garden
-     * * `kitchen` - Kitchen
-     * * `other` - Other
-     * * `rooms` - Rooms
-     * * `sports` - Sports
-     * * `tools` - Tools
-     * * `toys` - Toys
-     * * `vehicles` - Vehicles
+     * * `books` - Bücher
+     * * `clothing` - Kleidung
+     * * `electronics` - Elektronik
+     * * `furniture` - Möbel
+     * * `garden` - Garten
+     * * `kitchen` - Küche
+     * * `other` - Andere
+     * * `rooms` - Räume
+     * * `sports` - Sport
+     * * `tools` - Werkzeuge
+     * * `toys` - Spielzeug
+     * * `vehicles` - Fahrzeuge
      */
     category?: CategoryEnum | BlankEnum;
     name?: string;
     slug?: string;
     description?: string;
     /**
-     * Internal item, not for public display
+     * Interner Artikel, nicht für öffentliche Anzeige
      */
     internal?: boolean;
     /**
-     * Display your contact information public
+     * Kontaktinformationen öffentlich anzeigen
      */
     display_contact?: boolean;
     /**
@@ -972,7 +1004,7 @@ export type PatchedItem = {
      * * `sell` - Sell
      * * `donate` - Donate
      * * `rent` - Rent
-     * * `borrow` - Borrow
+     * * `borrow` - Ausleihen
      * * `want_buy` - Want to Buy
      * * `want_rent` - Want to Rent
      */
@@ -981,21 +1013,21 @@ export type PatchedItem = {
     /**
      * Only used for formatting, price must always be per hour for rental items
      *
-     * * `h` - Hourly
-     * * `d` - Daily
-     * * `w` - Weekly
+     * * `h` - Stündlich
+     * * `d` - Täglich
+     * * `w` - Wöchentlich
      */
     rental_period?: RentalPeriodEnum | BlankEnum;
     /**
-     * Allow self-service rental without owner approval
+     * Selbstbedienungsvermietung ohne Zustimmung des Eigentümers erlauben
      */
     rental_self_service?: boolean;
     /**
-     * Allow open-ended rentals without a return date
+     * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
     /**
-     * Enable payment via internal payment system
+     * Zahlung über internes Zahlungssystem aktivieren
      */
     payment_enabled?: boolean;
     readonly created_at?: string;
@@ -1003,13 +1035,13 @@ export type PatchedItem = {
     /**
      * Condition of the item
      *
-     * * `0` - New
-     * * `1` - Used
-     * * `2` - Broken
+     * * `0` - Neu
+     * * `1` - Gebraucht
+     * * `2` - Kaputt
      */
     condition?: ConditionEnum;
     active?: boolean;
-    status?: StatusB0aEnum;
+    status?: Status873Enum;
     /**
      * Set to True after the first publish notification has been sent.
      */
@@ -1017,7 +1049,7 @@ export type PatchedItem = {
     /**
      * Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
      *
-     * * `0` - Public
+     * * `0` - Öffentlich
      * * `1` - Authenticated
      * * `2` - Specific
      * * `3` - Private
@@ -1065,8 +1097,8 @@ export type PatchedProfile = {
      *
      * UI language preference for this user.
      *
-     * * `en` - English
-     * * `de` - German
+     * * `en` - Englisch
+     * * `de` - Deutsch
      */
     language?: LanguageEnum | BlankEnum;
 };
@@ -1074,15 +1106,17 @@ export type PatchedProfile = {
 export type PatchedUser = {
     readonly id?: string;
     /**
-     * Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+     * Benutzername
+     *
+     * Erforderlich. 150 Zeichen oder weniger. Nur Buchstaben, Ziffern und @/./+/-/_.
      */
     username?: string;
     /**
-     * Name of User
+     * Name des Benutzers
      */
     name?: string;
     /**
-     * Email address
+     * E-Mail-Adresse
      */
     email?: string;
 };
@@ -1101,16 +1135,16 @@ export type Profile = {
      *
      * UI language preference for this user.
      *
-     * * `en` - English
-     * * `de` - German
+     * * `en` - Englisch
+     * * `de` - Deutsch
      */
     language?: LanguageEnum | BlankEnum;
 };
 
 /**
- * * `h` - Hourly
- * * `d` - Daily
- * * `w` - Weekly
+ * * `h` - Stündlich
+ * * `d` - Täglich
+ * * `w` - Wöchentlich
  */
 export type RentalPeriodEnum = 'h' | 'd' | 'w';
 
@@ -1118,48 +1152,50 @@ export type RentalPeriodEnum = 'h' | 'd' | 'w';
  * * `sell` - Sell
  * * `donate` - Donate
  * * `rent` - Rent
- * * `borrow` - Borrow
+ * * `borrow` - Ausleihen
  * * `want_buy` - Want to Buy
  * * `want_rent` - Want to Rent
  */
 export type SalesTypeEnum = 'sell' | 'donate' | 'rent' | 'borrow' | 'want_buy' | 'want_rent';
 
 /**
- * * `0` - Draft
- * * `2` - Available
- * * `3` - Reserved
- * * `4` - Rented
- * * `5` - Sold
+ * * `1` - Ausstehend
+ * * `2` - Abgebrochen
+ * * `3` - Bestätigt
+ * * `4` - Abgeschlossen
+ * * `5` - Abgelehnt
  */
-export type StatusB0aEnum = 0 | 2 | 3 | 4 | 5;
+export type Status164Enum = 1 | 2 | 3 | 4 | 5;
 
 /**
- * * `1` - Pending
- * * `2` - Cancelled
- * * `3` - Confirmed
- * * `4` - Completed
- * * `5` - Rejected
+ * * `0` - Entwurf
+ * * `2` - Verfügbar
+ * * `3` - Reserviert
+ * * `4` - Rented
+ * * `5` - Verkauft
  */
-export type StatusE2dEnum = 1 | 2 | 3 | 4 | 5;
+export type Status873Enum = 0 | 2 | 3 | 4 | 5;
 
 export type User = {
     readonly id: string;
     /**
-     * Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+     * Benutzername
+     *
+     * Erforderlich. 150 Zeichen oder weniger. Nur Buchstaben, Ziffern und @/./+/-/_.
      */
     username: string;
     /**
-     * Name of User
+     * Name des Benutzers
      */
     name?: string;
     /**
-     * Email address
+     * E-Mail-Adresse
      */
     email?: string;
 };
 
 /**
- * * `0` - Public
+ * * `0` - Öffentlich
  * * `1` - Authenticated
  * * `2` - Specific
  * * `3` - Private
@@ -1191,29 +1227,29 @@ export type BookWritable = {
     /**
      * Category of the item
      *
-     * * `books` - Books
-     * * `clothing` - Clothing
-     * * `electronics` - Electronics
-     * * `furniture` - Furniture
-     * * `garden` - Garden
-     * * `kitchen` - Kitchen
-     * * `other` - Other
-     * * `rooms` - Rooms
-     * * `sports` - Sports
-     * * `tools` - Tools
-     * * `toys` - Toys
-     * * `vehicles` - Vehicles
+     * * `books` - Bücher
+     * * `clothing` - Kleidung
+     * * `electronics` - Elektronik
+     * * `furniture` - Möbel
+     * * `garden` - Garten
+     * * `kitchen` - Küche
+     * * `other` - Andere
+     * * `rooms` - Räume
+     * * `sports` - Sport
+     * * `tools` - Werkzeuge
+     * * `toys` - Spielzeug
+     * * `vehicles` - Fahrzeuge
      */
     category?: CategoryEnum | BlankEnum;
     name?: string;
     slug?: string;
     description?: string;
     /**
-     * Internal item, not for public display
+     * Interner Artikel, nicht für öffentliche Anzeige
      */
     internal?: boolean;
     /**
-     * Display your contact information public
+     * Kontaktinformationen öffentlich anzeigen
      */
     display_contact?: boolean;
     /**
@@ -1222,7 +1258,7 @@ export type BookWritable = {
      * * `sell` - Sell
      * * `donate` - Donate
      * * `rent` - Rent
-     * * `borrow` - Borrow
+     * * `borrow` - Ausleihen
      * * `want_buy` - Want to Buy
      * * `want_rent` - Want to Rent
      */
@@ -1230,37 +1266,37 @@ export type BookWritable = {
     /**
      * Only used for formatting, price must always be per hour for rental items
      *
-     * * `h` - Hourly
-     * * `d` - Daily
-     * * `w` - Weekly
+     * * `h` - Stündlich
+     * * `d` - Täglich
+     * * `w` - Wöchentlich
      */
     rental_period?: RentalPeriodEnum | BlankEnum;
     /**
-     * Allow self-service rental without owner approval
+     * Selbstbedienungsvermietung ohne Zustimmung des Eigentümers erlauben
      */
     rental_self_service?: boolean;
     /**
-     * Allow open-ended rentals without a return date
+     * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
     /**
-     * Enable payment via internal payment system
+     * Zahlung über internes Zahlungssystem aktivieren
      */
     payment_enabled?: boolean;
     /**
      * Condition of the item
      *
-     * * `0` - New
-     * * `1` - Used
-     * * `2` - Broken
+     * * `0` - Neu
+     * * `1` - Gebraucht
+     * * `2` - Kaputt
      */
     condition?: ConditionEnum;
     active?: boolean;
-    status?: StatusB0aEnum;
+    status?: Status873Enum;
     /**
      * Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
      *
-     * * `0` - Public
+     * * `0` - Öffentlich
      * * `1` - Authenticated
      * * `2` - Specific
      * * `3` - Private
@@ -1280,29 +1316,29 @@ export type BookListWritable = {
     /**
      * Category of the item
      *
-     * * `books` - Books
-     * * `clothing` - Clothing
-     * * `electronics` - Electronics
-     * * `furniture` - Furniture
-     * * `garden` - Garden
-     * * `kitchen` - Kitchen
-     * * `other` - Other
-     * * `rooms` - Rooms
-     * * `sports` - Sports
-     * * `tools` - Tools
-     * * `toys` - Toys
-     * * `vehicles` - Vehicles
+     * * `books` - Bücher
+     * * `clothing` - Kleidung
+     * * `electronics` - Elektronik
+     * * `furniture` - Möbel
+     * * `garden` - Garten
+     * * `kitchen` - Küche
+     * * `other` - Andere
+     * * `rooms` - Räume
+     * * `sports` - Sport
+     * * `tools` - Werkzeuge
+     * * `toys` - Spielzeug
+     * * `vehicles` - Fahrzeuge
      */
     category?: CategoryEnum | BlankEnum;
     name?: string;
     slug?: string;
     description?: string;
     /**
-     * Internal item, not for public display
+     * Interner Artikel, nicht für öffentliche Anzeige
      */
     internal?: boolean;
     /**
-     * Display your contact information public
+     * Kontaktinformationen öffentlich anzeigen
      */
     display_contact?: boolean;
     /**
@@ -1311,7 +1347,7 @@ export type BookListWritable = {
      * * `sell` - Sell
      * * `donate` - Donate
      * * `rent` - Rent
-     * * `borrow` - Borrow
+     * * `borrow` - Ausleihen
      * * `want_buy` - Want to Buy
      * * `want_rent` - Want to Rent
      */
@@ -1319,37 +1355,37 @@ export type BookListWritable = {
     /**
      * Only used for formatting, price must always be per hour for rental items
      *
-     * * `h` - Hourly
-     * * `d` - Daily
-     * * `w` - Weekly
+     * * `h` - Stündlich
+     * * `d` - Täglich
+     * * `w` - Wöchentlich
      */
     rental_period?: RentalPeriodEnum | BlankEnum;
     /**
-     * Allow self-service rental without owner approval
+     * Selbstbedienungsvermietung ohne Zustimmung des Eigentümers erlauben
      */
     rental_self_service?: boolean;
     /**
-     * Allow open-ended rentals without a return date
+     * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
     /**
-     * Enable payment via internal payment system
+     * Zahlung über internes Zahlungssystem aktivieren
      */
     payment_enabled?: boolean;
     /**
      * Condition of the item
      *
-     * * `0` - New
-     * * `1` - Used
-     * * `2` - Broken
+     * * `0` - Neu
+     * * `1` - Gebraucht
+     * * `2` - Kaputt
      */
     condition?: ConditionEnum;
     active?: boolean;
-    status?: StatusB0aEnum;
+    status?: Status873Enum;
     /**
      * Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
      *
-     * * `0` - Public
+     * * `0` - Öffentlich
      * * `1` - Authenticated
      * * `2` - Specific
      * * `3` - Private
@@ -1365,16 +1401,26 @@ export type BookListWritable = {
  * Detailed serializer for Booking where `item` is represented only by UUID.
  */
 export type BookingWritable = {
-    status?: StatusE2dEnum;
+    status?: Status164Enum;
     item: string;
+    /**
+     * Von
+     */
     time_from?: string | null;
+    /**
+     * Bis
+     */
     time_to?: string | null;
     /**
-     * Offered price for the booking
+     * Angebot
+     *
+     * Angebotener Preis für die Buchung
      */
     offer?: string | null;
     /**
-     * Counter offer price for the booking
+     * Gegenangebot
+     *
+     * Gegenangebotspreis für die Buchung
      */
     counter_offer?: string | null;
     accepted_by?: string | null;
@@ -1384,8 +1430,14 @@ export type BookingWritable = {
  * Detailed serializer for Booking where `item` is represented only by UUID.
  */
 export type BookingListWritable = {
-    status?: StatusE2dEnum;
+    status?: Status164Enum;
+    /**
+     * Von
+     */
     time_from?: string | null;
+    /**
+     * Bis
+     */
     time_to?: string | null;
 };
 
@@ -1442,29 +1494,29 @@ export type ItemWritable = {
     /**
      * Category of the item
      *
-     * * `books` - Books
-     * * `clothing` - Clothing
-     * * `electronics` - Electronics
-     * * `furniture` - Furniture
-     * * `garden` - Garden
-     * * `kitchen` - Kitchen
-     * * `other` - Other
-     * * `rooms` - Rooms
-     * * `sports` - Sports
-     * * `tools` - Tools
-     * * `toys` - Toys
-     * * `vehicles` - Vehicles
+     * * `books` - Bücher
+     * * `clothing` - Kleidung
+     * * `electronics` - Elektronik
+     * * `furniture` - Möbel
+     * * `garden` - Garten
+     * * `kitchen` - Küche
+     * * `other` - Andere
+     * * `rooms` - Räume
+     * * `sports` - Sport
+     * * `tools` - Werkzeuge
+     * * `toys` - Spielzeug
+     * * `vehicles` - Fahrzeuge
      */
     category?: CategoryEnum | BlankEnum;
     name?: string;
     slug?: string;
     description?: string;
     /**
-     * Internal item, not for public display
+     * Interner Artikel, nicht für öffentliche Anzeige
      */
     internal?: boolean;
     /**
-     * Display your contact information public
+     * Kontaktinformationen öffentlich anzeigen
      */
     display_contact?: boolean;
     /**
@@ -1473,7 +1525,7 @@ export type ItemWritable = {
      * * `sell` - Sell
      * * `donate` - Donate
      * * `rent` - Rent
-     * * `borrow` - Borrow
+     * * `borrow` - Ausleihen
      * * `want_buy` - Want to Buy
      * * `want_rent` - Want to Rent
      */
@@ -1481,37 +1533,37 @@ export type ItemWritable = {
     /**
      * Only used for formatting, price must always be per hour for rental items
      *
-     * * `h` - Hourly
-     * * `d` - Daily
-     * * `w` - Weekly
+     * * `h` - Stündlich
+     * * `d` - Täglich
+     * * `w` - Wöchentlich
      */
     rental_period?: RentalPeriodEnum | BlankEnum;
     /**
-     * Allow self-service rental without owner approval
+     * Selbstbedienungsvermietung ohne Zustimmung des Eigentümers erlauben
      */
     rental_self_service?: boolean;
     /**
-     * Allow open-ended rentals without a return date
+     * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
     /**
-     * Enable payment via internal payment system
+     * Zahlung über internes Zahlungssystem aktivieren
      */
     payment_enabled?: boolean;
     /**
      * Condition of the item
      *
-     * * `0` - New
-     * * `1` - Used
-     * * `2` - Broken
+     * * `0` - Neu
+     * * `1` - Gebraucht
+     * * `2` - Kaputt
      */
     condition?: ConditionEnum;
     active?: boolean;
-    status?: StatusB0aEnum;
+    status?: Status873Enum;
     /**
      * Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
      *
-     * * `0` - Public
+     * * `0` - Öffentlich
      * * `1` - Authenticated
      * * `2` - Specific
      * * `3` - Private
@@ -1531,29 +1583,29 @@ export type ItemListWritable = {
     /**
      * Category of the item
      *
-     * * `books` - Books
-     * * `clothing` - Clothing
-     * * `electronics` - Electronics
-     * * `furniture` - Furniture
-     * * `garden` - Garden
-     * * `kitchen` - Kitchen
-     * * `other` - Other
-     * * `rooms` - Rooms
-     * * `sports` - Sports
-     * * `tools` - Tools
-     * * `toys` - Toys
-     * * `vehicles` - Vehicles
+     * * `books` - Bücher
+     * * `clothing` - Kleidung
+     * * `electronics` - Elektronik
+     * * `furniture` - Möbel
+     * * `garden` - Garten
+     * * `kitchen` - Küche
+     * * `other` - Andere
+     * * `rooms` - Räume
+     * * `sports` - Sport
+     * * `tools` - Werkzeuge
+     * * `toys` - Spielzeug
+     * * `vehicles` - Fahrzeuge
      */
     category?: CategoryEnum | BlankEnum;
     name?: string;
     slug?: string;
     description?: string;
     /**
-     * Internal item, not for public display
+     * Interner Artikel, nicht für öffentliche Anzeige
      */
     internal?: boolean;
     /**
-     * Display your contact information public
+     * Kontaktinformationen öffentlich anzeigen
      */
     display_contact?: boolean;
     /**
@@ -1562,7 +1614,7 @@ export type ItemListWritable = {
      * * `sell` - Sell
      * * `donate` - Donate
      * * `rent` - Rent
-     * * `borrow` - Borrow
+     * * `borrow` - Ausleihen
      * * `want_buy` - Want to Buy
      * * `want_rent` - Want to Rent
      */
@@ -1570,37 +1622,37 @@ export type ItemListWritable = {
     /**
      * Only used for formatting, price must always be per hour for rental items
      *
-     * * `h` - Hourly
-     * * `d` - Daily
-     * * `w` - Weekly
+     * * `h` - Stündlich
+     * * `d` - Täglich
+     * * `w` - Wöchentlich
      */
     rental_period?: RentalPeriodEnum | BlankEnum;
     /**
-     * Allow self-service rental without owner approval
+     * Selbstbedienungsvermietung ohne Zustimmung des Eigentümers erlauben
      */
     rental_self_service?: boolean;
     /**
-     * Allow open-ended rentals without a return date
+     * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
     /**
-     * Enable payment via internal payment system
+     * Zahlung über internes Zahlungssystem aktivieren
      */
     payment_enabled?: boolean;
     /**
      * Condition of the item
      *
-     * * `0` - New
-     * * `1` - Used
-     * * `2` - Broken
+     * * `0` - Neu
+     * * `1` - Gebraucht
+     * * `2` - Kaputt
      */
     condition?: ConditionEnum;
     active?: boolean;
-    status?: StatusB0aEnum;
+    status?: Status873Enum;
     /**
      * Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
      *
-     * * `0` - Public
+     * * `0` - Öffentlich
      * * `1` - Authenticated
      * * `2` - Specific
      * * `3` - Private
@@ -1623,7 +1675,7 @@ export type ItemMinimalWritable = {
      * * `sell` - Sell
      * * `donate` - Donate
      * * `rent` - Rent
-     * * `borrow` - Borrow
+     * * `borrow` - Ausleihen
      * * `want_buy` - Want to Buy
      * * `want_rent` - Want to Rent
      */
@@ -1742,29 +1794,29 @@ export type PatchedBookWritable = {
     /**
      * Category of the item
      *
-     * * `books` - Books
-     * * `clothing` - Clothing
-     * * `electronics` - Electronics
-     * * `furniture` - Furniture
-     * * `garden` - Garden
-     * * `kitchen` - Kitchen
-     * * `other` - Other
-     * * `rooms` - Rooms
-     * * `sports` - Sports
-     * * `tools` - Tools
-     * * `toys` - Toys
-     * * `vehicles` - Vehicles
+     * * `books` - Bücher
+     * * `clothing` - Kleidung
+     * * `electronics` - Elektronik
+     * * `furniture` - Möbel
+     * * `garden` - Garten
+     * * `kitchen` - Küche
+     * * `other` - Andere
+     * * `rooms` - Räume
+     * * `sports` - Sport
+     * * `tools` - Werkzeuge
+     * * `toys` - Spielzeug
+     * * `vehicles` - Fahrzeuge
      */
     category?: CategoryEnum | BlankEnum;
     name?: string;
     slug?: string;
     description?: string;
     /**
-     * Internal item, not for public display
+     * Interner Artikel, nicht für öffentliche Anzeige
      */
     internal?: boolean;
     /**
-     * Display your contact information public
+     * Kontaktinformationen öffentlich anzeigen
      */
     display_contact?: boolean;
     /**
@@ -1773,7 +1825,7 @@ export type PatchedBookWritable = {
      * * `sell` - Sell
      * * `donate` - Donate
      * * `rent` - Rent
-     * * `borrow` - Borrow
+     * * `borrow` - Ausleihen
      * * `want_buy` - Want to Buy
      * * `want_rent` - Want to Rent
      */
@@ -1781,37 +1833,37 @@ export type PatchedBookWritable = {
     /**
      * Only used for formatting, price must always be per hour for rental items
      *
-     * * `h` - Hourly
-     * * `d` - Daily
-     * * `w` - Weekly
+     * * `h` - Stündlich
+     * * `d` - Täglich
+     * * `w` - Wöchentlich
      */
     rental_period?: RentalPeriodEnum | BlankEnum;
     /**
-     * Allow self-service rental without owner approval
+     * Selbstbedienungsvermietung ohne Zustimmung des Eigentümers erlauben
      */
     rental_self_service?: boolean;
     /**
-     * Allow open-ended rentals without a return date
+     * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
     /**
-     * Enable payment via internal payment system
+     * Zahlung über internes Zahlungssystem aktivieren
      */
     payment_enabled?: boolean;
     /**
      * Condition of the item
      *
-     * * `0` - New
-     * * `1` - Used
-     * * `2` - Broken
+     * * `0` - Neu
+     * * `1` - Gebraucht
+     * * `2` - Kaputt
      */
     condition?: ConditionEnum;
     active?: boolean;
-    status?: StatusB0aEnum;
+    status?: Status873Enum;
     /**
      * Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
      *
-     * * `0` - Public
+     * * `0` - Öffentlich
      * * `1` - Authenticated
      * * `2` - Specific
      * * `3` - Private
@@ -1827,16 +1879,26 @@ export type PatchedBookWritable = {
  * Detailed serializer for Booking where `item` is represented only by UUID.
  */
 export type PatchedBookingWritable = {
-    status?: StatusE2dEnum;
+    status?: Status164Enum;
     item?: string;
+    /**
+     * Von
+     */
     time_from?: string | null;
+    /**
+     * Bis
+     */
     time_to?: string | null;
     /**
-     * Offered price for the booking
+     * Angebot
+     *
+     * Angebotener Preis für die Buchung
      */
     offer?: string | null;
     /**
-     * Counter offer price for the booking
+     * Gegenangebot
+     *
+     * Gegenangebotspreis für die Buchung
      */
     counter_offer?: string | null;
     accepted_by?: string | null;
@@ -1880,29 +1942,29 @@ export type PatchedItemWritable = {
     /**
      * Category of the item
      *
-     * * `books` - Books
-     * * `clothing` - Clothing
-     * * `electronics` - Electronics
-     * * `furniture` - Furniture
-     * * `garden` - Garden
-     * * `kitchen` - Kitchen
-     * * `other` - Other
-     * * `rooms` - Rooms
-     * * `sports` - Sports
-     * * `tools` - Tools
-     * * `toys` - Toys
-     * * `vehicles` - Vehicles
+     * * `books` - Bücher
+     * * `clothing` - Kleidung
+     * * `electronics` - Elektronik
+     * * `furniture` - Möbel
+     * * `garden` - Garten
+     * * `kitchen` - Küche
+     * * `other` - Andere
+     * * `rooms` - Räume
+     * * `sports` - Sport
+     * * `tools` - Werkzeuge
+     * * `toys` - Spielzeug
+     * * `vehicles` - Fahrzeuge
      */
     category?: CategoryEnum | BlankEnum;
     name?: string;
     slug?: string;
     description?: string;
     /**
-     * Internal item, not for public display
+     * Interner Artikel, nicht für öffentliche Anzeige
      */
     internal?: boolean;
     /**
-     * Display your contact information public
+     * Kontaktinformationen öffentlich anzeigen
      */
     display_contact?: boolean;
     /**
@@ -1911,7 +1973,7 @@ export type PatchedItemWritable = {
      * * `sell` - Sell
      * * `donate` - Donate
      * * `rent` - Rent
-     * * `borrow` - Borrow
+     * * `borrow` - Ausleihen
      * * `want_buy` - Want to Buy
      * * `want_rent` - Want to Rent
      */
@@ -1919,37 +1981,37 @@ export type PatchedItemWritable = {
     /**
      * Only used for formatting, price must always be per hour for rental items
      *
-     * * `h` - Hourly
-     * * `d` - Daily
-     * * `w` - Weekly
+     * * `h` - Stündlich
+     * * `d` - Täglich
+     * * `w` - Wöchentlich
      */
     rental_period?: RentalPeriodEnum | BlankEnum;
     /**
-     * Allow self-service rental without owner approval
+     * Selbstbedienungsvermietung ohne Zustimmung des Eigentümers erlauben
      */
     rental_self_service?: boolean;
     /**
-     * Allow open-ended rentals without a return date
+     * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
     /**
-     * Enable payment via internal payment system
+     * Zahlung über internes Zahlungssystem aktivieren
      */
     payment_enabled?: boolean;
     /**
      * Condition of the item
      *
-     * * `0` - New
-     * * `1` - Used
-     * * `2` - Broken
+     * * `0` - Neu
+     * * `1` - Gebraucht
+     * * `2` - Kaputt
      */
     condition?: ConditionEnum;
     active?: boolean;
-    status?: StatusB0aEnum;
+    status?: Status873Enum;
     /**
      * Who can see this item: Public (everyone), Authenticated (logged-in users), Specific (selected users/groups), or Private (owner and co-owners only).
      *
-     * * `0` - Public
+     * * `0` - Öffentlich
      * * `1` - Authenticated
      * * `2` - Specific
      * * `3` - Private
@@ -1982,23 +2044,25 @@ export type PatchedProfileWritable = {
      *
      * UI language preference for this user.
      *
-     * * `en` - English
-     * * `de` - German
+     * * `en` - Englisch
+     * * `de` - Deutsch
      */
     language?: LanguageEnum | BlankEnum;
 };
 
 export type PatchedUserWritable = {
     /**
-     * Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+     * Benutzername
+     *
+     * Erforderlich. 150 Zeichen oder weniger. Nur Buchstaben, Ziffern und @/./+/-/_.
      */
     username?: string;
     /**
-     * Name of User
+     * Name des Benutzers
      */
     name?: string;
     /**
-     * Email address
+     * E-Mail-Adresse
      */
     email?: string;
 };
@@ -2015,23 +2079,25 @@ export type ProfileWritable = {
      *
      * UI language preference for this user.
      *
-     * * `en` - English
-     * * `de` - German
+     * * `en` - Englisch
+     * * `de` - Deutsch
      */
     language?: LanguageEnum | BlankEnum;
 };
 
 export type UserWritable = {
     /**
-     * Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+     * Benutzername
+     *
+     * Erforderlich. 150 Zeichen oder weniger. Nur Buchstaben, Ziffern und @/./+/-/_.
      */
     username: string;
     /**
-     * Name of User
+     * Name des Benutzers
      */
     name?: string;
     /**
-     * Email address
+     * E-Mail-Adresse
      */
     email?: string;
 };
@@ -2054,15 +2120,15 @@ export type BookingsListData = {
     path?: never;
     query?: {
         /**
-         * Which field to use when ordering the results.
+         * Feld, das zum Sortieren der Ergebnisse verwendet werden soll.
          */
         ordering?: string;
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
         /**
-         * A search term.
+         * Ein Suchbegriff.
          */
         search?: string;
     };
@@ -2160,16 +2226,16 @@ export type BooksListData = {
         isbn?: string;
         language?: string;
         /**
-         * Which field to use when ordering the results.
+         * Feld, das zum Sortieren der Ergebnisse verwendet werden soll.
          */
         ordering?: string;
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
         publisher_name?: string;
         /**
-         * A search term.
+         * Ein Suchbegriff.
          */
         search?: string;
         shelf_name?: string;
@@ -2204,7 +2270,7 @@ export type BooksDestroyData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -2225,7 +2291,7 @@ export type BooksRetrieveData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -2243,7 +2309,7 @@ export type BooksPartialUpdateData = {
     body?: PatchedBookWritable;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -2261,7 +2327,7 @@ export type BooksUpdateData = {
     body: BookWritable;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -2284,7 +2350,7 @@ export type BooksIsbnUpdateUpdateData = {
     };
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -2303,7 +2369,7 @@ export type CollectionItemsListData = {
     path?: never;
     query?: {
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
     };
@@ -2333,7 +2399,7 @@ export type CollectionItemsDestroyData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this collection item.
+         * Ein UUID-String, der collection item identifiziert.
          */
         id: string;
     };
@@ -2354,7 +2420,7 @@ export type CollectionItemsRetrieveData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this collection item.
+         * Ein UUID-String, der collection item identifiziert.
          */
         id: string;
     };
@@ -2372,7 +2438,7 @@ export type CollectionItemsPartialUpdateData = {
     body?: PatchedCollectionItemWritable;
     path: {
         /**
-         * A UUID string identifying this collection item.
+         * Ein UUID-String, der collection item identifiziert.
          */
         id: string;
     };
@@ -2390,7 +2456,7 @@ export type CollectionItemsUpdateData = {
     body: CollectionItemWritable;
     path: {
         /**
-         * A UUID string identifying this collection item.
+         * Ein UUID-String, der collection item identifiziert.
          */
         id: string;
     };
@@ -2409,7 +2475,7 @@ export type CollectionsListData = {
     path?: never;
     query?: {
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
     };
@@ -2439,7 +2505,7 @@ export type CollectionsDestroyData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this collection.
+         * Ein UUID-String, der collection identifiziert.
          */
         id: string;
     };
@@ -2460,7 +2526,7 @@ export type CollectionsRetrieveData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this collection.
+         * Ein UUID-String, der collection identifiziert.
          */
         id: string;
     };
@@ -2478,7 +2544,7 @@ export type CollectionsPartialUpdateData = {
     body?: PatchedCollectionWritable;
     path: {
         /**
-         * A UUID string identifying this collection.
+         * Ein UUID-String, der collection identifiziert.
          */
         id: string;
     };
@@ -2496,7 +2562,7 @@ export type CollectionsUpdateData = {
     body: CollectionWritable;
     path: {
         /**
-         * A UUID string identifying this collection.
+         * Ein UUID-String, der collection identifiziert.
          */
         id: string;
     };
@@ -2514,7 +2580,7 @@ export type CollectionsAddItemCreateData = {
     body: CollectionWritable;
     path: {
         /**
-         * A UUID string identifying this collection.
+         * Ein UUID-String, der collection identifiziert.
          */
         id: string;
     };
@@ -2532,7 +2598,7 @@ export type CollectionsBulkAddItemsCreateData = {
     body: CollectionWritable;
     path: {
         /**
-         * A UUID string identifying this collection.
+         * Ein UUID-String, der collection identifiziert.
          */
         id: string;
     };
@@ -2550,7 +2616,7 @@ export type CollectionsBulkRemoveItemsCreateData = {
     body: CollectionWritable;
     path: {
         /**
-         * A UUID string identifying this collection.
+         * Ein UUID-String, der collection identifiziert.
          */
         id: string;
     };
@@ -2568,13 +2634,13 @@ export type CollectionsHistoryListData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this collection.
+         * Ein UUID-String, der collection identifiziert.
          */
         id: string;
     };
     query?: {
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
     };
@@ -2591,7 +2657,7 @@ export type CollectionsManagePermissionsCreateData = {
     body: CollectionWritable;
     path: {
         /**
-         * A UUID string identifying this collection.
+         * Ein UUID-String, der collection identifiziert.
          */
         id: string;
     };
@@ -2609,13 +2675,13 @@ export type CollectionsPermissionsListData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this collection.
+         * Ein UUID-String, der collection identifiziert.
          */
         id: string;
     };
     query?: {
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
     };
@@ -2632,7 +2698,7 @@ export type CollectionsRemoveItemCreateData = {
     body: CollectionWritable;
     path: {
         /**
-         * A UUID string identifying this collection.
+         * Ein UUID-String, der collection identifiziert.
          */
         id: string;
         item_id: string;
@@ -2654,7 +2720,7 @@ export type CollectionsForItemListData = {
     };
     query?: {
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
     };
@@ -2672,7 +2738,7 @@ export type CollectionsMyCollectionsListData = {
     path?: never;
     query?: {
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
     };
@@ -2704,7 +2770,7 @@ export type GroupsListData = {
     path?: never;
     query?: {
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
     };
@@ -2721,7 +2787,7 @@ export type GroupsRetrieveData = {
     body?: never;
     path: {
         /**
-         * A unique integer value identifying this group.
+         * Ein eindeutiger Ganzzahl-Wert, der Gruppe identifiziert.
          */
         id: number;
     };
@@ -2740,7 +2806,7 @@ export type ImagesListData = {
     path?: never;
     query?: {
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
     };
@@ -2770,7 +2836,7 @@ export type ImagesDestroyData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this image.
+         * Ein UUID-String, der image identifiziert.
          */
         id: string;
     };
@@ -2791,7 +2857,7 @@ export type ImagesRetrieveData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this image.
+         * Ein UUID-String, der image identifiziert.
          */
         id: string;
     };
@@ -2809,7 +2875,7 @@ export type ImagesPartialUpdateData = {
     body?: PatchedImageWritable;
     path: {
         /**
-         * A UUID string identifying this image.
+         * Ein UUID-String, der image identifiziert.
          */
         id: string;
     };
@@ -2827,7 +2893,7 @@ export type ImagesUpdateData = {
     body: ImageWritable;
     path: {
         /**
-         * A UUID string identifying this image.
+         * Ein UUID-String, der image identifiziert.
          */
         id: string;
     };
@@ -2848,26 +2914,26 @@ export type ItemsListData = {
         /**
          * Category of the item
          *
-         * * `books` - Books
-         * * `clothing` - Clothing
-         * * `electronics` - Electronics
-         * * `furniture` - Furniture
-         * * `garden` - Garden
-         * * `kitchen` - Kitchen
-         * * `other` - Other
-         * * `rooms` - Rooms
-         * * `sports` - Sports
-         * * `tools` - Tools
-         * * `toys` - Toys
-         * * `vehicles` - Vehicles
+         * * `books` - Bücher
+         * * `clothing` - Kleidung
+         * * `electronics` - Elektronik
+         * * `furniture` - Möbel
+         * * `garden` - Garten
+         * * `kitchen` - Küche
+         * * `other` - Andere
+         * * `rooms` - Räume
+         * * `sports` - Sport
+         * * `tools` - Werkzeuge
+         * * `toys` - Spielzeug
+         * * `vehicles` - Fahrzeuge
          */
         category?: 'books' | 'clothing' | 'electronics' | 'furniture' | 'garden' | 'kitchen' | 'other' | 'rooms' | 'sports' | 'tools' | 'toys' | 'vehicles';
         /**
          * Condition of the item
          *
-         * * `0` - New
-         * * `1` - Used
-         * * `2` - Broken
+         * * `0` - Neu
+         * * `1` - Gebraucht
+         * * `2` - Kaputt
          */
         conditions?: Array<0 | 1 | 2>;
         created_after?: string;
@@ -2875,11 +2941,11 @@ export type ItemsListData = {
         max_price?: number;
         min_price?: number;
         /**
-         * Which field to use when ordering the results.
+         * Feld, das zum Sortieren der Ergebnisse verwendet werden soll.
          */
         ordering?: string;
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
         published?: boolean;
@@ -2889,21 +2955,21 @@ export type ItemsListData = {
          * * `sell` - Sell
          * * `donate` - Donate
          * * `rent` - Rent
-         * * `borrow` - Borrow
+         * * `borrow` - Ausleihen
          * * `want_buy` - Want to Buy
          * * `want_rent` - Want to Rent
          */
         sales_type?: Array<'borrow' | 'donate' | 'rent' | 'sell' | 'want_buy' | 'want_rent'>;
         /**
-         * A search term.
+         * Ein Suchbegriff.
          */
         search?: string;
         /**
-         * * `0` - Draft
-         * * `2` - Available
-         * * `3` - Reserved
+         * * `0` - Entwurf
+         * * `2` - Verfügbar
+         * * `3` - Reserviert
          * * `4` - Rented
-         * * `5` - Sold
+         * * `5` - Verkauft
          */
         status?: Array<0 | 2 | 3 | 4 | 5>;
         user?: string;
@@ -2934,7 +3000,7 @@ export type ItemsDestroyData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -2955,7 +3021,7 @@ export type ItemsRetrieveData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -2973,7 +3039,7 @@ export type ItemsPartialUpdateData = {
     body?: PatchedItemWritable;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -2991,7 +3057,7 @@ export type ItemsUpdateData = {
     body: ItemWritable;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -3009,7 +3075,7 @@ export type ItemsAiDescribeUpdateData = {
     body: ItemWritable;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -3027,7 +3093,7 @@ export type ItemsAiImageUpdateData = {
     body: ItemWritable;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -3045,7 +3111,7 @@ export type ItemsCoOwnersDestroyData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -3066,7 +3132,7 @@ export type ItemsCoOwnersRetrieveData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -3084,7 +3150,7 @@ export type ItemsCoOwnersCreateData = {
     body: ItemWritable;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -3102,7 +3168,7 @@ export type ItemsReorderImagesUpdateData = {
     body: ItemWritable;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -3120,7 +3186,7 @@ export type ItemsViewersDestroyData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -3141,7 +3207,7 @@ export type ItemsViewersRetrieveData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -3159,7 +3225,7 @@ export type ItemsViewersCreateData = {
     body: ItemWritable;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -3182,11 +3248,11 @@ export type MessagesListData = {
         created_at_before?: string;
         is_read?: boolean;
         /**
-         * Which field to use when ordering the results.
+         * Feld, das zum Sortieren der Ergebnisse verwendet werden soll.
          */
         ordering?: string;
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
         sender?: string;
@@ -3221,7 +3287,7 @@ export type MessagesDestroyData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this message.
+         * Ein UUID-String, der message identifiziert.
          */
         id: string;
     };
@@ -3242,7 +3308,7 @@ export type MessagesRetrieveData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this message.
+         * Ein UUID-String, der message identifiziert.
          */
         id: string;
     };
@@ -3260,7 +3326,7 @@ export type MessagesPartialUpdateData = {
     body?: PatchedMessageWritable;
     path: {
         /**
-         * A UUID string identifying this message.
+         * Ein UUID-String, der message identifiziert.
          */
         id: string;
     };
@@ -3278,7 +3344,7 @@ export type MessagesUpdateData = {
     body: MessageWritable;
     path: {
         /**
-         * A UUID string identifying this message.
+         * Ein UUID-String, der message identifiziert.
          */
         id: string;
     };
@@ -3323,7 +3389,7 @@ export type ProfilesListData = {
     path?: never;
     query?: {
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
     };
@@ -3385,25 +3451,34 @@ export type PublicBookingsListData = {
         created_at_before?: string;
         item?: string;
         /**
-         * Which field to use when ordering the results.
+         * Feld, das zum Sortieren der Ergebnisse verwendet werden soll.
          */
         ordering?: string;
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
         /**
-         * A search term.
+         * Role filter (owner/renter)
+         */
+        role?: string;
+        /**
+         * Ein Suchbegriff.
          */
         search?: string;
         /**
-         * * `1` - Pending
-         * * `2` - Cancelled
-         * * `3` - Confirmed
-         * * `4` - Completed
-         * * `5` - Rejected
+         * * `1` - Ausstehend
+         * * `2` - Abgebrochen
+         * * `3` - Bestätigt
+         * * `4` - Abgeschlossen
+         * * `5` - Abgelehnt
          */
         status?: Array<1 | 2 | 3 | 4 | 5>;
+        time_from_after?: string;
+        time_from_before?: string;
+        time_to_after?: string;
+        time_to_before?: string;
+        time_to_isnull?: boolean;
         user?: string;
     };
     url: '/api/public-bookings/';
@@ -3419,7 +3494,7 @@ export type PublicBookingsRetrieveData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this booking.
+         * Ein UUID-String, der booking identifiziert.
          */
         id: string;
     };
@@ -3440,26 +3515,26 @@ export type PublicItemsListData = {
         /**
          * Category of the item
          *
-         * * `books` - Books
-         * * `clothing` - Clothing
-         * * `electronics` - Electronics
-         * * `furniture` - Furniture
-         * * `garden` - Garden
-         * * `kitchen` - Kitchen
-         * * `other` - Other
-         * * `rooms` - Rooms
-         * * `sports` - Sports
-         * * `tools` - Tools
-         * * `toys` - Toys
-         * * `vehicles` - Vehicles
+         * * `books` - Bücher
+         * * `clothing` - Kleidung
+         * * `electronics` - Elektronik
+         * * `furniture` - Möbel
+         * * `garden` - Garten
+         * * `kitchen` - Küche
+         * * `other` - Andere
+         * * `rooms` - Räume
+         * * `sports` - Sport
+         * * `tools` - Werkzeuge
+         * * `toys` - Spielzeug
+         * * `vehicles` - Fahrzeuge
          */
         category?: 'books' | 'clothing' | 'electronics' | 'furniture' | 'garden' | 'kitchen' | 'other' | 'rooms' | 'sports' | 'tools' | 'toys' | 'vehicles';
         /**
          * Condition of the item
          *
-         * * `0` - New
-         * * `1` - Used
-         * * `2` - Broken
+         * * `0` - Neu
+         * * `1` - Gebraucht
+         * * `2` - Kaputt
          */
         conditions?: Array<0 | 1 | 2>;
         created_after?: string;
@@ -3467,11 +3542,11 @@ export type PublicItemsListData = {
         max_price?: number;
         min_price?: number;
         /**
-         * Which field to use when ordering the results.
+         * Feld, das zum Sortieren der Ergebnisse verwendet werden soll.
          */
         ordering?: string;
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
         published?: boolean;
@@ -3481,21 +3556,21 @@ export type PublicItemsListData = {
          * * `sell` - Sell
          * * `donate` - Donate
          * * `rent` - Rent
-         * * `borrow` - Borrow
+         * * `borrow` - Ausleihen
          * * `want_buy` - Want to Buy
          * * `want_rent` - Want to Rent
          */
         sales_type?: Array<'borrow' | 'donate' | 'rent' | 'sell' | 'want_buy' | 'want_rent'>;
         /**
-         * A search term.
+         * Ein Suchbegriff.
          */
         search?: string;
         /**
-         * * `0` - Draft
-         * * `2` - Available
-         * * `3` - Reserved
+         * * `0` - Entwurf
+         * * `2` - Verfügbar
+         * * `3` - Reserviert
          * * `4` - Rented
-         * * `5` - Sold
+         * * `5` - Verkauft
          */
         status?: Array<0 | 2 | 3 | 4 | 5>;
         user?: string;
@@ -3513,7 +3588,7 @@ export type PublicItemsRetrieveData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this item.
+         * Ein UUID-String, der item identifiziert.
          */
         id: string;
     };
@@ -3550,7 +3625,7 @@ export type UsersListData = {
     path?: never;
     query?: {
         /**
-         * A page number within the paginated result set.
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
          */
         page?: number;
     };
@@ -3567,7 +3642,7 @@ export type UsersRetrieveData = {
     body?: never;
     path: {
         /**
-         * A UUID string identifying this user.
+         * Ein UUID-String, der Benutzer identifiziert.
          */
         id: string;
     };
@@ -3585,7 +3660,7 @@ export type UsersPartialUpdateData = {
     body?: PatchedUserWritable;
     path: {
         /**
-         * A UUID string identifying this user.
+         * Ein UUID-String, der Benutzer identifiziert.
          */
         id: string;
     };
@@ -3603,7 +3678,7 @@ export type UsersUpdateData = {
     body: UserWritable;
     path: {
         /**
-         * A UUID string identifying this user.
+         * Ein UUID-String, der Benutzer identifiziert.
          */
         id: string;
     };
