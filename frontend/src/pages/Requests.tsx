@@ -29,7 +29,7 @@ import { format } from 'date-fns';
 import { Calendar, Clock, Menu, Package, RefreshCw, Send, User } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-const Bookings = () => {
+const Requests = () => {
   // CSP-compliant event handlers
   const handleBookingCardClick = (bookingUuid: string) => {
     setSelectedBookingId(bookingUuid);
@@ -805,4 +805,4 @@ const Bookings = () => {
   );
 };
 
-export default Bookings;
+export default Requests;

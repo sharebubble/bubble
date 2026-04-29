@@ -140,12 +140,9 @@ export const Header = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/bookings')}
-              aria-current={location.pathname.startsWith('/bookings') ? 'page' : undefined}
-              className={cn(
-                'relative gap-2',
-                location.pathname.startsWith('/bookings') && 'font-semibold',
-              )}
+              onClick={() => navigate('/requests')}
+              aria-current={location.pathname.startsWith('/requests') ? 'page' : undefined}
+              className={cn(location.pathname.startsWith('/requests') && 'font-semibold')}
               title={t('header.bookings')}
             >
               <Handshake className="h-5 w-5" />
