@@ -5,6 +5,7 @@ from djmoney.contrib.django_rest_framework import MoneyField
 from guardian.shortcuts import get_groups_with_perms, get_users_with_perms
 from rest_framework import serializers, status
 
+from bubble.core.storage import absolute_media_url
 from bubble.items.models import Image, Item, ItemStatus, SalesType, money_defaults
 
 
@@ -18,8 +19,8 @@ class ImageSerializer(serializers.ModelSerializer):
     """Serializer for Image model."""
 
     item = serializers.PrimaryKeyRelatedField(queryset=Item.objects.all())
-    thumbnail = serializers.ImageField(read_only=True)
-    preview = serializers.ImageField(read_only=True)
+    thumbnail = serializers.SerializerMethodField()
+    preview = serializers.SerializerMethodField()
     ordering = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta:
@@ -33,6 +34,16 @@ class ImageSerializer(serializers.ModelSerializer):
             "item",
         ]
         read_only_fields = ["id", "thumbnail", "preview"]
+
+    def get_thumbnail(self, obj: Image) -> str | None:
+        """Return absolute URL for the thumbnail spec field."""
+        request = self.context.get("request")
+        return absolute_media_url(obj.thumbnail, request=request)
+
+    def get_preview(self, obj: Image) -> str | None:
+        """Return absolute URL for the preview spec field."""
+        request = self.context.get("request")
+        return absolute_media_url(obj.preview, request=request)
 
     def get_fields(self):
         """Override to make fields read-only on update."""
@@ -76,14 +87,11 @@ class ItemSerializer(serializers.ModelSerializer):
         ]
 
     def get_first_image(self, obj):
-        """Get the first image of the item."""
+        """Get the first image of the item as an absolute URL."""
         first_image = obj.get_first_image()
         if first_image:
             request = self.context.get("request")
-            if first_image.thumbnail and request:
-                return request.build_absolute_uri(first_image.thumbnail.url)
-            if first_image.thumbnail:
-                return first_image.thumbnail.url
+            return absolute_media_url(first_image.thumbnail, request=request)
         return None
 
     def get_co_owners(self, obj):

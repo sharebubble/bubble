@@ -50,7 +50,7 @@ class TestBookViewSetISBNUpdate:
         self.factory = APIRequestFactory()
         self.user = User.objects.create_user(  # pyright: ignore[reportAttributeAccessIssue]
             username="testuser",
-            password="test12345",  # noqa: S106
+            password="test12345",
         )
         # add user to default group to have permissions
         self.user.groups.add(Group.objects.get(name=DefaultGroup.DEFAULT))  # pyright: ignore[reportAttributeAccessIssue]

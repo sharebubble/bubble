@@ -68,6 +68,9 @@ const translations = {
     'index.sortBy': 'Sort by',
     'index.sortName': 'Name',
     'index.sortPrice': 'Price',
+    'index.scopeLocal': 'Local',
+    'index.scopeAll': 'All',
+    'index.scopeFederated': 'Federated',
     'index.sortDate': 'Date',
     'index.onlyAvailable': 'Only available',
     'index.onlyAvailableTooltip': 'Show only available and reserved items',
@@ -620,6 +623,9 @@ const translations = {
     'index.sortDate': 'Datum',
     'index.onlyAvailable': 'Nur verfügbar',
     'index.onlyAvailableTooltip': 'Nur verfügbare und reservierte Artikel anzeigen',
+    'index.scopeLocal': 'Lokal',
+    'index.scopeAll': 'Alle',
+    'index.scopeFederated': 'Föderiert',
 
     // Browse Nav
     'browse.buy': 'Marktplatz',

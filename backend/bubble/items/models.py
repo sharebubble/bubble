@@ -211,6 +211,29 @@ class Item(models.Model):
         ),
     )
 
+    # Federation
+    federation_visibility = models.CharField(
+        max_length=20,
+        choices=[
+            ("public_federated", _("Public (federated)")),
+            ("local_only", _("Local only")),
+        ],
+        default="local_only",
+        help_text=_(
+            "Controls whether this item is shared via ActivityPub federation. "
+            "'Public (federated)' shares it with allowed peer instances. "
+            "'Local only' keeps it on this instance only."
+        ),
+    )
+    # Cached ActivityPub object URI — populated when the item is first federated.
+    ap_id = models.URLField(
+        max_length=2048,
+        blank=True,
+        default="",
+        editable=False,
+        help_text=_("ActivityPub object URI for this item."),
+    )
+
     # enable history tracking
     history = HistoricalRecords()
 

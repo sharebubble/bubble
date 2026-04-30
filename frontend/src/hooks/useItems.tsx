@@ -1,6 +1,6 @@
 import {
   publicItemsList,
-  type Status402Enum,
+  type StatusB0aEnum,
   type ConditionEnum,
   type SalesTypeEnum,
 } from '@/services/django';
@@ -21,7 +21,7 @@ export const useItems = ({
   category?: ItemCategory;
   search?: string;
   page?: number;
-  status?: Status402Enum | Status402Enum[];
+  status?: StatusB0aEnum | StatusB0aEnum[];
   minPrice?: number;
   maxPrice?: number;
   salesTypes?: SalesTypeEnum[];
