@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
+import { imagesAPI } from '@/services/custom/images';
 import { type Image, imagesDestroy, imagesPartialUpdate } from '@/services/django';
 import {
   Camera,
@@ -12,6 +13,8 @@ import {
   ChevronRight,
   GripVertical,
   Image as ImageIcon,
+  RotateCcw,
+  RotateCw,
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -28,6 +31,9 @@ interface ImageManagerProps {
   maxImages?: number;
   isEditing?: boolean;
   resetNewImagesToken?: number;
+  /** Files dropped externally (e.g. full-page drop zone). Consumed once, then cleared. */
+  externalFiles?: File[];
+  onExternalFilesConsumed?: () => void;
 }
 
 export const ImageManager = ({
@@ -37,11 +43,14 @@ export const ImageManager = ({
   maxImages = 16,
   isEditing = false,
   resetNewImagesToken,
+  externalFiles,
+  onExternalFilesConsumed,
 }: ImageManagerProps) => {
   const [newImages, setNewImages] = useState<NewImage[]>([]);
   const [currentExistingImages, setCurrentExistingImages] = useState<Image[]>(existingImages);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [rotatingId, setRotatingId] = useState<string | null>(null);
   const { toast } = useToast();
   const { t } = useLanguage();
   const isMobile = useIsMobile();
@@ -84,6 +93,13 @@ export const ImageManager = ({
       });
     };
   }, []);
+
+  // Consume files dropped from an external (full-page) drop zone
+  useEffect(() => {
+    if (!externalFiles || externalFiles.length === 0) return;
+    processFiles(externalFiles);
+    onExternalFilesConsumed?.();
+  }, [externalFiles]);
 
   const totalImages = currentExistingImages.length + newImages.length;
 
@@ -195,6 +211,38 @@ export const ImageManager = ({
       }
     },
     [currentExistingImages, onExistingImagesChange, toast],
+  );
+
+  const rotateExistingImage = useCallback(
+    async (imageId: string, direction: 'left' | 'right') => {
+      setRotatingId(imageId);
+      try {
+        const updated = await imagesAPI.rotateImage(imageId, direction);
+        // Force a cache-busted thumbnail URL so the browser re-fetches the rotated image
+        const cacheBustedUpdated: Image = {
+          ...updated,
+          thumbnail: updated.thumbnail
+            ? `${updated.thumbnail.split('?')[0]}?t=${Date.now()}`
+            : updated.thumbnail,
+        };
+        setCurrentExistingImages(prev =>
+          prev.map(img => (img.id === imageId ? cacheBustedUpdated : img)),
+        );
+        onExistingImagesChange?.(
+          currentExistingImages.map(img => (img.id === imageId ? cacheBustedUpdated : img)),
+        );
+      } catch (error) {
+        console.error('Error rotating image:', error);
+        toast({
+          title: t('imageManager.rotateErrorTitle'),
+          description: t('imageManager.rotateErrorDescription'),
+          variant: 'destructive',
+        });
+      } finally {
+        setRotatingId(null);
+      }
+    },
+    [currentExistingImages, onExistingImagesChange, toast, t],
   );
 
   const handleDragStart = (index: number) => {
@@ -381,6 +429,36 @@ export const ImageManager = ({
             >
               <X className="h-3 w-3" />
             </Button>
+
+            {/* Rotate Buttons — only for saved images */}
+            {item.type === 'existing' && isEditing && (
+              <div
+                className={`absolute bottom-2 right-2 flex gap-1 transition-opacity ${
+                  selectedIndex === displayIndex
+                    ? 'opacity-100'
+                    : 'opacity-0 group-hover:opacity-100'
+                }`}
+              >
+                <button
+                  type="button"
+                  disabled={rotatingId === item.data.id}
+                  className="bg-black/60 hover:bg-black/80 text-white rounded p-0.5 disabled:opacity-50"
+                  onClick={() => rotateExistingImage(item.data.id, 'left')}
+                  aria-label="Rotate left"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                </button>
+                <button
+                  type="button"
+                  disabled={rotatingId === item.data.id}
+                  className="bg-black/60 hover:bg-black/80 text-white rounded p-0.5 disabled:opacity-50"
+                  onClick={() => rotateExistingImage(item.data.id, 'right')}
+                  aria-label="Rotate right"
+                >
+                  <RotateCw className="h-3 w-3" />
+                </button>
+              </div>
+            )}
 
             {/* Primary Badge */}
             {displayIndex === 0 && (

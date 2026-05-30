@@ -257,6 +257,8 @@ const translations = {
     'imageManager.deleteSuccessDescription': 'Image deleted successfully',
     'imageManager.deleteErrorTitle': 'Error',
     'imageManager.deleteErrorDescription': 'Failed to delete image',
+    'imageManager.rotateErrorTitle': 'Error',
+    'imageManager.rotateErrorDescription': 'Failed to rotate image',
 
     // Requests
     'requests.title': 'Requests',
@@ -816,6 +818,8 @@ const translations = {
     'imageManager.deleteSuccessDescription': 'Bild erfolgreich gelöscht',
     'imageManager.deleteErrorTitle': 'Fehler',
     'imageManager.deleteErrorDescription': 'Bild konnte nicht gelöscht werden',
+    'imageManager.rotateErrorTitle': 'Fehler',
+    'imageManager.rotateErrorDescription': 'Bild konnte nicht gedreht werden',
 
     // Requests
     'requests.title': 'Anfragen',

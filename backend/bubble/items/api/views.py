@@ -1,6 +1,8 @@
 """API views for items."""
 
+import io
 import uuid as _uuid
+from pathlib import Path
 
 from constance import config
 from django.contrib.auth import get_user_model
@@ -18,7 +20,9 @@ from guardian.shortcuts import (
     get_users_with_perms,
     remove_perm,
 )
-from rest_framework import filters, serializers, viewsets
+from PIL import Image as PILImage
+from PIL import ImageOps as PILImageOps
+from rest_framework import filters, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import (
@@ -420,6 +424,51 @@ class ImageViewSet(viewsets.ModelViewSet):
                 return
 
         serializer.save()
+
+    @action(detail=True, methods=["put"], url_path="rotate")
+    def rotate(self, request, id=None):  # noqa: A002
+        """Rotate the original image 90° left or right and regenerate thumbnails."""
+        image = self.get_object()
+        direction = request.data.get("direction", "right")
+        if direction not in ("left", "right"):
+            return Response(
+                {"detail": "direction must be 'left' or 'right'"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # PIL rotates counter-clockwise; expand=True preserves dimensions after rotation
+        angle = 90 if direction == "left" else -90
+
+        with image.original.open("rb") as f:
+            pil_img = PILImage.open(f)
+            pil_img.load()
+            original_format = pil_img.format or "JPEG"
+            # Normalise EXIF orientation into pixels before rotating so the result
+            # matches what the user sees visually (imagekit does the same for
+            # thumbnails).
+            pil_img = PILImageOps.exif_transpose(pil_img)
+            rotated = pil_img.rotate(angle, expand=True)
+
+        buffer = io.BytesIO()
+        save_format = (
+            original_format if original_format in ("JPEG", "PNG", "WEBP") else "JPEG"
+        )
+        save_kwargs = {"quality": 95} if save_format in ("JPEG", "WEBP") else {}
+        rotated.save(buffer, format=save_format, **save_kwargs)
+        buffer.seek(0)
+
+        # Save under a new path via FieldFile.save() so the model is updated in the DB
+        # and all derived URLs (original, thumbnail, preview) change — guaranteeing
+        # browsers and CDNs fetch fresh content rather than serving a cached version.
+        old_name = image.original.name
+        extension = Path(old_name).suffix or ".jpg"
+        image.original.save(
+            f"original{extension}", ContentFile(buffer.read()), save=True
+        )
+        image.original.storage.delete(old_name)
+
+        serializer = self.get_serializer(image)
+        return Response(serializer.data)
 
 
 # ---------------------------------------------------------------------------

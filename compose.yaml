@@ -54,17 +54,8 @@ services:
     image: docker.io/axllent/mailpit:latest
 
   redis:
-    image: ghcr.io/dragonflydb/dragonfly:latest
+    image: redis:alpine
     restart: always
-    command: >
-      dragonfly
-        --maxmemory 2gb
-        --proactor_threads 4
-        --cache_mode
-    environment:
-      # required to work with django-channels
-      # https://github.com/dragonflydb/dragonfly/issues/182#issuecomment-1241624150
-      DFLY_default_lua_flags: 'allow-undeclared-keys disable-atomicity'
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 30s
