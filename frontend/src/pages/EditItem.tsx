@@ -43,7 +43,7 @@ import {
   PatchedItemWritable,
   RentalPeriodEnum,
   SalesTypeEnum,
-  Status402Enum,
+  StatusB0aEnum,
   VisibilityEnum,
 } from '@/services/django';
 import { useQueryClient } from '@tanstack/react-query';
@@ -66,7 +66,7 @@ export type EditItemFormData = {
   description: string;
   category: CategoryEnum | '';
   condition: ConditionEnum | '';
-  status: Status402Enum | '';
+  status: StatusB0aEnum | '';
   visibility: VisibilityEnum | '';
   sales_type: SalesTypeEnum | '';
   price: string;
@@ -175,7 +175,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
     description: '',
     category: '' as CategoryEnum | '',
     condition: '' as ConditionEnum | '',
-    status: '' as Status402Enum | '',
+    status: '' as StatusB0aEnum | '',
     visibility: 1 as VisibilityEnum | '',
     sales_type: '' as SalesTypeEnum | '',
     price: '',
@@ -355,7 +355,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
           description: formData.description,
           category: formData.category as CategoryEnum,
           condition: formData.condition as ConditionEnum,
-          status: formData.status !== '' ? (formData.status as Status402Enum) : undefined,
+          status: formData.status !== '' ? (formData.status as StatusB0aEnum) : undefined,
           visibility:
             formData.visibility !== '' ? (formData.visibility as VisibilityEnum) : undefined,
           sales_type: formData.sales_type as SalesTypeEnum,

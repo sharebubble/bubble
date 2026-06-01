@@ -41,7 +41,7 @@ import { convertLineBreaks } from '@/lib/convertLineBreaks';
 import { formatPrice } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import { cn } from '@/lib/utils';
-import { SalesTypeEnum, Status402Enum } from '@/services/django';
+import { SalesTypeEnum, StatusB0aEnum } from '@/services/django';
 import { Edit3, Eye, Grid3X3, List, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -82,8 +82,8 @@ const MyItems = () => {
     itemId: string,
     newStatus: 'draft' | 'available' | 'reserved' | 'rented' | 'sold',
   ) => {
-    // Map string status to Status402Enum number
-    let statusEnum: Status402Enum;
+    // Map string status to StatusB0aEnum number
+    let statusEnum: StatusB0aEnum;
     switch (newStatus) {
       case 'draft':
         statusEnum = 0;
@@ -142,7 +142,7 @@ const MyItems = () => {
     );
   };
 
-  const getStatusColor = (status: Status402Enum) => {
+  const getStatusColor = (status: StatusB0aEnum) => {
     switch (status) {
       case 0:
         return 'bg-muted text-muted-foreground'; // draft
@@ -159,7 +159,7 @@ const MyItems = () => {
     }
   };
 
-  const getStatusText = (status: Status402Enum | undefined) => {
+  const getStatusText = (status: StatusB0aEnum | undefined) => {
     switch (status) {
       case 0:
         return t('status.draft');

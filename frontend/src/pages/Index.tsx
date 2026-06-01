@@ -13,20 +13,21 @@ import {
 } from '@/components/ui/table';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useItems } from '@/hooks/useItems';
+import { useFederatedItems } from '@/hooks/useFederatedItems';
 import { type ItemCategoryFilter } from '@/hooks/types';
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import { formatPrice } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import { cn } from '@/lib/utils';
-import { type Status402Enum, type SalesTypeEnum, type CategoryEnum } from '@/services/django';
+import { type StatusB0aEnum, type SalesTypeEnum, type CategoryEnum } from '@/services/django';
 import { type ConditionEnum } from '@/services/django';
 import { getStatusColor, getStatusLabel } from '@/components/items/status';
-import { ChevronLeft, ChevronRight, Grid3X3, List } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Globe, Grid3X3, List, MapPin } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 type BrowseItemsPageFilters = {
-  status?: Status402Enum | Status402Enum[];
+  status?: StatusB0aEnum | StatusB0aEnum[];
   minPrice?: number;
   maxPrice?: number;
   salesTypes?: SalesTypeEnum[];
@@ -36,7 +37,7 @@ const PAGE_SIZE = 20;
 // by default, show 'new' and 'used' items, don't show 'broken' items
 const DEFAULT_CONDITIONS: ConditionEnum[] = [0, 1];
 // statuses that count as "available": Available (2) and Reserved (3)
-const AVAILABLE_STATUSES: Status402Enum[] = [2, 3];
+const AVAILABLE_STATUSES: StatusB0aEnum[] = [2, 3];
 const LS_KEY = 'indexViewMode';
 
 const Index = () => {
@@ -113,6 +114,24 @@ const Index = () => {
     if (sortField === 'price') return `${prefix}price`;
     return `${prefix}created_at`;
   })();
+
+  const VALID_SCOPES = ['local', 'federated', 'all'] as const;
+  type Scope = (typeof VALID_SCOPES)[number];
+  const scopeParam = params.get('scope') as Scope | null;
+  const scope: Scope =
+    scopeParam && (VALID_SCOPES as readonly string[]).includes(scopeParam) ? scopeParam : 'local';
+  const isFederatedScope = scope === 'federated' || scope === 'all';
+
+  const handleScopeChange = (newScope: Scope) => {
+    const newParams = new URLSearchParams(location.search);
+    if (newScope === 'local') {
+      newParams.delete('scope');
+    } else {
+      newParams.set('scope', newScope);
+    }
+    newParams.delete('page');
+    navigate(`/?${newParams.toString()}`);
+  };
 
   const handleSortClick = (field: SortField) => {
     const newDir: SortDir =
@@ -194,6 +213,22 @@ const Index = () => {
     ordering,
   });
 
+  // Federated query — only fired when scope is 'federated' or 'all'
+  const FEDERATED_PAGE_SIZE = 50;
+  const federatedOffset = (currentPage - 1) * FEDERATED_PAGE_SIZE;
+  const federatedQuery = useFederatedItems(
+    isFederatedScope
+      ? {
+          search: searchQuery,
+          scope,
+          category: selectedCategory === 'all' ? undefined : selectedCategory,
+          salesType: itemFilters?.salesTypes?.[0],
+          limit: FEDERATED_PAGE_SIZE,
+          offset: federatedOffset,
+        }
+      : undefined,
+  );
+
   const handlePageChange = (newPage: number) => {
     const newParams = new URLSearchParams(location.search);
     newParams.set('page', String(newPage));
@@ -218,7 +253,7 @@ const Index = () => {
     }
   };
 
-  if (itemsQuery.error) {
+  if (isFederatedScope ? federatedQuery.error : itemsQuery.error) {
     return (
       <main className="container mx-auto px-4 py-8">
         <div className="text-center">
@@ -228,11 +263,178 @@ const Index = () => {
     );
   }
 
-  if (itemsQuery.isLoading) {
+  if (isFederatedScope ? federatedQuery.isLoading : itemsQuery.isLoading) {
     return (
       <main className="container mx-auto px-4 py-8">
         <div className="text-center">
           <p className="text-destructive">{t('index.loadingItems')}</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Scope toggle — shown in the header bar
+  const scopeToggle = (
+    <div className="flex items-center gap-1 border rounded-lg p-1">
+      <Button
+        variant={scope === 'local' ? 'default' : 'ghost'}
+        size="sm"
+        onClick={() => handleScopeChange('local')}
+        className="h-8 px-2 gap-1 text-xs"
+        title={t('index.scopeLocal')}
+      >
+        <MapPin className="h-3 w-3" />
+        {t('index.scopeLocal')}
+      </Button>
+      <Button
+        variant={scope === 'all' ? 'default' : 'ghost'}
+        size="sm"
+        onClick={() => handleScopeChange('all')}
+        className="h-8 px-2 gap-1 text-xs"
+        title={t('index.scopeAll')}
+      >
+        <Globe className="h-3 w-3" />
+        {t('index.scopeAll')}
+      </Button>
+      <Button
+        variant={scope === 'federated' ? 'default' : 'ghost'}
+        size="sm"
+        onClick={() => handleScopeChange('federated')}
+        className="h-8 px-2 gap-1 text-xs"
+        title={t('index.scopeFederated')}
+      >
+        <Globe className="h-3 w-3" />
+        {t('index.scopeFederated')}
+      </Button>
+    </div>
+  );
+
+  if (isFederatedScope && federatedQuery.isSuccess) {
+    const federatedItems = federatedQuery.data.items;
+    const totalCount = federatedQuery.data.pagination.count;
+    const totalPages = Math.ceil(totalCount / FEDERATED_PAGE_SIZE);
+
+    const pagination = totalPages > 1 && (
+      <div className="flex items-center justify-center gap-2 pt-8">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          {t('index.previous')}
+        </Button>
+        <div className="flex items-center gap-2">
+          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+            let pageNum: number;
+            if (totalPages <= 5) pageNum = i + 1;
+            else if (currentPage <= 3) pageNum = i + 1;
+            else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
+            else pageNum = currentPage - 2 + i;
+            return (
+              <Button
+                key={pageNum}
+                variant={currentPage === pageNum ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handlePageChange(pageNum)}
+              >
+                {pageNum}
+              </Button>
+            );
+          })}
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          {t('index.next')}
+          <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+      </div>
+    );
+
+    return (
+      <main className="container mx-auto px-4 py-4">
+        <div className="space-y-4">
+          <BrowseNav
+            selectedConditions={selectedConditions}
+            selectedCategory={selectedCategory}
+            onSelectedConditionsChange={handleConditionsChange}
+            onSelectedCategoryChange={handleCategoryChange}
+            sortField={sortField}
+            sortDir={sortDir}
+            onSortClick={handleSortClick}
+            onlyAvailable={onlyAvailable}
+            onOnlyAvailableChange={handleOnlyAvailableChange}
+          />
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-foreground">
+              {searchQuery
+                ? t('index.searchResults').replace('{query}', searchQuery)
+                : selectedCategory === 'all'
+                  ? t('index.allItems')
+                  : t('index.categoryItems').replace('{category}', selectedCategory)}
+            </h2>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground">
+                {t('index.itemsFound').replace('{count}', String(totalCount))}
+              </span>
+              {scopeToggle}
+              <div className="flex items-center gap-1 border rounded-lg p-1">
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => toggleViewMode('list')}
+                  className="h-8 w-8 p-0"
+                  title={t('index.viewList')}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'cards' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => toggleViewMode('cards')}
+                  className="h-8 w-8 p-0"
+                  title={t('index.viewGrid')}
+                >
+                  <Grid3X3 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {federatedItems.length === 0 ? (
+            <div className="text-center py-8">
+              <p>{t('index.noItemsFound')}</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {federatedItems.map(item => (
+                <ItemCard
+                  key={item.ap_id ?? item.id}
+                  id={item.id}
+                  title={item.name}
+                  description={item.description || ''}
+                  category={item.category}
+                  condition={
+                    item.condition === 'new' ? 'new' : item.condition === 'used' ? 'used' : 'broken'
+                  }
+                  salesType={item.sales_type as SalesTypeEnum | undefined}
+                  price={item.price ? parseFloat(item.price) : undefined}
+                  priceCurrency={item.price_currency}
+                  location=""
+                  imageUrl={item.first_image_url ?? undefined}
+                  createdAt=""
+                  remoteInstance={item.source === 'remote' ? item.instance : null}
+                />
+              ))}
+            </div>
+          )}
+
+          {pagination}
         </div>
       </main>
     );
@@ -319,6 +521,7 @@ const Index = () => {
               <span className="text-sm text-muted-foreground">
                 {t('index.itemsFound').replace('{count}', String(itemsQuery.data.pagination.count))}
               </span>
+              {scopeToggle}
               {/* View mode toggle */}
               <div className="flex items-center gap-1 border rounded-lg p-1">
                 <Button
@@ -417,10 +620,10 @@ const Index = () => {
                       <TableCell>
                         {typeof item.status !== 'undefined' && item.status !== null && (
                           <Badge
-                            className={cn(getStatusColor(item.status as Status402Enum), 'text-xs')}
+                            className={cn(getStatusColor(item.status as StatusB0aEnum), 'text-xs')}
                           >
-                            {getStatusLabel(item.status as Status402Enum)
-                              ? t(`status.${getStatusLabel(item.status as Status402Enum)}`)
+                            {getStatusLabel(item.status as StatusB0aEnum)
+                              ? t(`status.${getStatusLabel(item.status as StatusB0aEnum)}`)
                               : ''}
                           </Badge>
                         )}

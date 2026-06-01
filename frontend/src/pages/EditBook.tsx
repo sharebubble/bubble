@@ -15,7 +15,7 @@ import {
   PatchedBookWritable,
   RentalPeriodEnum,
   SalesTypeEnum,
-  Status402Enum,
+  StatusB0aEnum,
 } from '@/services/django';
 import {
   booksIsbnUpdateUpdate,
@@ -221,14 +221,14 @@ const EditBook = () => {
   // ── Helpers ───────────────────────────────────────────────────────────────
   const buildBookData = (
     formData: EditItemFormData,
-    statusOverride?: Status402Enum,
+    statusOverride?: StatusB0aEnum,
   ): BookWritable => ({
     name: formData.name,
     description: formData.description,
     category: formData.category as CategoryEnum,
     condition: formData.condition as ConditionEnum,
     status:
-      statusOverride ?? (formData.status !== '' ? (formData.status as Status402Enum) : undefined),
+      statusOverride ?? (formData.status !== '' ? (formData.status as StatusB0aEnum) : undefined),
     sales_type: formData.sales_type !== '' ? (formData.sales_type as SalesTypeEnum) : undefined,
     price: formData.price === '' ? null : formData.price,
     rental_period:
@@ -283,7 +283,7 @@ const EditBook = () => {
   const onPublishOverride = async (formData: EditItemFormData, itemUuid: string) => {
     await updateBookMutation.mutateAsync({
       id: itemUuid,
-      body: buildBookData(formData, 2 as Status402Enum),
+      body: buildBookData(formData, 2 as StatusB0aEnum),
     });
     toast({
       title: t('editItem.publishSuccessTitle'),

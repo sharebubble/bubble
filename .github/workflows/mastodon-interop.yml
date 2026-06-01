@@ -1,0 +1,161 @@
+name: Mastodon Interop
+
+# Runs on demand or on pushes to main that touch federation code.
+# Tests that a Bubble instance is legible to Mastodon's federation stack.
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'backend/bubble/federation/**'
+      - '.github/workflows/mastodon-interop.yml'
+
+concurrency:
+  group: mastodon-interop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mastodon-interop:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      BUBBLE_DOMAIN: bubble.test
+      BUBBLE_PORT: 8080
+      # Minimal federation key — only for CI, never reuse in production
+      FEDERATION_KEY_ENCRYPTION_KEY: 'dGVzdC10ZXN0LXRlc3QtdGVzdC10ZXN0LXQ='
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build backend image
+        uses: docker/bake-action@v7
+        with:
+          push: false
+          load: true
+          files: compose.yaml,compose.test.yaml
+          targets: backend
+          set: |
+            backend.cache-from=type=gha,scope=backend-cached-tests
+            backend.cache-to=type=gha,scope=backend-cached-tests,mode=max
+
+      - name: Start Bubble services
+        run: |
+          docker compose up -d postgres redis
+          sleep 5
+          docker compose run --rm \
+            -e DJANGO_SETTINGS_MODULE=config.settings.test \
+            -e FEDERATION_ENABLED=true \
+            -e FEDERATION_DOMAIN=${{ env.BUBBLE_DOMAIN }} \
+            -e FEDERATION_KEY_ENCRYPTION_KEY=${{ env.FEDERATION_KEY_ENCRYPTION_KEY }} \
+            backend python manage.py migrate --run-syncdb
+          docker compose run --rm \
+            -e DJANGO_SETTINGS_MODULE=config.settings.test \
+            -e FEDERATION_ENABLED=true \
+            -e FEDERATION_DOMAIN=${{ env.BUBBLE_DOMAIN }} \
+            -e FEDERATION_KEY_ENCRYPTION_KEY=${{ env.FEDERATION_KEY_ENCRYPTION_KEY }} \
+            backend python manage.py shell -c "
+          from django.contrib.auth import get_user_model
+          User = get_user_model()
+          u = User.objects.create_user('alice', 'alice@bubble.test', 'pw', federation_enabled=True)
+          print('Created user:', u.username)
+          "
+
+      - name: Start Bubble HTTP server
+        run: |
+          docker compose run -d --name bubble-web \
+            -p ${{ env.BUBBLE_PORT }}:8000 \
+            -e DJANGO_SETTINGS_MODULE=config.settings.test \
+            -e FEDERATION_ENABLED=true \
+            -e FEDERATION_DOMAIN=${{ env.BUBBLE_DOMAIN }} \
+            -e FEDERATION_KEY_ENCRYPTION_KEY=${{ env.FEDERATION_KEY_ENCRYPTION_KEY }} \
+            -e ALLOWED_HOSTS="${{ env.BUBBLE_DOMAIN }},localhost,127.0.0.1" \
+            backend python manage.py runserver 0.0.0.0:8000
+          # Wait for the server to be ready
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:${{ env.BUBBLE_PORT }}/federation/nodeinfo/2.1 && break
+            sleep 2
+          done
+
+      - name: Add /etc/hosts entry for bubble.test
+        run: echo "127.0.0.1 ${{ env.BUBBLE_DOMAIN }}" | sudo tee -a /etc/hosts
+
+      - name: Run Mastodon-interop probe script
+        run: |
+          python3 - <<'PYEOF'
+          import sys, json, urllib.request, urllib.error
+
+          BASE = "http://bubble.test:8080"
+          USERNAME = "alice"
+
+          def get(url, accept="application/json"):
+              req = urllib.request.Request(url, headers={"Accept": accept})
+              with urllib.request.urlopen(req, timeout=10) as r:
+                  return json.loads(r.read())
+
+          errors = []
+
+          # 1. WebFinger
+          wf_url = f"{BASE}/.well-known/webfinger?resource=acct:{USERNAME}@bubble.test"
+          try:
+              wf = get(wf_url, "application/jrd+json")
+              assert wf.get("subject") == f"acct:{USERNAME}@bubble.test", f"bad subject: {wf}"
+              links = {l["rel"]: l["href"] for l in wf.get("links", []) if "href" in l}
+              actor_url = links.get("self")
+              assert actor_url, f"no self link in webfinger: {links}"
+              print(f"  WebFinger OK — actor: {actor_url}")
+          except Exception as e:
+              errors.append(f"WebFinger: {e}")
+              actor_url = f"{BASE}/federation/users/{USERNAME}"
+
+          # 2. Actor fetch (Mastodon sends Accept: application/activity+json)
+          try:
+              actor = get(actor_url, "application/activity+json")
+              for field in ("id", "type", "preferredUsername", "inbox", "outbox",
+                            "publicKey", "followers", "following", "featured"):
+                  assert field in actor, f"missing field: {field}"
+              assert actor["type"] == "Person", f"unexpected type: {actor['type']}"
+              assert actor["preferredUsername"] == USERNAME
+              assert actor.get("discoverable") is not None, "missing discoverable"
+              print(f"  Actor OK — type={actor['type']}, preferredUsername={actor['preferredUsername']}")
+          except Exception as e:
+              errors.append(f"Actor: {e}")
+
+          # 3. NodeInfo
+          try:
+              ni_disc = get(f"{BASE}/.well-known/nodeinfo")
+              ni_url = ni_disc["links"][-1]["href"]
+              ni = get(ni_url)
+              assert ni.get("software", {}).get("name") == "bubble", f"bad nodeinfo: {ni}"
+              assert ni.get("version") == "2.1", f"bad nodeinfo version: {ni}"
+              print(f"  NodeInfo OK — software={ni['software']}")
+          except Exception as e:
+              errors.append(f"NodeInfo: {e}")
+
+          # 4. Featured collection
+          try:
+              feat_url = actor.get("featured") if "actor" in dir() else f"{BASE}/federation/users/{USERNAME}/featured"
+              feat = get(feat_url, "application/activity+json")
+              assert feat.get("type") in ("OrderedCollection", "Collection"), f"bad featured type: {feat}"
+              print(f"  Featured OK — type={feat['type']}")
+          except Exception as e:
+              errors.append(f"Featured: {e}")
+
+          if errors:
+              print("\nFAILED:")
+              for err in errors:
+                  print(f"  {err}")
+              sys.exit(1)
+          else:
+              print("\nAll Mastodon-interop checks passed.")
+          PYEOF
+
+      - name: Tear down
+        if: always()
+        run: docker compose down --volumes

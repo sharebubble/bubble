@@ -9,6 +9,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
 
 from bubble.core.api.views import ConfigView
+from bubble.federation.urls import federation_patterns, wellknown_patterns
 
 urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),
@@ -22,7 +23,12 @@ urlpatterns = [
     path("accounts/", include("allauth.urls")),
     # Media files
     *static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT),
+    # Federation — discovery (/.well-known/*)
+    path(".well-known/", include((wellknown_patterns, "federation-wellknown"))),
+    # Federation — actor and inbox endpoints (/federation/*, /nodeinfo/*)
+    path("federation/", include((federation_patterns, "federation"))),
 ]
+
 if settings.DEBUG:
     # Static file serving when using Gunicorn + Uvicorn for local web socket development
     urlpatterns += staticfiles_urlpatterns()

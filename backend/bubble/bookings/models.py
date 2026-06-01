@@ -33,6 +33,8 @@ class BookingManager(models.Manager):
             accept_global_perms=False,
         )
 
+        # Include bookings where the local user is the booker OR where
+        # the user owns the item (covers both local and remote bookers).
         return self.filter(user=user) | self.filter(
             item__in=items_with_change_permission
         )
@@ -49,6 +51,11 @@ class Booking(models.Model):
         AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="bookings",
+        null=True,
+        blank=True,
+        help_text=_(
+            "Local user who made this booking. Null when booker is a remote actor."
+        ),
     )
 
     time_from = models.DateTimeField(
@@ -81,6 +88,24 @@ class Booking(models.Model):
         related_name="accepted_bookings",
     )
 
+    # Federation: remote booker (XOR with user — enforced by DB constraint below)
+    remote_booker_actor = models.ForeignKey(
+        "federation.RemoteActor",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="bookings",
+        help_text=_("Set when the booker is a remote federated actor."),
+    )
+    # Cached ActivityPub object URI
+    ap_id = models.URLField(
+        max_length=2048,
+        blank=True,
+        default="",
+        editable=False,
+        help_text=_("ActivityPub object URI for this booking."),
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -108,10 +133,20 @@ class Booking(models.Model):
                 condition=Q(status=BookingStatus.CONFIRMED) & Q(time_to__isnull=True),
                 index_type="gist",
             ),
+            # Enforce XOR: a booking must have exactly one of
+            # user OR remote_booker_actor
+            models.CheckConstraint(
+                condition=(
+                    models.Q(user__isnull=False, remote_booker_actor__isnull=True)
+                    | models.Q(user__isnull=True, remote_booker_actor__isnull=False)
+                ),
+                name="booking_booker_xor",
+            ),
         ]
 
     def __str__(self):
-        return f"Booking for {self.item.name} by {self.user}"
+        booker = self.user or self.remote_booker_actor or "unknown"
+        return f"Booking for {self.item.name} by {booker}"
 
     @property
     def is_active(self):
@@ -147,6 +182,25 @@ class Message(models.Model):
         AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="sent_messages",
+        null=True,
+        blank=True,
+        help_text=_("Local sender. Null when sender is a remote actor."),
+    )
+    # Federation: remote sender (XOR with sender)
+    remote_sender_actor = models.ForeignKey(
+        "federation.RemoteActor",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="sent_messages",
+        help_text=_("Set when the message sender is a remote federated actor."),
+    )
+    ap_id = models.URLField(
+        max_length=2048,
+        blank=True,
+        default="",
+        editable=False,
+        help_text=_("ActivityPub object URI for this message."),
     )
     created_at = models.DateTimeField(auto_now_add=True)
     message = models.TextField()
@@ -154,6 +208,16 @@ class Message(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(sender__isnull=False, remote_sender_actor__isnull=True)
+                    | models.Q(sender__isnull=True, remote_sender_actor__isnull=False)
+                ),
+                name="message_sender_xor",
+            ),
+        ]
 
     def __str__(self):
-        return f"Message from {self.sender}"
+        s = self.sender or self.remote_sender_actor or "unknown"
+        return f"Message from {s}"
