@@ -22,7 +22,7 @@ dependencies = [
     "django-model-utils",
     "django-money>=3.5.4",
     "django-redis",
-    "django-simple-history>=3.10.1",
+    "django-simple-history>=3.11.0",
     "huey>=2.5",
     "djangorestframework",
     "drf-orjson-renderer>=1.7.3",
