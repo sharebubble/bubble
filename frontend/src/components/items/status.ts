@@ -1,27 +1,25 @@
-import { Status402Enum } from '@/services/django';
+import { StatusB0aEnum } from '@/services/django';
 
-export const statusLabels: Record<Status402Enum, string> = {
+export const statusLabels: Record<StatusB0aEnum, string> = {
   0: 'draft',
-  1: 'draft', // legacy: processing mapped to draft
   2: 'available',
   3: 'reserved',
   4: 'rented',
   5: 'sold',
 };
 
-export const statusColors: Record<Status402Enum, string> = {
+export const statusColors: Record<StatusB0aEnum, string> = {
   0: 'bg-muted text-muted-foreground',
-  1: 'bg-muted text-muted-foreground', // legacy: processing mapped to draft colour
   2: 'bg-success text-success-foreground',
   3: 'bg-secondary text-secondary-foreground',
   4: 'bg-destructive text-destructive-foreground',
   5: 'bg-destructive text-destructive-foreground',
 };
 
-export const getStatusLabel = (status?: Status402Enum | null) =>
+export const getStatusLabel = (status?: StatusB0aEnum | null) =>
   status === undefined || status === null ? undefined : statusLabels[status];
 
-export const getStatusColor = (status?: Status402Enum | null) =>
+export const getStatusColor = (status?: StatusB0aEnum | null) =>
   status === undefined || status === null ? undefined : statusColors[status];
 
 export default {

@@ -13,6 +13,62 @@ Run
 - `docker compose exec backend python manage.py createsuperuser`
 - open http://localhost:8080 and log in
 
+# Federation (ActivityPub)
+
+Bubble supports ActivityPub federation, allowing items, bookings, and messages to flow between Bubble instances and interact with the broader fediverse (Mastodon, etc.).
+
+## Enabling federation
+
+Set these environment variables (e.g. in `backend/.env`):
+
+```env
+FEDERATION_ENABLED=true
+FEDERATION_DOMAIN=bubble.example.com
+# 32-byte URL-safe base64 key — generate with:
+# python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+FEDERATION_KEY_ENCRYPTION_KEY=<your-key>
+```
+
+Then restart the backend and run migrations:
+
+```bash
+docker compose exec backend python manage.py migrate
+```
+
+## Allowing peer instances
+
+Federation uses an **allowlist model** — remote instances must be explicitly permitted before any activities are exchanged.
+
+1. Log in to the Django admin at `/admin/`
+2. Navigate to **Federation → Remote instances → Add**
+3. Enter the peer instance domain and set **Allowlist state** to `Allowed`
+4. Optionally use the **Allow instances and backfill catalog** admin action to immediately import the remote instance's public item catalog
+
+## User-facing controls
+
+- **Enable/disable federation** per user: account settings → Federation
+- **Per-item visibility**: each item can be set to `Public (federated)` or `Local only`
+- **Profile discoverability**: controls whether your profile appears in remote search results
+
+## Mastodon lookup
+
+Bubble user profiles are Mastodon-compatible. You can look up a Bubble user from Mastodon using the handle format:
+
+```
+@username@bubble.example.com
+```
+
+## Monitoring
+
+Check the federation health endpoint (no auth required):
+
+```
+GET https://bubble.example.com/federation/health
+```
+
+For full operational guidance see [`docs/federation/operating.md`](docs/federation/operating.md).
+For privacy and GDPR considerations see [`docs/federation/privacy.md`](docs/federation/privacy.md).
+
 # Frontend
 
 For autocompletion and type checks inside your IDE, install the npm packages locally in the _frontend/_ folder:

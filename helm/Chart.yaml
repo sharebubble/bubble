@@ -20,4 +20,8 @@ home: https://github.com/sharebubble/bubble
 sources:
   - https://github.com/sharebubble/bubble
 
-dependencies: []
+dependencies:
+  - name: rustfs
+    version: "0.1.0"
+    repository: "https://charts.rustfs.com"
+    condition: rustfs.enabled

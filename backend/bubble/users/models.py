@@ -27,6 +27,16 @@ class User(AbstractUser):
     first_name = None  # type: ignore[assignment]
     last_name = None  # type: ignore[assignment]
 
+    # Federation
+    federation_enabled = models.BooleanField(
+        default=True,
+        help_text=_(
+            "Allow this user's profile and items to be federated via ActivityPub. "
+            "Disabling this removes the user from WebFinger lookup and stops "
+            "publishing their items to peer instances."
+        ),
+    )
+
     def get_absolute_url(self) -> str:
         """Get URL for user's detail view.
 
@@ -62,6 +72,15 @@ class Profile(models.Model):
         default="",
         verbose_name=_("preferred language"),
         help_text=_("UI language preference for this user."),
+    )
+
+    # Federation
+    federation_discoverable = models.BooleanField(
+        default=True,
+        help_text=_(
+            "Include this profile in WebFinger discovery and the Mastodon-compatible "
+            "actor endpoint. Requires federation_enabled on the User as well."
+        ),
     )
 
     def __str__(self):

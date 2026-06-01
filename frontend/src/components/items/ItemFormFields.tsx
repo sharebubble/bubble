@@ -16,7 +16,7 @@ import {
   ConditionEnum,
   RentalPeriodEnum,
   SalesTypeEnum,
-  Status402Enum,
+  StatusB0aEnum,
   VisibilityEnum,
 } from '@/services/django';
 import { Check, Loader2 } from 'lucide-react';
@@ -402,7 +402,7 @@ export const PricingFields = ({
 
 interface StatusFieldProps {
   formData: {
-    status: Status402Enum | '';
+    status: StatusB0aEnum | '';
     sales_type?: SalesTypeEnum | '';
   };
   setFormData: (data: any) => void;
@@ -411,20 +411,20 @@ interface StatusFieldProps {
   onFieldChange?: (fieldName: string, value: unknown) => void;
 }
 
-const SELL_DONATE_STATUSES: { value: Status402Enum; label: string }[] = [
+const SELL_DONATE_STATUSES: { value: StatusB0aEnum; label: string }[] = [
   { value: 0, label: 'draft' },
   { value: 2, label: 'available' },
   { value: 3, label: 'reserved' },
   { value: 5, label: 'sold' },
 ];
 
-const RENT_BORROW_STATUSES: { value: Status402Enum; label: string }[] = [
+const RENT_BORROW_STATUSES: { value: StatusB0aEnum; label: string }[] = [
   { value: 0, label: 'draft' },
   { value: 2, label: 'available' },
   { value: 4, label: 'rented' },
 ];
 
-const ALL_STATUSES: { value: Status402Enum; label: string }[] = [
+const ALL_STATUSES: { value: StatusB0aEnum; label: string }[] = [
   { value: 0, label: 'draft' },
   { value: 2, label: 'available' },
   { value: 3, label: 'reserved' },
@@ -464,7 +464,7 @@ export const StatusField = ({
           value={formData.status.toString()}
           onValueChange={value => {
             if (value !== '') {
-              const statusValue = parseInt(value) as Status402Enum;
+              const statusValue = parseInt(value) as StatusB0aEnum;
               setFormData({
                 ...formData,
                 status: statusValue,

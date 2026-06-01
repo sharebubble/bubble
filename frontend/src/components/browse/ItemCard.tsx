@@ -10,8 +10,8 @@ import { getCategoryIcon } from '@/lib/categoryIcons';
 import { formatPrice } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import { cn } from '@/lib/utils';
-import { SalesTypeEnum, Status402Enum } from '@/services/django';
-import { Clock, Zap } from 'lucide-react';
+import { SalesTypeEnum, StatusB0aEnum } from '@/services/django';
+import { Clock, Globe, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { getStatusColor, getStatusLabel } from '@/components/items/status';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
@@ -32,9 +32,11 @@ interface ItemCardProps {
   isFavorited?: boolean;
   ownerId?: string;
   owner?: string;
-  status?: Status402Enum | null;
+  status?: StatusB0aEnum | null;
   rentalOpenEnd?: boolean;
   rentalSelfService?: boolean;
+  /** When set, shows an origin badge indicating this item is from a remote instance */
+  remoteInstance?: string | null;
 }
 
 export const ItemCard = ({
@@ -55,6 +57,7 @@ export const ItemCard = ({
   status,
   rentalOpenEnd = false,
   rentalSelfService = false,
+  remoteInstance,
 }: ItemCardProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -145,24 +148,41 @@ export const ItemCard = ({
           </div>
         )}
 
-        {/* Instant Rental badge (bottom-left) */}
-        {rentalSelfService && (
-          <div className="absolute bottom-3 left-3">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge className="gap-1 bg-amber-500 text-white text-xs shadow-medium hover:bg-amber-500 cursor-default">
-                    <Zap className="h-3 w-3 fill-current" />
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="font-medium">{t('item.instantRental')}</p>
-                  <p className="text-xs text-muted-foreground max-w-48">
-                    {t('item.instantRentalTooltip')}
-                  </p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+        {/* Bottom-left badges: instant rental + remote origin */}
+        {(rentalSelfService || remoteInstance) && (
+          <div className="absolute bottom-3 left-3 flex flex-col gap-1 items-start">
+            {rentalSelfService && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge className="gap-1 bg-amber-500 text-white text-xs shadow-medium hover:bg-amber-500 cursor-default">
+                      <Zap className="h-3 w-3 fill-current" />
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="font-medium">{t('item.instantRental')}</p>
+                    <p className="text-xs text-muted-foreground max-w-48">
+                      {t('item.instantRentalTooltip')}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            {remoteInstance && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge className="gap-1 bg-blue-600/90 text-white text-xs shadow-medium hover:bg-blue-600/90 cursor-default backdrop-blur-xs">
+                      <Globe className="h-3 w-3" />
+                      <span className="max-w-24 truncate">{remoteInstance}</span>
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="font-medium">{remoteInstance}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
           </div>
         )}
 
