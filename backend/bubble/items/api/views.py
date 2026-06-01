@@ -454,6 +454,8 @@ class ImageViewSet(viewsets.ModelViewSet):
             original_format if original_format in ("JPEG", "PNG", "WEBP") else "JPEG"
         )
         save_kwargs = {"quality": 95} if save_format in ("JPEG", "WEBP") else {}
+        if save_format == "JPEG" and rotated.mode in ("RGBA", "LA", "P"):
+            rotated = rotated.convert("RGB")
         rotated.save(buffer, format=save_format, **save_kwargs)
         buffer.seek(0)
 
