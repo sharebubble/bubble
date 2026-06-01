@@ -444,7 +444,7 @@ export const ImageManager = ({
                   disabled={rotatingId === item.data.id}
                   className="bg-black/60 hover:bg-black/80 text-white rounded p-0.5 disabled:opacity-50"
                   onClick={() => rotateExistingImage(item.data.id, 'left')}
-                  aria-label="Rotate left"
+                  aria-label={t('imageManager.rotateLeft')}
                 >
                   <RotateCcw className="h-3 w-3" />
                 </button>
@@ -453,7 +453,7 @@ export const ImageManager = ({
                   disabled={rotatingId === item.data.id}
                   className="bg-black/60 hover:bg-black/80 text-white rounded p-0.5 disabled:opacity-50"
                   onClick={() => rotateExistingImage(item.data.id, 'right')}
-                  aria-label="Rotate right"
+                  aria-label={t('imageManager.rotateRight')}
                 >
                   <RotateCw className="h-3 w-3" />
                 </button>
