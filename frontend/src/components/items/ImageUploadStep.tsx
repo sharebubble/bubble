@@ -12,7 +12,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ImageManager } from './ImageManager';
 import { BarcodeScanner } from './BarcodeScanner';
-
 interface ImageUploadStepProps {
   onBack: () => void;
   onComplete: (data: any) => void;
@@ -31,6 +30,9 @@ export const ImageUploadStep = ({ onBack, onComplete }: ImageUploadStepProps) =>
   const [progress, setProgress] = useState(0);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   const [isbnScanning, setIsbnScanning] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
+  const [droppedFiles, setDroppedFiles] = useState<File[]>([]);
+  const dragCounterRef = useRef(0);
   const timeoutRef = useRef<number | null>(null); // retained if future timeout needed
   const intervalRef = useRef<number | null>(null); // retained for progress animation
   const navigatedRef = useRef(false);
@@ -216,6 +218,50 @@ export const ImageUploadStep = ({ onBack, onComplete }: ImageUploadStepProps) =>
     onComplete(wizardData);
   };
 
+  // Full-page drag & drop listeners
+  useEffect(() => {
+    const onDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      if (Array.from(e.dataTransfer?.items ?? []).some(i => i.kind === 'file')) {
+        dragCounterRef.current += 1;
+        setDragActive(true);
+      }
+    };
+    const onDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounterRef.current -= 1;
+      if (dragCounterRef.current <= 0) {
+        dragCounterRef.current = 0;
+        setDragActive(false);
+      }
+    };
+    const onDragOver = (e: DragEvent) => {
+      e.preventDefault();
+    };
+    const onDrop = (e: DragEvent) => {
+      e.preventDefault();
+      dragCounterRef.current = 0;
+      setDragActive(false);
+      const files = Array.from(e.dataTransfer?.files ?? []).filter(f =>
+        f.type.startsWith('image/'),
+      );
+      if (files.length > 0) {
+        setDroppedFiles(files);
+      }
+    };
+
+    document.addEventListener('dragenter', onDragEnter);
+    document.addEventListener('dragleave', onDragLeave);
+    document.addEventListener('dragover', onDragOver);
+    document.addEventListener('drop', onDrop);
+    return () => {
+      document.removeEventListener('dragenter', onDragEnter);
+      document.removeEventListener('dragleave', onDragLeave);
+      document.removeEventListener('dragover', onDragOver);
+      document.removeEventListener('drop', onDrop);
+    };
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -242,6 +288,16 @@ export const ImageUploadStep = ({ onBack, onComplete }: ImageUploadStepProps) =>
 
   return (
     <div className="space-y-6">
+      {/* Full-screen drop overlay */}
+      {dragActive && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm pointer-events-none">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-primary p-12 text-primary">
+            <Upload className="h-12 w-12" />
+            <p className="text-lg font-semibold">Drop images to add them</p>
+          </div>
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -255,6 +311,8 @@ export const ImageUploadStep = ({ onBack, onComplete }: ImageUploadStepProps) =>
             onExistingImagesChange={() => {}}
             existingImages={[]}
             maxImages={16}
+            externalFiles={droppedFiles}
+            onExternalFilesConsumed={() => setDroppedFiles([])}
           />
 
           {images.length > 0 && (

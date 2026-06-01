@@ -10,6 +10,7 @@ from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from guardian.shortcuts import assign_perm, get_objects_for_user
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToCover, ResizeToFill
+from PIL import ImageOps as PILImageOps
 from simple_history.models import HistoricalRecords
 
 from config.settings.base import AUTH_USER_MODEL
@@ -300,6 +301,13 @@ class ItemGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Item, on_delete=models.CASCADE)
 
 
+class ExifTranspose:
+    """Rotate/flip an image according to its EXIF orientation tag."""
+
+    def process(self, image):
+        return PILImageOps.exif_transpose(image)
+
+
 def upload_to_item_images(instance: "Image", filename: str):
     extension: str = Path(filename).suffix or ".jpg"
     item_creation_datestr = instance.item.created_at.strftime("%Y/%m/%d")
@@ -315,13 +323,13 @@ class Image(models.Model):
 
     thumbnail = ImageSpecField(
         source="original",
-        processors=[ResizeToFill(300, 200)],
+        processors=[ExifTranspose(), ResizeToFill(300, 200)],
         format="JPEG",
         options={"quality": 88},
     )
     preview = ImageSpecField(
         source="original",
-        processors=[ResizeToCover(1200, 1200)],
+        processors=[ExifTranspose(), ResizeToCover(1200, 1200)],
         format="JPEG",
         options={"quality": 88},
     )
