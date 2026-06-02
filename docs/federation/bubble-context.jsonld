@@ -1,0 +1,92 @@
+{
+  "@context": {
+    "as": "https://www.w3.org/ns/activitystreams#",
+    "vf": "https://w3id.org/valueflows#",
+    "schema": "https://schema.org/",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+
+    "bubble": "https://ns.sharebubble.org/v1#",
+
+    "Item": "bubble:Item",
+    "BookingRequest": "bubble:BookingRequest",
+
+    "salesType": {
+      "@id": "bubble:salesType",
+      "@type": "xsd:string"
+    },
+    "rentalPeriod": {
+      "@id": "bubble:rentalPeriod",
+      "@type": "xsd:string"
+    },
+    "rentalSelfService": {
+      "@id": "bubble:rentalSelfService",
+      "@type": "xsd:boolean"
+    },
+    "rentalOpenEnd": {
+      "@id": "bubble:rentalOpenEnd",
+      "@type": "xsd:boolean"
+    },
+    "condition": {
+      "@id": "bubble:condition",
+      "@type": "xsd:string"
+    },
+    "itemStatus": {
+      "@id": "bubble:itemStatus",
+      "@type": "xsd:string"
+    },
+    "category": {
+      "@id": "bubble:category",
+      "@type": "xsd:string"
+    },
+    "properties": {
+      "@id": "bubble:properties",
+      "@type": "@json"
+    },
+    "timeFrom": {
+      "@id": "bubble:timeFrom",
+      "@type": "xsd:dateTime"
+    },
+    "timeTo": {
+      "@id": "bubble:timeTo",
+      "@type": "xsd:dateTime"
+    },
+    "bookingStatus": {
+      "@id": "bubble:bookingStatus",
+      "@type": "xsd:string"
+    },
+    "offerPrice": {
+      "@id": "bubble:offerPrice",
+      "@type": "@json"
+    },
+    "counterOfferPrice": {
+      "@id": "bubble:counterOfferPrice",
+      "@type": "@json"
+    },
+
+    "Offer": "vf:Offer",
+    "Intent": "vf:Intent",
+    "Commitment": "vf:Commitment",
+    "ResourceSpecification": "vf:ResourceSpecification",
+    "resourceConformsTo": {
+      "@id": "vf:resourceConformsTo",
+      "@type": "@id"
+    },
+    "resourceQuantity": {
+      "@id": "vf:resourceQuantity",
+      "@type": "@json"
+    },
+    "availableQuantity": {
+      "@id": "vf:availableQuantity",
+      "@type": "@json"
+    },
+
+    "price": {
+      "@id": "schema:price",
+      "@type": "xsd:decimal"
+    },
+    "priceCurrency": {
+      "@id": "schema:priceCurrency",
+      "@type": "xsd:string"
+    }
+  }
+}

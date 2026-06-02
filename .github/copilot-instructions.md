@@ -23,6 +23,32 @@ This is a sharing platform built with django python and react frontend.
 - Prefer arrow functions for component definitions.
 - Use `lucide-react` for icons.
 
+## Git Commit Instructions
+
+All commit messages **must** follow the [Conventional Commits](https://www.conventionalcommits.org/) specification. This is enforced by CI.
+
+**Format:** `<type>(<scope>): <description>`
+
+**Allowed types:** `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`, `style`, `test`
+
+**Rules:**
+
+- The description must start with a lowercase letter.
+- The description must not end with a period.
+- The scope is optional but must be lowercase and use only `a-z`, `0-9`, `.`, `_`, `/`, or `-`.
+- Use `!` before `:` to indicate a breaking change, e.g. `feat(api)!: remove endpoint`.
+- Merge commits are exempt.
+
+**Examples:**
+
+```
+feat(items): add image rotation endpoint
+fix(federation): handle missing inbox URL gracefully
+chore: update dependencies
+docs(api): document S3 configuration env vars
+refactor(storage)!: replace minio with rustfs
+```
+
 ## Additional Instructions
 
 - If I tell you that you are wrong, think about whether or not you think that's true and respond with facts.

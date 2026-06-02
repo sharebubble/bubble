@@ -10,6 +10,7 @@ from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from guardian.shortcuts import assign_perm, get_objects_for_user
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToCover, ResizeToFill
+from PIL import ImageOps as PILImageOps
 from simple_history.models import HistoricalRecords
 
 from config.settings.base import AUTH_USER_MODEL
@@ -211,6 +212,29 @@ class Item(models.Model):
         ),
     )
 
+    # Federation
+    federation_visibility = models.CharField(
+        max_length=20,
+        choices=[
+            ("public_federated", _("Public (federated)")),
+            ("local_only", _("Local only")),
+        ],
+        default="local_only",
+        help_text=_(
+            "Controls whether this item is shared via ActivityPub federation. "
+            "'Public (federated)' shares it with allowed peer instances. "
+            "'Local only' keeps it on this instance only."
+        ),
+    )
+    # Cached ActivityPub object URI — populated when the item is first federated.
+    ap_id = models.URLField(
+        max_length=2048,
+        blank=True,
+        default="",
+        editable=False,
+        help_text=_("ActivityPub object URI for this item."),
+    )
+
     # enable history tracking
     history = HistoricalRecords()
 
@@ -277,6 +301,13 @@ class ItemGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Item, on_delete=models.CASCADE)
 
 
+class ExifTranspose:
+    """Rotate/flip an image according to its EXIF orientation tag."""
+
+    def process(self, image):
+        return PILImageOps.exif_transpose(image)
+
+
 def upload_to_item_images(instance: "Image", filename: str):
     extension: str = Path(filename).suffix or ".jpg"
     item_creation_datestr = instance.item.created_at.strftime("%Y/%m/%d")
@@ -292,13 +323,13 @@ class Image(models.Model):
 
     thumbnail = ImageSpecField(
         source="original",
-        processors=[ResizeToFill(300, 200)],
+        processors=[ExifTranspose(), ResizeToFill(300, 200)],
         format="JPEG",
         options={"quality": 88},
     )
     preview = ImageSpecField(
         source="original",
-        processors=[ResizeToCover(1200, 1200)],
+        processors=[ExifTranspose(), ResizeToCover(1200, 1200)],
         format="JPEG",
         options={"quality": 88},
     )

@@ -118,7 +118,7 @@ def user(db):
     """Create a test user."""
     return User.objects.create_user(
         username="testuser",
-        password="testpass123",  # noqa: S106
+        password="testpass123",
     )
 
 
@@ -127,7 +127,7 @@ def user2(db):
     """Create a second test user."""
     return User.objects.create_user(
         username="testuser2",
-        password="testpass123",  # noqa: S106
+        password="testpass123",
     )
 
 

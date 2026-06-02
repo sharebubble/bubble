@@ -115,8 +115,8 @@ THIRD_PARTY_APPS = [
     "drf_spectacular",
     "constance",
     "huey.contrib.djhuey",
+    "django_ratelimit",
 ]
-
 LOCAL_APPS = [
     "bubble.users",
     "bubble.items.apps.ItemsConfig",
@@ -126,6 +126,7 @@ LOCAL_APPS = [
     "bubble.books.apps.BooksConfig",
     "bubble.collections.apps.CollectionsConfig",
     "bubble.notifications.apps.NotificationsConfig",
+    "bubble.federation.apps.FederationConfig",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -324,7 +325,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [REDIS_URL],
+            "hosts": [{"address": REDIS_URL, "socket_timeout": None}],
         },
     },
 }
@@ -497,8 +498,116 @@ CONSTANCE_CONFIG = {
         env.bool("ROCKETCHAT_USER_UNDERSCORES", default=False),
         "Replace dot in usernames with underscores for sending notification to rocketchat",
     ),
+    "FEDERATION_ENABLED": (
+        env.bool("FEDERATION_ENABLED", default=False),
+        "Enable ActivityPub federation. Requires FEDERATION_DOMAIN and FEDERATION_KEY_ENCRYPTION_KEY.",
+    ),
+    "FEDERATION_DEFAULT_ITEM_VISIBILITY": (
+        env("FEDERATION_DEFAULT_ITEM_VISIBILITY", default="local_only"),
+        "Default federation visibility for new items: 'public_federated' or 'local_only'.",
+    ),
 }
 
 CONSTANCE_CONFIG_PUBLIC = ["REQUIRE_LOGIN", "DEFAULT_ITEM_VISIBILITY"]
 
 ISBN_LOOKUP_BASE_URL = env("ISBN_LOOKUP_BASE_URL", default="http://isbn-search:8000")
+
+# FEDERATION
+# ------------------------------------------------------------------------------
+# Enable ActivityPub federation by setting FEDERATION_ENABLED=true and
+# configuring FEDERATION_DOMAIN + FEDERATION_KEY_ENCRYPTION_KEY.
+FEDERATION_ENABLED = env.bool("FEDERATION_ENABLED", default=False)
+FEDERATION_DOMAIN = env("FEDERATION_DOMAIN", default="")
+FEDERATION_INSTANCE_NAME = env("FEDERATION_INSTANCE_NAME", default="")
+# Fernet-style base64-encoded 32-byte key for encrypting actor private keys.
+# Generate with:
+#   python -c "import secrets, base64; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())"
+FEDERATION_KEY_ENCRYPTION_KEY = env("FEDERATION_KEY_ENCRYPTION_KEY", default="")
+FEDERATION_DELIVERY_TIMEOUT = env.int("FEDERATION_DELIVERY_TIMEOUT", default=10)
+FEDERATION_DELIVERY_MAX_RETRIES = env.int("FEDERATION_DELIVERY_MAX_RETRIES", default=8)
+# Inbox rate limit expressed as django-ratelimit rate string, e.g. "60/m" or "200/h".
+FEDERATION_INBOX_RATE_LIMIT = env("FEDERATION_INBOX_RATE_LIMIT", default="60/m")
+
+# STORAGE
+# ------------------------------------------------------------------------------
+# STORAGE_BACKEND: "local" (default) or "s3"
+# When "s3", django-storages S3Boto3Storage is used for media files.
+# Static files always use WhiteNoise (or the locally-configured backend).
+STORAGE_BACKEND = env("STORAGE_BACKEND", default="local")
+
+if STORAGE_BACKEND == "s3":
+    # S3-compatible object storage (AWS S3, MinIO, Cloudflare R2, Backblaze B2, …)
+    AWS_ACCESS_KEY_ID = env("S3_ACCESS_KEY")
+    AWS_SECRET_ACCESS_KEY = env("S3_SECRET_KEY")
+    AWS_STORAGE_BUCKET_NAME = env("S3_BUCKET")
+    # Optional: override endpoint for non-AWS providers (MinIO, R2, etc.)
+    AWS_S3_ENDPOINT_URL = env("S3_ENDPOINT_URL", default="")
+    # Optional: CDN or direct bucket URL base (used to build absolute media URLs)
+    # When empty, django-storages constructs URLs from the endpoint + bucket.
+    AWS_S3_CUSTOM_DOMAIN = env("S3_CUSTOM_DOMAIN", default="")
+    # Always serve files via HTTPS
+    AWS_S3_USE_SSL = env.bool("S3_USE_SSL", default=True)
+    # Do not overwrite existing files with the same name
+    AWS_S3_FILE_OVERWRITE = False
+    # Cache-Control header for uploaded objects
+    AWS_S3_OBJECT_PARAMETERS = {
+        "CacheControl": "max-age=86400",
+    }
+    # Path prefix inside the bucket for media files
+    AWS_LOCATION = env("S3_MEDIA_PREFIX", default="media")
+    # Addressing style: "path" required for MinIO, "auto" for AWS
+    AWS_S3_ADDRESSING_STYLE = env("S3_ADDRESSING_STYLE", default="path")
+    # Signature version: s3v4 required for MinIO / most non-AWS providers
+    AWS_S3_SIGNATURE_VERSION = env("S3_SIGNATURE_VERSION", default="s3v4")
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+    # Override MEDIA_URL so Django's url() helpers produce absolute URLs.
+    # django-storages builds this automatically when AWS_S3_CUSTOM_DOMAIN is set.
+    if AWS_S3_CUSTOM_DOMAIN:
+        MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/"
+    elif AWS_S3_ENDPOINT_URL:
+        MEDIA_URL = f"{AWS_S3_ENDPOINT_URL}/{AWS_STORAGE_BUCKET_NAME}/{AWS_LOCATION}/"
+else:
+    # Local filesystem — keep existing behaviour
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+
+# CACHES
+# ------------------------------------------------------------------------------
+# https://docs.djangoproject.com/en/dev/ref/settings/#caches
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "",
+    },
+}
+
+CONSTANCE_BACKEND = "constance.backends.database.DatabaseBackend"
+
+if REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": REDIS_URL,
+            "OPTIONS": {
+                "CLIENT_CLASS": "django_redis.client.DefaultClient",
+                # Mimicking memcache behavior.
+                # https://github.com/jazzband/django-redis#memcached-exceptions-behavior
+                "IGNORE_EXCEPTIONS": True,
+            },
+        },
+    }
+    CONSTANCE_DATABASE_CACHE_BACKEND = "default"

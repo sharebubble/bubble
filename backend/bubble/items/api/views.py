@@ -1,12 +1,15 @@
 """API views for items."""
 
+import io
 import uuid as _uuid
+from pathlib import Path
 
 from constance import config
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.files.base import ContentFile
 from django.db import models
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
@@ -17,7 +20,9 @@ from guardian.shortcuts import (
     get_users_with_perms,
     remove_perm,
 )
-from rest_framework import filters, viewsets
+from PIL import Image as PILImage
+from PIL import ImageOps as PILImageOps
+from rest_framework import filters, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import (
@@ -26,6 +31,8 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 
+from bubble.core.storage import absolute_media_url
+from bubble.federation.models import RemoteItem
 from bubble.items.ai.image_analyze import analyze_image
 from bubble.items.ai.image_create import generate_image_from_prompt
 from bubble.items.api.serializers import (
@@ -417,3 +424,205 @@ class ImageViewSet(viewsets.ModelViewSet):
                 return
 
         serializer.save()
+
+    @action(detail=True, methods=["put"], url_path="rotate")
+    def rotate(self, request, id=None):  # noqa: A002
+        """Rotate the original image 90° left or right and regenerate thumbnails."""
+        image = self.get_object()
+        direction = request.data.get("direction", "right")
+        if direction not in ("left", "right"):
+            return Response(
+                {"detail": "direction must be 'left' or 'right'"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # PIL rotates counter-clockwise; expand=True preserves dimensions after rotation
+        angle = 90 if direction == "left" else -90
+
+        with image.original.open("rb") as f:
+            pil_img = PILImage.open(f)
+            pil_img.load()
+            original_format = pil_img.format or "JPEG"
+            # Normalise EXIF orientation into pixels before rotating so the result
+            # matches what the user sees visually (imagekit does the same for
+            # thumbnails).
+            pil_img = PILImageOps.exif_transpose(pil_img)
+            rotated = pil_img.rotate(angle, expand=True)
+
+        buffer = io.BytesIO()
+        save_format = (
+            original_format if original_format in ("JPEG", "PNG", "WEBP") else "JPEG"
+        )
+        save_kwargs = {"quality": 95} if save_format in ("JPEG", "WEBP") else {}
+        if save_format == "JPEG" and rotated.mode in ("RGBA", "LA", "P"):
+            rotated = rotated.convert("RGB")
+        rotated.save(buffer, format=save_format, **save_kwargs)
+        buffer.seek(0)
+
+        # Save under a new path via FieldFile.save() so the model is updated in the DB
+        # and all derived URLs (original, thumbnail, preview) change — guaranteeing
+        # browsers and CDNs fetch fresh content rather than serving a cached version.
+        old_name = image.original.name
+        extension = Path(old_name).suffix or ".jpg"
+        image.original.save(
+            f"original{extension}", ContentFile(buffer.read()), save=True
+        )
+        image.original.storage.delete(old_name)
+
+        serializer = self.get_serializer(image)
+        return Response(serializer.data)
+
+
+# ---------------------------------------------------------------------------
+# Federated search
+# ---------------------------------------------------------------------------
+
+
+class FederatedItemListSerializer(serializers.Serializer):
+    """Minimal read-only serializer for a unified local+remote item result."""
+
+    id = serializers.CharField()
+    name = serializers.CharField()
+    description = serializers.CharField()
+    category = serializers.CharField()
+    sales_type = serializers.CharField()
+    condition = serializers.CharField()
+    status = serializers.CharField()
+    price = serializers.CharField(allow_null=True)
+    price_currency = serializers.CharField()
+    source = serializers.CharField(help_text="'local' or 'remote'")
+    instance = serializers.CharField(
+        allow_null=True, help_text="Remote instance domain for remote items"
+    )
+    ap_id = serializers.CharField(allow_null=True)
+    first_image_url = serializers.CharField(allow_null=True)
+
+
+class FederatedItemViewSet(viewsets.ViewSet):
+    """Read-only ViewSet that returns a unified local + remote item search.
+
+    Query parameters
+    ----------------
+    search : str
+        Case-insensitive substring match on name / description.
+    scope : ``local`` | ``federated`` | ``all`` (default ``all``)
+        Restrict results to local items, remote items, or both.
+    category : str
+        Exact match on category.
+    sales_type : str
+        Exact match on sales_type.
+    limit : int  (default 50, max 200)
+        Page size.
+    offset : int (default 0)
+        Page offset.
+    """
+
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def list(self, request):
+        search = request.query_params.get("search", "").strip()
+        scope = request.query_params.get("scope", "all")
+        category = request.query_params.get("category", "").strip()
+        sales_type = request.query_params.get("sales_type", "").strip()
+        try:
+            limit = min(int(request.query_params.get("limit", 50)), 200)
+            offset = max(int(request.query_params.get("offset", 0)), 0)
+        except (TypeError, ValueError):
+            limit, offset = 50, 0
+
+        results = []
+
+        # --- local items ---
+        if scope in ("local", "all"):
+            local_qs = (
+                Item.objects.published()
+                .filter(visibility=VisibilityType.PUBLIC)
+                .select_related("user")
+                .prefetch_related("images")
+            )
+            if search:
+                local_qs = local_qs.filter(
+                    Q(name__icontains=search) | Q(description__icontains=search)
+                )
+            if category:
+                local_qs = local_qs.filter(category=category)
+            if sales_type:
+                local_qs = local_qs.filter(sales_type=sales_type)
+
+            for item in local_qs:
+                first_img = item.images.first()
+                first_img_url = (
+                    absolute_media_url(first_img.preview, request=request)
+                    if first_img
+                    else None
+                )
+                results.append(
+                    {
+                        "id": str(item.id),
+                        "name": item.name or "",
+                        "description": item.description or "",
+                        "category": item.category or "",
+                        "sales_type": item.sales_type or "",
+                        "condition": item.condition or "",
+                        "status": item.status or "",
+                        "price": str(item.price.amount)
+                        if item.price and item.price.amount
+                        else None,
+                        "price_currency": item.price_currency or "",
+                        "source": "local",
+                        "instance": None,
+                        "ap_id": item.ap_id or None,
+                        "first_image_url": first_img_url,
+                    }
+                )
+
+        # --- remote items ---
+        if scope in ("federated", "all"):
+            remote_qs = (
+                RemoteItem.objects.filter(deleted=False)
+                .select_related("instance", "remote_actor")
+                .prefetch_related("images")
+            )
+            if search:
+                remote_qs = remote_qs.filter(
+                    Q(name__icontains=search) | Q(description__icontains=search)
+                )
+            if category:
+                remote_qs = remote_qs.filter(category=category)
+            if sales_type:
+                remote_qs = remote_qs.filter(sales_type=sales_type)
+
+            for item in remote_qs:
+                first_img = item.images.first()
+                results.append(
+                    {
+                        "id": str(item.id),
+                        "name": item.name or "",
+                        "description": item.description or "",
+                        "category": item.category or "",
+                        "sales_type": item.sales_type or "",
+                        "condition": item.condition or "",
+                        "status": item.status or "",
+                        "price": str(item.price) if item.price is not None else None,
+                        "price_currency": item.price_currency or "",
+                        "source": "remote",
+                        "instance": item.instance_id,
+                        "ap_id": item.ap_id or None,
+                        "first_image_url": first_img.url if first_img else None,
+                    }
+                )
+
+        # Sort by name for a stable deterministic order, then paginate
+        results.sort(key=lambda r: r["name"].lower())
+        total = len(results)
+        page = results[offset : offset + limit]
+
+        serializer = FederatedItemListSerializer(page, many=True)
+        return Response(
+            {
+                "count": total,
+                "limit": limit,
+                "offset": offset,
+                "results": serializer.data,
+            }
+        )

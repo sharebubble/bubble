@@ -68,6 +68,9 @@ const translations = {
     'index.sortBy': 'Sort by',
     'index.sortName': 'Name',
     'index.sortPrice': 'Price',
+    'index.scopeLocal': 'Local',
+    'index.scopeAll': 'All',
+    'index.scopeFederated': 'Federated',
     'index.sortDate': 'Date',
     'index.onlyAvailable': 'Only available',
     'index.onlyAvailableTooltip': 'Show only available and reserved items',
@@ -254,6 +257,10 @@ const translations = {
     'imageManager.deleteSuccessDescription': 'Image deleted successfully',
     'imageManager.deleteErrorTitle': 'Error',
     'imageManager.deleteErrorDescription': 'Failed to delete image',
+    'imageManager.rotateErrorTitle': 'Error',
+    'imageManager.rotateErrorDescription': 'Failed to rotate image',
+    'imageManager.rotateLeft': 'Rotate left',
+    'imageManager.rotateRight': 'Rotate right',
 
     // Requests
     'requests.title': 'Requests',
@@ -620,6 +627,9 @@ const translations = {
     'index.sortDate': 'Datum',
     'index.onlyAvailable': 'Nur verfügbar',
     'index.onlyAvailableTooltip': 'Nur verfügbare und reservierte Artikel anzeigen',
+    'index.scopeLocal': 'Lokal',
+    'index.scopeAll': 'Alle',
+    'index.scopeFederated': 'Föderiert',
 
     // Browse Nav
     'browse.buy': 'Marktplatz',
@@ -810,6 +820,10 @@ const translations = {
     'imageManager.deleteSuccessDescription': 'Bild erfolgreich gelöscht',
     'imageManager.deleteErrorTitle': 'Fehler',
     'imageManager.deleteErrorDescription': 'Bild konnte nicht gelöscht werden',
+    'imageManager.rotateErrorTitle': 'Fehler',
+    'imageManager.rotateErrorDescription': 'Bild konnte nicht gedreht werden',
+    'imageManager.rotateLeft': 'Links drehen',
+    'imageManager.rotateRight': 'Rechts drehen',
 
     // Requests
     'requests.title': 'Anfragen',
