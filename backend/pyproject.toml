@@ -17,7 +17,7 @@ dependencies = [
     "django-cors-headers",
     "django-environ",
     "django-filter>=25.1",
-    "django-guardian>=3.2.0",
+    "django-guardian>=3.3.1",
     "django-imagekit>=5.0.0",
     "django-model-utils",
     "django-money>=3.5.4",
