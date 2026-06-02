@@ -29,7 +29,7 @@ repos:
         entry: frontend/node_modules/.bin/prettier
         args: ['--write']
         types_or: [javascript, jsx, ts, tsx, css, json, markdown, yaml]
-        exclude: 'backend/bubble/.*/templates/|frontend/src/services/django/'
+        exclude: 'backend/bubble/.*/templates/|frontend/src/services/django/|CHANGELOG.md'
 
   - repo: https://github.com/adamchainz/django-upgrade
     rev: '1.30.0'
