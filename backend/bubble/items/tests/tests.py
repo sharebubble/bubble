@@ -487,6 +487,54 @@ class ImageAPITestCase(TestCase):
         )
         assert list(item1_second_images.values_list("ordering", flat=True)) == [0]
 
+    def _create_image_for_item(self, item):
+        """Helper: create an image for item as the item's owner and return the Image."""
+        self.client.login(username=item.user.username, password=TEST_PASSWORD)
+        test_image = self.create_test_image()
+        url = reverse("api:image-list")
+        response = self.client.post(
+            url, {"item": str(item.id), "original": test_image}, format="multipart"
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        return Image.objects.get(id=response.data["id"])
+
+    def test_rotate_image_as_owner(self):
+        """Owner can rotate their own image."""
+        image = self._create_image_for_item(self.item1)
+        rotate_url = reverse("api:image-rotate", kwargs={"id": image.id})
+        response = self.client.put(rotate_url, {"direction": "right"})
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_rotate_image_left_as_owner(self):
+        """Owner can rotate their image to the left."""
+        image = self._create_image_for_item(self.item1)
+        rotate_url = reverse("api:image-rotate", kwargs={"id": image.id})
+        response = self.client.put(rotate_url, {"direction": "left"})
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_rotate_image_non_owner_gets_404(self):
+        """A user who does not own the image cannot rotate it (404 from queryset)."""
+        image = self._create_image_for_item(self.item1)
+        self.client.login(username="testuser2", password=TEST_PASSWORD)
+        rotate_url = reverse("api:image-rotate", kwargs={"id": image.id})
+        response = self.client.put(rotate_url, {"direction": "right"})
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_rotate_image_unauthenticated_gets_403(self):
+        """Unauthenticated requests to rotate are rejected with 403."""
+        image = self._create_image_for_item(self.item1)
+        self.client.logout()
+        rotate_url = reverse("api:image-rotate", kwargs={"id": image.id})
+        response = self.client.put(rotate_url, {"direction": "right"})
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_rotate_image_invalid_direction_returns_400(self):
+        """An invalid direction value returns 400."""
+        image = self._create_image_for_item(self.item1)
+        rotate_url = reverse("api:image-rotate", kwargs={"id": image.id})
+        response = self.client.put(rotate_url, {"direction": "diagonal"})
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
 
 class ItemFilterAPITestCase(TestCase):
     """Tests for ItemViewSet filtering functionality."""

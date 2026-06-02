@@ -287,3 +287,68 @@ Usage: {{- include "bubble.secretsFrom" . | nindent <N> }}
   {{- end }}
 {{- end }}
 {{- end }}
+
+{{/*
+RustFS subchart service name.
+When deployed as a subchart the StatefulSet Service follows the pattern
+"<release>-rustfs".  The S3 API is exposed on port 9000.
+*/}}
+{{- define "bubble.rustfs.serviceName" -}}
+{{- printf "%s-rustfs" (include "bubble.fullname" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+
+{{/*
+RustFS secret name — prefers existingSecret when set.
+When externalS3 is used instead, returns the externalS3 secret name.
+*/}}
+{{- define "bubble.rustfs.secretName" -}}
+{{- if .Values.rustfs.enabled -}}
+  {{- if .Values.rustfs.existingSecret -}}
+    {{- .Values.rustfs.existingSecret -}}
+  {{- else -}}
+    {{- include "bubble.rustfs.serviceName" . -}}
+  {{- end -}}
+{{- else if .Values.externalS3.enabled -}}
+  {{- if .Values.externalS3.existingSecret -}}
+    {{- .Values.externalS3.existingSecret -}}
+  {{- else -}}
+    {{- include "bubble.fullname" . -}}-external-s3
+  {{- end -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+S3 endpoint URL — returns the internal RustFS endpoint when rustfs.enabled,
+otherwise the operator-supplied externalS3.endpointUrl.
+*/}}
+{{- define "bubble.s3.endpointUrl" -}}
+{{- if .Values.rustfs.enabled -}}
+http://{{ include "bubble.rustfs.serviceName" . }}:9000
+{{- else -}}
+{{- .Values.externalS3.endpointUrl -}}
+{{- end }}
+{{- end }}
+
+{{/*
+S3 bucket name
+*/}}
+{{- define "bubble.s3.bucket" -}}
+{{- if .Values.rustfs.enabled -}}
+{{- .Values.rustfs.defaultBucket -}}
+{{- else -}}
+{{- .Values.externalS3.bucket -}}
+{{- end }}
+{{- end }}
+
+{{/*
+S3 custom domain (used for public media URLs).
+When RustFS is enabled and no customDomain override is given, we leave this
+empty so django-storages builds the URL from endpoint + bucket.
+*/}}
+{{- define "bubble.s3.customDomain" -}}
+{{- if .Values.rustfs.enabled -}}
+{{- .Values.rustfs.customDomain | default "" -}}
+{{- else -}}
+{{- .Values.externalS3.customDomain | default "" -}}
+{{- end }}
+{{- end }}

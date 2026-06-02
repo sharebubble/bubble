@@ -18,8 +18,8 @@ class ImagesAPI {
 
     const response = await fetch(`${client.getConfig().baseUrl}${endpoint}`, {
       credentials: 'include',
-      headers,
       ...options,
+      headers,
     });
 
     if (!response.ok) {
@@ -50,6 +50,14 @@ class ImagesAPI {
       method: 'POST',
       body: formData,
       // Don't set Content-Type header for FormData - let browser set it with boundary
+    });
+  }
+  // Rotate an existing image 90° in the given direction
+  async rotateImage(imageId: string, direction: 'left' | 'right'): Promise<Image> {
+    return this.request<Image>(`/api/images/${imageId}/rotate/`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ direction }),
     });
   }
 }

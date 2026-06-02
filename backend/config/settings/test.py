@@ -37,3 +37,21 @@ MEDIA_URL = "http://media.testserver/"
 # ------------------------------------------------------------------------------
 
 CONSTANCE_BACKEND = "constance.backends.database.DatabaseBackend"
+
+# RATE LIMITING
+# ------------------------------------------------------------------------------
+# Disable django-ratelimit in tests to avoid interference.
+RATELIMIT_ENABLE = False
+
+# STORAGE
+# ------------------------------------------------------------------------------
+# Use simple backends in tests — no manifest needed, no S3 calls.
+STORAGE_BACKEND = "local"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}

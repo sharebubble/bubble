@@ -7,12 +7,21 @@ from bubble.items.models import Item, SalesType
 from bubble.users.api.serializers import UserSerializer
 
 
+class RemoteActorMinimalSerializer(serializers.Serializer):
+    """Read-only minimal representation of a federated RemoteActor."""
+
+    ap_id = serializers.URLField(read_only=True)
+    username = serializers.CharField(read_only=True)
+    display_name = serializers.CharField(read_only=True)
+
+
 class BookingSerializer(serializers.ModelSerializer):
     """Detailed serializer for Booking where `item` is represented only by UUID."""
 
     item = serializers.PrimaryKeyRelatedField(queryset=Item.objects.published())
     item_details = ItemMinimalSerializer(read_only=True, source="item")
     user = UserSerializer(read_only=True)
+    remote_booker_actor = RemoteActorMinimalSerializer(read_only=True)
     unread_messages_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -23,6 +32,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "item",
             "item_details",
             "user",
+            "remote_booker_actor",
             "time_from",
             "time_to",
             "offer",
@@ -32,7 +42,13 @@ class BookingSerializer(serializers.ModelSerializer):
             "updated_at",
             "unread_messages_count",
         ]
-        read_only_fields = ["id", "user", "created_at", "updated_at"]
+        read_only_fields = [
+            "id",
+            "user",
+            "remote_booker_actor",
+            "created_at",
+            "updated_at",
+        ]
 
     def get_unread_messages_count(self, obj) -> int | None:
         """Return unread_messages_count if it exists as an annotated field."""
@@ -174,6 +190,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
     booking = serializers.PrimaryKeyRelatedField(queryset=Booking.objects.all())
     sender = serializers.StringRelatedField(read_only=True)
+    remote_sender_actor = RemoteActorMinimalSerializer(read_only=True)
 
     class Meta:
         model = Message
@@ -181,8 +198,9 @@ class MessageSerializer(serializers.ModelSerializer):
             "id",
             "booking",
             "sender",
+            "remote_sender_actor",
             "created_at",
             "message",
             "is_read",
         ]
-        read_only_fields = ["id", "sender", "created_at"]
+        read_only_fields = ["id", "sender", "remote_sender_actor", "created_at"]

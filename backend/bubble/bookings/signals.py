@@ -33,44 +33,63 @@ def notify_new_message(sender, instance: Message, created, **kwargs):
         item, only_with_perms_in=["change_item"], with_group_users=False
     )
 
+    # sender may be None for remote actors; fall back gracefully
+    local_sender = instance.sender
+    remote_sender = instance.remote_sender_actor
+    sender_display = (
+        local_sender.name
+        if local_sender
+        else (str(remote_sender) if remote_sender else _("Remote user"))
+    )
     notification_context = {
         "message": instance.message,
         "item_title": item.name,
-        "sender": instance.sender.name,
+        "sender": sender_display,
     }
 
-    if instance.booking.user != instance.sender:
-        send_message_notification(
-            instance.booking.user_id,  # type: ignore[union-attr]
-            message=instance.message,
-            booking_uuid=str(instance.booking.id),
-        )
-        logger.info(
-            "Sent new message notification to user %s for message %s",
-            instance.booking.user.username,
-            instance.pk,
-        )
-        dispatch_notification(
-            instance.booking.user, EventType.NEW_MESSAGE, notification_context
-        )
+    # local_booker may be None if booking was made by a remote actor
+    local_booker = instance.booking.user
+
+    # Determine if the sender is the booker side or the owner side.
+    # For remote senders, treat them as the booker side.
+    sender_is_booker = (local_sender is not None and local_sender == local_booker) or (
+        local_sender is None and remote_sender is not None
+    )
+
+    if not sender_is_booker:
+        # Message from item owner → notify the booker (if local)
+        if local_booker is not None:
+            send_message_notification(
+                local_booker.id,
+                message=instance.message,
+                booking_uuid=str(instance.booking.id),
+            )
+            logger.info(
+                "Sent new message notification to user %s for message %s",
+                local_booker.username,
+                instance.pk,
+            )
+            dispatch_notification(
+                local_booker, EventType.NEW_MESSAGE, notification_context
+            )
     else:
-        # Send notification to each user with change permission (except the sender)
+        # Message from booker → notify each user with change permission
         for user in users_with_perms:
             user_obj = cast("User", user)
-            if user_obj.id != instance.sender_id:  # type: ignore[union-attr]
-                send_message_notification(
-                    user_obj.id,  # type: ignore[union-attr]
-                    message=instance.message,
-                    booking_uuid=str(instance.booking.id),
-                )
-                logger.info(
-                    "Sent new message notification to user %s for message %s",
-                    user_obj.username,
-                    instance.pk,
-                )
-                dispatch_notification(
-                    user_obj, EventType.NEW_MESSAGE, notification_context
-                )
+            # Skip the sender if they somehow also have change_item perm
+            if local_sender is not None and user_obj.id == local_sender.id:
+                continue
+            send_message_notification(
+                user_obj.id,
+                message=instance.message,
+                booking_uuid=str(instance.booking.id),
+            )
+            logger.info(
+                "Sent new message notification to user %s for message %s",
+                user_obj.username,
+                instance.pk,
+            )
+            dispatch_notification(user_obj, EventType.NEW_MESSAGE, notification_context)
 
 
 @receiver(post_save, sender=Booking)
@@ -88,10 +107,11 @@ def notify_new_booking(sender, instance: Booking, created, **kwargs):
     )
 
     # Send notification to each user with change permission (except the booking creator)
+    local_booker_id = instance.user_id  # may be None for remote bookers
     for user in users_with_perms:
-        if user.id != instance.user_id:  # type: ignore[union-attr]
+        if user.id != local_booker_id:
             send_message_notification(
-                user.id,  # type: ignore[union-attr]
+                user.id,
                 message=_("A new booking has been created for your item."),
             )
             logger.info(

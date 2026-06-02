@@ -17,18 +17,20 @@ dependencies = [
     "django-cors-headers",
     "django-environ",
     "django-filter>=25.1",
-    "django-guardian>=3.2.0",
+    "django-guardian>=3.3.1",
     "django-imagekit>=5.0.0",
     "django-model-utils",
     "django-money>=3.5.4",
+    "django-ratelimit>=4.1.0",
     "django-redis",
     "django-simple-history>=3.10.1",
     "huey>=3.0.1",
+    "django-storages[boto3]>=1.14",
     "djangorestframework",
     "drf-orjson-renderer>=1.7.3",
     "drf-spectacular",
     "fido2",
-    "google-genai>=1.39.1",
+    "google-genai>=2.7.0",
     "gunicorn",
     "hiredis",
     "httpx>=0.28.1",
@@ -40,6 +42,9 @@ dependencies = [
     "uvicorn-worker",
     "uvicorn[standard]",
     "whitenoise",
+    "pyld>=2.0",
+    "http-message-signatures>=0.5",
+    "cryptography>=47.0.0",
 ]
 
 [[tool.uv.index]]
@@ -189,6 +194,15 @@ ignore = [
   "PLR0915",  # Too many statements in function
   "C901",  # Function is too complex
   "COM812",  # Use of `assert` in a test function
+]
+
+[tool.ruff.lint.per-file-ignores]
+"*/tests/test_*.py" = [
+  "PT009",    # unittest-style self.assert* is fine in Django TestCase subclasses
+  "PT019",    # unittest fixture injection pattern
+  "PLC0415",  # local imports inside test helpers/setUp avoid circular deps
+  "S106",     # hardcoded passwords in test fixtures are intentional
+  "FBT002",   # boolean default args in test helpers are fine
 ]
 
 [tool.ruff.lint.isort]
