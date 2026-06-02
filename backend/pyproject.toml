@@ -23,7 +23,7 @@ dependencies = [
     "django-money>=3.5.4",
     "django-ratelimit>=4.1.0",
     "django-redis",
-    "django-simple-history>=3.10.1",
+    "django-simple-history>=3.11.0",
     "huey>=3.0.1",
     "django-storages[boto3]>=1.14",
     "djangorestframework",
