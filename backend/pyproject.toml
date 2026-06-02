@@ -13,7 +13,7 @@ dependencies = [
     "django-allauth[mfa,socialaccount]",
     "django-allow-cidr>=0.8.0",
     "django-anymail[mailgun]",
-    "django-constance[redis]>=4.3.4",
+    "django-constance[redis]>=4.3.5",
     "django-cors-headers",
     "django-environ",
     "django-filter>=25.1",
