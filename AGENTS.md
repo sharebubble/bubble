@@ -17,7 +17,7 @@ Located in `backend/`. Uses Django REST Framework (DRF) for the API.
 
 ### Frontend (React)
 
-Located in `frontend/`. Built with Vite, TypeScript, and Tailwind CSS.
+Located in `frontend/`. Built with Vite, TypeScript, Tailwind CSS, and Mantine.
 
 - `src/services/django/`: Auto-generated SDK based on the backend OpenAPI schema.
 - `src/hooks/`: React Query hooks for data fetching (e.g., `useItems`, `useBookings`).
@@ -30,7 +30,7 @@ To update types after backend changes, run `npm run types:openapi` to regenerate
 
 - **Backend:** Python 3.12+, Django 5.x, Django Rest Framework, Channels (WebSockets), Celery (Background Tasks).
 - **Database:** PostgreSQL with `pgvector` for semantic similarity search.
-- **Frontend:** React, TypeScript, Vite, Tailwind CSS, Lucide React (Icons).
+- **Frontend:** React, TypeScript, Vite, Tailwind CSS, Mantine, Lucide React (Icons).
 - **AI/ML:** Integration with Gemini/Google AI for image analysis and prompt-based image generation.
 - **DevOps:** Docker Compose, Justfile for command automation.
 
@@ -47,7 +47,8 @@ To update types after backend changes, run `npm run types:openapi` to regenerate
 ### Frontend
 
 - **API Access:** Always use the generated SDK in `src/services/django/`. Do not write raw fetch calls for backend endpoints.
-- **Styling:** Use Tailwind CSS utility classes. Prefer components from `src/components/ui/` (likely Shadcn UI based).
+- **Styling:** Use Mantine components for new UI work. Tailwind CSS utilities are still allowed for layout and spacing.
+- **Migration policy:** Existing components under `src/components/ui/` remain supported during migration. When touching old shadcn-based flows, prefer migrating that touched surface to Mantine instead of adding new shadcn usage.
 - **Hooks:** Business logic should reside in custom hooks under `src/hooks/`.
 - **Absolute Imports:** Use `@/` prefix for imports within the `src` directory.
 

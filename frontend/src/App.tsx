@@ -25,6 +25,8 @@ import MyItems from './pages/MyItems';
 import NotFound from './pages/NotFound';
 import Profile from './pages/Profile';
 import { Header } from './components/layout/Header';
+import { MantineProvider } from '@mantine/core';
+import { mantineTheme } from './theme/mantine';
 
 const queryClient = new QueryClient();
 
@@ -148,21 +150,23 @@ const ProtectedRoutes = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="bubble-theme">
-      <LanguageProvider>
-        <AuthProvider>
-          <NotificationProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <ProtectedRoutes />
-              </BrowserRouter>
-            </TooltipProvider>
-          </NotificationProvider>
-        </AuthProvider>
-      </LanguageProvider>
-    </ThemeProvider>
+    <MantineProvider theme={mantineTheme} defaultColorScheme="auto">
+      <ThemeProvider defaultTheme="system" storageKey="bubble-theme">
+        <LanguageProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <ProtectedRoutes />
+                </BrowserRouter>
+              </TooltipProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </MantineProvider>
   </QueryClientProvider>
 );
 

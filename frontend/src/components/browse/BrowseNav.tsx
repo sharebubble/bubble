@@ -1,17 +1,32 @@
-import { Button, buttonVariants } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Checkbox,
+  Flex,
+  Group,
+  Button as MantineButton,
+  Menu,
+  Radio,
+  SegmentedControl,
+} from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ItemCategoryFilter } from '@/hooks/types';
 import { cn } from '@/lib/utils';
-import { ArrowDown, ArrowUp, Binoculars, Calendar, Store } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { ConditionFilter } from './ConditionFilter';
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Binoculars,
+  Calendar,
+  ChevronDown,
+  Filter,
+  Store,
+} from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { CategoryFilter } from './CategoryFilter';
 import { ConditionEnum } from '@/services/django';
 
 type SortField = 'name' | 'price' | 'date';
 type SortDir = 'asc' | 'desc';
+type Scope = 'local' | 'federated' | 'all';
 
 type BrowseNavProps = {
   selectedCategory: ItemCategoryFilter;
@@ -20,7 +35,9 @@ type BrowseNavProps = {
   onSelectedConditionsChange: (conditions: ConditionEnum[]) => void;
   sortField: SortField;
   sortDir: SortDir;
-  onSortClick: (field: SortField) => void;
+  onSortChange: (field: SortField, dir: SortDir) => void;
+  scope: Scope;
+  onScopeChange: (scope: Scope) => void;
   onlyAvailable: boolean;
   onOnlyAvailableChange: (value: boolean) => void;
   className?: string;
@@ -32,6 +49,10 @@ const browseTabs = [
   { label: 'browse.wanted', type: 'wanted', icon: Binoculars },
 ];
 
+const CONDITIONS: ConditionEnum[] = [0, 1, 2];
+
+type BrowseType = (typeof browseTabs)[number]['type'];
+
 export const BrowseNav = ({
   selectedCategory,
   selectedConditions,
@@ -39,7 +60,9 @@ export const BrowseNav = ({
   onSelectedConditionsChange,
   sortField,
   sortDir,
-  onSortClick,
+  onSortChange,
+  scope,
+  onScopeChange,
   onlyAvailable,
   onOnlyAvailableChange,
   className,
@@ -48,105 +71,262 @@ export const BrowseNav = ({
   const location = useLocation();
 
   const params = new URLSearchParams(location.search);
-  const activeType = location.pathname === '/' ? params.get('type') : null;
+  const rawType = params.get('type');
+  const activeType: BrowseType =
+    rawType === 'rent' || rawType === 'buy' || rawType === 'wanted' ? rawType : 'rent';
+  const navigate = useNavigate();
+
+  const handleTypeChange = (value: string): void => {
+    const nextType = value as BrowseType;
+    const nextParams = new URLSearchParams(location.search);
+    nextParams.set('type', nextType);
+    nextParams.delete('page');
+    const nextSearch = nextParams.toString();
+    navigate(`${location.pathname}?${nextSearch}`);
+  };
+
+  const getConditionName = (value: ConditionEnum): string => {
+    switch (value) {
+      case 0:
+        return t('condition.new');
+      case 1:
+        return t('condition.used');
+      case 2:
+        return t('condition.broken');
+      default:
+        return t('condition.unknown');
+    }
+  };
+
+  const toggleCondition = (condition: ConditionEnum): void => {
+    const nextConditions = selectedConditions.includes(condition)
+      ? selectedConditions.filter(value => value !== condition)
+      : [...selectedConditions, condition];
+    onSelectedConditionsChange(nextConditions);
+  };
+
+  const handleDateSortClick = (): void => {
+    if (sortField === 'date') {
+      onSortChange('date', sortDir === 'desc' ? 'asc' : 'desc');
+      return;
+    }
+
+    onSortChange('date', 'desc');
+  };
+
+  const handlePriceSortClick = (): void => {
+    if (sortField === 'price') {
+      onSortChange('price', sortDir === 'asc' ? 'desc' : 'asc');
+      return;
+    }
+
+    onSortChange('price', 'asc');
+  };
+
+  const activeSortIconClass = 'h-3.5 w-3.5 text-[var(--mantine-color-green-6)]';
+  const inactiveSortIconClass = 'h-3.5 w-3.5 text-muted-foreground';
+
+  const dateSortIconColored =
+    sortField !== 'date' ? (
+      <ArrowUpDown className={inactiveSortIconClass} aria-hidden="true" />
+    ) : sortDir === 'asc' ? (
+      <ArrowUp className={activeSortIconClass} aria-hidden="true" />
+    ) : (
+      <ArrowDown className={activeSortIconClass} aria-hidden="true" />
+    );
+
+  const priceSortIconColored =
+    sortField !== 'price' ? (
+      <ArrowUpDown className={inactiveSortIconClass} aria-hidden="true" />
+    ) : sortDir === 'desc' ? (
+      <ArrowDown className={activeSortIconClass} aria-hidden="true" />
+    ) : (
+      <ArrowUp className={activeSortIconClass} aria-hidden="true" />
+    );
 
   return (
     <form
       onSubmit={event => event.preventDefault()}
-      className={cn(
-        className,
-        'flex w-full flex-wrap items-center justify-between gap-y-2 gap-x-4',
-      )}
+      className={cn(className, 'flex w-full flex-col gap-2')}
     >
-      {/* Browse Tabs */}
-      <div className="flex order-1">
-        {browseTabs.map(tab => {
-          const isActive = activeType === tab.type;
-          const Icon = tab.icon;
-          const tabParams = new URLSearchParams(location.search);
-          tabParams.set('type', tab.type);
-          tabParams.delete('page');
-          const tabSearch = tabParams.toString();
-
-          return (
-            <NavLink
-              key={tab.type}
-              to={`/?${tabSearch}`}
-              className={cn(
-                buttonVariants({
-                  variant: isActive ? 'default' : 'outline-primary',
-                }),
-                'flex-1 justify-center rounded-none',
-                'first:rounded-l-md last:rounded-r-md not-first:-ml-px',
-                isActive ? 'relative z-10 border border-primary shadow-glow' : 'hover:z-10',
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-              <span className="hidden sm:inline">{t(tab.label)}</span>
-            </NavLink>
-          );
-        })}
-      </div>
-
-      {/* Sort buttons — top-right on mobile, far-right on desktop */}
-      <div className="flex shrink-0 items-center gap-1 rounded-lg border p-1 order-2 lg:order-3">
-        {(['price', 'date'] as const).map(field => {
-          const active = sortField === field;
-          const label = t(
-            `index.sort${field.charAt(0).toUpperCase() + field.slice(1)}` as
-              | 'index.sortName'
-              | 'index.sortPrice'
-              | 'index.sortDate',
-          );
-          return (
-            <Button
-              key={field}
-              variant={active ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => onSortClick(field)}
-              className="h-8 gap-1 px-2 text-xs"
-            >
-              {label}
-              {active &&
-                (sortDir === 'asc' ? (
-                  <ArrowUp className="h-3 w-3" />
-                ) : (
-                  <ArrowDown className="h-3 w-3" />
-                ))}
-            </Button>
-          );
-        })}
-      </div>
-
-      {/* Detail filters — row below on mobile, between tabs and sort on desktop */}
-      <div className="flex flex-row gap-2 order-3 w-full lg:order-2 lg:w-auto lg:flex-1">
-        <CategoryFilter
-          selectedCategory={selectedCategory}
-          onCategoryChange={onSelectedCategoryChange}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center">
+        {/* Browse Tabs */}
+        <SegmentedControl
+          className="w-full md:flex-1"
+          color="green"
+          size="sm"
+          value={activeType}
+          onChange={handleTypeChange}
+          data={[
+            {
+              value: 'rent',
+              label: (
+                <Flex
+                  direction={{ base: 'column', sm: 'row' }}
+                  align="center"
+                  justify="center"
+                  columnGap={8}
+                  className="py-1"
+                >
+                  <Calendar size={16} />
+                  <span>{t('browse.bookOrRent')}</span>
+                </Flex>
+              ),
+            },
+            {
+              value: 'buy',
+              label: (
+                <Flex
+                  direction={{ base: 'column', sm: 'row' }}
+                  align="center"
+                  justify="center"
+                  columnGap={8}
+                  className="py-1"
+                >
+                  <Store size={16} />
+                  <span>{t('browse.buy')}</span>
+                </Flex>
+              ),
+            },
+            {
+              value: 'wanted',
+              label: (
+                <Flex
+                  direction={{ base: 'column', sm: 'row' }}
+                  align="center"
+                  justify="center"
+                  columnGap={8}
+                  className="py-1"
+                >
+                  <Binoculars size={16} />
+                  <span>{t('browse.wanted')}</span>
+                </Flex>
+              ),
+            },
+          ]}
         />
-        {activeType === 'buy' && (
-          <ConditionFilter
-            selectedConditions={selectedConditions}
-            onConditionsChange={onSelectedConditionsChange}
-          />
-        )}
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <label className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-1.5 text-sm transition-colors hover:bg-muted">
-                <Checkbox
-                  id="only-available"
-                  checked={onlyAvailable}
-                  onCheckedChange={checked => onOnlyAvailableChange(checked === true)}
-                />
-                <span>{t('index.onlyAvailable')}</span>
-              </label>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p>{t('index.onlyAvailableTooltip')}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+
+        <Group className="w-full md:w-auto" wrap="nowrap">
+          <div className="min-w-0 grow">
+            <CategoryFilter
+              selectedCategory={selectedCategory}
+              onCategoryChange={onSelectedCategoryChange}
+            />
+          </div>
+
+          <Menu position="bottom-end" shadow="md" width={320} closeOnItemClick={false}>
+            <Menu.Target>
+              <MantineButton
+                type="button"
+                size="md"
+                variant="default"
+                className="shrink-0"
+                leftSection={<Filter className="h-3.5 w-3.5" aria-hidden="true" />}
+                rightSection={<ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />}
+                aria-label={t('index.filterAndSort')}
+                title={t('index.filterAndSort')}
+              ></MantineButton>
+            </Menu.Target>
+
+            <Menu.Dropdown>
+              <Menu.Label>{t('index.availability')}</Menu.Label>
+              <Menu.Item
+                leftSection={
+                  <Checkbox
+                    checked={onlyAvailable}
+                    readOnly
+                    tabIndex={-1}
+                    variant="outline"
+                    aria-hidden="true"
+                  />
+                }
+                onClick={() => onOnlyAvailableChange(!onlyAvailable)}
+              >
+                {t('index.onlyAvailable')}
+              </Menu.Item>
+              <Menu.Divider />
+              {activeType === 'buy' && (
+                <>
+                  <Menu.Label>{t('index.condition')}</Menu.Label>
+                  {CONDITIONS.map(condition => (
+                    <Menu.Item
+                      key={condition}
+                      closeMenuOnClick={false}
+                      onClick={() => toggleCondition(condition)}
+                      leftSection={
+                        <Checkbox
+                          checked={selectedConditions.includes(condition)}
+                          readOnly
+                          variant="outline"
+                          tabIndex={-1}
+                          aria-hidden="true"
+                        />
+                      }
+                    >
+                      {getConditionName(condition)}
+                    </Menu.Item>
+                  ))}
+                  <Menu.Divider />
+                </>
+              )}
+              {/* Sort control */}
+              <>
+                <Menu.Label>{t('index.sort')}</Menu.Label>
+                <Menu.Item onClick={handleDateSortClick} leftSection={dateSortIconColored}>
+                  {t('index.sortDate')}
+                </Menu.Item>
+                <Menu.Item onClick={handlePriceSortClick} leftSection={priceSortIconColored}>
+                  {t('index.sortPrice')}
+                </Menu.Item>
+              </>
+              <Menu.Divider />
+
+              <Menu.Label>{t('index.scope')}</Menu.Label>
+              <Menu.Item
+                leftSection={
+                  <Radio
+                    checked={scope === 'local'}
+                    readOnly
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    variant="outline"
+                  />
+                }
+                onClick={() => onScopeChange('local')}
+              >
+                {t('index.scopeLocal')}
+              </Menu.Item>
+              <Menu.Item
+                leftSection={
+                  <Radio
+                    checked={scope === 'all'}
+                    readOnly
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    variant="outline"
+                  />
+                }
+                onClick={() => onScopeChange('all')}
+              >
+                {t('index.scopeAll')}
+              </Menu.Item>
+              <Menu.Item
+                leftSection={
+                  <Radio
+                    checked={scope === 'federated'}
+                    readOnly
+                    tabIndex={-1}
+                    aria-hidden="true"
+                    variant="outline"
+                  />
+                }
+                onClick={() => onScopeChange('federated')}
+              >
+                {t('index.scopeFederated')}
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
       </div>
     </form>
   );

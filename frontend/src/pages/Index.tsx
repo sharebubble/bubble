@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { type StatusB0aEnum, type SalesTypeEnum, type CategoryEnum } from '@/services/django';
 import { type ConditionEnum } from '@/services/django';
 import { getStatusColor, getStatusLabel } from '@/components/items/status';
-import { ChevronLeft, ChevronRight, Globe, Grid3X3, List, MapPin } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Grid3X3, List } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -133,18 +133,10 @@ const Index = () => {
     navigate(`/?${newParams.toString()}`);
   };
 
-  const handleSortClick = (field: SortField) => {
-    const newDir: SortDir =
-      field === sortField
-        ? sortDir === 'asc'
-          ? 'desc'
-          : 'asc'
-        : field === 'date'
-          ? 'desc'
-          : 'asc';
+  const handleSortChange = (field: SortField, dir: SortDir) => {
     const newParams = new URLSearchParams(location.search);
     newParams.set('sortField', field);
-    newParams.set('sortDir', newDir);
+    newParams.set('sortDir', dir);
     newParams.delete('page');
     navigate(`/?${newParams.toString()}`);
   };
@@ -273,42 +265,6 @@ const Index = () => {
     );
   }
 
-  // Scope toggle — shown in the header bar
-  const scopeToggle = (
-    <div className="flex items-center gap-1 border rounded-lg p-1">
-      <Button
-        variant={scope === 'local' ? 'default' : 'ghost'}
-        size="sm"
-        onClick={() => handleScopeChange('local')}
-        className="h-8 px-2 gap-1 text-xs"
-        title={t('index.scopeLocal')}
-      >
-        <MapPin className="h-3 w-3" />
-        {t('index.scopeLocal')}
-      </Button>
-      <Button
-        variant={scope === 'all' ? 'default' : 'ghost'}
-        size="sm"
-        onClick={() => handleScopeChange('all')}
-        className="h-8 px-2 gap-1 text-xs"
-        title={t('index.scopeAll')}
-      >
-        <Globe className="h-3 w-3" />
-        {t('index.scopeAll')}
-      </Button>
-      <Button
-        variant={scope === 'federated' ? 'default' : 'ghost'}
-        size="sm"
-        onClick={() => handleScopeChange('federated')}
-        className="h-8 px-2 gap-1 text-xs"
-        title={t('index.scopeFederated')}
-      >
-        <Globe className="h-3 w-3" />
-        {t('index.scopeFederated')}
-      </Button>
-    </div>
-  );
-
   if (isFederatedScope && federatedQuery.isSuccess) {
     const federatedItems = federatedQuery.data.items;
     const totalCount = federatedQuery.data.pagination.count;
@@ -366,7 +322,9 @@ const Index = () => {
             onSelectedCategoryChange={handleCategoryChange}
             sortField={sortField}
             sortDir={sortDir}
-            onSortClick={handleSortClick}
+            onSortChange={handleSortChange}
+            scope={scope}
+            onScopeChange={handleScopeChange}
             onlyAvailable={onlyAvailable}
             onOnlyAvailableChange={handleOnlyAvailableChange}
           />
@@ -382,7 +340,6 @@ const Index = () => {
               <span className="text-sm text-muted-foreground">
                 {t('index.itemsFound').replace('{count}', String(totalCount))}
               </span>
-              {scopeToggle}
               <div className="flex items-center gap-1 border rounded-lg p-1">
                 <Button
                   variant={viewMode === 'list' ? 'default' : 'ghost'}
@@ -504,7 +461,9 @@ const Index = () => {
             onSelectedCategoryChange={handleCategoryChange}
             sortField={sortField}
             sortDir={sortDir}
-            onSortClick={handleSortClick}
+            onSortChange={handleSortChange}
+            scope={scope}
+            onScopeChange={handleScopeChange}
             onlyAvailable={onlyAvailable}
             onOnlyAvailableChange={handleOnlyAvailableChange}
           />
@@ -521,7 +480,6 @@ const Index = () => {
               <span className="text-sm text-muted-foreground">
                 {t('index.itemsFound').replace('{count}', String(itemsQuery.data.pagination.count))}
               </span>
-              {scopeToggle}
               {/* View mode toggle */}
               <div className="flex items-center gap-1 border rounded-lg p-1">
                 <Button

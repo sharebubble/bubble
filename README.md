@@ -71,6 +71,14 @@ For privacy and GDPR considerations see [`docs/federation/privacy.md`](docs/fede
 
 # Frontend
 
+## UI library direction
+
+The frontend is being migrated from shadcn-style primitives to Mantine.
+
+- Use Mantine for new UI components and interactions.
+- Existing shadcn-based components in `frontend/src/components/ui/` are kept temporarily and can coexist during migration.
+- Prefer incremental migration: if you modify an existing shadcn surface, migrate that touched area to Mantine where practical.
+
 For autocompletion and type checks inside your IDE, install the npm packages locally in the _frontend/_ folder:
 
 ```
