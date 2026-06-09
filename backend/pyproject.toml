@@ -43,7 +43,7 @@ dependencies = [
     "uvicorn[standard]",
     "whitenoise",
     "pyld>=2.0",
-    "http-message-signatures>=0.5",
+    "http-message-signatures>=2.0.1",
     "cryptography>=47.0.0",
 ]
 
