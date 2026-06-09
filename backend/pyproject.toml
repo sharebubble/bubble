@@ -61,7 +61,7 @@ torchvision = [
 ]
 
 [build-system]
-requires = ["setuptools>=45", "wheel", "setuptools-scm[toml]>=6.2"]
+requires = ["setuptools>=45", "wheel", "setuptools-scm[toml]>=10.0.5"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
