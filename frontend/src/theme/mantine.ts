@@ -1,4 +1,4 @@
-import { createTheme, type MantineColorsTuple } from '@mantine/core';
+import { createTheme, em, type MantineColorsTuple } from '@mantine/core';
 
 const bubbleGreen: MantineColorsTuple = [
   '#edf6ed',
@@ -14,6 +14,14 @@ const bubbleGreen: MantineColorsTuple = [
 ];
 
 export const mantineTheme = createTheme({
+  // use the same breakpoints as in Tailwind
+  breakpoints: {
+    xs: em(480),
+    sm: em(640),
+    md: em(768),
+    lg: em(1024),
+    xl: em(1280),
+  },
   white: '#fbfaf9',
   black: '#171411',
   defaultRadius: 'md',
