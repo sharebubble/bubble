@@ -27,7 +27,7 @@ dependencies = [
     "huey>=3.0.1",
     "django-storages[boto3]>=1.14",
     "djangorestframework",
-    "drf-orjson-renderer>=1.7.3",
+    "drf-orjson-renderer>=1.8.0",
     "drf-spectacular",
     "fido2",
     "google-genai>=2.7.0",
