@@ -71,9 +71,7 @@ export const BrowseNav = ({
   const location = useLocation();
 
   const params = new URLSearchParams(location.search);
-  const rawType = params.get('type');
-  const activeType: BrowseType =
-    rawType === 'rent' || rawType === 'buy' || rawType === 'wanted' ? rawType : 'rent';
+  const activeType = params.get('type') as BrowseType | null;
   const navigate = useNavigate();
 
   const handleTypeChange = (value: string): void => {
@@ -155,7 +153,7 @@ export const BrowseNav = ({
           className="w-full md:flex-1"
           color="green"
           size="sm"
-          value={activeType}
+          value={activeType || undefined}
           onChange={handleTypeChange}
           data={[
             {
