@@ -9,6 +9,8 @@ updates:
     # Every weekday
     schedule:
       interval: 'daily'
+    commit-message:
+      prefix: 'chore'
     groups:
       github-actions:
         patterns:
@@ -28,6 +30,8 @@ updates:
         update-types:
           - 'version-update:semver-major'
           - 'version-update:semver-minor'
+    commit-message:
+      prefix: 'chore'
     groups:
       docker-python:
         patterns:
@@ -41,6 +45,8 @@ updates:
     # Every weekday
     schedule:
       interval: 'daily'
+    commit-message:
+      prefix: 'chore'
     groups:
       python:
         update-types:
