@@ -18,7 +18,7 @@ dependencies = [
     "django-environ",
     "django-filter>=25.2",
     "django-guardian>=3.3.1",
-    "django-imagekit>=5.0.0",
+    "django-imagekit>=6.1.0",
     "django-model-utils",
     "django-money>=3.5.4",
     "django-ratelimit>=4.1.0",
