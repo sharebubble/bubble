@@ -1,59 +1,139 @@
-import * as React from 'react';
-import { Slot } from '@radix-ui/react-slot';
-import { cva, type VariantProps } from 'class-variance-authority';
+import {
+  Button as MantineButton,
+  type ButtonProps as MantineButtonProps,
+  type PolymorphicComponentProps,
+} from '@mantine/core';
+import React from 'react';
 
-import { cn } from '@/lib/utils';
+type ShadcnVariant =
+  | 'default'
+  | 'destructive'
+  | 'outline'
+  | 'outline-primary'
+  | 'secondary'
+  | 'ghost'
+  | 'link'
+  | 'community'
+  | 'warm'
+  | 'success'
+  | 'warning';
 
-const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-smooth hover:cursor-pointer focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
-  {
-    variants: {
-      variant: {
-        default:
-          'bg-primary text-primary-foreground shadow-soft hover:bg-primary/90 hover:shadow-medium',
-        destructive:
-          'bg-destructive text-destructive-foreground shadow-soft hover:bg-destructive/90',
-        outline:
-          'border border-input bg-background shadow-soft hover:bg-accent hover:text-accent-foreground',
-        'outline-primary':
-          'border border-primary bg-background text-primary shadow-soft hover:bg-primary hover:text-primary-foreground',
-        secondary: 'bg-secondary text-secondary-foreground shadow-soft hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
-        community:
-          'bg-gradient-primary text-primary-foreground shadow-medium hover:shadow-strong transition-all duration-300 hover:scale-105',
-        warm: 'bg-gradient-warm text-white shadow-medium hover:shadow-glow transition-all duration-300',
-        success: 'bg-success text-success-foreground shadow-soft hover:bg-success/90',
-        warning: 'bg-warning text-warning-foreground shadow-soft hover:bg-warning/90',
-      },
-      size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-9 rounded-md px-3',
-        lg: 'h-11 rounded-md px-8',
-        xl: 'h-12 rounded-lg px-10 text-base',
-        icon: 'h-10 w-10',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-      size: 'default',
-    },
-  },
-);
+type ShadcnSize = 'default' | 'sm' | 'lg' | 'xl' | 'icon';
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+interface ButtonExtraProps {
+  variant?: ShadcnVariant;
+  size?: ShadcnSize;
   asChild?: boolean;
 }
 
+type ButtonProps = ButtonExtraProps &
+  Omit<MantineButtonProps, 'variant' | 'size' | 'color'> & {
+    className?: string;
+    onClick?: React.MouseEventHandler<HTMLButtonElement>;
+    children?: React.ReactNode;
+    disabled?: boolean;
+    type?: 'button' | 'submit' | 'reset';
+    id?: string;
+    title?: string;
+    'aria-label'?: string;
+    'aria-current'?: string | boolean;
+    component?: React.ElementType;
+    to?: string;
+    href?: string;
+  };
+
+const variantMap: Record<
+  ShadcnVariant,
+  { variant: MantineButtonProps['variant']; color?: string }
+> = {
+  default: { variant: 'filled', color: 'brand' },
+  destructive: { variant: 'filled', color: 'red' },
+  outline: { variant: 'outline', color: 'gray' },
+  'outline-primary': { variant: 'outline', color: 'brand' },
+  secondary: { variant: 'light', color: 'gray' },
+  ghost: { variant: 'subtle', color: 'gray' },
+  link: { variant: 'transparent', color: 'brand' },
+  community: { variant: 'filled', color: 'teal' },
+  warm: { variant: 'filled', color: 'orange' },
+  success: { variant: 'filled', color: 'green' },
+  warning: { variant: 'filled', color: 'yellow' },
+};
+
+const sizeMap: Record<ShadcnSize, MantineButtonProps['size']> = {
+  default: 'sm',
+  sm: 'xs',
+  lg: 'md',
+  xl: 'lg',
+  icon: 'sm',
+};
+
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : 'button';
+  (
+    {
+      variant = 'default',
+      size = 'default',
+      asChild = false,
+      className,
+      children,
+      component,
+      ...props
+    },
+    ref,
+  ) => {
+    const { variant: mv, color } = variantMap[variant] ?? variantMap.default;
+    const ms = sizeMap[size] ?? 'sm';
+
+    // asChild: use the child element's type as the `component` prop
+    if (asChild && React.isValidElement(children)) {
+      const child = children as React.ReactElement<any>;
+      const { children: childChildren, ...childProps } = child.props as any;
+      return (
+        <MantineButton
+          ref={ref}
+          component={child.type as React.ElementType}
+          variant={mv}
+          color={color}
+          size={ms}
+          className={className}
+          {...childProps}
+          {...props}
+        >
+          {childChildren}
+        </MantineButton>
+      );
+    }
+
+    // icon size: wrap children, force square shape
+    const iconStyle = size === 'icon' ? { width: 36, height: 36, padding: 0 } : undefined;
+
     return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+      <MantineButton
+        ref={ref}
+        component={component as any}
+        variant={mv}
+        color={color}
+        size={ms}
+        className={className}
+        style={iconStyle}
+        {...props}
+      >
+        {children}
+      </MantineButton>
     );
   },
 );
 Button.displayName = 'Button';
 
+// buttonVariants is used in a few places for className generation
+const buttonVariants = ({
+  variant = 'default',
+  size = 'default',
+  className = '',
+}: {
+  variant?: ShadcnVariant;
+  size?: ShadcnSize;
+  className?: string;
+} = {}): string => `${className}`;
+
 export { Button, buttonVariants };
+export type { ButtonProps };

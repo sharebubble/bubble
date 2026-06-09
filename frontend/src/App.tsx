@@ -1,13 +1,15 @@
 import React from 'react';
-import { Toaster as Sonner } from '@/components/ui/sonner';
 import { Toaster } from '@/components/ui/toaster';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { useAppConfig } from '@/hooks/useAppConfig';
 import { useLanguageSync } from '@/hooks/useLanguageSync';
 import { NotificationProvider } from '@/providers/NotificationProvider';
 import { ThemeProvider } from '@/providers/theme-provider';
+import { mantineTheme } from '@/theme';
+import { MantineProvider } from '@mantine/core';
+import { ModalsProvider } from '@mantine/modals';
+import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { configureApiClient } from './config/apiClient';
@@ -146,23 +148,34 @@ const ProtectedRoutes = () => {
   );
 };
 
+// Derive initial colorScheme from localStorage to avoid flash
+const getInitialColorScheme = (): 'light' | 'dark' | 'auto' => {
+  try {
+    const stored = localStorage.getItem('bubble-theme') as 'light' | 'dark' | 'system' | null;
+    if (stored === 'light' || stored === 'dark') return stored;
+  } catch {}
+  return 'auto';
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="bubble-theme">
-      <LanguageProvider>
-        <AuthProvider>
-          <NotificationProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <ProtectedRoutes />
-              </BrowserRouter>
-            </TooltipProvider>
-          </NotificationProvider>
-        </AuthProvider>
-      </LanguageProvider>
-    </ThemeProvider>
+    <MantineProvider theme={mantineTheme} defaultColorScheme={getInitialColorScheme()}>
+      <ModalsProvider>
+        <Notifications position="top-right" />
+        <Toaster />
+        <ThemeProvider defaultTheme="system" storageKey="bubble-theme">
+          <LanguageProvider>
+            <AuthProvider>
+              <NotificationProvider>
+                <BrowserRouter>
+                  <ProtectedRoutes />
+                </BrowserRouter>
+              </NotificationProvider>
+            </AuthProvider>
+          </LanguageProvider>
+        </ThemeProvider>
+      </ModalsProvider>
+    </MantineProvider>
   </QueryClientProvider>
 );
 

@@ -1,8 +1,8 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useWebSocket, WebSocketMessage } from '@/hooks/useWebSocket';
+import { notifications } from '@mantine/notifications';
 import { useQueryClient } from '@tanstack/react-query';
 import { ReactNode, useCallback, useEffect } from 'react';
-import { toast } from 'sonner';
 
 interface NotificationProviderProps {
   children: ReactNode;
@@ -25,8 +25,10 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           break;
 
         case 'logout':
-          toast.error('You have been logged out', {
-            description: message.data?.message || 'Your session has ended.',
+          notifications.show({
+            color: 'red',
+            title: 'Logged out',
+            message: message.data?.message || 'Your session has ended.',
           });
           // Give user a moment to see the notification before signing out
           setTimeout(() => {
@@ -35,8 +37,10 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           break;
 
         case 'session_invalid':
-          toast.error('Session Invalid', {
-            description:
+          notifications.show({
+            color: 'red',
+            title: 'Session Invalid',
+            message:
               message.data?.message || 'Your session has been invalidated. Please log in again.',
           });
           // Give user a moment to see the notification before signing out
@@ -46,8 +50,10 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
           break;
 
         case 'new_message':
-          toast.info('New Message', {
-            description: message.data?.message || 'You have a new message.',
+          notifications.show({
+            color: 'blue',
+            title: 'New Message',
+            message: message.data?.message || 'You have a new message.',
           });
           // Invalidate bookings to update unread message counts
           queryClient.invalidateQueries({ queryKey: ['bookings'] });
@@ -61,8 +67,9 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
         case 'notification':
           // Generic notification
-          toast(message.data?.title || 'Notification', {
-            description: message.data?.message,
+          notifications.show({
+            title: message.data?.title || 'Notification',
+            message: message.data?.message,
           });
           break;
 

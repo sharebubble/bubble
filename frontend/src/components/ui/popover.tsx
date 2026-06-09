@@ -1,29 +1,96 @@
-import * as React from 'react';
-import * as PopoverPrimitive from '@radix-ui/react-popover';
+import { Popover as MantinePopover, type PopoverProps as MantinePopoverProps } from '@mantine/core';
+import React from 'react';
 
-import { cn } from '@/lib/utils';
+// ── Context ───────────────────────────────────────────────────────────────────
 
-const Popover = PopoverPrimitive.Root;
+interface PopoverContextValue {
+  opened: boolean;
+  setOpened: (v: boolean) => void;
+}
 
-const PopoverTrigger = PopoverPrimitive.Trigger;
+const PopoverContext = React.createContext<PopoverContextValue>({
+  opened: false,
+  setOpened: () => {},
+});
 
-const PopoverContent = React.forwardRef<
-  React.ElementRef<typeof PopoverPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = 'center', sideOffset = 4, ...props }, ref) => (
-  <PopoverPrimitive.Portal>
-    <PopoverPrimitive.Content
-      ref={ref}
-      align={align}
-      sideOffset={sideOffset}
-      className={cn(
-        'z-50 w-72 rounded-md border bg-popover p-4 text-popover-foreground shadow-md outline-hidden data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
-        className,
-      )}
-      {...props}
-    />
-  </PopoverPrimitive.Portal>
-));
-PopoverContent.displayName = PopoverPrimitive.Content.displayName;
+// ── Popover (root) ────────────────────────────────────────────────────────────
 
-export { Popover, PopoverTrigger, PopoverContent };
+interface PopoverRootProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+  modal?: boolean;
+}
+
+const Popover = ({
+  open,
+  onOpenChange,
+  defaultOpen = false,
+  children,
+  modal,
+}: PopoverRootProps) => {
+  const [internalOpen, setInternalOpen] = React.useState(defaultOpen);
+  const isControlled = open !== undefined;
+  const opened = isControlled ? open! : internalOpen;
+
+  const setOpened = React.useCallback(
+    (v: boolean) => {
+      if (!isControlled) setInternalOpen(v);
+      onOpenChange?.(v);
+    },
+    [isControlled, onOpenChange],
+  );
+
+  return (
+    <PopoverContext.Provider value={{ opened, setOpened }}>
+      <MantinePopover opened={opened} onChange={setOpened} trapFocus={modal}>
+        {children}
+      </MantinePopover>
+    </PopoverContext.Provider>
+  );
+};
+Popover.displayName = 'Popover';
+
+// ── PopoverTrigger ────────────────────────────────────────────────────────────
+
+interface PopoverTriggerProps {
+  children: React.ReactNode;
+  asChild?: boolean;
+  className?: string;
+}
+
+const PopoverTrigger = ({ children, asChild }: PopoverTriggerProps) => {
+  if (asChild && React.isValidElement(children)) {
+    return <MantinePopover.Target>{children}</MantinePopover.Target>;
+  }
+  return <MantinePopover.Target>{children}</MantinePopover.Target>;
+};
+PopoverTrigger.displayName = 'PopoverTrigger';
+
+// ── PopoverContent ────────────────────────────────────────────────────────────
+
+interface PopoverContentProps extends React.HTMLAttributes<HTMLDivElement> {
+  align?: 'start' | 'center' | 'end';
+  sideOffset?: number;
+  side?: 'top' | 'right' | 'bottom' | 'left';
+}
+
+const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
+  ({ className, children, align = 'center', sideOffset: _s, side, ...props }, ref) => {
+    const position = side as MantinePopoverProps['position'] | undefined;
+    return (
+      <MantinePopover.Dropdown
+        ref={ref}
+        className={className}
+        {...(position ? { 'data-side': position } : {})}
+        {...props}
+      >
+        {children}
+      </MantinePopover.Dropdown>
+    );
+  },
+);
+PopoverContent.displayName = 'PopoverContent';
+
+export { Popover, PopoverContent, PopoverTrigger };

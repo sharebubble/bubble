@@ -156,11 +156,11 @@ export const CategoryConditionFields = ({
           <Select
             key={formData.category || 'empty'}
             value={formData.category}
-            onValueChange={(value: CategoryEnum) => {
+            onValueChange={value => {
               if (value) {
-                setFormData({ ...formData, category: value });
-                onCategoryChange?.(value);
-                onFieldChange?.('category', value);
+                setFormData({ ...formData, category: value as CategoryEnum });
+                onCategoryChange?.(value as CategoryEnum);
+                onFieldChange?.('category', value as CategoryEnum);
               }
             }}
             disabled={disabled}
@@ -259,22 +259,23 @@ export const PricingFields = ({
   const showPrice = salesType !== '' && !PRICE_NULL_TYPES.includes(salesType as SalesTypeEnum);
   const showRentalOptions = salesType === 'rent' || salesType === 'borrow';
 
-  const handleSalesTypeChange = (value: SalesTypeEnum) => {
-    const updates: any = { ...formData, sales_type: value };
+  const handleSalesTypeChange = (value: string) => {
+    const salesTypeValue = value as SalesTypeEnum;
+    const updates: any = { ...formData, sales_type: salesTypeValue };
 
     // Clear price locally for types that must have null price
     // (backend also auto-clears price when sales_type changes to donate/borrow)
-    if (PRICE_NULL_TYPES.includes(value)) {
+    if (PRICE_NULL_TYPES.includes(salesTypeValue)) {
       updates.price = '';
     }
     // Clear rental options when switching away from rent/borrow
-    if (value !== 'rent' && value !== 'borrow') {
+    if (salesTypeValue !== 'rent' && salesTypeValue !== 'borrow') {
       updates.rental_period = '';
       updates.rental_self_service = false;
       updates.rental_open_end = false;
     }
     setFormData(updates);
-    onFieldChange?.('sales_type', value);
+    onFieldChange?.('sales_type', salesTypeValue);
   };
 
   return (
@@ -336,9 +337,9 @@ export const PricingFields = ({
               <FieldWrapper fieldName="rental_period" fieldStates={fieldStates}>
                 <Select
                   value={formData.rental_period}
-                  onValueChange={(value: RentalPeriodEnum) => {
-                    setFormData({ ...formData, rental_period: value });
-                    onFieldChange?.('rental_period', value);
+                  onValueChange={value => {
+                    setFormData({ ...formData, rental_period: value as RentalPeriodEnum });
+                    onFieldChange?.('rental_period', value as RentalPeriodEnum);
                   }}
                   disabled={disabled}
                   required

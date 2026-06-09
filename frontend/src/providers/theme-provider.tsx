@@ -35,16 +35,16 @@ export function ThemeProvider({
 
     root.classList.remove('light', 'dark');
 
-    if (theme === 'system') {
-      const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
+    const resolvedTheme =
+      theme === 'system'
+        ? window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light'
+        : theme;
 
-      root.classList.add(systemTheme);
-      return;
-    }
-
-    root.classList.add(theme);
+    root.classList.add(resolvedTheme);
+    // Keep Mantine's color-scheme attribute in sync so its CSS variables work
+    root.setAttribute('data-mantine-color-scheme', resolvedTheme);
   }, [theme]);
 
   const value = {

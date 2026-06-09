@@ -1,28 +1,92 @@
-import * as React from 'react';
-import * as TooltipPrimitive from '@radix-ui/react-tooltip';
+import { Tooltip as MantineTooltip, type TooltipProps as MantineTooltipProps } from '@mantine/core';
+import React from 'react';
 
-import { cn } from '@/lib/utils';
+// ── TooltipProvider ──────────────────────────────────────────────────────────
+// Mantine doesn't need a provider wrapper — this is a no-op shim for
+// backward-compat with code that wraps Shadcn tooltips in <TooltipProvider>.
 
-const TooltipProvider = TooltipPrimitive.Provider;
+const TooltipProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+TooltipProvider.displayName = 'TooltipProvider';
 
-const Tooltip = TooltipPrimitive.Root;
+// ── Tooltip ──────────────────────────────────────────────────────────────────
 
-const TooltipTrigger = TooltipPrimitive.Trigger;
+interface TooltipProps {
+  children: React.ReactNode;
+  className?: string;
+}
 
-const TooltipContent = React.forwardRef<
-  React.ElementRef<typeof TooltipPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
->(({ className, sideOffset = 4, ...props }, ref) => (
-  <TooltipPrimitive.Content
-    ref={ref}
-    sideOffset={sideOffset}
-    className={cn(
-      'z-50 overflow-hidden rounded-md border bg-popover px-3 py-1.5 text-sm text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
-      className,
-    )}
-    {...props}
-  />
+const Tooltip = ({ children }: TooltipProps) => <>{children}</>;
+Tooltip.displayName = 'Tooltip';
+
+// ── TooltipTrigger ───────────────────────────────────────────────────────────
+// Holds the reference element. Mantine wraps the child directly.
+
+interface TooltipTriggerProps {
+  children: React.ReactNode;
+  asChild?: boolean;
+}
+
+const TooltipTrigger = React.forwardRef<HTMLElement, TooltipTriggerProps>(({ children }, _ref) => (
+  <>{children}</>
 ));
-TooltipContent.displayName = TooltipPrimitive.Content.displayName;
+TooltipTrigger.displayName = 'TooltipTrigger';
 
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider };
+// ── TooltipContent ───────────────────────────────────────────────────────────
+// The actual tooltip label. We reconstruct the Mantine Tooltip here wrapping
+// the sibling trigger by using a compound component pattern via context.
+
+interface TooltipContentProps extends React.HTMLAttributes<HTMLDivElement> {
+  sideOffset?: number;
+  side?: 'top' | 'right' | 'bottom' | 'left';
+}
+
+const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentProps>(
+  ({ children }, _ref) => <>{children}</>,
+);
+TooltipContent.displayName = 'TooltipContent';
+
+// ── Compound Tooltip ─────────────────────────────────────────────────────────
+// The real Mantine Tooltip wraps the trigger+content pattern by scanning
+// children for TooltipTrigger and TooltipContent.
+// Usage:
+//   <Tooltip>
+//     <TooltipTrigger asChild><Button>hover me</Button></TooltipTrigger>
+//     <TooltipContent>label text</TooltipContent>
+//   </Tooltip>
+
+interface CompoundTooltipProps extends Omit<MantineTooltipProps, 'label' | 'children'> {
+  children: React.ReactNode;
+}
+
+const CompoundTooltip = ({ children, ...restProps }: CompoundTooltipProps) => {
+  let props = restProps;
+  let trigger: React.ReactNode = null;
+  let label: React.ReactNode = null;
+
+  React.Children.forEach(children, child => {
+    if (!React.isValidElement(child)) return;
+    const displayName = (child.type as any)?.displayName ?? (child.type as any)?.name ?? '';
+    if (displayName === 'TooltipTrigger') {
+      // Unwrap asChild — render child's children
+      const triggerProps = child.props as TooltipTriggerProps;
+      trigger = triggerProps.children;
+    } else if (displayName === 'TooltipContent') {
+      label = (child.props as React.HTMLAttributes<HTMLDivElement>).children;
+      const cp = child.props as TooltipContentProps;
+      if (cp.side && !props.position) {
+        props = { ...props, position: cp.side };
+      }
+    }
+  });
+
+  if (!label) return <>{trigger}</>;
+
+  return (
+    <MantineTooltip label={label} {...props}>
+      <span style={{ display: 'inline-flex' }}>{trigger}</span>
+    </MantineTooltip>
+  );
+};
+CompoundTooltip.displayName = 'Tooltip';
+
+export { CompoundTooltip as Tooltip, TooltipContent, TooltipProvider, TooltipTrigger };

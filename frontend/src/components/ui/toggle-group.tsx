@@ -1,55 +1,63 @@
-import * as React from 'react';
-import * as ToggleGroupPrimitive from '@radix-ui/react-toggle-group';
-import { type VariantProps } from 'class-variance-authority';
+import { SegmentedControl, type SegmentedControlProps } from '@mantine/core';
+import React from 'react';
 
-import { cn } from '@/lib/utils';
-import { toggleVariants } from '@/components/ui/toggle';
+// ── ToggleGroup ───────────────────────────────────────────────────────────────
+// Wraps Mantine's SegmentedControl to match Shadcn's ToggleGroup API.
+// Children are expected to be <ToggleGroupItem value="..."> elements.
 
-const ToggleGroupContext = React.createContext<VariantProps<typeof toggleVariants>>({
-  size: 'default',
-  variant: 'default',
-});
+interface ToggleGroupProps {
+  type: 'single' | 'multiple';
+  value?: string;
+  onValueChange?: (value: string) => void;
+  children: React.ReactNode;
+  className?: string;
+  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+}
 
-const ToggleGroup = React.forwardRef<
-  React.ElementRef<typeof ToggleGroupPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root> &
-    VariantProps<typeof toggleVariants>
->(({ className, variant, size, children, ...props }, ref) => (
-  <ToggleGroupPrimitive.Root
-    ref={ref}
-    className={cn('flex items-center justify-center gap-1', className)}
-    {...props}
-  >
-    <ToggleGroupContext.Provider value={{ variant, size }}>{children}</ToggleGroupContext.Provider>
-  </ToggleGroupPrimitive.Root>
-));
+const ToggleGroup = ({
+  value,
+  onValueChange,
+  children,
+  className,
+  size = 'sm',
+}: ToggleGroupProps) => {
+  // Collect data from ToggleGroupItem children
+  const data: { value: string; label: React.ReactNode }[] = [];
 
-ToggleGroup.displayName = ToggleGroupPrimitive.Root.displayName;
-
-const ToggleGroupItem = React.forwardRef<
-  React.ElementRef<typeof ToggleGroupPrimitive.Item>,
-  React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item> &
-    VariantProps<typeof toggleVariants>
->(({ className, children, variant, size, ...props }, ref) => {
-  const context = React.useContext(ToggleGroupContext);
+  React.Children.forEach(children, child => {
+    if (React.isValidElement(child)) {
+      const dn = (child.type as any)?.displayName ?? '';
+      if (dn === 'ToggleGroupItem') {
+        const cp = child.props as { value: string; children?: React.ReactNode };
+        data.push({ value: cp.value, label: cp.children ?? cp.value });
+      }
+    }
+  });
 
   return (
-    <ToggleGroupPrimitive.Item
-      ref={ref}
-      className={cn(
-        toggleVariants({
-          variant: context.variant || variant,
-          size: context.size || size,
-        }),
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </ToggleGroupPrimitive.Item>
+    <SegmentedControl
+      value={value}
+      onChange={onValueChange}
+      data={data.map(d => ({ value: d.value, label: d.label as string }))}
+      className={className}
+      size={size}
+    />
   );
-});
+};
+ToggleGroup.displayName = 'ToggleGroup';
 
-ToggleGroupItem.displayName = ToggleGroupPrimitive.Item.displayName;
+// ── ToggleGroupItem ───────────────────────────────────────────────────────────
+// Only used to collect value+label for ToggleGroup above.
+
+interface ToggleGroupItemProps {
+  value: string;
+  children?: React.ReactNode;
+  className?: string;
+  'aria-label'?: string;
+  disabled?: boolean;
+}
+
+const ToggleGroupItem = ({ children }: ToggleGroupItemProps) => <>{children}</>;
+ToggleGroupItem.displayName = 'ToggleGroupItem';
 
 export { ToggleGroup, ToggleGroupItem };

@@ -1,45 +1,39 @@
-import * as React from 'react';
-import * as AvatarPrimitive from '@radix-ui/react-avatar';
+import { Avatar as MantineAvatar, type AvatarProps as MantineAvatarProps } from '@mantine/core';
+import React from 'react';
 
-import { cn } from '@/lib/utils';
+// ── Avatar ───────────────────────────────────────────────────────────────────
 
-const Avatar = React.forwardRef<
-  React.ElementRef<typeof AvatarPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Root
-    ref={ref}
-    className={cn('relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full', className)}
-    {...props}
-  />
-));
-Avatar.displayName = AvatarPrimitive.Root.displayName;
+interface AvatarProps extends MantineAvatarProps {
+  className?: string;
+}
 
-const AvatarImage = React.forwardRef<
-  React.ElementRef<typeof AvatarPrimitive.Image>,
-  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Image
-    ref={ref}
-    className={cn('aspect-square h-full w-full', className)}
-    {...props}
-  />
-));
-AvatarImage.displayName = AvatarPrimitive.Image.displayName;
+const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
+  ({ className, children, src, alt, ...props }, ref) => (
+    <MantineAvatar ref={ref} src={src} alt={alt} className={className} {...props}>
+      {children}
+    </MantineAvatar>
+  ),
+);
+Avatar.displayName = 'Avatar';
 
-const AvatarFallback = React.forwardRef<
-  React.ElementRef<typeof AvatarPrimitive.Fallback>,
-  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>
->(({ className, ...props }, ref) => (
-  <AvatarPrimitive.Fallback
-    ref={ref}
-    className={cn(
-      'flex h-full w-full items-center justify-center rounded-full bg-muted',
-      className,
-    )}
-    {...props}
-  />
-));
-AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
+// ── AvatarImage ──────────────────────────────────────────────────────────────
+// In Mantine, the image is passed as `src` to Avatar directly.
+// This shim accepts src/alt and renders nothing (the parent Avatar handles it).
 
-export { Avatar, AvatarImage, AvatarFallback };
+interface AvatarImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {}
+
+const AvatarImage = React.forwardRef<HTMLImageElement, AvatarImageProps>((_props, _ref) => null);
+AvatarImage.displayName = 'AvatarImage';
+
+// ── AvatarFallback ───────────────────────────────────────────────────────────
+// In Mantine, fallback content is passed as children to Avatar.
+// This shim wraps children in a fragment.
+
+interface AvatarFallbackProps extends React.HTMLAttributes<HTMLSpanElement> {}
+
+const AvatarFallback = React.forwardRef<HTMLSpanElement, AvatarFallbackProps>(
+  ({ children }, _ref) => <>{children}</>,
+);
+AvatarFallback.displayName = 'AvatarFallback';
+
+export { Avatar, AvatarFallback, AvatarImage };
