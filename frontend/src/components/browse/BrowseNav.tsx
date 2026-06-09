@@ -1,11 +1,4 @@
-import {
-  Checkbox,
-  Flex,
-  Group,
-  Button as MantineButton,
-  Menu,
-  Radio,
-} from '@mantine/core';
+import { Checkbox, Flex, Group, Button as MantineButton, Menu, Radio } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ItemCategoryFilter } from '@/hooks/types';
 import { cn } from '@/lib/utils';
