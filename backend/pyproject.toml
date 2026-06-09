@@ -30,7 +30,7 @@ dependencies = [
     "drf-orjson-renderer>=1.7.3",
     "drf-spectacular",
     "fido2",
-    "google-genai>=2.7.0",
+    "google-genai>=2.8.0",
     "gunicorn",
     "hiredis",
     "httpx>=0.28.1",
