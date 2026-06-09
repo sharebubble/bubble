@@ -81,7 +81,7 @@ const translations = {
 
     // Browse Nav
     'browse.buy': 'Marketplace',
-    'browse.bookOrRent': 'Book / Rent',
+    'browse.rent': 'Rent',
     'browse.wanted': 'Wanted',
 
     // Items
@@ -641,7 +641,7 @@ const translations = {
 
     // Browse Nav
     'browse.buy': 'Marktplatz',
-    'browse.bookOrRent': 'Buchen / Mieten',
+    'browse.rent': 'Mieten',
     'browse.wanted': 'Gesucht',
 
     // Items

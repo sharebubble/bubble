@@ -5,7 +5,6 @@ import {
   Button as MantineButton,
   Menu,
   Radio,
-  SegmentedControl,
 } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ItemCategoryFilter } from '@/hooks/types';
@@ -44,7 +43,7 @@ type BrowseNavProps = {
 };
 
 const browseTabs = [
-  { label: 'browse.bookOrRent', type: 'rent', icon: Calendar },
+  { label: 'browse.rent', type: 'rent', icon: Calendar },
   { label: 'browse.buy', type: 'buy', icon: Store },
   { label: 'browse.wanted', type: 'wanted', icon: Binoculars },
 ];
@@ -147,64 +146,37 @@ export const BrowseNav = ({
       onSubmit={event => event.preventDefault()}
       className={cn(className, 'flex w-full flex-col gap-2')}
     >
-      <div className="flex flex-col gap-4 md:flex-row md:items-center">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         {/* Browse Tabs */}
-        <SegmentedControl
-          className="w-full md:flex-1"
-          color="green"
-          size="sm"
-          value={activeType || undefined}
-          onChange={handleTypeChange}
-          data={[
-            {
-              value: 'rent',
-              label: (
+        <MantineButton.Group className="flex w-full">
+          {browseTabs.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeType === tab.type;
+            return (
+              <MantineButton
+                key={tab.type}
+                color="green"
+                variant={isActive ? 'filled' : 'outline'}
+                onClick={() => handleTypeChange(tab.type)}
+                className="!h-12 flex-1 sm:!h-10"
+              >
                 <Flex
                   direction={{ base: 'column', sm: 'row' }}
                   align="center"
                   justify="center"
                   columnGap={8}
+                  rowGap={4}
                   className="py-1"
                 >
-                  <Calendar size={16} />
-                  <span>{t('browse.bookOrRent')}</span>
+                  <Icon size={16} />
+                  <span>{t(tab.label)}</span>
                 </Flex>
-              ),
-            },
-            {
-              value: 'buy',
-              label: (
-                <Flex
-                  direction={{ base: 'column', sm: 'row' }}
-                  align="center"
-                  justify="center"
-                  columnGap={8}
-                  className="py-1"
-                >
-                  <Store size={16} />
-                  <span>{t('browse.buy')}</span>
-                </Flex>
-              ),
-            },
-            {
-              value: 'wanted',
-              label: (
-                <Flex
-                  direction={{ base: 'column', sm: 'row' }}
-                  align="center"
-                  justify="center"
-                  columnGap={8}
-                  className="py-1"
-                >
-                  <Binoculars size={16} />
-                  <span>{t('browse.wanted')}</span>
-                </Flex>
-              ),
-            },
-          ]}
-        />
+              </MantineButton>
+            );
+          })}
+        </MantineButton.Group>
 
-        <Group className="w-full md:w-auto" wrap="nowrap">
+        <Group className="w-full sm:w-auto" wrap="nowrap">
           <div className="min-w-0 grow">
             <CategoryFilter
               selectedCategory={selectedCategory}
