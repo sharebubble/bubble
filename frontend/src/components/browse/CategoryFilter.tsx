@@ -1,7 +1,7 @@
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { type ItemCategoryFilter } from '@/hooks/types';
-import { categories, categoryTranslationKeys } from '@/lib/categoryIcons';
+import { categories, categoryTranslationKeys, getCategoryIcon } from '@/lib/categoryIcons';
+import { Group, Select } from '@mantine/core';
 
 const categoryIconClassName = 'h-4 w-4 text-muted-foreground';
 
@@ -20,35 +20,28 @@ export const CategoryFilter = ({ selectedCategory, onCategoryChange }: CategoryF
   const getCategoryName = (id: ItemCategoryFilter) => t(categoryTranslationKeys[id]);
 
   return (
-    <div>
-      <label htmlFor="category-filter" className="sr-only">
-        {t('editItem.category')}
-      </label>
-      <Select
-        value={selectedCategory}
-        onValueChange={value => onCategoryChange(value as ItemCategoryFilter)}
-      >
-        <SelectTrigger id="category-filter">
-          <div className="flex items-center gap-2">
-            <SelectedCategoryIcon className={categoryIconClassName} />
-            <span>{getCategoryName(selectedCategory)}</span>
-          </div>
-        </SelectTrigger>
-        <SelectContent>
-          {categories.map(category => {
-            const Icon = category.icon;
-
-            return (
-              <SelectItem key={category.id} value={category.id}>
-                <span className="flex items-center gap-2">
-                  <Icon className={categoryIconClassName} />
-                  <span>{getCategoryName(category.id)}</span>
-                </span>
-              </SelectItem>
-            );
-          })}
-        </SelectContent>
-      </Select>
-    </div>
+    <Select
+      size="md"
+      checkIconPosition="right"
+      aria-label={t('editItem.category')}
+      value={selectedCategory}
+      data={categories.map(category => ({
+        value: category.id,
+        label: getCategoryName(category.id),
+      }))}
+      leftSection={<SelectedCategoryIcon className={categoryIconClassName} />}
+      onChange={value => {
+        if (value) onCategoryChange(value as ItemCategoryFilter);
+      }}
+      renderOption={({ option }) => {
+        const Icon = getCategoryIcon(option.value);
+        return (
+          <Group gap="xs">
+            <Icon className={categoryIconClassName} />
+            <span>{option.label}</span>
+          </Group>
+        );
+      }}
+    />
   );
 };
