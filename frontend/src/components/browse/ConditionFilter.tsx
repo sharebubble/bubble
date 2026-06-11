@@ -1,12 +1,6 @@
-import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ConditionEnum } from '@/services/django/types.gen';
+import { Button, Checkbox, Menu } from '@mantine/core';
 import { ChevronDown } from 'lucide-react';
 
 const CONDITIONS: ConditionEnum[] = [0, 1, 2];
@@ -50,29 +44,38 @@ export const ConditionFilter = ({
     selectedConditionNames.length > 0 ? selectedConditionNames.join(' / ') : t('index.condition');
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
+    <Menu position="bottom-start" shadow="md" closeOnItemClick={false}>
+      <Menu.Target>
         <Button
           variant="outline"
-          className="min-w-40 justify-between"
+          justify="space-between"
+          className="min-w-40"
+          rightSection={<ChevronDown size={16} className="text-muted-foreground" />}
           aria-label={t('index.condition')}
         >
           <span className="truncate">{triggerLabel}</span>
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="min-w-40">
+      </Menu.Target>
+      <Menu.Dropdown className="min-w-40">
         {CONDITIONS.map(condition => (
-          <DropdownMenuCheckboxItem
+          <Menu.Item
             key={condition}
-            checked={selectedConditions.includes(condition)}
-            onCheckedChange={() => toggleCondition(condition)}
-            onSelect={event => event.preventDefault()}
+            closeMenuOnClick={false}
+            onClick={() => toggleCondition(condition)}
+            leftSection={
+              <Checkbox
+                checked={selectedConditions.includes(condition)}
+                readOnly
+                tabIndex={-1}
+                variant="outline"
+                aria-hidden="true"
+              />
+            }
           >
             {getConditionName(condition)}
-          </DropdownMenuCheckboxItem>
+          </Menu.Item>
         ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </Menu.Dropdown>
+    </Menu>
   );
 };

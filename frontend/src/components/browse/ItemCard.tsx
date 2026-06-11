@@ -1,20 +1,16 @@
 import { AddToCollectionPopover } from '@/components/collections/AddToCollectionPopover';
 import { BookingDialog } from '@/components/items/BookingDialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { getStatusLabel, getStatusMantineColor } from '@/components/items/status';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { getCategoryIcon } from '@/lib/categoryIcons';
+import { convertLineBreaks } from '@/lib/convertLineBreaks';
 import { formatPrice } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
-import { cn } from '@/lib/utils';
 import { SalesTypeEnum, StatusB0aEnum } from '@/services/django';
+import { Badge, Button, Card, Text, Tooltip } from '@mantine/core';
 import { Clock, Globe, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { getStatusColor, getStatusLabel } from '@/components/items/status';
-import { convertLineBreaks } from '@/lib/convertLineBreaks';
 
 interface ItemCardProps {
   id: string;
@@ -82,36 +78,32 @@ export const ItemCard = ({
     }
   };
 
-  const conditionColors = {
-    new: 'bg-success text-success-foreground',
-    used: 'bg-warning text-warning-foreground',
-    broken: 'bg-destructive text-destructive-foreground',
-  };
-
-  const salesTypeBadgeColor = (st: SalesTypeEnum | undefined) => {
+  const salesTypeBadgeProps = (
+    st: SalesTypeEnum | undefined,
+  ): { color: string; variant: 'filled' | 'light' | 'outline' } => {
     switch (st) {
-      case 'sell':
-        return 'bg-muted text-info-foreground';
       case 'donate':
       case 'borrow':
-        return 'bg-success text-success-foreground';
-      case 'rent':
-        return 'bg-muted text-info-foreground';
+        return { color: 'green', variant: 'filled' };
       case 'want_buy':
       case 'want_rent':
-        return 'bg-muted text-muted-foreground border border-border';
+        return { color: 'gray', variant: 'outline' };
+      case 'sell':
+      case 'rent':
       default:
-        return 'bg-muted text-muted-foreground';
+        return { color: 'gray', variant: 'light' };
     }
   };
 
   return (
     <Card
-      className="group overflow-hidden transition-all duration-300 hover:shadow-strong hover:scale-105 border-border animate-fade-in cursor-pointer"
+      withBorder
+      padding="lg"
+      className="group overflow-hidden transition-all duration-300 hover:shadow-strong hover:scale-105 animate-fade-in cursor-pointer"
       onClick={() => navigate(`/item/${id}`)}
     >
       {/* Image Section */}
-      <div className="relative aspect-4/3 overflow-hidden">
+      <Card.Section className="relative aspect-4/3 overflow-hidden">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -133,7 +125,7 @@ export const ItemCard = ({
         <div className="absolute top-3 left-3 flex gap-2">
           {/* Status badge (shows available/reserved/sold/...) */}
           {typeof status !== 'undefined' && status !== null ? (
-            <Badge className={cn(getStatusColor(status), 'text-xs shadow-medium')}>
+            <Badge color={getStatusMantineColor(status)} size="sm" className="shadow-medium">
               {getStatusLabel(status) ? t(`status.${getStatusLabel(status)}`) : ''}
             </Badge>
           ) : null}
@@ -142,7 +134,7 @@ export const ItemCard = ({
         {/* Sales type badge (top-right) */}
         {salesType && (
           <div className="absolute top-3 right-3">
-            <Badge className={cn(salesTypeBadgeColor(salesType), 'text-xs shadow-medium')}>
+            <Badge {...salesTypeBadgeProps(salesType)} size="sm" className="shadow-medium">
               {t(`item.salesType.badge.${salesType}`)}
             </Badge>
           </div>
@@ -152,36 +144,35 @@ export const ItemCard = ({
         {(rentalSelfService || remoteInstance) && (
           <div className="absolute bottom-3 left-3 flex flex-col gap-1 items-start">
             {rentalSelfService && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge className="gap-1 bg-amber-500 text-white text-xs shadow-medium hover:bg-amber-500 cursor-default">
-                      <Zap className="h-3 w-3 fill-current" />
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="font-medium">{t('item.instantRental')}</p>
-                    <p className="text-xs text-muted-foreground max-w-48">
+              <Tooltip
+                multiline
+                label={
+                  <div>
+                    <Text size="sm" fw={500}>
+                      {t('item.instantRental')}
+                    </Text>
+                    <Text size="xs" className="max-w-48">
                       {t('item.instantRentalTooltip')}
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+                    </Text>
+                  </div>
+                }
+              >
+                <Badge color="yellow" size="sm" className="shadow-medium cursor-default">
+                  <Zap size={12} className="fill-current" />
+                </Badge>
+              </Tooltip>
             )}
             {remoteInstance && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Badge className="gap-1 bg-blue-600/90 text-white text-xs shadow-medium hover:bg-blue-600/90 cursor-default backdrop-blur-xs">
-                      <Globe className="h-3 w-3" />
-                      <span className="max-w-24 truncate">{remoteInstance}</span>
-                    </Badge>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p className="font-medium">{remoteInstance}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip label={remoteInstance}>
+                <Badge
+                  color="blue"
+                  size="sm"
+                  leftSection={<Globe size={12} />}
+                  className="shadow-medium cursor-default backdrop-blur-xs"
+                >
+                  <span className="max-w-24 truncate">{remoteInstance}</span>
+                </Badge>
+              </Tooltip>
             )}
           </div>
         )}
@@ -199,30 +190,30 @@ export const ItemCard = ({
             </div>
           </div>
         )}
-      </div>
+      </Card.Section>
 
       {/* Content Section */}
-      <CardContent className="p-4 space-y-3">
+      <div className="mt-4 space-y-3">
         <div>
-          <h3 className="font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+          <h3 className="font-semibold line-clamp-1 group-hover:text-primary transition-colors">
             {title}
           </h3>
-          <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+          <Text size="sm" c="dimmed" lineClamp={2} className="mt-1">
             {convertLineBreaks(description)}
-          </p>
+          </Text>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <Text size="xs" c="dimmed" component="div" className="flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
+            <Clock size={12} />
             <span>{formatDate(createdAt, language)}</span>
           </div>
-        </div>
-      </CardContent>
+        </Text>
+      </div>
 
       {/* Actions */}
-      <CardFooter
-        className="p-4 pt-0 flex gap-2"
+      <div
+        className="mt-4 flex gap-2"
         onClick={e => {
           e.stopPropagation();
         }}
@@ -234,95 +225,74 @@ export const ItemCard = ({
           // No ownership restriction — owners should be able to rent/borrow their own items
           if (isRentable) {
             return (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex flex-1 gap-2">
-                      <Button
-                        size="sm"
-                        className="w-full"
-                        onClick={e => {
-                          e.stopPropagation();
-                          navigate(`/item/${id}#booking`);
-                        }}
-                        disabled={!user}
-                      >
-                        {getActionLabel(salesType)}
-                      </Button>
-                    </div>
-                  </TooltipTrigger>
-                  {!user && (
-                    <TooltipContent>
-                      <p>{t('auth.loginRequired')}</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip label={t('auth.loginRequired')} disabled={!!user}>
+                <div className="flex flex-1 gap-2">
+                  <Button
+                    size="sm"
+                    fullWidth
+                    onClick={e => {
+                      e.stopPropagation();
+                      navigate(`/item/${id}#booking`);
+                    }}
+                    disabled={!user}
+                  >
+                    {getActionLabel(salesType)}
+                  </Button>
+                </div>
+              </Tooltip>
             );
           }
 
           // Wanted items: open booking dialog so the viewer can contact/offer
           if (salesType === 'want_buy' || salesType === 'want_rent') {
             return (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex flex-1 gap-2">
-                      <BookingDialog
-                        itemUuid={id}
-                        itemName={title}
-                        price={price?.toString()}
-                        priceCurrency={priceCurrency || undefined}
-                        salesType={salesType}
-                        rentalOpenEnd={rentalOpenEnd}
-                        buttonSize="sm"
-                        buttonClassName="w-full"
-                        triggerLabel={getActionLabel(salesType)}
-                        disabled={isOwner || !user}
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  {(!user || isOwner) && (
-                    <TooltipContent>
-                      <p>{!user ? t('auth.loginRequired') : t('item.cannotMessageSelf')}</p>
-                    </TooltipContent>
-                  )}
-                </Tooltip>
-              </TooltipProvider>
+              <Tooltip
+                label={!user ? t('auth.loginRequired') : t('item.cannotMessageSelf')}
+                disabled={!!user && !isOwner}
+              >
+                <div className="flex flex-1 gap-2">
+                  <BookingDialog
+                    itemUuid={id}
+                    itemName={title}
+                    price={price?.toString()}
+                    priceCurrency={priceCurrency || undefined}
+                    salesType={salesType}
+                    rentalOpenEnd={rentalOpenEnd}
+                    buttonSize="sm"
+                    buttonClassName="w-full"
+                    triggerLabel={getActionLabel(salesType)}
+                    disabled={isOwner || !user}
+                  />
+                </div>
+              </Tooltip>
             );
           }
 
           // sell / donate: open booking dialog
           return (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex flex-1 gap-2">
-                    <BookingDialog
-                      itemUuid={id}
-                      itemName={title}
-                      price={price?.toString()}
-                      priceCurrency={priceCurrency || undefined}
-                      salesType={salesType}
-                      rentalOpenEnd={rentalOpenEnd}
-                      buttonSize="sm"
-                      buttonClassName="w-full"
-                      triggerLabel={getActionLabel(salesType)}
-                      disabled={(isOwner && !!price) || !user || !buyingAllowed}
-                    />
-                  </div>
-                </TooltipTrigger>
-                {(!user || isOwner) && (
-                  <TooltipContent>
-                    <p>{!user ? t('auth.loginRequired') : t('item.cannotMessageSelf')}</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
+            <Tooltip
+              label={!user ? t('auth.loginRequired') : t('item.cannotMessageSelf')}
+              disabled={!!user && !isOwner}
+            >
+              <div className="flex flex-1 gap-2">
+                <BookingDialog
+                  itemUuid={id}
+                  itemName={title}
+                  price={price?.toString()}
+                  priceCurrency={priceCurrency || undefined}
+                  salesType={salesType}
+                  rentalOpenEnd={rentalOpenEnd}
+                  buttonSize="sm"
+                  buttonClassName="w-full"
+                  triggerLabel={getActionLabel(salesType)}
+                  disabled={(isOwner && !!price) || !user || !buyingAllowed}
+                />
+              </div>
+            </Tooltip>
           );
         })()}
         <AddToCollectionPopover itemId={id} iconOnly />
-      </CardFooter>
+      </div>
     </Card>
   );
 };

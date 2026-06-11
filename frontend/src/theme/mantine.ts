@@ -1,4 +1,4 @@
-import { createTheme, em, type MantineColorsTuple } from '@mantine/core';
+import { Badge, createTheme, em, type MantineColorsTuple } from '@mantine/core';
 
 const bubbleGreen: MantineColorsTuple = [
   '#edf6ed',
@@ -29,4 +29,10 @@ export const mantineTheme = createTheme({
     green: bubbleGreen,
   },
   primaryColor: 'green',
+  components: {
+    // Keep sentence-case badges as in the pre-Mantine design
+    Badge: Badge.extend({
+      styles: { label: { textTransform: 'none' } },
+    }),
+  },
 });

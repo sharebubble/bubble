@@ -1,16 +1,11 @@
 import { BrowseNav } from '@/components/browse/BrowseNav';
 import { ItemCard } from '@/components/browse/ItemCard';
 import { AddToCollectionPopover } from '@/components/collections/AddToCollectionPopover';
-import { getStatusColor, getStatusLabel } from '@/components/items/status';
-import { Badge } from '@/components/ui/badge';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  getSalesTypeBadgeProps,
+  getStatusLabel,
+  getStatusMantineColor,
+} from '@/components/items/status';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { type ItemCategoryFilter } from '@/hooks/types';
 import { useFederatedItems } from '@/hooks/useFederatedItems';
@@ -18,14 +13,13 @@ import { useItems } from '@/hooks/useItems';
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import { formatPrice } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
-import { cn } from '@/lib/utils';
 import {
   type CategoryEnum,
   type ConditionEnum,
   type SalesTypeEnum,
   type StatusB0aEnum,
 } from '@/services/django';
-import { Group, Pagination, SegmentedControl, Text } from '@mantine/core';
+import { Badge, Group, Pagination, SegmentedControl, Table, Text } from '@mantine/core';
 import { Grid3X3, List } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -76,18 +70,6 @@ const VALID_CATEGORIES: ItemCategoryFilter[] = [
 const VALID_CONDITIONS: ConditionEnum[] = [0, 1, 2];
 const VALID_SORT_FIELDS: SortField[] = ['name', 'price', 'date'];
 const VALID_SCOPES = ['local', 'federated', 'all'] as const;
-
-const SALES_TYPE_BADGE_COLORS: Partial<Record<SalesTypeEnum, string>> = {
-  sell: 'bg-primary text-primary-foreground',
-  donate: 'bg-success text-success-foreground',
-  borrow: 'bg-success text-success-foreground',
-  rent: 'bg-info text-info-foreground',
-  want_buy: 'bg-muted text-muted-foreground border border-border',
-  want_rent: 'bg-muted text-muted-foreground border border-border',
-};
-
-const salesTypeBadgeColor = (st: SalesTypeEnum | undefined): string =>
-  (st && SALES_TYPE_BADGE_COLORS[st]) || 'bg-muted text-muted-foreground';
 
 // ---------------------------------------------------------------------------
 // Component
@@ -244,7 +226,7 @@ const Index = () => {
     return (
       <main className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <p className="text-destructive">{t('common.loadingError')}</p>
+          <Text c="red">{t('common.loadingError')}</Text>
         </div>
       </main>
     );
@@ -254,7 +236,7 @@ const Index = () => {
     return (
       <main className="container mx-auto px-4 py-8">
         <div className="text-center">
-          <p className="text-destructive">{t('index.loadingItems')}</p>
+          <Text c="red">{t('index.loadingItems')}</Text>
         </div>
       </main>
     );
@@ -297,8 +279,8 @@ const Index = () => {
             value={viewMode}
             onChange={value => toggleViewMode(value as 'list' | 'cards')}
             data={[
-              { label: <List className="h-4 w-4" />, value: 'list' },
-              { label: <Grid3X3 className="h-4 w-4" />, value: 'cards' },
+              { label: <List size={16} />, value: 'list' },
+              { label: <Grid3X3 size={16} />, value: 'cards' },
             ]}
             color="green"
             styles={{
@@ -342,27 +324,27 @@ const Index = () => {
           </div>
         ) : viewMode === 'list' ? (
           <div className="rounded-lg border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16"></TableHead>
-                  <TableHead>{t('item.name')}</TableHead>
-                  <TableHead>{t('item.category')}</TableHead>
-                  <TableHead>{t('item.salesType.label')}</TableHead>
-                  <TableHead>{t('item.condition')}</TableHead>
-                  <TableHead>{t('item.price')}</TableHead>
-                  <TableHead>{t('item.createdAt')}</TableHead>
-                  <TableHead className="w-10"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <Table highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th className="w-16"></Table.Th>
+                  <Table.Th>{t('item.name')}</Table.Th>
+                  <Table.Th>{t('item.category')}</Table.Th>
+                  <Table.Th>{t('item.salesType.label')}</Table.Th>
+                  <Table.Th>{t('item.condition')}</Table.Th>
+                  <Table.Th>{t('item.price')}</Table.Th>
+                  <Table.Th>{t('item.createdAt')}</Table.Th>
+                  <Table.Th className="w-10"></Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
                 {localItems.map(item => (
-                  <TableRow
+                  <Table.Tr
                     key={item.id}
-                    className="cursor-pointer hover:bg-muted/50"
+                    className="cursor-pointer"
                     onClick={() => navigate(`/item/${item.id}`)}
                   >
-                    <TableCell>
+                    <Table.Td>
                       <div className="w-10 h-10 rounded-md overflow-hidden shrink-0">
                         {item.first_image ? (
                           <img
@@ -381,59 +363,58 @@ const Index = () => {
                           })()
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
+                    </Table.Td>
+                    <Table.Td>
                       <div className="font-medium max-w-56 truncate">{item.name}</div>
                       {item.description && (
-                        <div className="text-xs text-muted-foreground truncate max-w-56">
+                        <Text size="xs" c="dimmed" truncate className="max-w-56">
                           {item.description}
-                        </div>
+                        </Text>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">
+                    </Table.Td>
+                    <Table.Td>
+                      <Badge variant="outline" color="gray" size="sm">
                         {t(`categories.${item.category}`)}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
+                    </Table.Td>
+                    <Table.Td>
                       {item.sales_type && (
                         <Badge
-                          className={cn(
-                            salesTypeBadgeColor(item.sales_type as SalesTypeEnum),
-                            'text-xs',
-                          )}
+                          {...getSalesTypeBadgeProps(item.sales_type as SalesTypeEnum)}
+                          size="sm"
                         >
                           {t(`item.salesType.badge.${item.sales_type}`)}
                         </Badge>
                       )}
-                    </TableCell>
-                    <TableCell>
+                    </Table.Td>
+                    <Table.Td>
                       {typeof item.status !== 'undefined' && item.status !== null && (
                         <Badge
-                          className={cn(getStatusColor(item.status as StatusB0aEnum), 'text-xs')}
+                          color={getStatusMantineColor(item.status as StatusB0aEnum)}
+                          size="sm"
                         >
                           {getStatusLabel(item.status as StatusB0aEnum)
                             ? t(`status.${getStatusLabel(item.status as StatusB0aEnum)}`)
                             : ''}
                         </Badge>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm font-medium whitespace-nowrap">
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" fw={500} className="whitespace-nowrap">
                         {item.price ? formatPrice(item.price, item.price_currency) : '—'}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="xs" c="dimmed" className="whitespace-nowrap">
                         {formatDate(item.created_at, language)}
-                      </div>
-                    </TableCell>
-                    <TableCell onClick={e => e.stopPropagation()}>
+                      </Text>
+                    </Table.Td>
+                    <Table.Td onClick={e => e.stopPropagation()}>
                       <AddToCollectionPopover itemId={item.id} iconOnly />
-                    </TableCell>
-                  </TableRow>
+                    </Table.Td>
+                  </Table.Tr>
                 ))}
-              </TableBody>
+              </Table.Tbody>
             </Table>
           </div>
         ) : (
