@@ -1,7 +1,4 @@
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { ActionIcon, Badge, Text } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
@@ -375,11 +372,11 @@ export const ImageManager = ({
   return (
     <div className="space-y-2 px-0 md-0 p-3">
       <div className="flex items-center justify-between pt-4">
-        <Label>
+        <Text component="label" size="sm" fw={500}>
           {t('imageManager.imagesLabel')}
           {isEditing && ' ' + t('imageManager.dragToReorder')}
-        </Label>
-        <Badge variant="secondary">
+        </Text>
+        <Badge variant="light" color="gray">
           {totalImages} / {maxImages}
         </Badge>
       </div>
@@ -395,7 +392,7 @@ export const ImageManager = ({
             onDrop={e => item.type === 'existing' && handleDrop(e, item.index)}
           >
             <img
-              src={item.type === 'existing' ? item.data.thumbnail : item.data.url}
+              src={item.type === 'existing' ? (item.data.thumbnail ?? undefined) : item.data.url}
               alt={`Image ${displayIndex + 1}`}
               className="w-full h-32 object-contain rounded-lg border cursor-pointer bg-muted"
               onClick={() =>
@@ -411,13 +408,12 @@ export const ImageManager = ({
             )}
 
             {/* Delete Button */}
-            <Button
-              type="button"
-              variant="destructive"
+            <ActionIcon
+              color="red"
               size="sm"
               className={`absolute top-2 right-2 transition-opacity ${
                 selectedIndex === displayIndex ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-              } p-1`}
+              }`}
               onClick={() => {
                 if (item.type === 'existing') {
                   removeExistingImage(item.data.id);
@@ -427,8 +423,8 @@ export const ImageManager = ({
               }}
               aria-label={t('imageManager.delete')}
             >
-              <X className="h-3 w-3" />
-            </Button>
+              <X size={12} />
+            </ActionIcon>
 
             {/* Rotate Buttons — only for saved images */}
             {item.type === 'existing' && isEditing && (
@@ -461,11 +457,7 @@ export const ImageManager = ({
             )}
 
             {/* Primary Badge */}
-            {displayIndex === 0 && (
-              <Badge className="absolute bottom-2 left-2 bg-primary text-primary-foreground">
-                Primary
-              </Badge>
-            )}
+            {displayIndex === 0 && <Badge className="absolute bottom-2 left-2">Primary</Badge>}
             {/* Mobile move controls */}
             {isMobile && (
               <div
@@ -499,7 +491,7 @@ export const ImageManager = ({
           (isMobile ? (
             <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg h-32 flex flex-col items-center justify-center p-2 gap-2 hover:border-muted-foreground/50 transition-colors">
               {/* Hidden inputs */}
-              <Input
+              <input
                 id="camera-image"
                 type="file"
                 accept="image/*"
@@ -507,7 +499,7 @@ export const ImageManager = ({
                 onChange={handleCameraCapture}
                 className="hidden"
               />
-              <Input
+              <input
                 id="device-images"
                 type="file"
                 accept="image/*"
@@ -517,25 +509,25 @@ export const ImageManager = ({
               />
               {/* Buttons */}
               <div className="flex items-center gap-2 w-full">
-                <Label
+                <label
                   htmlFor="camera-image"
                   className="cursor-pointer flex-1 flex flex-col items-center justify-center gap-1 px-2 py-1.5 rounded-md border hover:bg-muted/50"
                 >
                   <Camera className="h-5 w-5 text-muted-foreground" />
                   <span className="text-xs">Camera</span>
-                </Label>
-                <Label
+                </label>
+                <label
                   htmlFor="device-images"
                   className="cursor-pointer flex-1 flex flex-col items-center justify-center gap-1 px-2 py-1.5 rounded-md border hover:bg-muted/50"
                 >
                   <ImageIcon className="h-5 w-5 text-muted-foreground" />
                   <span className="text-xs">Upload</span>
-                </Label>
+                </label>
               </div>
             </div>
           ) : (
             <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg h-32 flex flex-col items-center justify-center hover:border-muted-foreground/50 transition-colors">
-              <Input
+              <input
                 id="images"
                 type="file"
                 accept="image/*"
@@ -543,22 +535,24 @@ export const ImageManager = ({
                 onChange={handleFileSelect}
                 className="hidden"
               />
-              <Label
+              <label
                 htmlFor="images"
                 className="cursor-pointer flex flex-col items-center justify-center h-full w-full"
               >
                 <ImageIcon className="h-8 w-8 text-muted-foreground mb-2" />
-                <span className="text-sm text-muted-foreground">Add Image</span>
-              </Label>
+                <Text size="sm" c="dimmed" component="span">
+                  Add Image
+                </Text>
+              </label>
             </div>
           ))}
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <Text size="sm" c="dimmed">
         {t('imageManager.uploadInstructions')
           .replace('{max}', String(maxImages))
           .replace('{drag}', isEditing ? ' ' + t('imageManager.dragToReorder') : '')}
-      </p>
+      </Text>
     </div>
   );
 };

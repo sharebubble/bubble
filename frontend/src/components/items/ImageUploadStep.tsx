@@ -1,13 +1,10 @@
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Badge, Button, Card, Loader, Progress, Text, Title } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateItem } from '@/hooks/useCreateItem';
 import { imagesAPI } from '@/services/custom/images';
 import { itemsAiDescribeUpdate, booksCreate, booksIsbnUpdateUpdate } from '@/services/django';
-import { CheckCircle, Loader, SkipForward, Sparkles, Upload } from 'lucide-react';
+import { CheckCircle, SkipForward, Sparkles, Upload } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ImageManager } from './ImageManager';
@@ -290,22 +287,20 @@ export const ImageUploadStep = ({ onBack, onComplete }: ImageUploadStepProps) =>
     <div className="space-y-6">
       {/* Full-screen drop overlay */}
       {dragActive && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm pointer-events-none">
-          <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-primary p-12 text-primary">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--mantine-color-body)]/80 backdrop-blur-sm pointer-events-none">
+          <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-[var(--mantine-color-green-6)] p-12 text-[var(--mantine-color-green-6)]">
             <Upload className="h-12 w-12" />
             <p className="text-lg font-semibold">Drop images to add them</p>
           </div>
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Upload Item Images
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <Card withBorder padding="lg">
+        <Title order={3} className="flex items-center gap-2 mb-6">
+          <Upload className="h-5 w-5" />
+          Upload Item Images
+        </Title>
+        <div className="space-y-6">
           <ImageManager
             onImagesChange={setImages}
             onExistingImagesChange={() => {}}
@@ -317,8 +312,7 @@ export const ImageUploadStep = ({ onBack, onComplete }: ImageUploadStepProps) =>
 
           {images.length > 0 && (
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="gap-1">
-                <CheckCircle className="h-3 w-3" />
+              <Badge variant="light" color="gray" leftSection={<CheckCircle size={12} />}>
                 {images.length}{' '}
                 {images.length !== 1
                   ? t('imageUpload.imagesUploadedPlural')
@@ -331,12 +325,16 @@ export const ImageUploadStep = ({ onBack, onComplete }: ImageUploadStepProps) =>
           {isProcessing && (
             <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-2">
-                <Loader className="h-4 w-4 animate-spin" />
-                <span className="text-sm font-medium">{getProcessingMessage()}</span>
+                <Loader size={16} />
+                <Text size="sm" fw={500} component="span">
+                  {getProcessingMessage()}
+                </Text>
               </div>
               <Progress value={progress} className="w-full" />
               {processingState === 'processing' && activeItemId && (
-                <p className="text-xs text-muted-foreground">{t('imageUpload.aiGenerating')}</p>
+                <Text size="xs" c="dimmed">
+                  {t('imageUpload.aiGenerating')}
+                </Text>
               )}
             </div>
           )}
@@ -348,22 +346,25 @@ export const ImageUploadStep = ({ onBack, onComplete }: ImageUploadStepProps) =>
                 <Button
                   onClick={handleProceedWithAI}
                   disabled={images.length === 0}
-                  className="w-full gap-2"
+                  fullWidth
+                  leftSection={<Sparkles size={16} />}
                 >
-                  <Sparkles className="h-4 w-4" />
                   {t('imageUpload.continueWithAI')}
                 </Button>
 
-                <Button variant="outline" onClick={handleSkipAI} className="w-full gap-2">
-                  <SkipForward className="h-4 w-4" />
+                <Button
+                  variant="outline"
+                  onClick={handleSkipAI}
+                  fullWidth
+                  leftSection={<SkipForward size={16} />}
+                >
                   {t('imageUpload.skipAndContinue')}
                 </Button>
 
                 {/* Scan ISBN */}
                 <div>
                   {isbnScanning ? (
-                    <Button variant="outline" disabled className="w-full gap-2">
-                      <Loader className="h-4 w-4 animate-spin" />
+                    <Button variant="outline" disabled fullWidth leftSection={<Loader size={16} />}>
                       {t('imageUpload.scanIsbnCreating')}
                     </Button>
                   ) : (
@@ -377,7 +378,7 @@ export const ImageUploadStep = ({ onBack, onComplete }: ImageUploadStepProps) =>
               </>
             )}
           </div>
-        </CardContent>
+        </div>
       </Card>
     </div>
   );
