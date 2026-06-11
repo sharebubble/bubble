@@ -1,14 +1,11 @@
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
+  ActionIcon,
+  Avatar,
+  Button,
+  Indicator,
+  Menu,
+  TextInput,
+} from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnreadMessages } from '@/hooks/useMessages';
@@ -91,10 +88,10 @@ export const Header = () => {
             </NavLink>
             <form className="flex-1 max-w-lg" onSubmit={handleSubmit}>
               <div className={cn('relative transition-all duration-300 focus-within:scale-105')}>
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
+                <TextInput
                   placeholder={t('header.search')}
-                  className="pl-10 shadow-soft focus:shadow-medium transition-shadow"
+                  leftSection={<Search size={16} aria-hidden="true" />}
+                  className="shadow-soft focus-within:shadow-medium transition-shadow"
                   value={inputValue}
                   onChange={e => handleSearchChange(e.target.value)}
                 />
@@ -102,12 +99,11 @@ export const Header = () => {
             </form>
 
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
-              className="gap-2"
+              leftSection={<LogIn size={16} aria-hidden="true" />}
               onClick={() => navigate('/profile')}
             >
-              <LogIn className="h-4 w-4" />
               <span className="hidden sm:inline">{t('header.signIn')}</span>
             </Button>
           </div>
@@ -134,10 +130,10 @@ export const Header = () => {
           {/* Search Bar */}
           <form className="flex-1 max-w-lg" onSubmit={handleSubmit}>
             <div className={cn('relative transition-all duration-300 focus-within:scale-105')}>
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
+              <TextInput
                 placeholder={t('header.search')}
-                className="pl-10 shadow-soft focus:shadow-medium transition-shadow"
+                leftSection={<Search size={16} aria-hidden="true" />}
+                className="shadow-soft focus-within:shadow-medium transition-shadow"
                 value={inputValue}
                 onChange={e => handleSearchChange(e.target.value)}
               />
@@ -147,91 +143,90 @@ export const Header = () => {
           {/* Actions */}
           <div className="flex items-center gap-2">
             {/* Bookings */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/requests')}
-              aria-current={location.pathname.startsWith('/requests') ? 'page' : undefined}
-              className={cn(
-                'relative',
-                location.pathname.startsWith('/requests') && 'font-semibold',
-              )}
-              title={t('header.bookings')}
+            <Indicator
+              label={unreadCount}
+              color="red"
+              size={20}
+              disabled={unreadCount === 0}
+              offset={4}
             >
-              <Handshake className="h-5 w-5" />
-              <span className="hidden sm:inline">{t('requests.title')}</span>
-
-              {unreadCount > 0 && (
-                <Badge
-                  variant="destructive"
-                  className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 text-xs"
-                >
-                  {unreadCount}
-                </Badge>
-              )}
-            </Button>
+              <Button
+                variant="subtle"
+                size="sm"
+                color="gray"
+                onClick={() => navigate('/requests')}
+                aria-current={location.pathname.startsWith('/requests') ? 'page' : undefined}
+                className={cn(location.pathname.startsWith('/requests') && '!font-semibold')}
+                title={t('header.bookings')}
+                leftSection={<Handshake size={20} aria-hidden="true" />}
+              >
+                <span className="hidden sm:inline">{t('requests.title')}</span>
+              </Button>
+            </Indicator>
 
             {/* Add Item */}
             <Button
-              variant="default"
+              variant="filled"
               size="sm"
-              className="gap-2"
+              leftSection={<Plus size={16} aria-hidden="true" />}
               onClick={() => navigate('/create-item')}
               aria-current={location.pathname.startsWith('/create-item') ? 'page' : undefined}
             >
-              <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">{t('header.shareItem')}</span>
             </Button>
 
             {/* Profile Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="relative">
-                  <Avatar className="w-5 h-5">
-                    <AvatarFallback className="text-xs">
-                      {user.email?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
+            <Menu position="bottom-end" shadow="md" width={224}>
+              <Menu.Target>
+                <ActionIcon
+                  variant="default"
+                  size="lg"
+                  aria-label={t('header.myProfile')}
+                >
+                  <Avatar size={20} radius="xl" color="green">
+                    {user.email?.charAt(0).toUpperCase()}
                   </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="w-56 bg-background border border-border z-50"
-              >
-                <DropdownMenuItem asChild className="flex items-center">
-                  <NavLink to="/my-items">
-                    <Library className="w-4 h-4 mr-2" />
-                    {t('header.items')}
-                  </NavLink>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="flex items-center">
-                  <NavLink to="/bookings">
-                    <CalendarCheck className="w-4 h-4 mr-2" />
-                    {t('header.bookings')}
-                  </NavLink>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="flex items-center">
-                  <NavLink to="/collections">
-                    <BookMarked className="w-4 h-4 mr-2" />
-                    {t('collections.title')}
-                  </NavLink>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="flex items-center">
-                  <NavLink to="/profile">
-                    <User className="w-4 h-4 mr-2" />
-                    {t('header.myProfile')}
-                  </NavLink>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="flex items-center text-destructive focus:text-destructive"
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  component={NavLink}
+                  to="/my-items"
+                  leftSection={<Library size={16} aria-hidden="true" />}
+                >
+                  {t('header.items')}
+                </Menu.Item>
+                <Menu.Item
+                  component={NavLink}
+                  to="/bookings"
+                  leftSection={<CalendarCheck size={16} aria-hidden="true" />}
+                >
+                  {t('header.bookings')}
+                </Menu.Item>
+                <Menu.Item
+                  component={NavLink}
+                  to="/collections"
+                  leftSection={<BookMarked size={16} aria-hidden="true" />}
+                >
+                  {t('collections.title')}
+                </Menu.Item>
+                <Menu.Item
+                  component={NavLink}
+                  to="/profile"
+                  leftSection={<User size={16} aria-hidden="true" />}
+                >
+                  {t('header.myProfile')}
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  color="red"
+                  leftSection={<LogOut size={16} aria-hidden="true" />}
                   onClick={handleSignOut}
                 >
-                  <LogOut className="w-4 h-4 mr-2" />
                   {t('header.signOut')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           </div>
         </div>
       </div>
