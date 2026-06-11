@@ -1,8 +1,6 @@
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { CollectionList } from '@/services/django';
+import { ActionIcon, Badge, Card, Text, Title } from '@mantine/core';
 import { BookMarked, ChevronRight, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -18,66 +16,72 @@ export const CollectionCard = ({ collection, isOwner, onDelete }: CollectionCard
 
   return (
     <Card
-      className="group overflow-hidden transition-all duration-300 hover:shadow-strong hover:scale-105 border-border animate-fade-in cursor-pointer"
+      withBorder
+      padding="md"
+      className="group overflow-hidden transition-all duration-300 hover:shadow-strong hover:scale-105 animate-fade-in cursor-pointer"
       onClick={() => navigate(`/collections/${collection.id}`)}
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <BookMarked className="h-5 w-5 text-primary shrink-0" />
-            <h3 className="font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-              {collection.name}
-            </h3>
-          </div>
-          <Badge variant="secondary" className="shrink-0 text-xs">
-            {t('collections.itemCount').replace('{count}', collection.items_count)}
-          </Badge>
+      <div className="flex items-start justify-between gap-2 pb-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <BookMarked className="h-5 w-5 text-primary shrink-0" />
+          <Title
+            order={3}
+            size="md"
+            className="line-clamp-1 group-hover:text-primary transition-colors"
+          >
+            {collection.name}
+          </Title>
         </div>
-      </CardHeader>
+        <Badge variant="light" size="sm" className="shrink-0">
+          {t('collections.itemCount').replace('{count}', collection.items_count)}
+        </Badge>
+      </div>
 
       {collection.description && (
-        <CardContent className="py-0 pb-3">
-          <p className="text-sm text-muted-foreground line-clamp-2">{collection.description}</p>
-        </CardContent>
+        <Text size="sm" c="dimmed" lineClamp={2} className="pb-3">
+          {collection.description}
+        </Text>
       )}
 
-      <CardFooter
-        className="px-4 pb-3 pt-0 flex items-center justify-between gap-2"
+      <div
+        className="flex items-center justify-between gap-2 mt-auto"
         onClick={e => e.stopPropagation()}
       >
-        <span className="text-xs text-muted-foreground">
+        <Text size="xs" c="dimmed">
           {t('collections.owner')}: {collection.owner}
-        </span>
+        </Text>
 
         <div className="flex items-center gap-1">
           {isOwner && onDelete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            <ActionIcon
+              variant="subtle"
+              color="red"
+              size="sm"
               title={t('collections.deleteCollection')}
+              aria-label={t('collections.deleteCollection')}
               onClick={e => {
                 e.stopPropagation();
                 onDelete(collection.id);
               }}
             >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+              <Trash2 size={14} />
+            </ActionIcon>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            size="sm"
             title={t('common.open')}
+            aria-label={t('common.open')}
             onClick={e => {
               e.stopPropagation();
               navigate(`/collections/${collection.id}`);
             }}
           >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+            <ChevronRight size={16} />
+          </ActionIcon>
         </div>
-      </CardFooter>
+      </div>
     </Card>
   );
 };

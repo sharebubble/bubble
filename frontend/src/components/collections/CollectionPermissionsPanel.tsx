@@ -1,18 +1,18 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useManageCollectionPermission, useCollectionPermissions } from '@/hooks/useCollections';
 import { type CollectionGrant } from '@/services/django';
 import { groupsList, usersList } from '@/services/django';
+import {
+  ActionIcon,
+  Button,
+  CloseButton,
+  Paper,
+  SegmentedControl,
+  Select,
+  Table,
+  Text,
+} from '@mantine/core';
+import { TextInput } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { Share2, Shield, Trash2 } from 'lucide-react';
 import { useState } from 'react';
@@ -74,7 +74,7 @@ export const CollectionPermissionsPanel = ({
   const filteredUsers = (allUsers ?? []).filter(
     u =>
       u.username?.toLowerCase().includes(search.toLowerCase()) ||
-      (u as any).name?.toLowerCase().includes(search.toLowerCase()),
+      (u as { name?: string }).name?.toLowerCase().includes(search.toLowerCase()),
   );
 
   const filteredGroups = (allGroups ?? []).filter(g =>
@@ -128,52 +128,50 @@ export const CollectionPermissionsPanel = ({
 
       {/* Current grants table */}
       <div className="space-y-2">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        <Text size="xs" fw={500} c="dimmed" tt="uppercase" className="tracking-wide">
           {t('collections.currentGrants')}
-        </p>
+        </Text>
         {grantsLoading ? (
-          <p className="text-xs text-muted-foreground">{t('common.loading')}</p>
+          <Text size="xs" c="dimmed">
+            {t('common.loading')}
+          </Text>
         ) : !grants || grants.length === 0 ? (
-          <p className="text-xs text-muted-foreground">{t('collections.noGrants')}</p>
+          <Text size="xs" c="dimmed">
+            {t('collections.noGrants')}
+          </Text>
         ) : (
           <div className="border rounded-md overflow-hidden">
-            <table className="w-full text-xs">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="text-left px-3 py-2 font-medium text-muted-foreground">
-                    {t('collections.grantType')}
-                  </th>
-                  <th className="text-left px-3 py-2 font-medium text-muted-foreground">
-                    {t('collections.grantSubject')}
-                  </th>
-                  <th className="text-left px-3 py-2 font-medium text-muted-foreground">
-                    {t('collections.grantPermissionCol')}
-                  </th>
-                  <th className="px-3 py-2" />
-                </tr>
-              </thead>
-              <tbody className="divide-y">
+            <Table fz="xs" highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th c="dimmed">{t('collections.grantType')}</Table.Th>
+                  <Table.Th c="dimmed">{t('collections.grantSubject')}</Table.Th>
+                  <Table.Th c="dimmed">{t('collections.grantPermissionCol')}</Table.Th>
+                  <Table.Th />
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
                 {grants.map((grant, i) => {
                   const isCreator =
                     grant.subject_type === 'user' &&
                     ownerUsername !== undefined &&
                     grant.subject_name === ownerUsername;
                   return (
-                    <tr key={i} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-3 py-2 text-muted-foreground">
+                    <Table.Tr key={i}>
+                      <Table.Td c="dimmed">
                         {grant.subject_type === 'user'
                           ? t('collections.permUser')
                           : t('collections.permGroup')}
-                      </td>
-                      <td className="px-3 py-2 font-medium">{grant.subject_name}</td>
-                      <td className="px-3 py-2 text-muted-foreground">
+                      </Table.Td>
+                      <Table.Td className="font-medium">{grant.subject_name}</Table.Td>
+                      <Table.Td c="dimmed">
                         {t(ROLE_LABEL_KEY[grant.permission] ?? grant.permission)}
-                      </td>
-                      <td className="px-3 py-2 text-right">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                      </Table.Td>
+                      <Table.Td className="text-right">
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          size="sm"
                           disabled={managePermission.isPending || isCreator}
                           onClick={() => handleRevoke(grant)}
                           title={
@@ -181,57 +179,64 @@ export const CollectionPermissionsPanel = ({
                               ? t('collections.ownerCannotRevoke')
                               : t('collections.revokeGrant')
                           }
+                          aria-label={
+                            isCreator
+                              ? t('collections.ownerCannotRevoke')
+                              : t('collections.revokeGrant')
+                          }
                         >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </td>
-                    </tr>
+                          <Trash2 size={12} />
+                        </ActionIcon>
+                      </Table.Td>
+                    </Table.Tr>
                   );
                 })}
-              </tbody>
-            </table>
+              </Table.Tbody>
+            </Table>
           </div>
         )}
       </div>
 
       {/* Grant form */}
       <div className="space-y-3 pt-1">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+        <Text size="xs" fw={500} c="dimmed" tt="uppercase" className="tracking-wide">
           {t('collections.action')}
-        </p>
+        </Text>
 
         {/* User / Group toggle */}
-        <Tabs value={subjectType} onValueChange={handleSubjectTypeChange}>
-          <TabsList className="h-8">
-            <TabsTrigger value="group" className="text-xs px-3">
-              {t('collections.subjectTypeGroup')}
-            </TabsTrigger>
-            <TabsTrigger value="user" className="text-xs px-3">
-              {t('collections.subjectTypeUser')}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <SegmentedControl
+          size="xs"
+          value={subjectType}
+          onChange={handleSubjectTypeChange}
+          data={[
+            { value: 'group', label: t('collections.subjectTypeGroup') },
+            { value: 'user', label: t('collections.subjectTypeUser') },
+          ]}
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Subject picker */}
           <div className="space-y-1">
-            <Label className="text-xs">
+            <Text component="label" size="xs" fw={500} className="block">
               {subjectType === 'user' ? t('collections.username') : t('collections.groupName')}
-            </Label>
+            </Text>
             {selectedId ? (
-              <div className="flex items-center gap-2 h-9 px-3 border rounded text-sm bg-muted">
-                <span className="flex-1 truncate">{selectedName}</span>
-                <button
-                  type="button"
-                  className="text-muted-foreground hover:text-foreground text-xs shrink-0"
-                  onClick={clearSelection}
-                >
-                  ✕
-                </button>
-              </div>
+              <Paper
+                withBorder
+                radius="sm"
+                px="sm"
+                bg="gray.1"
+                className="flex items-center gap-2 h-9"
+              >
+                <Text size="sm" truncate className="flex-1">
+                  {selectedName}
+                </Text>
+                <CloseButton size="sm" className="shrink-0" onClick={clearSelection} />
+              </Paper>
             ) : (
               <>
-                <Input
+                <TextInput
+                  size="sm"
                   placeholder={
                     subjectType === 'user'
                       ? t('collections.usernamePlaceholder')
@@ -241,17 +246,19 @@ export const CollectionPermissionsPanel = ({
                   onChange={e => setSearch(e.target.value)}
                   onFocus={() => setInputFocused(true)}
                   onBlur={() => setTimeout(() => setInputFocused(false), 150)}
-                  className="h-9 text-sm"
                 />
                 {inputFocused && (
                   <>
                     {subjectType === 'user' && filteredUsers.length > 0 && (
-                      <div className="border rounded p-1 space-y-1 max-h-32 overflow-y-auto">
+                      <Paper withBorder radius="sm" p={4} className="space-y-1 max-h-32 overflow-y-auto">
                         {filteredUsers.slice(0, 10).map(u => (
-                          <button
+                          <Button
                             key={u.id}
-                            type="button"
-                            className="w-full text-left text-sm px-2 py-1 rounded hover:bg-muted"
+                            variant="subtle"
+                            color="gray"
+                            size="compact-sm"
+                            fullWidth
+                            justify="flex-start"
                             onClick={() => {
                               setSelectedId(u.id);
                               setSelectedName(u.username ?? String(u.id));
@@ -259,17 +266,20 @@ export const CollectionPermissionsPanel = ({
                             }}
                           >
                             {u.username}
-                          </button>
+                          </Button>
                         ))}
-                      </div>
+                      </Paper>
                     )}
                     {subjectType === 'group' && filteredGroups.length > 0 && (
-                      <div className="border rounded p-1 space-y-1 max-h-32 overflow-y-auto">
+                      <Paper withBorder radius="sm" p={4} className="space-y-1 max-h-32 overflow-y-auto">
                         {filteredGroups.slice(0, 10).map(g => (
-                          <button
+                          <Button
                             key={g.id}
-                            type="button"
-                            className="w-full text-left text-sm px-2 py-1 rounded hover:bg-muted"
+                            variant="subtle"
+                            color="gray"
+                            size="compact-sm"
+                            fullWidth
+                            justify="flex-start"
                             onClick={() => {
                               setSelectedId(String(g.id));
                               setSelectedName(g.name ?? String(g.id));
@@ -277,9 +287,9 @@ export const CollectionPermissionsPanel = ({
                             }}
                           >
                             {g.name}
-                          </button>
+                          </Button>
                         ))}
-                      </div>
+                      </Paper>
                     )}
                   </>
                 )}
@@ -289,19 +299,18 @@ export const CollectionPermissionsPanel = ({
 
           {/* Role selector */}
           <div className="space-y-1">
-            <Label className="text-xs">{t('collections.permission')}</Label>
-            <Select value={role} onValueChange={v => setRole(v as Role)}>
-              <SelectTrigger className="h-9 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {roleOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Text component="label" size="xs" fw={500} className="block">
+              {t('collections.permission')}
+            </Text>
+            <Select
+              size="sm"
+              value={role}
+              onChange={v => {
+                if (v) setRole(v as Role);
+              }}
+              data={roleOptions}
+              allowDeselect={false}
+            />
           </div>
         </div>
 
@@ -309,10 +318,10 @@ export const CollectionPermissionsPanel = ({
         <div className="flex gap-2">
           <Button
             size="sm"
+            leftSection={<Share2 size={16} />}
             onClick={handleShare}
             disabled={!selectedId || managePermission.isPending}
           >
-            <Share2 className="w-4 h-4 mr-2" />
             {t('collections.grantPermission')}
           </Button>
         </div>

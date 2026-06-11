@@ -1,7 +1,3 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -12,6 +8,7 @@ import {
   useItemCollections,
 } from '@/hooks/useCollections';
 import { cn } from '@/lib/utils';
+import { ActionIcon, Button, Popover, Text, TextInput, Tooltip } from '@mantine/core';
 import { BookMarked, Check, Loader2, Plus } from 'lucide-react';
 import { useState } from 'react';
 
@@ -80,22 +77,44 @@ export const AddToCollectionPopover = ({
 
   const isBusy = addMutation.isPending || removeMutation.isPending || createMutation.isPending;
 
-  const popover = (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size={iconOnly ? 'icon' : 'sm'}
-          className={cn(iconOnly ? 'h-8 w-8 shrink-0' : 'gap-2', className)}
-          onClick={e => e.stopPropagation()}
-        >
-          <BookMarked className="h-4 w-4" />
-          {!iconOnly && t('collections.addToCollection')}
-        </Button>
-      </PopoverTrigger>
+  const trigger = iconOnly ? (
+    <ActionIcon
+      variant="default"
+      size="md"
+      className={cn('shrink-0', className)}
+      onClick={e => e.stopPropagation()}
+      aria-label={t('collections.addToCollection')}
+    >
+      <BookMarked size={16} />
+    </ActionIcon>
+  ) : (
+    <Button
+      variant="outline"
+      size="sm"
+      className={className}
+      leftSection={<BookMarked size={16} />}
+      onClick={e => e.stopPropagation()}
+    >
+      {t('collections.addToCollection')}
+    </Button>
+  );
 
-      <PopoverContent className="w-64 p-3 space-y-2" align="end" onClick={e => e.stopPropagation()}>
-        <p className="text-sm font-medium">{t('collections.myCollections')}</p>
+  return (
+    <Popover opened={open} onChange={setOpen} position="bottom-end" width={260} shadow="md">
+      <Popover.Target>
+        {iconOnly ? (
+          <Tooltip label={t('collections.addToCollection')} position="top">
+            {trigger}
+          </Tooltip>
+        ) : (
+          trigger
+        )}
+      </Popover.Target>
+
+      <Popover.Dropdown className="space-y-2" p="sm" onClick={e => e.stopPropagation()}>
+        <Text size="sm" fw={500}>
+          {t('collections.myCollections')}
+        </Text>
 
         {isLoadingCollections && (
           <div className="flex items-center justify-center py-2">
@@ -104,26 +123,28 @@ export const AddToCollectionPopover = ({
         )}
 
         {!isLoadingCollections && (!collections || collections.length === 0) && (
-          <p className="text-xs text-muted-foreground">{t('collections.noCollections')}</p>
+          <Text size="xs" c="dimmed">
+            {t('collections.noCollections')}
+          </Text>
         )}
 
         <div className="space-y-1 max-h-48 overflow-y-auto">
           {(collections ?? []).map(col => {
             const alreadyIn = collectionContainsItem(col.id);
             return (
-              <button
+              <Button
                 key={col.id}
-                type="button"
+                variant="subtle"
+                color={alreadyIn ? 'green' : 'gray'}
+                size="compact-sm"
+                fullWidth
+                justify="space-between"
                 disabled={isBusy}
+                rightSection={alreadyIn ? <Check size={12} className="shrink-0" /> : undefined}
                 onClick={() => handleToggle(col.id, alreadyIn)}
-                className={cn(
-                  'w-full flex items-center justify-between text-left text-sm px-2 py-1.5 rounded hover:bg-muted transition-colors',
-                  alreadyIn && 'text-primary font-medium',
-                )}
               >
                 <span className="truncate">{col.name}</span>
-                {alreadyIn && <Check className="h-3 w-3 shrink-0 ml-1" />}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -131,11 +152,12 @@ export const AddToCollectionPopover = ({
         {/* Create new collection inline */}
         {showCreate ? (
           <div className="flex gap-1 pt-1">
-            <Input
+            <TextInput
+              size="xs"
+              className="flex-1"
               value={newName}
               onChange={e => setNewName(e.target.value)}
               placeholder={t('collections.namePlaceholder')}
-              className="h-7 text-sm flex-1"
               onKeyDown={e => {
                 if (e.key === 'Enter') handleCreate();
                 if (e.key === 'Escape') setShowCreate(false);
@@ -143,40 +165,29 @@ export const AddToCollectionPopover = ({
               autoFocus
               disabled={isBusy}
             />
-            <Button
-              size="sm"
-              className="h-7 px-2"
+            <ActionIcon
+              size="input-xs"
               onClick={handleCreate}
               disabled={isBusy || !newName.trim()}
+              aria-label={t('collections.newCollection')}
             >
-              <Check className="h-3 w-3" />
-            </Button>
+              <Check size={12} />
+            </ActionIcon>
           </div>
         ) : (
           <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground"
+            variant="subtle"
+            color="gray"
+            size="compact-sm"
+            fullWidth
+            justify="flex-start"
+            leftSection={<Plus size={12} />}
             onClick={() => setShowCreate(true)}
           >
-            <Plus className="h-3 w-3" />
             {t('collections.newCollection')}
           </Button>
         )}
-      </PopoverContent>
+      </Popover.Dropdown>
     </Popover>
-  );
-
-  if (!iconOnly) return popover;
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{popover}</TooltipTrigger>
-        <TooltipContent side="top">
-          <p>{t('collections.addToCollection')}</p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
   );
 };
