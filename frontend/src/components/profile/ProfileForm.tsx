@@ -18,7 +18,7 @@ import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
 } from '@/hooks/useNotificationPreferences';
-import { useTheme } from '@/providers/theme-provider';
+import { useMantineColorScheme } from '@mantine/core';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, Loader2, Monitor, Moon, Sun } from 'lucide-react';
 import React from 'react';
@@ -40,7 +40,7 @@ export const ProfileForm = () => {
   const updateNotifPrefs = useUpdateNotificationPreferences();
   const { rocketchatEnabled } = useAppConfig();
   const { language, setLanguage, t } = useLanguage();
-  const { theme, setTheme } = useTheme();
+  const { colorScheme, setColorScheme } = useMantineColorScheme();
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -206,28 +206,28 @@ export const ProfileForm = () => {
         <CardContent>
           <div className="flex gap-2">
             <Button
-              variant={theme === 'light' ? 'default' : 'outline'}
+              variant={colorScheme === 'light' ? 'default' : 'outline'}
               size="sm"
               className="gap-2"
-              onClick={() => setTheme('light')}
+              onClick={() => setColorScheme('light')}
             >
               <Sun className="h-4 w-4" />
               {t('header.light')}
             </Button>
             <Button
-              variant={theme === 'dark' ? 'default' : 'outline'}
+              variant={colorScheme === 'dark' ? 'default' : 'outline'}
               size="sm"
               className="gap-2"
-              onClick={() => setTheme('dark')}
+              onClick={() => setColorScheme('dark')}
             >
               <Moon className="h-4 w-4" />
               {t('header.dark')}
             </Button>
             <Button
-              variant={theme === 'system' ? 'default' : 'outline'}
+              variant={colorScheme === 'auto' ? 'default' : 'outline'}
               size="sm"
               className="gap-2"
-              onClick={() => setTheme('system')}
+              onClick={() => setColorScheme('auto')}
             >
               <Monitor className="h-4 w-4" />
               {t('profile.themeAuto')}

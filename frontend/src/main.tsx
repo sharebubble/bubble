@@ -5,6 +5,12 @@ import App from './App.tsx';
 import '@mantine/core/styles.css';
 import './index.css';
 
+// The pre-Mantine theme switcher stored 'system' under this key; Mantine's
+// color scheme manager expects 'auto'.
+if (localStorage.getItem('bubble-theme') === 'system') {
+  localStorage.setItem('bubble-theme', 'auto');
+}
+
 declare global {
   interface Window {
     _env_?: {
