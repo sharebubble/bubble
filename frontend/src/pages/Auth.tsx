@@ -1,4 +1,4 @@
-import LoginWithSocialButton from '@/components/ui/login-with-social-button';
+import LoginWithSocialButton from '@/components/auth/LoginWithSocialButton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';

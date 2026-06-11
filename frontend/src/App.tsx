@@ -1,7 +1,6 @@
 import React from 'react';
 import { Notifications } from '@mantine/notifications';
 import { ModalsProvider } from '@mantine/modals';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { useAppConfig } from '@/hooks/useAppConfig';
@@ -162,12 +161,10 @@ const App = () => (
         <LanguageProvider>
           <AuthProvider>
             <NotificationProvider>
-              <TooltipProvider>
-                <Notifications />
-                <BrowserRouter>
-                  <ProtectedRoutes />
-                </BrowserRouter>
-              </TooltipProvider>
+              <Notifications />
+              <BrowserRouter>
+                <ProtectedRoutes />
+              </BrowserRouter>
             </NotificationProvider>
           </AuthProvider>
         </LanguageProvider>

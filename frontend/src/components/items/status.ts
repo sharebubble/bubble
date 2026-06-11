@@ -8,14 +8,6 @@ export const statusLabels: Record<StatusB0aEnum, string> = {
   5: 'sold',
 };
 
-export const statusColors: Record<StatusB0aEnum, string> = {
-  0: 'bg-muted text-muted-foreground',
-  2: 'bg-success text-success-foreground',
-  3: 'bg-secondary text-secondary-foreground',
-  4: 'bg-destructive text-destructive-foreground',
-  5: 'bg-destructive text-destructive-foreground',
-};
-
 // Mantine color names for Badge/indicator `color` props.
 export const statusMantineColors: Record<StatusB0aEnum, string> = {
   0: 'gray',
@@ -28,17 +20,12 @@ export const statusMantineColors: Record<StatusB0aEnum, string> = {
 export const getStatusLabel = (status?: StatusB0aEnum | null) =>
   status === undefined || status === null ? undefined : statusLabels[status];
 
-export const getStatusColor = (status?: StatusB0aEnum | null) =>
-  status === undefined || status === null ? undefined : statusColors[status];
-
 export const getStatusMantineColor = (status?: StatusB0aEnum | null) =>
   status === undefined || status === null ? undefined : statusMantineColors[status];
 
 export default {
   statusLabels,
-  statusColors,
   statusMantineColors,
   getStatusLabel,
-  getStatusColor,
   getStatusMantineColor,
 };
