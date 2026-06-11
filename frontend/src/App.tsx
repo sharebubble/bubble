@@ -1,6 +1,5 @@
 import React from 'react';
-import { Toaster as Sonner } from '@/components/ui/sonner';
-import { Toaster } from '@/components/ui/toaster';
+import { Notifications } from '@mantine/notifications';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
@@ -162,8 +161,7 @@ const App = () => (
           <AuthProvider>
             <NotificationProvider>
               <TooltipProvider>
-                <Toaster />
-                <Sonner />
+                <Notifications />
                 <BrowserRouter>
                   <ProtectedRoutes />
                 </BrowserRouter>
