@@ -1,16 +1,24 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import LoginWithSocialButton from '@/components/ui/login-with-social-button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { authAPI, LoginCredentials } from '@/services/custom/auth';
 import { client } from '@/services/django/client.gen';
+import { Alert, Button, Card, Divider, PasswordInput, Text, TextInput, Title } from '@mantine/core';
 import { Eye, EyeOff, Loader } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+interface AuthConfig {
+  data?: {
+    socialaccount?: {
+      providers?: { id: string; name: string }[];
+    };
+    account?: {
+      login_methods?: string[];
+    };
+  };
+}
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -22,7 +30,7 @@ const Auth = () => {
   const { t } = useLanguage();
   const { refreshAuth } = useAuth();
 
-  const [authConfig, setAuthConfig] = useState<any | null>(null);
+  const [authConfig, setAuthConfig] = useState<AuthConfig | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
 
   const [loginData, setLoginData] = useState<LoginCredentials>({
@@ -99,24 +107,35 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-background to-muted flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <Card className="shadow-lg border-0 bg-card/50 backdrop-blur-xs">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold bg-linear-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-              {t('auth.welcomeTitle')}
-            </CardTitle>
-            <p className="text-muted-foreground mt-2">{t('auth.signInSubtitle')}</p>
-          </CardHeader>
+        <Card withBorder padding="lg" shadow="md">
+          <div className="text-center">
+            <Title order={2}>
+              <Text
+                component="span"
+                inherit
+                variant="gradient"
+                gradient={{ from: 'green.6', to: 'green.4' }}
+              >
+                {t('auth.welcomeTitle')}
+              </Text>
+            </Title>
+            <Text c="dimmed" className="mt-2">
+              {t('auth.signInSubtitle')}
+            </Text>
+          </div>
 
-          <CardContent className="space-y-6">
+          <div className="space-y-6 mt-6">
             {/* Social Login Button */}
             <div className="text-center">
               {loadingConfig ? (
-                <div className="text-sm text-muted-foreground">{t('common.loading')}</div>
+                <Text size="sm" c="dimmed">
+                  {t('common.loading')}
+                </Text>
               ) : (
                 // render one button per provider if available
-                (authConfig?.data?.socialaccount?.providers ?? []).map((p: any) => (
+                (authConfig?.data?.socialaccount?.providers ?? []).map(p => (
                   <div key={p.id} className="mb-2">
                     <LoginWithSocialButton name={p.name} id={p.id} />
                   </div>
@@ -124,83 +143,61 @@ const Auth = () => {
               )}
             </div>
 
-            {/* Divider */}
-            <div className="border-t" />
+            <Divider />
 
             <form onSubmit={handleLogin} className="space-y-4">
               {/* CSRF Token */}
               <input type="hidden" name="csrfmiddlewaretoken" value={csrfToken} />
 
               {error && (
-                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
-                  <p className="text-sm text-destructive">{error}</p>
-                </div>
+                <Alert color="red" variant="light">
+                  {error}
+                </Alert>
               )}
 
               {/* show username/password login only when backend indicates methods are available */}
               {!loadingConfig && (authConfig?.data?.account?.login_methods ?? []).length > 0 && (
                 <>
-                  <div className="space-y-2">
-                    <Label htmlFor="username">{t('auth.usernameOrEmail')}</Label>
-                    <Input
-                      id="username"
-                      name="username"
-                      type="text"
-                      value={loginData.username}
-                      onChange={e => setLoginData({ ...loginData, username: e.target.value })}
-                      placeholder={t('auth.enterUsernameOrEmail')}
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
+                  <TextInput
+                    label={t('auth.usernameOrEmail')}
+                    name="username"
+                    type="text"
+                    value={loginData.username}
+                    onChange={e => setLoginData({ ...loginData, username: e.target.value })}
+                    placeholder={t('auth.enterUsernameOrEmail')}
+                    required
+                    disabled={isLoading}
+                  />
 
-                  <div className="space-y-2">
-                    <Label htmlFor="password">{t('auth.password')}</Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        value={loginData.password}
-                        onChange={e => setLoginData({ ...loginData, password: e.target.value })}
-                        placeholder={t('auth.enterPassword')}
-                        required
-                        disabled={isLoading}
-                        className="pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        disabled={isLoading}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
+                  <PasswordInput
+                    label={t('auth.password')}
+                    name="password"
+                    value={loginData.password}
+                    onChange={e => setLoginData({ ...loginData, password: e.target.value })}
+                    placeholder={t('auth.enterPassword')}
+                    required
+                    disabled={isLoading}
+                    visible={showPassword}
+                    onVisibilityChange={setShowPassword}
+                    visibilityToggleIcon={({ reveal }) =>
+                      reveal ? <EyeOff size={16} /> : <Eye size={16} />
+                    }
+                  />
 
                   <Button
                     type="submit"
-                    className="w-full"
+                    fullWidth
                     disabled={isLoading || !loginData.username || !loginData.password}
+                    leftSection={
+                      isLoading ? <Loader size={16} className="animate-spin" /> : undefined
+                    }
                   >
-                    {isLoading ? (
-                      <>
-                        <Loader className="w-4 h-4 mr-2 animate-spin" />
-                        {t('auth.signingIn')}
-                      </>
-                    ) : (
-                      t('auth.signIn')
-                    )}
+                    {isLoading ? t('auth.signingIn') : t('auth.signIn')}
                   </Button>
                 </>
               )}
             </form>
-          </CardContent>
+          </div>
         </Card>
       </div>
     </div>

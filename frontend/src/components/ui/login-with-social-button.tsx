@@ -1,6 +1,6 @@
-import { Button } from '@/components/ui/button';
 import { getCSRFToken } from '@/lib/utils';
 import { client } from '@/services/django/client.gen';
+import { Button } from '@mantine/core';
 import { useState } from 'react';
 
 interface LoginWithSocialButtonProps {
