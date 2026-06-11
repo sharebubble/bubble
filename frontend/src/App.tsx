@@ -1,5 +1,6 @@
 import React from 'react';
 import { Notifications } from '@mantine/notifications';
+import { ModalsProvider } from '@mantine/modals';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
@@ -157,7 +158,8 @@ const App = () => (
       colorSchemeManager={colorSchemeManager}
     >
       <ColorSchemeSync />
-      <LanguageProvider>
+      <ModalsProvider>
+        <LanguageProvider>
           <AuthProvider>
             <NotificationProvider>
               <TooltipProvider>
@@ -169,6 +171,7 @@ const App = () => (
             </NotificationProvider>
           </AuthProvider>
         </LanguageProvider>
+      </ModalsProvider>
     </MantineProvider>
   </QueryClientProvider>
 );
