@@ -1,15 +1,4 @@
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button, Group, Input, Modal, NumberInput, Text } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCreateBooking } from '@/hooks/useBookings';
 import { formatPrice } from '@/lib/currency';
@@ -42,6 +31,18 @@ const formatDateLocal = (date: Date): string => {
   const day = String(date.getDate()).padStart(2, '0');
   const hours = String(date.getHours()).padStart(2, '0');
   return `${year}-${month}-${day}T${hours}:00`;
+};
+
+/** Map the legacy shadcn button size prop to Mantine sizes. */
+const mapButtonSize = (size: 'default' | 'sm' | 'lg' | 'icon'): 'md' | 'sm' | 'lg' => {
+  switch (size) {
+    case 'sm':
+      return 'sm';
+    case 'lg':
+      return 'lg';
+    default:
+      return 'md';
+  }
 };
 
 export const BookingDialog = ({
@@ -153,45 +154,45 @@ export const BookingDialog = ({
     setDialogOpen(false);
 
     // If backend returned the created booking with a UUID, navigate to it
-    if (booking && (booking as any).id) {
+    if (booking && (booking as { id?: string }).id) {
       navigate(`/bookings`);
     }
   };
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogTrigger asChild>
-        <Button
-          size={buttonSize}
-          className={`${buttonClassName} ${disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
-          disabled={createBookingMutation.isPending || disabled}
-        >
-          {triggerLabel ?? (isRental ? t('booking.bookNow') : t('itemDetail.buyNow'))}
-        </Button>
-      </DialogTrigger>
+    <>
+      <Button
+        size={mapButtonSize(buttonSize)}
+        className={`${buttonClassName} ${disabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+        disabled={createBookingMutation.isPending || disabled}
+        onClick={() => setDialogOpen(true)}
+      >
+        {triggerLabel ?? (isRental ? t('booking.bookNow') : t('itemDetail.buyNow'))}
+      </Button>
 
-      <DialogContent>
+      <Modal
+        opened={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        title={isRental ? t('booking.bookNow') : t('itemDetail.buyNow')}
+      >
         <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>{isRental ? t('booking.bookNow') : t('itemDetail.buyNow')}</DialogTitle>
-            <DialogDescription>
-              {t('booking.createBookingDescription').replace('{itemName}', itemName)}
-            </DialogDescription>
-          </DialogHeader>
+          <Text size="sm" c="dimmed">
+            {t('booking.createBookingDescription').replace('{itemName}', itemName)}
+          </Text>
 
           <div className="grid gap-4 py-4">
             {/* Original Price Display */}
             <div className="space-y-1">
               {isRental && price != null ? (
-                <p className="text-base">
+                <Text>
                   <span className="font-medium">{t('booking.listedRentalPrice')}:</span>{' '}
                   {formatPrice(price, priceCurrency)} {t('time.perHour')}
-                </p>
+                </Text>
               ) : price != null ? (
-                <p className="text-base">
+                <Text>
                   <span className="font-medium">{t('booking.listedPrice')}:</span>{' '}
                   {formatPrice(price, priceCurrency)}
-                </p>
+                </Text>
               ) : null}
             </div>
 
@@ -199,7 +200,7 @@ export const BookingDialog = ({
             {isRental && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="timeFrom">{t('booking.rentalStart')} *</Label>
+                  <Input.Label htmlFor="timeFrom">{t('booking.rentalStart')} *</Input.Label>
                   <DateHourPicker
                     id="timeFrom"
                     value={timeFrom}
@@ -209,13 +210,13 @@ export const BookingDialog = ({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="timeTo">
+                  <Input.Label htmlFor="timeTo">
                     {rentalOpenEnd ? t('booking.rentalEndOptional') : `${t('booking.rentalEnd')} *`}
-                  </Label>
+                  </Input.Label>
                   {rentalOpenEnd && (
-                    <p className="text-xs text-muted-foreground">
+                    <Text size="xs" c="dimmed">
                       {t('booking.rentalEndOptionalNote')}
-                    </p>
+                    </Text>
                   )}
                   <DateHourPicker
                     id="timeTo"
@@ -230,9 +231,9 @@ export const BookingDialog = ({
 
             {/* Calculated Total Price (editable) */}
             <div className="space-y-2">
-              <Label htmlFor="offer">
+              <Input.Label htmlFor="offer">
                 {isRental ? t('booking.totalPrice') : t('booking.purchaseOffer')} *
-              </Label>
+              </Input.Label>
               {isRental &&
                 timeFrom &&
                 timeTo &&
@@ -242,25 +243,24 @@ export const BookingDialog = ({
                   const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
                   if (hours > 0) {
                     return (
-                      <p className="text-sm text-muted-foreground">
+                      <Text size="sm" c="dimmed">
                         {hours} {hours === 1 ? t('time.hour') : t('time.hours')}
-                      </p>
+                      </Text>
                     );
                   }
                   return null;
                 })()}
-              <Input
+              <NumberInput
                 id="offer"
-                type="number"
-                step="0.01"
+                step={0.01}
                 placeholder={t('booking.enterYourOffer')}
                 value={offerPrice}
-                onChange={e => setOfferPrice(e.target.value)}
+                onChange={value => setOfferPrice(value === '' ? '' : String(value))}
               />
             </div>
           </div>
 
-          <DialogFooter>
+          <Group justify="flex-end" mt="md">
             <Button
               type="button"
               variant="outline"
@@ -274,9 +274,9 @@ export const BookingDialog = ({
                 ? t('common.submitting')
                 : t('booking.submitRequest')}
             </Button>
-          </DialogFooter>
+          </Group>
         </form>
-      </DialogContent>
-    </Dialog>
+      </Modal>
+    </>
   );
 };

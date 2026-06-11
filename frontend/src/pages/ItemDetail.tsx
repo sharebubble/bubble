@@ -1,21 +1,7 @@
 import { BookingDialog } from '@/components/items/BookingDialog';
 import { RentalCalendar } from '@/components/items/RentalCalendar';
-import { getStatusColor, getStatusLabel } from '@/components/items/status';
+import { getStatusLabel, getStatusMantineColor } from '@/components/items/status';
 import { AddToCollectionPopover } from '@/components/collections/AddToCollectionPopover';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import UserInfoBox from '@/components/users/UserInfoBox';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -26,8 +12,11 @@ import { convertLineBreaks } from '@/lib/convertLineBreaks';
 import { formatPrice } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { SalesTypeEnum } from '@/services/django';
+import { ActionIcon, Badge, Button, Text, Tooltip } from '@mantine/core';
+import { Carousel } from '@mantine/carousel';
+import { modals } from '@mantine/modals';
 import { formatDistanceToNow } from 'date-fns';
-import useEmblaCarousel from 'embla-carousel-react';
+import type { EmblaCarouselType } from 'embla-carousel';
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import {
   ArrowLeft,
@@ -40,23 +29,25 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
-const getSalesTypeBadgeColor = (st: SalesTypeEnum) => {
+const getSalesTypeBadgeProps = (
+  st: SalesTypeEnum,
+): { color: string; variant: 'filled' | 'outline' | 'light' } => {
   switch (st) {
     case 'sell':
-      return 'bg-primary text-primary-foreground';
+      return { color: 'green', variant: 'filled' };
     case 'donate':
     case 'borrow':
-      return 'bg-success text-success-foreground';
+      return { color: 'teal', variant: 'filled' };
     case 'rent':
-      return 'bg-info text-info-foreground';
+      return { color: 'blue', variant: 'filled' };
     case 'want_buy':
     case 'want_rent':
-      return 'bg-muted text-muted-foreground border border-border';
+      return { color: 'gray', variant: 'outline' };
     default:
-      return 'bg-muted text-muted-foreground';
+      return { color: 'gray', variant: 'light' };
   }
 };
 
@@ -74,18 +65,19 @@ const ItemDetail = () => {
   const [selectedEndDate, setSelectedEndDate] = useState<Date | undefined>();
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // embla apis exposed by Mantine Carousel - configure for single full-width slide (no peek)
+  const emblaOptions = { loop: false, align: 'center', containScroll: 'trimSnaps' } as const;
+  const [emblaApi, setEmblaApi] = useState<EmblaCarouselType | null>(null);
+  const [emblaFsApi, setEmblaFsApi] = useState<EmblaCarouselType | null>(null);
+
   // open fullscreen viewer at a given index
   const openFullscreen = (index: number) => {
     setActiveIndex(index);
     setShowAllImages(true);
     // try to scroll fullscreen embla immediately if available
-    if (emblaFsApi && emblaFsApi.scrollTo) emblaFsApi.scrollTo(index);
+    if (emblaFsApi) emblaFsApi.scrollTo(index);
   };
-
-  // embla refs and api - configure for single full-width slide (no peek)
-  const emblaOptions = { loop: false, align: 'center', containScroll: 'trimSnaps' } as const;
-  const [emblaRef, emblaApi] = useEmblaCarousel(emblaOptions);
-  const [emblaFsRef, emblaFsApi] = useEmblaCarousel(emblaOptions);
 
   const handleDateRangeSelect = (start: Date, end: Date) => {
     setSelectedStartDate(start);
@@ -128,38 +120,26 @@ const ItemDetail = () => {
     });
   };
 
-  useEffect(() => {
-    if (emblaApi && emblaApi.reInit) emblaApi.reInit();
-    if (emblaFsApi && emblaFsApi.reInit) emblaFsApi.reInit();
-
-    // wire up select handler to keep track of active slide for dot indicators
-    let removeSelect: (() => void) | undefined;
-    if (emblaApi && emblaApi.on) {
-      const onSelect = () => {
-        const idx =
-          typeof emblaApi.selectedScrollSnap === 'function' ? emblaApi.selectedScrollSnap() : 0;
-        setActiveIndex(idx ?? 0);
-      };
-      emblaApi.on('select', onSelect);
-      // set initial
-      onSelect();
-      removeSelect = () => emblaApi.off && emblaApi.off('select', onSelect);
-    }
-
-    return () => {
-      if (removeSelect) removeSelect();
-    };
-  }, [emblaApi, emblaFsApi, item?.images]);
+  const openDeleteConfirm = () =>
+    modals.openConfirmModal({
+      title: t('itemDetail.deleteConfirmTitle'),
+      children: <Text size="sm">{t('itemDetail.deleteConfirmDescription')}</Text>,
+      labels: { confirm: t('common.delete'), cancel: t('common.cancel') },
+      confirmProps: { color: 'red' },
+      onConfirm: () => {
+        void handleDelete();
+      },
+    });
 
   // when opening fullscreen, ensure fullscreen embla is on the correct slide
   useEffect(() => {
-    if (showAllImages && typeof activeIndex === 'number' && emblaFsApi && emblaFsApi.scrollTo) {
+    if (showAllImages && typeof activeIndex === 'number' && emblaFsApi) {
       emblaFsApi.scrollTo(activeIndex);
     }
   }, [showAllImages, activeIndex, emblaFsApi]);
 
-  const scrollPrev = useCallback((api: any) => api && api.scrollPrev && api.scrollPrev(), []);
-  const scrollNext = useCallback((api: any) => api && api.scrollNext && api.scrollNext(), []);
+  const scrollPrev = useCallback((api: EmblaCarouselType | null) => api?.scrollPrev(), []);
+  const scrollNext = useCallback((api: EmblaCarouselType | null) => api?.scrollNext(), []);
 
   // keyboard navigation: left/right arrows control the current visible carousel
   useEffect(() => {
@@ -196,9 +176,9 @@ const ItemDetail = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-background text-center py-10">
-        <p className="text-destructive">{error.message}</p>
-        <Button asChild className="mt-4">
-          <Link to="/">Back to Home</Link>
+        <Text c="red">{error.message}</Text>
+        <Button component={Link} to="/" mt="md">
+          Back to Home
         </Button>
       </div>
     );
@@ -208,8 +188,8 @@ const ItemDetail = () => {
     return (
       <div className="min-h-screen bg-background text-center py-10">
         <p>Item not found.</p>
-        <Button asChild className="mt-4">
-          <Link to="/">Back to Home</Link>
+        <Button component={Link} to="/" mt="md">
+          Back to Home
         </Button>
       </div>
     );
@@ -246,8 +226,12 @@ const ItemDetail = () => {
   return (
     <>
       <div className="container mx-auto max-w-4xl px-4 py-8">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
+        <Button
+          variant="subtle"
+          onClick={() => navigate(-1)}
+          mb="md"
+          leftSection={<ArrowLeft size={16} />}
+        >
           {t('common.back')}
         </Button>
 
@@ -257,48 +241,49 @@ const ItemDetail = () => {
             images.length > 0 ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1',
           )}
         >
-          {/* Image Carousel (embla) - only show if there are images */}
+          {/* Image Carousel - only show if there are images */}
           {images.length > 0 ? (
             <div className="relative">
-              <div className="embla overflow-hidden">
-                <div className="embla__viewport" ref={emblaRef}>
-                  <div className="embla__container flex">
-                    {images.map((image, index) => (
-                      <div key={index} className="embla__slide flex-none w-full">
-                        {/* reduced thumbnail height; smaller on mobile, larger on desktop */}
-                        <div className="w-full h-40 md:h-56 lg:h-72 overflow-hidden rounded-lg relative">
-                          <img
-                            src={image.preview || image.original}
-                            alt={`${name} ${index + 1}`}
-                            className="w-full h-full object-cover cursor-pointer"
-                            onClick={() => openFullscreen(index)}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <Carousel
+                emblaOptions={emblaOptions}
+                withControls={false}
+                getEmblaApi={setEmblaApi}
+                onSlideChange={setActiveIndex}
+              >
+                {images.map((image, index) => (
+                  <Carousel.Slide key={index}>
+                    {/* reduced thumbnail height; smaller on mobile, larger on desktop */}
+                    <div className="w-full h-40 md:h-56 lg:h-72 overflow-hidden rounded-lg relative">
+                      <img
+                        src={image.preview || image.original}
+                        alt={`${name} ${index + 1}`}
+                        className="w-full h-full object-cover cursor-pointer"
+                        onClick={() => openFullscreen(index)}
+                      />
+                    </div>
+                  </Carousel.Slide>
+                ))}
+              </Carousel>
               {/* navigation: arrows (left) and dots (center) on same horizontal row */}
               {images.length > 1 && (
                 <div className="mt-2 flex items-center w-full">
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
+                    <ActionIcon
+                      variant="default"
+                      size="lg"
                       onClick={() => scrollPrev(emblaApi)}
-                      className="bg-white/80 hover:bg-white/95 text-black shadow-xs"
+                      aria-label="Previous image"
                     >
-                      <ChevronLeft className="h-5 w-5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
+                      <ChevronLeft size={20} />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="default"
+                      size="lg"
                       onClick={() => scrollNext(emblaApi)}
-                      className="bg-white/80 hover:bg-white/95 text-black shadow-xs"
+                      aria-label="Next image"
                     >
-                      <ChevronRight className="h-5 w-5" />
-                    </Button>
+                      <ChevronRight size={20} />
+                    </ActionIcon>
                   </div>
 
                   <div className="flex-1 flex justify-center">
@@ -309,7 +294,9 @@ const ItemDetail = () => {
                           aria-label={`Go to image ${idx + 1}`}
                           onClick={() => emblaApi && emblaApi.scrollTo(idx)}
                           className={`h-2 w-2 rounded-full ${
-                            activeIndex === idx ? 'bg-primary' : 'bg-gray-300'
+                            activeIndex === idx
+                              ? 'bg-[var(--mantine-color-green-6)]'
+                              : 'bg-gray-300'
                           }`}
                         />
                       ))}
@@ -324,54 +311,51 @@ const ItemDetail = () => {
           <div className="space-y-6">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-4">
-                {(() => {
-                  const CategoryIcon = getCategoryIcon(category);
-                  return (
-                    <Badge className="gap-1.5">
-                      <CategoryIcon className="h-3.5 w-3.5" />
-                      {t(`categories.${category}`)}
-                    </Badge>
-                  );
-                })()}
-                <Badge variant="secondary">{getConditionLabel(condition)}</Badge>
+                <Badge leftSection={createElement(getCategoryIcon(category), { size: 14 })}>
+                  {t(`categories.${category}`)}
+                </Badge>
+                <Badge variant="light" color="gray">
+                  {getConditionLabel(condition)}
+                </Badge>
                 {typeof item.status !== 'undefined' && item.status !== null && (
-                  <Badge className={cn(getStatusColor(item.status), 'text-xs')}>
+                  <Badge color={getStatusMantineColor(item.status)}>
                     {getStatusLabel(item.status) ? t(`status.${getStatusLabel(item.status)}`) : ''}
                   </Badge>
                 )}
                 {sales_type && (
-                  <Badge className={cn(getSalesTypeBadgeColor(sales_type), 'text-xs')}>
+                  <Badge {...getSalesTypeBadgeProps(sales_type)}>
                     {t(`item.salesType.badge.${sales_type}`)}
                   </Badge>
                 )}
                 {item.rental_self_service && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Badge className="gap-1 bg-amber-500 text-white text-xs hover:bg-amber-500 cursor-default">
-                          <Zap className="h-3 w-3 fill-current" />
-                        </Badge>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="font-medium">{t('item.instantRental')}</p>
-                        <p className="text-xs text-muted-foreground max-w-56">
-                          {t('item.instantRentalTooltip')}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <Tooltip
+                    multiline
+                    w={240}
+                    label={
+                      <div>
+                        <Text size="sm" fw={500}>
+                          {t('item.instantRental')}
+                        </Text>
+                        <Text size="xs">{t('item.instantRentalTooltip')}</Text>
+                      </div>
+                    }
+                  >
+                    <Badge color="yellow" className="cursor-default">
+                      <Zap size={12} className="fill-current block" />
+                    </Badge>
+                  </Tooltip>
                 )}
               </div>
               <h1 className="text-3xl font-bold">{name}</h1>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
+              <Text component="div" size="sm" c="dimmed" className="flex items-center gap-2">
+                <Calendar size={16} />
                 <span>
                   {t('itemDetail.listed')}{' '}
                   {formatDistanceToNow(new Date(created_at), {
                     addSuffix: true,
                   })}
                 </span>
-              </div>
+              </Text>
             </div>
 
             <div className="space-y-4">
@@ -385,40 +369,40 @@ const ItemDetail = () => {
               )}
             </div>
 
-            <p className="text-muted-foreground">
-              {description !== undefined && convertLineBreaks(description)}
-            </p>
+            <Text c="dimmed">{description !== undefined && convertLineBreaks(description)}</Text>
 
             {/* Properties */}
             {item.properties &&
-              typeof item.properties === 'object' &&
-              !Array.isArray(item.properties) &&
-              Object.keys(item.properties).length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                    {t('itemDetail.properties')}
-                  </h3>
-                  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
-                    {Object.entries(item.properties as Record<string, unknown>)
-                      .filter(([key]) => key !== 'metadata')
-                      .sort(([a], [b]) => a.localeCompare(b))
-                      .map(([key, value]) => (
-                        <div key={key} className="contents">
-                          <dt className="font-medium capitalize text-muted-foreground">{key}</dt>
-                          <dd className="text-foreground break-words">
-                            {value === null || value === undefined
-                              ? '—'
-                              : Array.isArray(value)
-                                ? value.join(', ')
-                                : typeof value === 'object'
-                                  ? JSON.stringify(value)
-                                  : String(value)}
-                          </dd>
-                        </div>
-                      ))}
-                  </dl>
-                </div>
-              )}
+            typeof item.properties === 'object' &&
+            !Array.isArray(item.properties) &&
+            Object.keys(item.properties).length > 0 ? (
+              <div className="space-y-2">
+                <Text size="sm" fw={600} c="dimmed" tt="uppercase" className="tracking-wide">
+                  {t('itemDetail.properties')}
+                </Text>
+                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                  {Object.entries(item.properties as Record<string, unknown>)
+                    .filter(([key]) => key !== 'metadata')
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([key, value]) => (
+                      <div key={key} className="contents">
+                        <dt className="font-medium capitalize text-[var(--mantine-color-dimmed)]">
+                          {key}
+                        </dt>
+                        <dd className="break-words">
+                          {value === null || value === undefined
+                            ? '—'
+                            : Array.isArray(value)
+                              ? value.join(', ')
+                              : typeof value === 'object'
+                                ? JSON.stringify(value)
+                                : String(value)}
+                        </dd>
+                      </div>
+                    ))}
+                </dl>
+              </div>
+            ) : null}
 
             {/* Show owner details to logged-in users only */}
             {user && <UserInfoBox userUuid={item.user} />}
@@ -428,34 +412,24 @@ const ItemDetail = () => {
               {/* Owner controls: edit & delete */}
               {isOwner && (
                 <>
-                  <Button asChild variant="outline">
-                    <Link
-                      to={category === 'books' ? `/edit-book/${item.id}` : `/edit-item/${item.id}`}
-                    >
-                      <Edit3 className="mr-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="destructive">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>{t('itemDetail.deleteConfirmTitle')}</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          {t('itemDetail.deleteConfirmDescription')}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDelete}>
-                          {t('common.delete')}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  <ActionIcon
+                    component={Link}
+                    to={category === 'books' ? `/edit-book/${item.id}` : `/edit-item/${item.id}`}
+                    variant="outline"
+                    size="lg"
+                    aria-label={t('common.edit')}
+                  >
+                    <Edit3 size={16} />
+                  </ActionIcon>
+                  <ActionIcon
+                    variant="filled"
+                    color="red"
+                    size="lg"
+                    onClick={openDeleteConfirm}
+                    aria-label={t('common.delete')}
+                  >
+                    <Trash2 size={16} />
+                  </ActionIcon>
                 </>
               )}
 
@@ -509,14 +483,9 @@ const ItemDetail = () => {
 
                       if (!user) {
                         return (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="inline-block">{dialog}</span>
-                              </TooltipTrigger>
-                              <TooltipContent>{t('auth.loginRequired')}</TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
+                          <Tooltip label={t('auth.loginRequired')}>
+                            <span className="inline-block">{dialog}</span>
+                          </Tooltip>
                         );
                       }
 
@@ -533,10 +502,10 @@ const ItemDetail = () => {
             {/* Collections this item appears in — only shown to logged-in users */}
             {user && itemCollections && itemCollections.length > 0 && (
               <div className="space-y-2 pt-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <BookMarked className="h-4 w-4" />
+                <Text component="div" size="sm" c="dimmed" className="flex items-center gap-2">
+                  <BookMarked size={16} />
                   <span>{t('collections.appearsIn')}</span>
-                </div>
+                </Text>
                 <div className="flex flex-wrap gap-2">
                   {itemCollections.map(col => (
                     <Link
@@ -544,10 +513,7 @@ const ItemDetail = () => {
                       to={`/collections/${col.id}`}
                       onClick={e => e.stopPropagation()}
                     >
-                      <Badge
-                        variant="secondary"
-                        className="cursor-pointer hover:bg-secondary/70 transition-colors"
-                      >
+                      <Badge variant="light" color="gray" className="cursor-pointer">
                         {col.name}
                       </Badge>
                     </Link>
@@ -582,61 +548,69 @@ const ItemDetail = () => {
             className="relative w-full h-full max-w-4xl max-h-4xl"
             onClick={e => e.stopPropagation()}
           >
-            <div className="embla embla--fullscreen h-full w-full">
-              <div className="embla__viewport h-full" ref={emblaFsRef}>
-                <div className="embla__container flex h-full">
-                  {images.map((image, index) => (
-                    <div
-                      key={index}
-                      className="embla__slide flex-none w-full flex items-center justify-center"
-                    >
-                      <div className="w-full h-full flex items-center justify-center">
-                        <img
-                          src={image.preview || image.original}
-                          alt={`${name} ${index + 1}`}
-                          className="max-w-full max-h-full object-contain"
-                          onClick={() => setShowAllImages(false)}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <Carousel
+              emblaOptions={emblaOptions}
+              withControls={false}
+              getEmblaApi={setEmblaFsApi}
+              initialSlide={activeIndex}
+              className="h-full w-full"
+              styles={{
+                viewport: { height: '100%' },
+                container: { height: '100%' },
+              }}
+            >
+              {images.map((image, index) => (
+                <Carousel.Slide key={index} className="flex items-center justify-center">
+                  <div className="w-full h-full flex items-center justify-center">
+                    <img
+                      src={image.preview || image.original}
+                      alt={`${name} ${index + 1}`}
+                      className="max-w-full max-h-full object-contain"
+                      onClick={() => setShowAllImages(false)}
+                    />
+                  </div>
+                </Carousel.Slide>
+              ))}
+            </Carousel>
 
             {images.length > 1 && (
               <div className="absolute inset-y-0 left-2 flex items-center z-50">
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <ActionIcon
+                  variant="filled"
+                  color="dark"
+                  size="lg"
                   onClick={() => scrollPrev(emblaFsApi)}
-                  className="text-white bg-black/40 hover:bg-black/50 shadow-lg"
+                  aria-label="Previous image"
                 >
-                  <ChevronLeft className="h-6 w-6" />
-                </Button>
+                  <ChevronLeft size={24} />
+                </ActionIcon>
               </div>
             )}
             {images.length > 1 && (
               <div className="absolute inset-y-0 right-2 flex items-center z-50">
-                <Button
-                  variant="ghost"
-                  size="icon"
+                <ActionIcon
+                  variant="filled"
+                  color="dark"
+                  size="lg"
                   onClick={() => scrollNext(emblaFsApi)}
-                  className="text-white bg-black/40 hover:bg-black/50 shadow-lg"
+                  aria-label="Next image"
                 >
-                  <ChevronRight className="h-6 w-6" />
-                </Button>
+                  <ChevronRight size={24} />
+                </ActionIcon>
               </div>
             )}
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-4 right-4 text-white hover:bg-white/20"
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="lg"
+              c="white"
+              className="absolute top-4 right-4"
               onClick={() => setShowAllImages(false)}
+              aria-label="Close"
             >
-              <X className="h-6 w-6" />
-            </Button>
+              <X size={24} />
+            </ActionIcon>
           </div>
         </div>
       )}
