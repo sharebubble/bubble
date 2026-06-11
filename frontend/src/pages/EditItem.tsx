@@ -7,27 +7,6 @@ import {
   StatusField,
   VisibilityField,
 } from '@/components/items/ItemFormFields';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useUpdateItem } from '@/hooks/useCreateItem';
@@ -46,6 +25,21 @@ import {
   StatusB0aEnum,
   VisibilityEnum,
 } from '@/services/django';
+import {
+  ActionIcon,
+  Badge,
+  Button,
+  Card,
+  Collapse,
+  Group,
+  Menu,
+  Paper,
+  Progress,
+  Text,
+  Title,
+  UnstyledButton,
+} from '@mantine/core';
+import { modals } from '@mantine/modals';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -110,8 +104,8 @@ export type EditItemExtensionProps = {
     setFormData: React.Dispatch<React.SetStateAction<EditItemFormData>>,
   ) => ReactNode;
   /**
-   * Extra items rendered inside the mobile three-dot DropdownMenu.
-   * Each item should be a <DropdownMenuItem> element.
+   * Extra items rendered inside the mobile three-dot Menu.
+   * Each item should be a <Menu.Item> element.
    */
   renderExtraMobileMenuItems?: (
     formData: EditItemFormData,
@@ -147,7 +141,6 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
   } = props;
 
   const navigate = useNavigate();
-  const [incompleteWarningOpen, setIncompleteWarningOpen] = useState(false);
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const { itemUuid: editItemUuid } = useParams<{ itemUuid: string }>();
@@ -160,7 +153,6 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
 
   const [loading, setLoading] = useState(false);
   const [aiProcessing, setAiProcessing] = useState(false);
-  const [aiDialogOpen, setAiDialogOpen] = useState(false);
   const [accessOpen, setAccessOpen] = useState(false);
   const [images, setImages] = useState<{ url: string; file: File }[]>([]);
   const [existingImages, setExistingImages] = useState<Image[]>([]);
@@ -222,16 +214,33 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
 
   const handleBackClick = useCallback(() => {
     if (editItemUuid && missingFields.length > 0) {
-      setIncompleteWarningOpen(true);
+      modals.openConfirmModal({
+        title: (
+          <Group gap="xs" wrap="nowrap">
+            <AlertTriangle size={20} color="var(--mantine-color-yellow-6)" />
+            {t('editItem.incompleteWarningTitle')}
+          </Group>
+        ),
+        children: (
+          <>
+            <Text size="sm">{t('editItem.incompleteWarningDescription')}</Text>
+            <ul className="mt-2 list-disc list-inside text-sm">
+              {missingFields.map(field => (
+                <li key={field}>{field}</li>
+              ))}
+            </ul>
+          </>
+        ),
+        labels: {
+          confirm: t('editItem.leaveAnyway'),
+          cancel: t('editItem.stayAndComplete'),
+        },
+        onConfirm: () => navigate(-1),
+      });
     } else {
       navigate(-1);
     }
-  }, [editItemUuid, missingFields.length, navigate]);
-
-  const handleConfirmLeave = useCallback(() => {
-    setIncompleteWarningOpen(false);
-    navigate(-1);
-  }, [navigate]);
+  }, [editItemUuid, missingFields, navigate, t]);
 
   const categories: CategoryEnum[] = [
     'electronics',
@@ -623,6 +632,21 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
     }
   };
 
+  // AI confirm dialog — shared between desktop button and mobile menu
+  const openAiConfirmModal = () => {
+    modals.openConfirmModal({
+      title: t('editItem.aiMagicWarningTitle'),
+      children: <Text size="sm">{t('editItem.aiMagicWarningDescription')}</Text>,
+      labels: {
+        confirm: t('editItem.aiMagicWarningContinue'),
+        cancel: t('editItem.aiMagicWarningCancel'),
+      },
+      onConfirm: () => {
+        void handleAiProcess();
+      },
+    });
+  };
+
   const handleAiImageGenerate = async () => {
     if (!editItemUuid) {
       toast({
@@ -711,33 +735,36 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
   return (
     <div className="container mx-auto py-8 space-y-0 p-3">
       {/* Back Button */}
-      <Button variant="ghost" onClick={handleBackClick} className="mb-6 gap-2">
-        <ArrowLeft className="h-4 w-4" />
+      <Button
+        variant="subtle"
+        onClick={handleBackClick}
+        className="mb-6"
+        leftSection={<ArrowLeft size={16} />}
+      >
         {t('common.back')}
       </Button>
 
-      <Card>
-        <CardHeader>
+      <Card withBorder padding="lg">
+        <div className="mb-6">
           <div className="flex items-center justify-between">
-            <CardTitle>{editItemUuid ? t('itemDetail.editItem') : t('editItem.name')}</CardTitle>
+            <Title order={3}>{editItemUuid ? t('itemDetail.editItem') : t('editItem.name')}</Title>
             <div className="flex gap-2 items-center">
               {/* ── Desktop: inline buttons ── */}
               <div className="hidden md:flex gap-2">
                 {renderExtraHeaderButtons && renderExtraHeaderButtons(formData, setFormData)}
                 {editItemUuid &&
                   (existingImages.length > 0 ? (
-                    <>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={aiProcessing}
-                        className="gap-2"
-                        onClick={() => setAiDialogOpen(true)}
-                      >
-                        <Sparkles className={`h-4 w-4 ${aiProcessing ? 'animate-spin' : ''}`} />
-                        {aiProcessing ? t('editItem.aiMagicProcessing') : t('editItem.aiMagic')}
-                      </Button>
-                    </>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={aiProcessing}
+                      leftSection={
+                        <Sparkles size={16} className={aiProcessing ? 'animate-spin' : ''} />
+                      }
+                      onClick={openAiConfirmModal}
+                    >
+                      {aiProcessing ? t('editItem.aiMagicProcessing') : t('editItem.aiMagic')}
+                    </Button>
                   ) : (
                     <Button
                       type="button"
@@ -747,10 +774,11 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
                         (!formData.name && !formData.description) ||
                         images.length < 1
                       }
-                      className="gap-2"
+                      leftSection={
+                        <Sparkles size={16} className={aiProcessing ? 'animate-spin' : ''} />
+                      }
                       onClick={handleAiImageGenerate}
                     >
-                      <Sparkles className={`h-4 w-4 ${aiProcessing ? 'animate-spin' : ''}`} />
                       {aiProcessing ? t('editItem.aiMagicProcessing') : t('editItem.aiMagic')}
                     </Button>
                   ))}
@@ -759,111 +787,71 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
               {/* ── Mobile: three-dot menu ── */}
               {editItemUuid && (
                 <div className="flex md:hidden">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button type="button" variant="ghost" size="icon">
-                        <MoreVertical className="h-5 w-5" />
-                        <span className="sr-only">More options</span>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                  <Menu position="bottom-end" shadow="md">
+                    <Menu.Target>
+                      <ActionIcon
+                        type="button"
+                        variant="subtle"
+                        color="gray"
+                        size="lg"
+                        aria-label="More options"
+                      >
+                        <MoreVertical size={20} />
+                      </ActionIcon>
+                    </Menu.Target>
+                    <Menu.Dropdown>
                       {/* AI magic item */}
                       {existingImages.length > 0 ? (
-                        <DropdownMenuItem
+                        <Menu.Item
                           disabled={aiProcessing}
-                          onSelect={() => setAiDialogOpen(true)}
+                          onClick={openAiConfirmModal}
+                          leftSection={
+                            <Sparkles size={16} className={aiProcessing ? 'animate-spin' : ''} />
+                          }
                         >
-                          <Sparkles
-                            className={`h-4 w-4 mr-2 ${aiProcessing ? 'animate-spin' : ''}`}
-                          />
                           {aiProcessing ? t('editItem.aiMagicProcessing') : t('editItem.aiMagic')}
-                        </DropdownMenuItem>
+                        </Menu.Item>
                       ) : (
-                        <DropdownMenuItem
+                        <Menu.Item
                           disabled={
                             aiProcessing ||
                             (!formData.name && !formData.description) ||
                             images.length < 1
                           }
-                          onSelect={handleAiImageGenerate}
+                          onClick={handleAiImageGenerate}
+                          leftSection={
+                            <Sparkles size={16} className={aiProcessing ? 'animate-spin' : ''} />
+                          }
                         >
-                          <Sparkles
-                            className={`h-4 w-4 mr-2 ${aiProcessing ? 'animate-spin' : ''}`}
-                          />
                           {aiProcessing ? t('editItem.aiMagicProcessing') : t('editItem.aiMagic')}
-                        </DropdownMenuItem>
+                        </Menu.Item>
                       )}
                       {/* Extension-provided items */}
                       {renderExtraMobileMenuItems &&
                         renderExtraMobileMenuItems(formData, setFormData)}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    </Menu.Dropdown>
+                  </Menu>
                 </div>
               )}
 
               {formData.status === 0 && editItemUuid && (
                 <Button
                   type="button"
-                  variant="default"
                   onClick={handlePublish}
                   disabled={loading || updateItemMutation.isPending || aiProcessing}
-                  className="gap-2"
                 >
                   {t('editItem.publish')}
                 </Button>
               )}
             </div>
           </div>
-        </CardHeader>
+        </div>
 
-        {/* Warning dialog for incomplete fields when navigating away */}
-        <AlertDialog open={incompleteWarningOpen} onOpenChange={setIncompleteWarningOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-yellow-500" />
-                {t('editItem.incompleteWarningTitle')}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('editItem.incompleteWarningDescription')}
-                <ul className="mt-2 list-disc list-inside text-sm">
-                  {missingFields.map(field => (
-                    <li key={field}>{field}</li>
-                  ))}
-                </ul>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t('editItem.stayAndComplete')}</AlertDialogCancel>
-              <AlertDialogAction onClick={handleConfirmLeave}>
-                {t('editItem.leaveAnyway')}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        {/* AI confirm dialog — controlled by state, shared between desktop button and mobile menu */}
-        <AlertDialog open={aiDialogOpen} onOpenChange={setAiDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('editItem.aiMagicWarningTitle')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('editItem.aiMagicWarningDescription')}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t('editItem.aiMagicWarningCancel')}</AlertDialogCancel>
-              <AlertDialogAction onClick={handleAiProcess}>
-                {t('editItem.aiMagicWarningContinue')}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-        <CardContent>
+        <div>
           <form onSubmit={e => e.preventDefault()} className="space-y-6">
             {/* Image Upload and AI Processing Section */}
-            <Card className="border-dashed">
-              <CardContent className="space-y-4">
+            <Card withBorder padding="lg" style={{ borderStyle: 'dashed' }}>
+              <div className="space-y-4">
                 <ImageManager
                   onImagesChange={setImages}
                   onExistingImagesChange={setExistingImages}
@@ -875,8 +863,11 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
 
                 {images.length > 0 && (
                   <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="gap-1">
-                      <CheckCircle className="h-3 w-3" />
+                    <Badge
+                      variant="light"
+                      color="gray"
+                      leftSection={<CheckCircle size={12} />}
+                    >
                       {images.length} new image
                       {images.length !== 1 ? 's' : ''} ready to upload
                     </Badge>
@@ -885,15 +876,17 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
 
                 {/* Processing State */}
                 {processingState !== 'idle' && (
-                  <div className="space-y-3 p-4 bg-muted/50 rounded-lg">
+                  <Paper p="md" radius="md" bg="gray.0" className="space-y-3">
                     <div className="flex items-center gap-2">
-                      <Loader className="h-4 w-4 animate-spin" />
-                      <span className="text-sm font-medium">{getProcessingMessage()}</span>
+                      <Loader size={16} className="animate-spin" />
+                      <Text size="sm" fw={500}>
+                        {getProcessingMessage()}
+                      </Text>
                     </div>
                     <Progress value={progress} className="w-full" />
-                  </div>
+                  </Paper>
                 )}
-              </CardContent>
+              </div>
             </Card>
 
             <BasicFields
@@ -948,10 +941,8 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
                 {formData.status === 0 && editItemUuid && (
                   <Button
                     type="button"
-                    variant="default"
                     onClick={handlePublish}
                     disabled={loading || updateItemMutation.isPending || aiProcessing}
-                    className="gap-2"
                   >
                     {t('editItem.publish')}
                   </Button>
@@ -962,33 +953,32 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
 
           {/* Collapsible visibility & access section */}
           {editItemUuid && (
-            <Collapsible open={accessOpen} onOpenChange={setAccessOpen} className="mt-6">
-              <CollapsibleTrigger asChild>
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2 border-t pt-4 text-sm font-medium hover:text-foreground text-muted-foreground transition-colors"
-                >
-                  {accessOpen ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
+            <div className="mt-6">
+              <UnstyledButton
+                type="button"
+                onClick={() => setAccessOpen(prev => !prev)}
+                className="flex w-full items-center gap-2 border-t pt-4"
+              >
+                {accessOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <Text size="sm" fw={500} c="dimmed">
                   {t('editItem.accessSection')}
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent className="pt-4 space-y-6">
-                <VisibilityField
-                  formData={formData}
-                  setFormData={setFormData}
-                  disabled={aiProcessing}
-                  fieldStates={fieldStates}
-                  onFieldChange={handleFieldChange}
-                />
-                <AccessManager itemId={editItemUuid} visibility={formData.visibility} />
-              </CollapsibleContent>
-            </Collapsible>
+                </Text>
+              </UnstyledButton>
+              <Collapse in={accessOpen}>
+                <div className="pt-4 space-y-6">
+                  <VisibilityField
+                    formData={formData}
+                    setFormData={setFormData}
+                    disabled={aiProcessing}
+                    fieldStates={fieldStates}
+                    onFieldChange={handleFieldChange}
+                  />
+                  <AccessManager itemId={editItemUuid} visibility={formData.visibility} />
+                </div>
+              </Collapse>
+            </div>
           )}
-        </CardContent>
+        </div>
       </Card>
     </div>
   );
