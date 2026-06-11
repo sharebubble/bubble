@@ -1,5 +1,14 @@
 # Mantine Migration Plan
 
+> **Status (June 2026): implemented.** All phases below landed on the
+> `migrate-to-mantine` branch; `src/components/ui/` and all `@radix-ui`
+> packages are gone. Kept beyond the original teardown list: `clsx` +
+> `tailwind-merge` (the `cn()` helper is still used for layout classes),
+> `tailwindcss-animate` (fade animations), `embla-carousel-react` (peer
+> dependency of `@mantine/carousel`), and `date-fns` (date math). The
+> `.dark`-class mirror (`ColorSchemeSync`) also stays while Tailwind
+> `dark:` utilities remain in layout code.
+
 Plan for completing the migration of the frontend from shadcn/ui (Radix +
 Tailwind variants) to [Mantine](https://mantine.dev) as the primary UI library.
 
