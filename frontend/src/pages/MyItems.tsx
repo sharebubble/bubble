@@ -1,47 +1,13 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDeleteItem, useMyItems, useUpdateItemStatus } from '@/hooks/useMyItems';
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
 import { formatPrice } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
-import { cn } from '@/lib/utils';
+import { getStatusMantineColor } from '@/components/items/status';
 import { SalesTypeEnum, StatusB0aEnum } from '@/services/django';
+import { ActionIcon, Badge, Button, Card, Menu, Select, Table, Text, Title } from '@mantine/core';
+import { modals } from '@mantine/modals';
 import { Edit3, Eye, Grid3X3, List, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -78,6 +44,21 @@ const MyItems = () => {
     deleteItemMutation.mutate(itemId);
   };
 
+  const openDeleteConfirm = (itemId: string) => {
+    modals.openConfirmModal({
+      title: 'Are you absolutely sure?',
+      children: (
+        <Text size="sm">
+          This action cannot be undone. This will permanently delete your item and remove its data
+          from our servers.
+        </Text>
+      ),
+      labels: { confirm: 'Delete', cancel: 'Cancel' },
+      confirmProps: { color: 'red' },
+      onConfirm: () => handleDeleteItem(itemId),
+    });
+  };
+
   const handleStatusChange = async (
     itemId: string,
     newStatus: 'draft' | 'available' | 'reserved' | 'rented' | 'sold',
@@ -107,56 +88,45 @@ const MyItems = () => {
     updateStatusMutation.mutate({ itemId, status: statusEnum });
   };
 
-  /** Returns the SelectItem options appropriate for the given sales_type. */
+  const handleStatusSelectChange = (itemId: string, value: string | null) => {
+    if (!value) return;
+    const statusMap: Record<string, 'draft' | 'available' | 'reserved' | 'rented' | 'sold'> = {
+      '0': 'draft',
+      '2': 'available',
+      '3': 'reserved',
+      '4': 'rented',
+      '5': 'sold',
+    };
+    handleStatusChange(itemId, statusMap[value] || 'draft');
+  };
+
+  /** Returns the Select options appropriate for the given sales_type. */
   const getStatusOptions = (salesType: SalesTypeEnum | undefined) => {
     const sellDonate = ['sell', 'donate', 'want_buy'];
     const rentBorrow = ['rent', 'borrow', 'want_rent'];
     if (salesType && sellDonate.includes(salesType)) {
-      return (
-        <>
-          <SelectItem value="0">{t('status.draft')}</SelectItem>
-          <SelectItem value="2">{t('status.available')}</SelectItem>
-          <SelectItem value="3">{t('status.reserved')}</SelectItem>
-          <SelectItem value="5">{t('status.sold')}</SelectItem>
-        </>
-      );
+      return [
+        { value: '0', label: t('status.draft') },
+        { value: '2', label: t('status.available') },
+        { value: '3', label: t('status.reserved') },
+        { value: '5', label: t('status.sold') },
+      ];
     }
     if (salesType && rentBorrow.includes(salesType)) {
-      return (
-        <>
-          <SelectItem value="0">{t('status.draft')}</SelectItem>
-          <SelectItem value="2">{t('status.available')}</SelectItem>
-          <SelectItem value="4">{t('status.rented')}</SelectItem>
-        </>
-      );
+      return [
+        { value: '0', label: t('status.draft') },
+        { value: '2', label: t('status.available') },
+        { value: '4', label: t('status.rented') },
+      ];
     }
     // fallback: all options
-    return (
-      <>
-        <SelectItem value="0">{t('status.draft')}</SelectItem>
-        <SelectItem value="2">{t('status.available')}</SelectItem>
-        <SelectItem value="3">{t('status.reserved')}</SelectItem>
-        <SelectItem value="4">{t('status.rented')}</SelectItem>
-        <SelectItem value="5">{t('status.sold')}</SelectItem>
-      </>
-    );
-  };
-
-  const getStatusColor = (status: StatusB0aEnum) => {
-    switch (status) {
-      case 0:
-        return 'bg-muted text-muted-foreground'; // draft
-      case 2:
-        return 'bg-success text-success-foreground'; // available
-      case 3:
-        return 'bg-warning text-warning-foreground'; // reserved
-      case 4:
-        return 'bg-primary text-primary-foreground'; // rented
-      case 5:
-        return 'bg-destructive text-destructive-foreground'; // sold/gone
-      default:
-        return 'bg-muted text-muted-foreground';
-    }
+    return [
+      { value: '0', label: t('status.draft') },
+      { value: '2', label: t('status.available') },
+      { value: '3', label: t('status.reserved') },
+      { value: '4', label: t('status.rented') },
+      { value: '5', label: t('status.sold') },
+    ];
   };
 
   const getStatusText = (status: StatusB0aEnum | undefined) => {
@@ -176,22 +146,48 @@ const MyItems = () => {
     }
   };
 
-  const getSalesTypeBadgeColor = (st: SalesTypeEnum | undefined) => {
+  const getSalesTypeBadgeProps = (st: SalesTypeEnum | undefined) => {
     switch (st) {
       case 'sell':
-        return 'bg-primary text-primary-foreground';
+        return { color: 'green', variant: 'filled' as const };
       case 'donate':
       case 'borrow':
-        return 'bg-success text-success-foreground';
+        return { color: 'teal', variant: 'filled' as const };
       case 'rent':
-        return 'bg-info text-info-foreground';
+        return { color: 'blue', variant: 'filled' as const };
       case 'want_buy':
       case 'want_rent':
-        return 'bg-muted text-muted-foreground border border-border';
+        return { color: 'gray', variant: 'outline' as const };
       default:
-        return 'bg-muted text-muted-foreground';
+        return { color: 'gray', variant: 'filled' as const };
     }
   };
+
+  const renderItemMenu = (item: (typeof items)[number]) => (
+    <Menu position="bottom-end" shadow="md">
+      <Menu.Target>
+        <ActionIcon variant="subtle" color="gray" aria-label="Actions">
+          <MoreHorizontal size={16} />
+        </ActionIcon>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Item leftSection={<Eye size={16} />} onClick={() => navigate(`/item/${item.id}`)}>
+          View
+        </Menu.Item>
+        <Menu.Item leftSection={<Edit3 size={16} />} onClick={() => navigate(getEditUrl(item))}>
+          Edit
+        </Menu.Item>
+        <Menu.Divider />
+        <Menu.Item
+          color="red"
+          leftSection={<Trash2 size={16} />}
+          onClick={() => openDeleteConfirm(item.id)}
+        >
+          Delete
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
+  );
 
   if (isLoading) {
     return (
@@ -204,26 +200,28 @@ const MyItems = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-foreground">{t('myItems.title')}</h1>
+        <Title order={1}>{t('myItems.title')}</Title>
         <div className="flex items-center gap-4">
           {/* View Mode Toggle */}
           <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
+            <ActionIcon
+              variant={viewMode === 'list' ? 'filled' : 'subtle'}
+              color={viewMode === 'list' ? undefined : 'gray'}
+              size="lg"
               onClick={() => toggleViewMode('list')}
-              className="h-8 w-8 p-0"
+              aria-label="List view"
             >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'cards' ? 'default' : 'ghost'}
-              size="sm"
+              <List size={16} />
+            </ActionIcon>
+            <ActionIcon
+              variant={viewMode === 'cards' ? 'filled' : 'subtle'}
+              color={viewMode === 'cards' ? undefined : 'gray'}
+              size="lg"
               onClick={() => toggleViewMode('cards')}
-              className="h-8 w-8 p-0"
+              aria-label="Card view"
             >
-              <Grid3X3 className="h-4 w-4" />
-            </Button>
+              <Grid3X3 size={16} />
+            </ActionIcon>
           </div>
         </div>
       </div>
@@ -231,39 +229,42 @@ const MyItems = () => {
       {items.length === 0 ? (
         <div className="text-center py-12">
           <div className="max-w-md mx-auto">
-            <h3 className="text-xl font-semibold text-foreground mb-2">{t('myItems.noItems')}</h3>
-            <p className="text-muted-foreground mb-6">{t('myItems.createFirst')}</p>
-            <Button onClick={() => navigate('/create-item')} className="gap-2">
-              <Plus className="h-4 w-4" />
+            <Title order={3} className="mb-2">
+              {t('myItems.noItems')}
+            </Title>
+            <Text c="dimmed" className="mb-6">
+              {t('myItems.createFirst')}
+            </Text>
+            <Button leftSection={<Plus size={16} />} onClick={() => navigate('/create-item')}>
               {t('myItems.shareItem')}
             </Button>
           </div>
         </div>
       ) : viewMode === 'list' ? (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-20">Image</TableHead>
-                <TableHead>Title</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Price</TableHead>
-                <TableHead>Created</TableHead>
-                <TableHead className="w-20">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        <div className="rounded-lg border overflow-hidden">
+          <Table highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th className="w-20">Image</Table.Th>
+                <Table.Th>Title</Table.Th>
+                <Table.Th>Status</Table.Th>
+                <Table.Th>Category</Table.Th>
+                <Table.Th>Price</Table.Th>
+                <Table.Th>Created</Table.Th>
+                <Table.Th className="w-20">Actions</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
               {items.map(item => {
                 const primaryImage = item.first_image;
 
                 return (
-                  <TableRow
+                  <Table.Tr
                     key={item.id}
-                    className="cursor-pointer hover:bg-muted/50"
+                    className="cursor-pointer"
                     onClick={() => navigate(getEditUrl(item))}
                   >
-                    <TableCell>
+                    <Table.Td>
                       <div className="w-12 h-12 rounded-lg overflow-hidden">
                         {primaryImage ? (
                           <img
@@ -282,293 +283,161 @@ const MyItems = () => {
                           })()
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
+                    </Table.Td>
+                    <Table.Td>
                       <div className="font-medium max-w-48 truncate">{item.name}</div>
                       {item.description && (
-                        <div className="text-sm text-muted-foreground truncate max-w-48">
+                        <Text size="sm" c="dimmed" className="truncate max-w-48">
                           {item.description}
-                        </div>
+                        </Text>
                       )}
-                    </TableCell>
-                    <TableCell onClick={e => e.stopPropagation()}>
+                    </Table.Td>
+                    <Table.Td onClick={e => e.stopPropagation()}>
                       <Select
-                        value={item.status?.toString()}
-                        onValueChange={value => {
-                          const statusMap: Record<
-                            string,
-                            'draft' | 'available' | 'reserved' | 'rented' | 'sold'
-                          > = {
-                            '0': 'draft',
-                            '2': 'available',
-                            '3': 'reserved',
-                            '4': 'rented',
-                            '5': 'sold',
-                          };
-                          handleStatusChange(item.id, statusMap[value] || 'draft');
-                        }}
+                        className="w-32"
+                        value={item.status !== undefined ? item.status.toString() : null}
+                        data={getStatusOptions(item.sales_type as SalesTypeEnum | undefined)}
+                        onChange={value => handleStatusSelectChange(item.id, value)}
                         disabled={updateStatusMutation.isPending}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getStatusOptions(item.sales_type as SalesTypeEnum | undefined)}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
+                        allowDeselect={false}
+                      />
+                    </Table.Td>
+                    <Table.Td>
                       <div className="flex flex-wrap items-center gap-1">
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" color="gray" size="sm">
                           {t(`categories.${item.category}`)}
                         </Badge>
                         {item.sales_type && (
                           <Badge
-                            className={cn(
-                              getSalesTypeBadgeColor(item.sales_type as SalesTypeEnum),
-                              'text-xs',
-                            )}
+                            size="sm"
+                            {...getSalesTypeBadgeProps(item.sales_type as SalesTypeEnum)}
                           >
                             {t(`item.salesType.badge.${item.sales_type}`)}
                           </Badge>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
+                    </Table.Td>
+                    <Table.Td>
                       <div className="text-sm font-medium">
                         {item.price && (
                           <div className="flex items-center gap-1">
                             {formatPrice(item.price, item.price_currency)}
                             {item.sales_type === 'rent' && (
-                              <span className="text-xs text-muted-foreground">
+                              <Text component="span" size="xs" c="dimmed">
                                 {t('time.perHour')}
-                              </span>
+                              </Text>
                             )}
                           </div>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm text-muted-foreground">
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" c="dimmed">
                         {formatDate(item.created_at, language)}
-                      </div>
-                    </TableCell>
-                    <TableCell onClick={e => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/item/${item.id}`)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(getEditUrl(item))}>
-                            <Edit3 className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <DropdownMenuItem
-                                onSelect={e => e.preventDefault()}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This action cannot be undone. This will permanently delete your
-                                  item and remove its data from our servers.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => handleDeleteItem(item.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                      </Text>
+                    </Table.Td>
+                    <Table.Td onClick={e => e.stopPropagation()}>{renderItemMenu(item)}</Table.Td>
+                  </Table.Tr>
                 );
               })}
-            </TableBody>
+            </Table.Tbody>
           </Table>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map(item => {
             return (
-              <Card key={item.id} className="overflow-hidden">
+              <Card key={item.id} withBorder padding="lg" className="overflow-hidden">
                 {/* Image */}
-                <div
-                  className="aspect-4/3 overflow-hidden cursor-pointer"
-                  onClick={() => navigate(getEditUrl(item))}
-                >
-                  {item.first_image ? (
-                    <img
-                      src={item.first_image}
-                      alt={item.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    (() => {
-                      const CategoryIcon = getCategoryIcon(item.category);
-                      return (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-subtle">
-                          <CategoryIcon className="h-16 w-16 text-muted-foreground/50" />
-                        </div>
-                      );
-                    })()
-                  )}
-                </div>
+                <Card.Section>
+                  <div
+                    className="aspect-4/3 overflow-hidden cursor-pointer"
+                    onClick={() => navigate(getEditUrl(item))}
+                  >
+                    {item.first_image ? (
+                      <img
+                        src={item.first_image}
+                        alt={item.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      (() => {
+                        const CategoryIcon = getCategoryIcon(item.category);
+                        return (
+                          <div className="flex h-full w-full items-center justify-center bg-gradient-subtle">
+                            <CategoryIcon className="h-16 w-16 text-muted-foreground/50" />
+                          </div>
+                        );
+                      })()
+                    )}
+                  </div>
+                </Card.Section>
 
-                <CardHeader className="pb-3">
+                <div className="pt-4 pb-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <h3
-                      className="font-semibold text-foreground line-clamp-1 cursor-pointer hover:underline"
+                    <Title
+                      order={3}
+                      size="h5"
+                      className="line-clamp-1 cursor-pointer hover:underline"
                       onClick={() => navigate(getEditUrl(item))}
                     >
                       {item.name}
-                    </h3>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => navigate(`/item/${item.id}`)}>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate(getEditUrl(item))}>
-                          <Edit3 className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem
-                              onSelect={e => e.preventDefault()}
-                              className="text-destructive focus:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete your item
-                                and remove its data from our servers.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteItem(item.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    </Title>
+                    {renderItemMenu(item)}
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Badge
-                      className={cn(
-                        item.status !== undefined && getStatusColor(item.status),
-                        'text-xs',
-                      )}
-                    >
+                    <Badge size="sm" color={getStatusMantineColor(item.status) ?? 'gray'}>
                       {getStatusText(item.status)}
                     </Badge>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="outline" color="gray" size="sm">
                       {t(`categories.${item.category}`)}
                     </Badge>
                   </div>
-                </CardHeader>
+                </div>
 
-                <CardContent className="pb-3">
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
+                <div className="pb-3">
+                  <Text size="sm" c="dimmed" className="line-clamp-2 mb-3">
                     {item.description !== undefined && convertLineBreaks(item.description)}
-                  </p>
+                  </Text>
 
                   {/* Price */}
-                  <div className="text-lg font-semibold text-primary">
-                    <div className="text-sm space-y-1">
-                      {item.price && (
-                        <div className="flex items-center gap-1">
-                          {formatPrice(item.price, item.price_currency)}
-                          {item.sales_type === 'rent' && (
-                            <span className="text-xs font-normal text-muted-foreground">
-                              {t('time.perHour')}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <Text component="div" size="sm" fw={600} c="green.7">
+                    {item.price && (
+                      <div className="flex items-center gap-1">
+                        {formatPrice(item.price, item.price_currency)}
+                        {item.sales_type === 'rent' && (
+                          <Text component="span" size="xs" fw={400} c="dimmed">
+                            {t('time.perHour')}
+                          </Text>
+                        )}
+                      </div>
+                    )}
+                  </Text>
                   {item.sales_type && (
                     <Badge
-                      className={cn(
-                        getSalesTypeBadgeColor(item.sales_type as SalesTypeEnum),
-                        'text-xs mt-1',
-                      )}
+                      size="sm"
+                      className="mt-1"
+                      {...getSalesTypeBadgeProps(item.sales_type as SalesTypeEnum)}
                     >
                       {t(`item.salesType.badge.${item.sales_type}`)}
                     </Badge>
                   )}
-                </CardContent>
+                </div>
 
-                <CardFooter className="pt-0">
-                  <div className="w-full space-y-2">
-                    <div className="text-xs text-muted-foreground">{t('myItems.status')}</div>
-                    <Select
-                      value={item.status !== undefined ? item.status.toString() : undefined}
-                      onValueChange={value => {
-                        const statusMap: Record<
-                          string,
-                          'draft' | 'available' | 'reserved' | 'rented' | 'sold'
-                        > = {
-                          '0': 'draft',
-                          '2': 'available',
-                          '3': 'reserved',
-                          '4': 'rented',
-                          '5': 'sold',
-                        };
-                        handleStatusChange(item.id, statusMap[value] || 'draft');
-                      }}
-                      disabled={updateStatusMutation.isPending}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getStatusOptions(item.sales_type as SalesTypeEnum | undefined)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardFooter>
+                <div className="w-full space-y-2">
+                  <Text size="xs" c="dimmed">
+                    {t('myItems.status')}
+                  </Text>
+                  <Select
+                    className="w-full"
+                    value={item.status !== undefined ? item.status.toString() : null}
+                    data={getStatusOptions(item.sales_type as SalesTypeEnum | undefined)}
+                    onChange={value => handleStatusSelectChange(item.id, value)}
+                    disabled={updateStatusMutation.isPending}
+                    allowDeselect={false}
+                  />
+                </div>
               </Card>
             );
           })}
