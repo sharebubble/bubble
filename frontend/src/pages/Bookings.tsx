@@ -115,12 +115,7 @@ const BookingRow = ({
             </Text>
             {stateBadge}
           </div>
-          <Text
-            component="div"
-            size="xs"
-            c="dimmed"
-            className="flex flex-wrap gap-x-4 gap-y-0.5"
-          >
+          <Text component="div" size="xs" c="dimmed" className="flex flex-wrap gap-x-4 gap-y-0.5">
             <span className="flex items-center gap-1">
               <User size={12} className="shrink-0" />
               {userName}
@@ -291,12 +286,7 @@ const MyBookingsPage = () => {
           <ChevronRight size={16} />
         </ActionIcon>
         {offset !== 0 && (
-          <Button
-            size="compact-sm"
-            variant="subtle"
-            color="gray"
-            onClick={() => setOffset(0)}
-          >
+          <Button size="compact-sm" variant="subtle" color="gray" onClick={() => setOffset(0)}>
             {t('bookings.today')}
           </Button>
         )}

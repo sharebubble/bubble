@@ -250,7 +250,12 @@ export const CollectionPermissionsPanel = ({
                 {inputFocused && (
                   <>
                     {subjectType === 'user' && filteredUsers.length > 0 && (
-                      <Paper withBorder radius="sm" p={4} className="space-y-1 max-h-32 overflow-y-auto">
+                      <Paper
+                        withBorder
+                        radius="sm"
+                        p={4}
+                        className="space-y-1 max-h-32 overflow-y-auto"
+                      >
                         {filteredUsers.slice(0, 10).map(u => (
                           <Button
                             key={u.id}
@@ -271,7 +276,12 @@ export const CollectionPermissionsPanel = ({
                       </Paper>
                     )}
                     {subjectType === 'group' && filteredGroups.length > 0 && (
-                      <Paper withBorder radius="sm" p={4} className="space-y-1 max-h-32 overflow-y-auto">
+                      <Paper
+                        withBorder
+                        radius="sm"
+                        p={4}
+                        className="space-y-1 max-h-32 overflow-y-auto"
+                      >
                         {filteredGroups.slice(0, 10).map(g => (
                           <Button
                             key={g.id}

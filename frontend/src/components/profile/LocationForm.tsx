@@ -81,10 +81,7 @@ export const LocationForm = ({ location, onSuccess }: LocationFormProps) => {
           {...form.getInputProps('latitude')}
           value={form.getValues().latitude ?? ''}
           onChange={e =>
-            form.setFieldValue(
-              'latitude',
-              e.target.value ? parseFloat(e.target.value) : undefined
-            )
+            form.setFieldValue('latitude', e.target.value ? parseFloat(e.target.value) : undefined)
           }
         />
 
@@ -96,10 +93,7 @@ export const LocationForm = ({ location, onSuccess }: LocationFormProps) => {
           {...form.getInputProps('longitude')}
           value={form.getValues().longitude ?? ''}
           onChange={e =>
-            form.setFieldValue(
-              'longitude',
-              e.target.value ? parseFloat(e.target.value) : undefined
-            )
+            form.setFieldValue('longitude', e.target.value ? parseFloat(e.target.value) : undefined)
           }
         />
       </div>

@@ -863,11 +863,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
 
                 {images.length > 0 && (
                   <div className="flex items-center gap-2">
-                    <Badge
-                      variant="light"
-                      color="gray"
-                      leftSection={<CheckCircle size={12} />}
-                    >
+                    <Badge variant="light" color="gray" leftSection={<CheckCircle size={12} />}>
                       {images.length} new image
                       {images.length !== 1 ? 's' : ''} ready to upload
                     </Badge>

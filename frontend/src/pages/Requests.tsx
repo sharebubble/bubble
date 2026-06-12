@@ -248,7 +248,12 @@ const Requests = () => {
                       {getStatusBadge(booking.status)}
                     </div>
                   </div>
-                  <Text component="div" size="xs" c="dimmed" className="flex items-center gap-1 mb-1">
+                  <Text
+                    component="div"
+                    size="xs"
+                    c="dimmed"
+                    className="flex items-center gap-1 mb-1"
+                  >
                     <User className="h-3 w-3" />
                     <span className="line-clamp-1">
                       {t('requests.requestFrom')}{' '}

@@ -1,11 +1,4 @@
-import {
-  ActionIcon,
-  Avatar,
-  Button,
-  Indicator,
-  Menu,
-  TextInput,
-} from '@mantine/core';
+import { ActionIcon, Avatar, Button, Indicator, Menu, TextInput } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnreadMessages } from '@/hooks/useMessages';
@@ -178,11 +171,7 @@ export const Header = () => {
             {/* Profile Dropdown */}
             <Menu position="bottom-end" shadow="md" width={224}>
               <Menu.Target>
-                <ActionIcon
-                  variant="default"
-                  size="lg"
-                  aria-label={t('header.myProfile')}
-                >
+                <ActionIcon variant="default" size="lg" aria-label={t('header.myProfile')}>
                   <Avatar size={20} radius="xl" color="green">
                     {user.email?.charAt(0).toUpperCase()}
                   </Avatar>

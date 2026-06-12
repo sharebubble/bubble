@@ -142,7 +142,9 @@ export const LocationsList = () => {
         onClose={() => setIsEditDialogOpen(false)}
         title="Edit Location"
       >
-        {editingLocation && <LocationForm location={editingLocation} onSuccess={handleEditSuccess} />}
+        {editingLocation && (
+          <LocationForm location={editingLocation} onSuccess={handleEditSuccess} />
+        )}
       </Modal>
     </Card>
   );

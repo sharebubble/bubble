@@ -276,7 +276,9 @@ export const PricingFields = ({
             label={salesType === 'rent' ? t('editItem.rentalPrice') : t('editItem.price')}
             placeholder={t('editItem.enterPrice')}
             value={formData.price}
-            onChange={value => setFormData({ ...formData, price: value === '' ? '' : String(value) })}
+            onChange={value =>
+              setFormData({ ...formData, price: value === '' ? '' : String(value) })
+            }
             onBlur={() => onFieldBlur?.('price', formData.price === '' ? null : formData.price)}
             disabled={disabled}
             required={PRICE_REQUIRED_TYPES.includes(salesType as SalesTypeEnum)}
