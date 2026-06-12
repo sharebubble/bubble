@@ -95,7 +95,7 @@
 @layer base {
   :root {
     /* Community-focused warm palette */
-    --background: 45 15% 98%;
+    --background: 30 20% 98%; /* #fbfaf9 */
     --foreground: 25 25% 15%;
 
     /* Primary: Subtle sage green inspired by logo - calm, natural */
