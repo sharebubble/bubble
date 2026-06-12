@@ -3,7 +3,6 @@ import { ItemCard } from '@/components/browse/ItemCard';
 import { AddToCollectionPopover } from '@/components/collections/AddToCollectionPopover';
 import { getStatusColor, getStatusLabel } from '@/components/items/status';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -26,7 +25,8 @@ import {
   type SalesTypeEnum,
   type StatusB0aEnum,
 } from '@/services/django';
-import { ChevronLeft, ChevronRight, Grid3X3, List } from 'lucide-react';
+import { Group, Pagination, SegmentedControl, Text } from '@mantine/core';
+import { Grid3X3, List } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -269,48 +269,6 @@ const Index = () => {
     : (itemsQuery.data?.pagination.count ?? 0);
   const totalPages = Math.ceil(totalCount / (isFederatedScope ? FEDERATED_PAGE_SIZE : PAGE_SIZE));
 
-  const pagination = totalPages > 1 && (
-    <div className="flex items-center justify-center gap-2 pt-8">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => handlePageChange(currentPage - 1)}
-        disabled={currentPage === 1}
-      >
-        <ChevronLeft className="h-4 w-4 mr-1" />
-        {t('index.previous')}
-      </Button>
-      <div className="flex items-center gap-2">
-        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-          let pageNum: number;
-          if (totalPages <= 5) pageNum = i + 1;
-          else if (currentPage <= 3) pageNum = i + 1;
-          else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
-          else pageNum = currentPage - 2 + i;
-          return (
-            <Button
-              key={pageNum}
-              variant={currentPage === pageNum ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => handlePageChange(pageNum)}
-            >
-              {pageNum}
-            </Button>
-          );
-        })}
-      </div>
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => handlePageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
-      >
-        {t('index.next')}
-        <ChevronRight className="h-4 w-4 ml-1" />
-      </Button>
-    </div>
-  );
-
   const federatedItems = federatedQuery.data?.items ?? [];
   const localItems = itemsQuery.data?.items ?? [];
 
@@ -331,40 +289,24 @@ const Index = () => {
           onOnlyAvailableChange={handleOnlyAvailableChange}
         />
 
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-foreground">
-            {searchQuery
-              ? t('index.searchResults').replace('{query}', searchQuery)
-              : selectedCategory === 'all'
-                ? t('index.allItems')
-                : t('index.categoryItems').replace('{category}', selectedCategory)}
-          </h2>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">
-              {t('index.itemsFound').replace('{count}', String(totalCount))}
-            </span>
-            <div className="flex items-center gap-1 border rounded-lg p-1">
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => toggleViewMode('list')}
-                className="h-8 w-8 p-0"
-                title={t('index.viewList')}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'cards' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => toggleViewMode('cards')}
-                className="h-8 w-8 p-0"
-                title={t('index.viewGrid')}
-              >
-                <Grid3X3 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </div>
+        <Group justify="space-between" align="center">
+          <Text size="sm" c="dimmed">
+            {t('index.itemsFound').replace('{count}', String(totalCount))}
+          </Text>
+          <SegmentedControl
+            value={viewMode}
+            onChange={value => toggleViewMode(value as 'list' | 'cards')}
+            data={[
+              { label: <List className="h-4 w-4" />, value: 'list' },
+              { label: <Grid3X3 className="h-4 w-4" />, value: 'cards' },
+            ]}
+            color="green"
+            styles={{
+              label: { padding: 8 },
+              indicator: { boxShadow: 'none' },
+            }}
+          />
+        </Group>
 
         {isFederatedScope ? (
           federatedItems.length === 0 ? (
@@ -520,7 +462,11 @@ const Index = () => {
           </div>
         )}
 
-        {pagination}
+        {totalPages > 1 && (
+          <div className="flex justify-center pt-3">
+            <Pagination total={totalPages} value={currentPage} onChange={handlePageChange} />
+          </div>
+        )}
       </div>
     </main>
   );
