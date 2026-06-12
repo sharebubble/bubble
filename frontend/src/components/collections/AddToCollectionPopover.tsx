@@ -10,7 +10,7 @@ import {
 import { cn } from '@/lib/utils';
 import { ActionIcon, Button, Popover, Text, TextInput, Tooltip } from '@mantine/core';
 import { BookMarked, Check, Loader2, Plus } from 'lucide-react';
-import { useState } from 'react';
+import { useState, type MouseEvent } from 'react';
 
 interface AddToCollectionPopoverProps {
   itemId: string;
@@ -77,12 +77,17 @@ export const AddToCollectionPopover = ({
 
   const isBusy = addMutation.isPending || removeMutation.isPending || createMutation.isPending;
 
+  const handleTriggerClick = (e: MouseEvent) => {
+    e.stopPropagation();
+    setOpen(o => !o);
+  };
+
   const trigger = iconOnly ? (
     <ActionIcon
       variant="default"
       size="md"
       className={cn('shrink-0', className)}
-      onClick={e => e.stopPropagation()}
+      onClick={handleTriggerClick}
       aria-label={t('collections.addToCollection')}
     >
       <BookMarked size={16} />
@@ -93,7 +98,7 @@ export const AddToCollectionPopover = ({
       size="sm"
       className={className}
       leftSection={<BookMarked size={16} />}
-      onClick={e => e.stopPropagation()}
+      onClick={handleTriggerClick}
     >
       {t('collections.addToCollection')}
     </Button>
