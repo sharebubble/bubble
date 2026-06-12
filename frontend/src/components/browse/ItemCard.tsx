@@ -84,7 +84,7 @@ export const ItemCard = ({
     switch (st) {
       case 'donate':
       case 'borrow':
-        return { color: 'green', variant: 'filled' };
+        return { color: 'teal', variant: 'filled' };
       case 'want_buy':
       case 'want_rent':
         return { color: 'gray', variant: 'outline' };

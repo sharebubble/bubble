@@ -1,6 +1,10 @@
 import { BookingDialog } from '@/components/items/BookingDialog';
 import { RentalCalendar } from '@/components/items/RentalCalendar';
-import { getStatusLabel, getStatusMantineColor } from '@/components/items/status';
+import {
+  getSalesTypeBadgeProps,
+  getStatusLabel,
+  getStatusMantineColor,
+} from '@/components/items/status';
 import { AddToCollectionPopover } from '@/components/collections/AddToCollectionPopover';
 import UserInfoBox from '@/components/users/UserInfoBox';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -31,25 +35,6 @@ import {
 } from 'lucide-react';
 import { createElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-
-const getSalesTypeBadgeProps = (
-  st: SalesTypeEnum,
-): { color: string; variant: 'filled' | 'outline' | 'light' } => {
-  switch (st) {
-    case 'sell':
-      return { color: 'green', variant: 'filled' };
-    case 'donate':
-    case 'borrow':
-      return { color: 'teal', variant: 'filled' };
-    case 'rent':
-      return { color: 'blue', variant: 'filled' };
-    case 'want_buy':
-    case 'want_rent':
-      return { color: 'gray', variant: 'outline' };
-    default:
-      return { color: 'gray', variant: 'light' };
-  }
-};
 
 const ItemDetail = () => {
   const { itemUuid } = useParams<{ itemUuid: string }>();

@@ -392,7 +392,11 @@ export const ImageManager = ({
             onDrop={e => item.type === 'existing' && handleDrop(e, item.index)}
           >
             <img
-              src={item.type === 'existing' ? (item.data.thumbnail ?? undefined) : item.data.url}
+              src={
+                item.type === 'existing'
+                  ? (item.data.thumbnail ?? item.data.original)
+                  : item.data.url
+              }
               alt={`Image ${displayIndex + 1}`}
               className="w-full h-32 object-contain rounded-lg border cursor-pointer bg-muted"
               onClick={() =>

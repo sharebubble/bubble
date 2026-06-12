@@ -4,7 +4,7 @@ import { getCategoryIcon } from '@/lib/categoryIcons';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
 import { formatPrice } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
-import { getStatusMantineColor } from '@/components/items/status';
+import { getSalesTypeBadgeProps, getStatusMantineColor } from '@/components/items/status';
 import { SalesTypeEnum, StatusB0aEnum } from '@/services/django';
 import { ActionIcon, Badge, Button, Card, Menu, Select, Table, Text, Title } from '@mantine/core';
 import { modals } from '@mantine/modals';
@@ -143,23 +143,6 @@ const MyItems = () => {
         return t('status.sold');
       default:
         return t('status.unknown');
-    }
-  };
-
-  const getSalesTypeBadgeProps = (st: SalesTypeEnum | undefined) => {
-    switch (st) {
-      case 'sell':
-        return { color: 'green', variant: 'filled' as const };
-      case 'donate':
-      case 'borrow':
-        return { color: 'teal', variant: 'filled' as const };
-      case 'rent':
-        return { color: 'blue', variant: 'filled' as const };
-      case 'want_buy':
-      case 'want_rent':
-        return { color: 'gray', variant: 'outline' as const };
-      default:
-        return { color: 'gray', variant: 'filled' as const };
     }
   };
 
