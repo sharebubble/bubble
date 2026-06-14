@@ -1,8 +1,8 @@
-import { ActionIcon, Avatar, Button, Indicator, Menu, TextInput } from '@mantine/core';
+import { ActionIcon, Avatar, Button, Indicator, Menu } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnreadMessages } from '@/hooks/useMessages';
-import * as Sentry from '@sentry/react';
+import { SearchBar } from '@/components/layout/SearchBar';
 
 import { cn } from '@/lib/utils';
 import {
@@ -13,17 +13,14 @@ import {
   LogIn,
   LogOut,
   Plus,
-  Search,
   User,
 } from 'lucide-react';
-import { SubmitEvent, useEffect, useRef, useState } from 'react';
-import { NavLink, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 
 export const Header = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
   const { data: unreadMessages } = useUnreadMessages();
 
   const { t } = useLanguage();
@@ -33,36 +30,6 @@ export const Header = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
-  };
-
-  const searchTerm = searchParams.get('search') || '';
-  const [inputValue, setInputValue] = useState(searchTerm);
-  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleSearchChange = (term: string) => {
-    setInputValue(term);
-
-    if (debounceTimer.current) clearTimeout(debounceTimer.current);
-
-    debounceTimer.current = setTimeout(() => {
-      const next = new URLSearchParams(searchParams);
-      if (term.length > 0) {
-        next.set('search', term);
-      } else {
-        next.delete('search');
-      }
-      setSearchParams(next, { replace: true });
-    }, 300);
-  };
-
-  // Keep input in sync if the URL param changes externally (e.g. browser back/forward)
-  useEffect(() => {
-    setInputValue(searchTerm);
-  }, [searchTerm]);
-
-  const handleSubmit = (event: SubmitEvent) => {
-    event.preventDefault();
-    setSearchParams(searchParams, { replace: false });
   };
 
   if (!user) {
@@ -79,17 +46,9 @@ export const Header = () => {
                 <p className="text-xs text-muted-foreground">Community Network</p>
               </div>
             </NavLink>
-            <form className="flex-1 max-w-lg" onSubmit={handleSubmit}>
-              <div className="relative">
-                <TextInput
-                  placeholder={t('header.search')}
-                  leftSection={<Search size={16} aria-hidden="true" />}
-                  className="shadow-soft focus-within:shadow-medium transition-shadow"
-                  value={inputValue}
-                  onChange={e => handleSearchChange(e.target.value)}
-                />
-              </div>
-            </form>
+            <div className="flex-1 max-w-lg">
+              <SearchBar showOwner={false} />
+            </div>
 
             <Button
               variant="default"
@@ -121,17 +80,9 @@ export const Header = () => {
           </NavLink>
 
           {/* Search Bar */}
-          <form className="flex-1 max-w-lg" onSubmit={handleSubmit}>
-            <div className="relative">
-              <TextInput
-                placeholder={t('header.search')}
-                leftSection={<Search size={16} aria-hidden="true" />}
-                className="shadow-soft focus-within:shadow-medium transition-shadow"
-                value={inputValue}
-                onChange={e => handleSearchChange(e.target.value)}
-              />
-            </div>
-          </form>
+          <div className="flex-1 max-w-lg">
+            <SearchBar showOwner />
+          </div>
 
           {/* Actions */}
           <div className="flex items-center gap-2">

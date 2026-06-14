@@ -1,5 +1,6 @@
 import {
   publicItemsList,
+  type PublicItemsListData,
   type StatusB0aEnum,
   type ConditionEnum,
   type SalesTypeEnum,
@@ -17,6 +18,8 @@ export const useItems = ({
   salesTypes,
   conditions,
   ordering,
+  owner,
+  collection,
 }: {
   category?: ItemCategory;
   search?: string;
@@ -27,6 +30,10 @@ export const useItems = ({
   salesTypes?: SalesTypeEnum[];
   conditions?: ConditionEnum[];
   ordering?: string;
+  /** Restrict to items owned by this user id. */
+  owner?: string;
+  /** Restrict to items contained in this collection id. */
+  collection?: string;
 } = {}) => {
   const normalizedStatus =
     status === undefined ? undefined : Array.isArray(status) ? status : [status];
@@ -48,10 +55,14 @@ export const useItems = ({
         salesTypes: salesTypesSorted,
         conditions: conditionsSorted,
         ordering,
+        owner,
+        collection,
       },
     ],
     queryFn: async () => {
       const response = await publicItemsList({
+        // `collection` is a valid backend filter that is not yet part of the
+        // generated query type, so the object is widened before being passed.
         query: {
           category,
           page: page,
@@ -62,7 +73,9 @@ export const useItems = ({
           sales_type: salesTypesSorted,
           conditions: conditionsSorted,
           ordering,
-        },
+          user: owner,
+          collection,
+        } as NonNullable<PublicItemsListData['query']> & { collection?: string },
       });
       return {
         items: response.data.results || [],
