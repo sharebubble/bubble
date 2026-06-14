@@ -1,4 +1,4 @@
-import { createContext, ReactNode, useContext, useState } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useMemo, useState } from 'react';
 
 const LANGUAGES = ['en', 'de'] as const;
 export type Language = (typeof LANGUAGES)[number];
@@ -1157,25 +1157,29 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     return 'en';
   });
 
-  const setLanguage = (lang: Language) => {
+  const setLanguage = useCallback((lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('bubble-language', lang);
-  };
+  }, []);
 
-  const syncLanguage = (lang: Language) => {
+  const syncLanguage = useCallback((lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('bubble-language', lang);
-  };
+  }, []);
 
-  const t = (key: string): string => {
-    return translations[language][key as keyof (typeof translations)['en']] || key;
-  };
-
-  return (
-    <LanguageContext.Provider value={{ language, setLanguage, syncLanguage, t }}>
-      {children}
-    </LanguageContext.Provider>
+  const t = useCallback(
+    (key: string): string => {
+      return translations[language][key as keyof (typeof translations)['en']] || key;
+    },
+    [language],
   );
+
+  const value = useMemo(
+    () => ({ language, setLanguage, syncLanguage, t }),
+    [language, setLanguage, syncLanguage, t],
+  );
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 };
 
 export const useLanguage = () => {

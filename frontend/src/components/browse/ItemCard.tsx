@@ -10,6 +10,7 @@ import { formatDate } from '@/lib/date';
 import { SalesTypeEnum, StatusB0aEnum } from '@/services/django';
 import { Badge, Button, Card, Text, Tooltip } from '@mantine/core';
 import { Clock, Globe, Zap } from 'lucide-react';
+import { memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface ItemCardProps {
@@ -35,7 +36,7 @@ interface ItemCardProps {
   remoteInstance?: string | null;
 }
 
-export const ItemCard = ({
+const ItemCardComponent = ({
   id,
   title,
   description,
@@ -99,7 +100,7 @@ export const ItemCard = ({
     <Card
       withBorder
       padding="lg"
-      className="group overflow-hidden transition-all duration-300 hover:shadow-strong hover:scale-105 animate-fade-in cursor-pointer"
+      className="group overflow-hidden transition-shadow duration-300 hover:shadow-strong animate-fade-in cursor-pointer"
       onClick={() => navigate(`/item/${id}`)}
     >
       {/* Image Section */}
@@ -108,6 +109,8 @@ export const ItemCard = ({
           <img
             src={imageUrl}
             alt={title}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
           />
         ) : (
@@ -168,7 +171,7 @@ export const ItemCard = ({
                   color="blue"
                   size="sm"
                   leftSection={<Globe size={12} />}
-                  className="shadow-medium cursor-default backdrop-blur-xs"
+                  className="shadow-medium cursor-default"
                 >
                   <span className="max-w-24 truncate">{remoteInstance}</span>
                 </Badge>
@@ -180,7 +183,7 @@ export const ItemCard = ({
         {/* Price overlay */}
         {price !== undefined && (
           <div className="absolute bottom-3 right-3">
-            <div className="rounded-lg bg-background/90 backdrop-blur-xs px-3 py-1 shadow-medium">
+            <div className="rounded-lg bg-background/95 px-3 py-1 shadow-medium">
               <div className="flex items-center gap-1 text-sm font-semibold">
                 {formatPrice(price, priceCurrency)}
                 {(salesType === 'rent' || salesType === 'borrow') && (
@@ -296,3 +299,5 @@ export const ItemCard = ({
     </Card>
   );
 };
+
+export const ItemCard = memo(ItemCardComponent);
