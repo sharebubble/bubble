@@ -85,7 +85,10 @@ export const RentalCalendar = ({
   // All dates use the browser's local timezone
   // JavaScript Date objects automatically work in the user's timezone
   const [currentDate, setCurrentDate] = useState(new Date());
+  // First click of a range selection (a datetime in weekly view, a day in monthly).
   const [selectingStart, setSelectingStart] = useState<Date | null>(null);
+  // Tile currently under the pointer while a start is pending — drives the live preview.
+  const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
 
   const currentWeekStart = useMemo(() => startOfDay(currentDate), [currentDate]);
 
@@ -124,7 +127,9 @@ export const RentalCalendar = ({
     const dayStart = startOfDay(day);
 
     if (!selectingStart) {
+      // First click: mark the start tile and wait for the end.
       setSelectingStart(dayStart);
+      setHoveredDate(dayStart);
     } else {
       const start = isBefore(dayStart, selectingStart) ? dayStart : selectingStart;
       const end = isBefore(dayStart, selectingStart) ? selectingStart : dayStart;
@@ -132,6 +137,7 @@ export const RentalCalendar = ({
 
       onDateRangeSelect?.(start, adjustedEnd);
       setSelectingStart(null);
+      setHoveredDate(null);
     }
   };
 
@@ -146,8 +152,9 @@ export const RentalCalendar = ({
     }
 
     if (!selectingStart) {
-      // Start selection
+      // First click: mark the start slot and wait for the end.
       setSelectingStart(selectedDateTime);
+      setHoveredDate(selectedDateTime);
     } else {
       // Check if clicking the same slot - select just one hour
       if (selectedDateTime.getTime() === selectingStart.getTime()) {
@@ -155,6 +162,7 @@ export const RentalCalendar = ({
         endDateTime.setHours(hour + 1, 0, 0, 0);
         onDateRangeSelect?.(selectedDateTime, endDateTime);
         setSelectingStart(null);
+        setHoveredDate(null);
         return;
       }
 
@@ -168,6 +176,7 @@ export const RentalCalendar = ({
 
       onDateRangeSelect?.(start, adjustedEnd);
       setSelectingStart(null);
+      setHoveredDate(null);
     }
   };
 
@@ -183,18 +192,24 @@ export const RentalCalendar = ({
     );
   };
 
-  const isTimeSlotInPreview = (date: Date, hour: number): boolean => {
+  const isTimeSlotPendingStart = (date: Date, hour: number): boolean => {
     if (!selectingStart) return false;
+    const slotStart = new Date(date);
+    slotStart.setHours(hour, 0, 0, 0);
+    return slotStart.getTime() === selectingStart.getTime();
+  };
+
+  // Light highlight for the tiles between the pending start and the hovered tile.
+  const isTimeSlotInPreview = (date: Date, hour: number): boolean => {
+    if (!selectingStart || !hoveredDate) return false;
 
     const slotStart = new Date(date);
     slotStart.setHours(hour, 0, 0, 0);
 
-    const start = selectingStart;
-    const end = slotStart;
+    const [start, end] = isBefore(hoveredDate, selectingStart)
+      ? [hoveredDate, selectingStart]
+      : [selectingStart, hoveredDate];
 
-    if (isBefore(end, start)) {
-      return isWithinInterval(slotStart, { start: end, end: start });
-    }
     return isWithinInterval(slotStart, { start, end });
   };
 
@@ -258,15 +273,20 @@ export const RentalCalendar = ({
     });
   };
 
-  const isDayInPreview = (day: Date): boolean => {
+  const isDayPendingStart = (day: Date): boolean => {
     if (!selectingStart) return false;
-    const dayStart = startOfDay(day);
-    const start = selectingStart;
-    const end = dayStart;
+    return startOfDay(day).getTime() === selectingStart.getTime();
+  };
 
-    if (isBefore(end, start)) {
-      return isWithinInterval(dayStart, { start: end, end: start });
-    }
+  // Light highlight for the days between the pending start and the hovered day.
+  const isDayInPreview = (day: Date): boolean => {
+    if (!selectingStart || !hoveredDate) return false;
+    const dayStart = startOfDay(day);
+
+    const [start, end] = isBefore(hoveredDate, selectingStart)
+      ? [hoveredDate, selectingStart]
+      : [selectingStart, hoveredDate];
+
     return isWithinInterval(dayStart, { start, end });
   };
 
@@ -303,8 +323,33 @@ export const RentalCalendar = ({
     });
   };
 
+  const clearSelection = () => {
+    setSelectingStart(null);
+    setHoveredDate(null);
+  };
+
+  const formatDurationLabel = (start: Date, end: Date) => {
+    const hours = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60));
+    if (viewMode === 'monthly') {
+      return `${Math.max(1, Math.round(hours / 24))} ${t('calendar.days')}`;
+    }
+    return `${hours} ${t('calendar.hours')}`;
+  };
+
+  // Live range while a start is pending: ordered start/end plus the unit padding
+  // (a full hour in weekly view, a full day in monthly) used for the final booking.
+  const previewRange = useMemo(() => {
+    if (!selectingStart || !hoveredDate) return null;
+    const [start, last] = isBefore(hoveredDate, selectingStart)
+      ? [hoveredDate, selectingStart]
+      : [selectingStart, hoveredDate];
+    const end =
+      viewMode === 'weekly' ? new Date(last.getTime() + 60 * 60 * 1000) : addDays(last, 1);
+    return { start, end };
+  }, [selectingStart, hoveredDate, viewMode]);
+
   const renderWeeklyView = () => (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" onMouseLeave={() => selectingStart && setHoveredDate(null)}>
       <div className="min-w-[700px]">
         {/* Week Day Headers */}
         <div className="grid grid-cols-8 gap-1 mb-2">
@@ -336,14 +381,22 @@ export const RentalCalendar = ({
                 const isPast = isTimeSlotPast(day, hour);
                 const isBooked = isTimeSlotBooked(day, hour);
                 const booking = isBooked ? getBookingForTimeSlot(day, hour) : null;
-                const isSelected = isTimeSlotSelected(day, hour);
-                const isPreview = isTimeSlotInPreview(day, hour);
+                const isPendingStart = isTimeSlotPendingStart(day, hour);
+                // Hide the previously confirmed range while a new selection is in progress.
+                const isSelected = !selectingStart && isTimeSlotSelected(day, hour);
+                const isPreview = isTimeSlotInPreview(day, hour) && !isPendingStart;
                 const isClickDisabled = isPast || isBooked;
+                const isHighlighted = isSelected || isPendingStart;
 
                 const slotButton = (
                   <button
                     key={dayIndex}
                     onClick={() => !isClickDisabled && handleTimeSlotClick(day, hour)}
+                    onMouseEnter={() => {
+                      const slot = new Date(day);
+                      slot.setHours(hour, 0, 0, 0);
+                      if (selectingStart && !isClickDisabled) setHoveredDate(slot);
+                    }}
                     disabled={isPast && !isBooked}
                     className={cn(
                       'h-8 rounded transition-colors w-full',
@@ -352,13 +405,12 @@ export const RentalCalendar = ({
                         !isPast &&
                         'bg-[var(--mantine-color-red-1)] cursor-pointer opacity-70 border border-[var(--mantine-color-red-3)]',
                       !isClickDisabled &&
-                        !isSelected &&
+                        !isHighlighted &&
                         !isPreview &&
                         'bg-transparent hover:bg-[var(--mantine-color-gray-1)] border',
-                      isSelected &&
+                      isHighlighted &&
                         'bg-[var(--mantine-color-green-6)] text-white hover:bg-[var(--mantine-color-green-7)]',
                       isPreview &&
-                        !isSelected &&
                         'bg-[var(--mantine-color-green-2)] hover:bg-[var(--mantine-color-green-3)]',
                     )}
                   />
@@ -405,19 +457,28 @@ export const RentalCalendar = ({
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div
+        className="grid grid-cols-7 gap-1"
+        onMouseLeave={() => selectingStart && setHoveredDate(null)}
+      >
         {daysInMonthGrid.map((day, index) => {
           const isPast = isDayPast(day);
           const isBooked = isDayBooked(day);
           const bookings = isBooked ? getBookingsForDay(day) : [];
-          const isSelected = isDaySelected(day);
-          const isPreview = isDayInPreview(day);
+          const isPendingStart = isDayPendingStart(day);
+          // Hide the previously confirmed range while a new selection is in progress.
+          const isSelected = !selectingStart && isDaySelected(day);
+          const isPreview = isDayInPreview(day) && !isPendingStart;
           const isCurrentMonth = isSameMonth(day, currentDate);
           const isClickDisabled = isPast || isBooked;
+          const isHighlighted = isSelected || isPendingStart;
 
           const dayButton = (
             <button
               onClick={() => !isClickDisabled && handleDayClick(day)}
+              onMouseEnter={() => {
+                if (selectingStart && !isClickDisabled) setHoveredDate(startOfDay(day));
+              }}
               disabled={isPast && !isBooked}
               className={cn(
                 'h-16 rounded transition-colors flex flex-col items-center justify-center p-1 w-full',
@@ -427,16 +488,15 @@ export const RentalCalendar = ({
                   !isPast &&
                   'bg-[var(--mantine-color-red-1)] cursor-pointer opacity-70 border border-[var(--mantine-color-red-3)]',
                 !isClickDisabled &&
-                  !isSelected &&
+                  !isHighlighted &&
                   !isPreview &&
                   'bg-transparent hover:bg-[var(--mantine-color-gray-1)] border',
-                isSelected &&
+                isHighlighted &&
                   'bg-[var(--mantine-color-green-6)] text-white hover:bg-[var(--mantine-color-green-7)]',
                 isPreview &&
-                  !isSelected &&
                   'bg-[var(--mantine-color-green-2)] hover:bg-[var(--mantine-color-green-3)]',
                 isSameDay(day, new Date()) &&
-                  !isSelected &&
+                  !isHighlighted &&
                   'border-2 border-[var(--mantine-color-green-6)]',
               )}
             >
@@ -513,8 +573,45 @@ export const RentalCalendar = ({
 
       {viewMode === 'weekly' ? renderWeeklyView() : renderMonthlyView()}
 
+      {/* Live preview while a start tile is selected and an end is being chosen */}
+      {selectingStart && (
+        <Paper
+          mt="md"
+          p="md"
+          radius="lg"
+          withBorder
+          bg="green.0"
+          className="relative flex flex-wrap items-center justify-between gap-3"
+        >
+          <div>
+            <Text size="sm" fw={500} mb={4}>
+              {t('calendar.selectingPeriod')}
+            </Text>
+            {previewRange ? (
+              <>
+                <Text size="sm" c="dimmed">
+                  {format(previewRange.start, 'EEE, MMM d, HH:mm')} –{' '}
+                  {format(previewRange.end, 'EEE, MMM d, HH:mm')}
+                </Text>
+                <Text size="sm" fw={600} mt={2}>
+                  {t('calendar.duration')}:{' '}
+                  {formatDurationLabel(previewRange.start, previewRange.end)}
+                </Text>
+              </>
+            ) : (
+              <Text size="sm" c="dimmed">
+                {t('calendar.clickToSetEnd')}
+              </Text>
+            )}
+          </div>
+          <Button size="xs" variant="subtle" color="gray" onClick={clearSelection}>
+            {t('calendar.clearSelection')}
+          </Button>
+        </Paper>
+      )}
+
       {/* Selection Summary */}
-      {selectedStart && selectedEnd && (
+      {!selectingStart && selectedStart && selectedEnd && (
         <Paper mt="md" p="md" radius="lg" bg="gray.1" className="relative">
           <Text size="sm" fw={500} mb={4}>
             {t('calendar.selectedPeriod')}:

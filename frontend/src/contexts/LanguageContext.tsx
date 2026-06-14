@@ -315,6 +315,10 @@ const translations = {
     'calendar.to': 'To',
     'calendar.duration': 'Duration',
     'calendar.hours': 'hours',
+    'calendar.days': 'days',
+    'calendar.selectingPeriod': 'Selecting period',
+    'calendar.clickToSetEnd': 'Click an end tile to confirm, or hover to preview',
+    'calendar.clearSelection': 'Clear',
     'calendar.week': 'Week',
     'calendar.month': 'Month',
 
@@ -883,6 +887,11 @@ const translations = {
     'calendar.to': 'Bis',
     'calendar.duration': 'Dauer',
     'calendar.hours': 'Stunden',
+    'calendar.days': 'Tage',
+    'calendar.selectingPeriod': 'Zeitraum wählen',
+    'calendar.clickToSetEnd':
+      'Klicke ein End-Feld zum Bestätigen oder bewege die Maus für eine Vorschau',
+    'calendar.clearSelection': 'Zurücksetzen',
     'calendar.week': 'Woche',
     'calendar.month': 'Monat',
 
