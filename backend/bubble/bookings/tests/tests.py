@@ -1126,10 +1126,12 @@ class BookingAgendaFilterTestCase(APITestCase):
         ]
 
     def test_selectable_page_size(self):
-        response = self.client.get("/api/bookings/?status=3&page_size=2")
+        page_size = 2
+        confirmed_count = Booking.objects.filter(status=BookingStatus.CONFIRMED).count()
+        response = self.client.get(f"/api/bookings/?status=3&page_size={page_size}")
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["count"] == 3
-        assert len(response.data["results"]) == 2
+        assert response.data["count"] == confirmed_count
+        assert len(response.data["results"]) == page_size
         assert response.data["next"] is not None
 
     def test_search_spans_all_time(self):
