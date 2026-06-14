@@ -409,6 +409,11 @@ const translations = {
     'itemDetail.notFound': 'Item not found',
     'itemDetail.availability': 'Availability',
     'itemDetail.properties': 'Properties',
+    'itemDetail.previousImage': 'Previous image',
+    'itemDetail.nextImage': 'Next image',
+    'itemDetail.openImage': 'Open image in full screen',
+    'itemDetail.closeViewer': 'Close image viewer',
+    'itemDetail.goToImage': 'Go to image',
 
     // My Items
     'myItems.title': 'My Items',
@@ -973,6 +978,11 @@ const translations = {
     'itemDetail.notFound': 'Artikel nicht gefunden',
     'itemDetail.availability': 'Verfügbarkeit',
     'itemDetail.properties': 'Eigenschaften',
+    'itemDetail.previousImage': 'Vorheriges Bild',
+    'itemDetail.nextImage': 'Nächstes Bild',
+    'itemDetail.openImage': 'Bild im Vollbild öffnen',
+    'itemDetail.closeViewer': 'Bildansicht schließen',
+    'itemDetail.goToImage': 'Zu Bild springen',
 
     // My Items
     'myItems.title': 'Meine Artikel',
