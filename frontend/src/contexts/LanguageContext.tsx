@@ -388,6 +388,14 @@ const translations = {
     'bookings.prevPeriod': 'Previous period',
     'bookings.nextPeriod': 'Next period',
     'bookings.today': 'Today',
+    'bookings.searchPlaceholder': 'Search bookings by item…',
+    'bookings.showPending': 'Show pending requests',
+    'bookings.pending': 'Pending',
+    'bookings.directionPast': 'Past',
+    'bookings.directionUpcoming': 'Current & upcoming',
+    'bookings.perPage': 'Per page',
+    'bookings.noSearchResults': 'No bookings match your search',
+    'bookings.searchingAll': 'Searching all bookings — past, current & upcoming',
     'header.bookings': 'Bookings',
 
     // Item Detail
@@ -955,6 +963,14 @@ const translations = {
     'bookings.prevPeriod': 'Vorheriger Zeitraum',
     'bookings.nextPeriod': 'Nächster Zeitraum',
     'bookings.today': 'Heute',
+    'bookings.searchPlaceholder': 'Buchungen nach Artikel suchen…',
+    'bookings.showPending': 'Ausstehende Anfragen anzeigen',
+    'bookings.pending': 'Ausstehend',
+    'bookings.directionPast': 'Vergangen',
+    'bookings.directionUpcoming': 'Aktuell & bevorstehend',
+    'bookings.perPage': 'Pro Seite',
+    'bookings.noSearchResults': 'Keine Buchungen entsprechen deiner Suche',
+    'bookings.searchingAll': 'Alle Buchungen durchsuchen – vergangen, aktuell & bevorstehend',
     'header.bookings': 'Buchungen',
 
     // Item Detail

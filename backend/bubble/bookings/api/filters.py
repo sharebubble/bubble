@@ -1,4 +1,6 @@
 import django_filters
+from django.db.models import Q
+from django.utils import timezone
 from guardian.shortcuts import get_objects_for_user
 
 from bubble.bookings.models import Booking, BookingStatus, Message
@@ -37,6 +39,18 @@ class BookingFilter(django_filters.FilterSet):
     role = django_filters.CharFilter(
         method="filter_role", label="Role filter (owner/renter)"
     )
+    # temporal=upcoming → current + future bookings (not yet ended)
+    # temporal=active   → currently running bookings
+    # temporal=past     → bookings that have already ended
+    temporal = django_filters.ChoiceFilter(
+        choices=[
+            ("upcoming", "Upcoming"),
+            ("active", "Active"),
+            ("past", "Past"),
+        ],
+        method="filter_temporal",
+        label="Temporal filter (upcoming/active/past)",
+    )
 
     class Meta:
         model = Booking
@@ -52,6 +66,7 @@ class BookingFilter(django_filters.FilterSet):
             "time_to_before",
             "time_to_isnull",
             "role",
+            "temporal",
         ]
 
     def filter_role(self, queryset, name, value):
@@ -69,6 +84,26 @@ class BookingFilter(django_filters.FilterSet):
             # Bookings where the current user is the requester
             return queryset.filter(user=request.user)
 
+        return queryset
+
+    def filter_temporal(self, queryset, name, value):
+        """Split bookings relative to the current time for the agenda view.
+
+        An open-ended booking (``time_to`` is null) is treated as not-yet-ended,
+        so it counts as upcoming/active but never as past.
+        """
+        now = timezone.now()
+        if value == "past":
+            # Already ended.
+            return queryset.filter(time_to__lt=now)
+        if value == "upcoming":
+            # Current + future: anything that has not ended yet.
+            return queryset.filter(Q(time_to__gte=now) | Q(time_to__isnull=True))
+        if value == "active":
+            # Currently running: started and not yet ended.
+            return queryset.filter(
+                Q(time_from__lte=now) & (Q(time_to__gte=now) | Q(time_to__isnull=True))
+            )
         return queryset
 
 
