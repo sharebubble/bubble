@@ -44,7 +44,7 @@ dependencies = [
     "whitenoise",
     "pyld>=3.0.0",
     "http-message-signatures>=2.0.1",
-    "cryptography>=47.0.0",
+    "cryptography>=48.0.1",
 ]
 
 [[tool.uv.index]]
