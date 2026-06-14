@@ -67,7 +67,7 @@ export const Header = () => {
 
   if (!user) {
     return (
-      <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
+      <header className="sticky top-0 z-50 border-b border-border bg-background/95 md:bg-background/80 md:backdrop-blur-md">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-4">
             <NavLink to="/" className="flex items-center gap-3">
@@ -80,7 +80,7 @@ export const Header = () => {
               </div>
             </NavLink>
             <form className="flex-1 max-w-lg" onSubmit={handleSubmit}>
-              <div className={cn('relative transition-all duration-300 focus-within:scale-105')}>
+              <div className="relative">
                 <TextInput
                   placeholder={t('header.search')}
                   leftSection={<Search size={16} aria-hidden="true" />}
@@ -106,7 +106,7 @@ export const Header = () => {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/95 md:bg-background/80 md:backdrop-blur-md">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           {/* Logo */}

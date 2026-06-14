@@ -30,18 +30,27 @@ if (dsn) {
   // get sentryId from dsn, which is the part after the last '/'
   const sentryId = dsn.split('/').pop();
 
+  // Performance tracing and the auto-injected feedback widget add meaningful
+  // CPU/JS overhead on phones and low-power devices, so trim them there.
+  const isMobile =
+    typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
   Sentry.init({
     dsn: dsn,
     // Adds request headers and IP for users, for more info visit:
     // https://docs.sentry.io/platforms/javascript/guides/react/configuration/options/#sendDefaultPii
     sendDefaultPii: true,
-    tracesSampleRate: 1.0,
+    tracesSampleRate: isMobile ? 0.1 : 1.0,
     integrations: [
       Sentry.browserTracingIntegration(),
-      Sentry.feedbackIntegration({
-        colorScheme: 'system',
-        autoInject: true,
-      }),
+      ...(isMobile
+        ? []
+        : [
+            Sentry.feedbackIntegration({
+              colorScheme: 'system',
+              autoInject: true,
+            }),
+          ]),
     ],
     tunnel: `/sentry-tunnel/${sentryId}/`, // Proxy endpoint to hide the DSN from the client
   });

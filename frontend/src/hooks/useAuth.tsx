@@ -1,7 +1,7 @@
 import * as Sentry from '@sentry/react';
 import { authAPI, Session, SessionResponse, User } from '@/services/custom/auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createContext, ReactNode, useContext } from 'react';
+import { createContext, ReactNode, useCallback, useContext, useMemo } from 'react';
 
 interface AuthContextType {
   user?: User;
@@ -68,21 +68,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     },
   });
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await logoutMutation.mutateAsync();
-  };
+  }, [logoutMutation]);
 
-  const refreshAuth = () => {
+  const refreshAuth = useCallback(() => {
     return queryClient.invalidateQueries({ queryKey: ['session'] });
-  };
+  }, [queryClient]);
 
-  const value = {
-    user: sessionData?.user,
-    session: sessionData ?? null,
-    loading: isLoading,
-    signOut,
-    refreshAuth,
-  };
+  const value = useMemo(
+    () => ({
+      user: sessionData?.user,
+      session: sessionData ?? null,
+      loading: isLoading,
+      signOut,
+      refreshAuth,
+    }),
+    [sessionData, isLoading, signOut, refreshAuth],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
