@@ -1,5 +1,6 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usersRetrieve } from '@/services/django/sdk.gen';
+import { Card, Text, Title } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 
 const UserInfoBox = ({ userUuid }: { userUuid: string }) => {
@@ -21,24 +22,34 @@ const UserInfoBox = ({ userUuid }: { userUuid: string }) => {
   if (!userUuid) return null;
 
   return (
-    <div className="mt-6 rounded-md border p-4 bg-card">
-      <h3 className="text-lg font-semibold">{t('itemDetail.ownerInfo')}</h3>
-      {isLoading && <p className="text-sm text-muted-foreground">{t('common.loading')}</p>}
-      {error && <p className="text-sm text-destructive">{(error as Error).message}</p>}
+    <Card withBorder padding="lg" className="mt-6">
+      <Title order={3} size="h4">
+        {t('itemDetail.ownerInfo')}
+      </Title>
+      {isLoading && (
+        <Text size="sm" c="dimmed">
+          {t('common.loading')}
+        </Text>
+      )}
+      {error && (
+        <Text size="sm" c="red">
+          {(error as Error).message}
+        </Text>
+      )}
       {owner && (
-        <div className="mt-2 text-sm space-y-1">
-          <div>
+        <div className="mt-2 space-y-1">
+          <Text size="sm">
             <strong>{t('user.name')}:</strong> {owner.name || owner.username || owner.email}
-          </div>
+          </Text>
           {owner.email && (
-            <div>
+            <Text size="sm">
               <strong>{t('user.email')}:</strong> {owner.email}
-            </div>
+            </Text>
           )}
           {/* Add more fields as needed, keep it minimal for privacy */}
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

@@ -1,7 +1,5 @@
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button, Popover, ScrollArea, Text } from '@mantine/core';
+import { DatePicker } from '@mantine/dates';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { CalendarIcon } from 'lucide-react';
@@ -41,6 +39,13 @@ const nowLocalHour = (): string => {
   const d = String(now.getDate()).padStart(2, '0');
   const h = String(now.getHours()).padStart(2, '0');
   return `${y}-${m}-${d}T${h}:00`;
+};
+
+/** Parse a Mantine "YYYY-MM-DD" date string into a local Date (no timezone shift). */
+const parseDateString = (s: string): Date | undefined => {
+  const [y, m, d] = s.split('-').map(Number);
+  if (!y || !m || !d) return undefined;
+  return new Date(y, m - 1, d);
 };
 
 export const DateHourPicker = ({
@@ -104,39 +109,50 @@ export const DateHourPicker = ({
       : null;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+    <Popover opened={open} onChange={setOpen} position="bottom-start" withinPortal>
+      <Popover.Target>
         <Button
           id={id}
-          variant="outline"
-          className={cn(
-            'w-full justify-start text-left font-normal',
-            !displayValue && 'text-muted-foreground',
-          )}
+          variant="default"
+          fullWidth
+          justify="flex-start"
+          fw={400}
+          c={displayValue ? undefined : 'dimmed'}
+          leftSection={<CalendarIcon size={16} className="shrink-0" />}
           type="button"
+          onClick={() => setOpen(o => !o)}
         >
-          <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
           {displayValue ?? placeholder}
         </Button>
-      </PopoverTrigger>
+      </Popover.Target>
 
-      <PopoverContent className="w-auto p-0" align="start">
+      <Popover.Dropdown p={0}>
         <div className="flex">
           {/* Calendar */}
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={handleDaySelect}
-            disabled={minDate ? { before: minDate } : undefined}
-            initialFocus
-          />
+          <div className="p-3">
+            <DatePicker
+              value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null}
+              onChange={dateString => {
+                if (!dateString) return;
+                handleDaySelect(parseDateString(dateString));
+              }}
+              minDate={minDate}
+            />
+          </div>
 
           {/* Hour picker */}
           <div className="flex flex-col border-l w-16">
-            <p className="px-2 pt-[2.1rem] pb-1 text-xs font-medium text-muted-foreground text-center">
+            <Text
+              size="xs"
+              fw={500}
+              c="dimmed"
+              ta="center"
+              className="px-2 pt-[2.1rem] pb-1"
+              component="p"
+            >
               Hour
-            </p>
-            <ScrollArea className="h-[252px]">
+            </Text>
+            <ScrollArea h={252}>
               <div ref={hourListRef} className="flex flex-col gap-0.5 p-1">
                 {Array.from({ length: 24 }, (_, h) => (
                   <button
@@ -147,9 +163,10 @@ export const DateHourPicker = ({
                     onClick={() => handleHourSelect(h)}
                     className={cn(
                       'rounded px-2 py-1.5 text-sm text-center transition-colors',
-                      'hover:bg-accent hover:text-accent-foreground',
+                      'hover:bg-[var(--mantine-color-gray-1)]',
                       'disabled:opacity-40 disabled:cursor-not-allowed',
-                      selectedHour === h && 'bg-primary text-primary-foreground hover:bg-primary',
+                      selectedHour === h &&
+                        'bg-[var(--mantine-color-green-6)] text-white hover:bg-[var(--mantine-color-green-6)]',
                     )}
                   >
                     {String(h).padStart(2, '0')}:00
@@ -159,7 +176,7 @@ export const DateHourPicker = ({
             </ScrollArea>
           </div>
         </div>
-      </PopoverContent>
+      </Popover.Dropdown>
     </Popover>
   );
 };

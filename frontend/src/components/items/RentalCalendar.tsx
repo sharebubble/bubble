@@ -1,7 +1,13 @@
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import {
+  ActionIcon,
+  Button,
+  Card,
+  Paper,
+  Popover,
+  SegmentedControl,
+  Text,
+  Title,
+} from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { publicBookingsList } from '@/services/django';
@@ -255,7 +261,6 @@ export const RentalCalendar = ({
   const isDayInPreview = (day: Date): boolean => {
     if (!selectingStart) return false;
     const dayStart = startOfDay(day);
-    const previewEnd = startOfDay(new Date()); // just for a valid date object
     const start = selectingStart;
     const end = dayStart;
 
@@ -303,7 +308,7 @@ export const RentalCalendar = ({
       <div className="min-w-[700px]">
         {/* Week Day Headers */}
         <div className="grid grid-cols-8 gap-1 mb-2">
-          <div className="text-xs font-medium text-muted-foreground sticky left-0 bg-background p-2">
+          <div className="text-xs font-medium text-[var(--mantine-color-dimmed)] sticky left-0 bg-[var(--mantine-color-body)] p-2">
             {t('calendar.time')}
           </div>
           {weekDays.map((day, index) => (
@@ -311,7 +316,7 @@ export const RentalCalendar = ({
               key={index}
               className={cn(
                 'text-xs font-medium text-center p-2 rounded',
-                isSameDay(day, new Date()) && 'bg-primary text-primary-foreground',
+                isSameDay(day, new Date()) && 'bg-[var(--mantine-color-green-6)] text-white',
               )}
             >
               <div>{format(day, 'EEE')}</div>
@@ -324,7 +329,7 @@ export const RentalCalendar = ({
         <div className="space-y-1">
           {hours.map(hour => (
             <div key={hour} className="grid grid-cols-8 gap-1">
-              <div className="text-xs text-muted-foreground sticky left-0 bg-background p-2 flex items-center">
+              <div className="text-xs text-[var(--mantine-color-dimmed)] sticky left-0 bg-[var(--mantine-color-body)] p-2 flex items-center">
                 {format(new Date().setHours(hour, 0, 0, 0), 'HH:mm')}
               </div>
               {weekDays.map((day, dayIndex) => {
@@ -342,36 +347,39 @@ export const RentalCalendar = ({
                     disabled={isPast && !isBooked}
                     className={cn(
                       'h-8 rounded transition-colors w-full',
-                      isPast && 'bg-muted cursor-not-allowed opacity-50',
+                      isPast && 'bg-[var(--mantine-color-gray-2)] cursor-not-allowed opacity-50',
                       isBooked &&
                         !isPast &&
-                        'bg-destructive/20 cursor-pointer opacity-70 border border-destructive/50',
+                        'bg-[var(--mantine-color-red-1)] cursor-pointer opacity-70 border border-[var(--mantine-color-red-3)]',
                       !isClickDisabled &&
                         !isSelected &&
                         !isPreview &&
-                        'bg-background hover:bg-accent border',
-                      isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90',
-                      isPreview && !isSelected && 'bg-primary/30 hover:bg-primary/40',
+                        'bg-transparent hover:bg-[var(--mantine-color-gray-1)] border',
+                      isSelected &&
+                        'bg-[var(--mantine-color-green-6)] text-white hover:bg-[var(--mantine-color-green-7)]',
+                      isPreview &&
+                        !isSelected &&
+                        'bg-[var(--mantine-color-green-2)] hover:bg-[var(--mantine-color-green-3)]',
                     )}
                   />
                 );
 
                 if (isBooked && booking) {
                   return (
-                    <Popover key={dayIndex}>
-                      <PopoverTrigger asChild>{slotButton}</PopoverTrigger>
-                      <PopoverContent className="w-auto p-3">
+                    <Popover key={dayIndex} withinPortal shadow="md">
+                      <Popover.Target>{slotButton}</Popover.Target>
+                      <Popover.Dropdown p={12}>
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2 font-semibold text-sm">
-                            <User className="h-3.5 w-3.5" />
+                            <User size={14} />
                             {booking.userFullName}
                           </div>
-                          <div className="text-xs text-muted-foreground">
+                          <Text size="xs" c="dimmed">
                             {format(booking.start, 'MMM d, HH:mm')} -{' '}
                             {format(booking.end, 'MMM d, HH:mm')}
-                          </div>
+                          </Text>
                         </div>
-                      </PopoverContent>
+                      </Popover.Dropdown>
                     </Popover>
                   );
                 }
@@ -389,7 +397,10 @@ export const RentalCalendar = ({
     <div>
       <div className="grid grid-cols-7 gap-1 mb-2">
         {Array.from({ length: 7 }).map((_, i) => (
-          <div key={i} className="text-xs font-medium text-center p-2 text-muted-foreground">
+          <div
+            key={i}
+            className="text-xs font-medium text-center p-2 text-[var(--mantine-color-dimmed)]"
+          >
             {format(addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i), 'EEE')}
           </div>
         ))}
@@ -410,18 +421,23 @@ export const RentalCalendar = ({
               disabled={isPast && !isBooked}
               className={cn(
                 'h-16 rounded transition-colors flex flex-col items-center justify-center p-1 w-full',
-                !isCurrentMonth && 'text-muted-foreground',
-                isPast && 'bg-muted cursor-not-allowed opacity-50',
+                !isCurrentMonth && 'text-[var(--mantine-color-dimmed)]',
+                isPast && 'bg-[var(--mantine-color-gray-2)] cursor-not-allowed opacity-50',
                 isBooked &&
                   !isPast &&
-                  'bg-destructive/20 cursor-pointer opacity-70 border border-destructive/50',
+                  'bg-[var(--mantine-color-red-1)] cursor-pointer opacity-70 border border-[var(--mantine-color-red-3)]',
                 !isClickDisabled &&
                   !isSelected &&
                   !isPreview &&
-                  'bg-background hover:bg-accent border',
-                isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90',
-                isPreview && !isSelected && 'bg-primary/30 hover:bg-primary/40',
-                isSameDay(day, new Date()) && !isSelected && 'border-2 border-primary',
+                  'bg-transparent hover:bg-[var(--mantine-color-gray-1)] border',
+                isSelected &&
+                  'bg-[var(--mantine-color-green-6)] text-white hover:bg-[var(--mantine-color-green-7)]',
+                isPreview &&
+                  !isSelected &&
+                  'bg-[var(--mantine-color-green-2)] hover:bg-[var(--mantine-color-green-3)]',
+                isSameDay(day, new Date()) &&
+                  !isSelected &&
+                  'border-2 border-[var(--mantine-color-green-6)]',
               )}
             >
               <span className="text-sm font-medium">{format(day, 'd')}</span>
@@ -430,24 +446,24 @@ export const RentalCalendar = ({
 
           if (isBooked && bookings.length > 0) {
             return (
-              <Popover key={index}>
-                <PopoverTrigger asChild>{dayButton}</PopoverTrigger>
-                <PopoverContent className="w-auto p-3">
+              <Popover key={index} withinPortal shadow="md">
+                <Popover.Target>{dayButton}</Popover.Target>
+                <Popover.Dropdown p={12}>
                   <div className="flex flex-col gap-2">
                     <div className="font-semibold text-sm">{format(day, 'MMM d, yyyy')}</div>
                     {bookings.map((booking, idx) => (
                       <div key={idx} className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-2 text-sm">
-                          <User className="h-3.5 w-3.5 shrink-0" />
+                          <User size={14} className="shrink-0" />
                           <span className="font-medium">{booking.userFullName}</span>
                         </div>
-                        <div className="text-xs text-muted-foreground ml-5">
+                        <Text size="xs" c="dimmed" className="ml-5">
                           {format(booking.start, 'HH:mm')} - {format(booking.end, 'HH:mm')}
-                        </div>
+                        </Text>
                       </div>
                     ))}
                   </div>
-                </PopoverContent>
+                </Popover.Dropdown>
               </Popover>
             );
           }
@@ -459,75 +475,72 @@ export const RentalCalendar = ({
   );
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">{t('calendar.selectRentalPeriod')}</CardTitle>
-            <ToggleGroup
-              type="single"
-              value={viewMode}
-              onValueChange={value => {
-                if (value) setViewMode(value as 'weekly' | 'monthly');
-              }}
-              size="sm"
-            >
-              <ToggleGroupItem value="weekly" aria-label="Weekly view">
-                {t('calendar.week')}
-              </ToggleGroupItem>
-              <ToggleGroupItem value="monthly" aria-label="Monthly view">
-                {t('calendar.month')}
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-          <div className="flex items-center justify-center gap-2">
-            <Button variant="outline" size="sm" onClick={goToPrevious}>
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <span className="text-sm font-medium min-w-[180px] text-center">
-              {viewMode === 'weekly'
-                ? `${format(currentWeekStart, 'MMM d')} - ${format(
-                    endOfWeek(currentWeekStart, { weekStartsOn: 1 }),
-                    'MMM d, yyyy',
-                  )}`
-                : format(currentDate, 'MMMM yyyy')}
-            </span>
-            <Button variant="outline" size="sm" onClick={goToNext}>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
+    <Card withBorder className="w-full">
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center justify-between">
+          <Title order={3} fz="lg">
+            {t('calendar.selectRentalPeriod')}
+          </Title>
+          <SegmentedControl
+            size="xs"
+            value={viewMode}
+            onChange={value => {
+              if (value) setViewMode(value as 'weekly' | 'monthly');
+            }}
+            data={[
+              { value: 'weekly', label: t('calendar.week') },
+              { value: 'monthly', label: t('calendar.month') },
+            ]}
+          />
         </div>
-      </CardHeader>
-      <CardContent>
-        {viewMode === 'weekly' ? renderWeeklyView() : renderMonthlyView()}
+        <div className="flex items-center justify-center gap-2">
+          <ActionIcon variant="default" size="lg" onClick={goToPrevious} aria-label="Previous">
+            <ChevronLeft size={16} />
+          </ActionIcon>
+          <span className="text-sm font-medium min-w-[180px] text-center">
+            {viewMode === 'weekly'
+              ? `${format(currentWeekStart, 'MMM d')} - ${format(
+                  endOfWeek(currentWeekStart, { weekStartsOn: 1 }),
+                  'MMM d, yyyy',
+                )}`
+              : format(currentDate, 'MMMM yyyy')}
+          </span>
+          <ActionIcon variant="default" size="lg" onClick={goToNext} aria-label="Next">
+            <ChevronRight size={16} />
+          </ActionIcon>
+        </div>
+      </div>
 
-        {/* Selection Summary */}
-        {selectedStart && selectedEnd && (
-          <div className="mt-4 p-4 bg-muted rounded-lg relative">
-            <p className="text-sm font-medium mb-1">{t('calendar.selectedPeriod')}:</p>
-            <div className="text-sm text-muted-foreground">
-              <span className="font-medium">{t('calendar.from')}:</span>{' '}
-              {format(selectedStart, 'EEE, MMM d, yyyy HH:mm')}
-            </div>
-            <div className="text-sm text-muted-foreground">
-              <span className="font-medium">{t('calendar.to')}:</span>{' '}
-              {format(selectedEnd, 'EEE, MMM d, yyyy HH:mm')}
-            </div>
-            <div className="text-sm font-semibold mt-2">
-              {t('calendar.duration')}:{' '}
-              {Math.round((selectedEnd.getTime() - selectedStart.getTime()) / (1000 * 60 * 60))}{' '}
-              {t('calendar.hours')}
-            </div>
+      {viewMode === 'weekly' ? renderWeeklyView() : renderMonthlyView()}
 
-            {/* Book Now button bottom-right */}
-            <div className="absolute right-4 bottom-4">
-              <Button size="sm" onClick={() => onBookNow && onBookNow(selectedStart, selectedEnd)}>
-                {t('booking.bookNow')}
-              </Button>
-            </div>
+      {/* Selection Summary */}
+      {selectedStart && selectedEnd && (
+        <Paper mt="md" p="md" radius="lg" bg="gray.1" className="relative">
+          <Text size="sm" fw={500} mb={4}>
+            {t('calendar.selectedPeriod')}:
+          </Text>
+          <Text size="sm" c="dimmed">
+            <span className="font-medium">{t('calendar.from')}:</span>{' '}
+            {format(selectedStart, 'EEE, MMM d, yyyy HH:mm')}
+          </Text>
+          <Text size="sm" c="dimmed">
+            <span className="font-medium">{t('calendar.to')}:</span>{' '}
+            {format(selectedEnd, 'EEE, MMM d, yyyy HH:mm')}
+          </Text>
+          <Text size="sm" fw={600} mt="xs">
+            {t('calendar.duration')}:{' '}
+            {Math.round((selectedEnd.getTime() - selectedStart.getTime()) / (1000 * 60 * 60))}{' '}
+            {t('calendar.hours')}
+          </Text>
+
+          {/* Book Now button bottom-right */}
+          <div className="absolute right-4 bottom-4">
+            <Button size="sm" onClick={() => onBookNow && onBookNow(selectedStart, selectedEnd)}>
+              {t('booking.bookNow')}
+            </Button>
           </div>
-        )}
-      </CardContent>
+        </Paper>
+      )}
     </Card>
   );
 };

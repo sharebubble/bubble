@@ -1,13 +1,12 @@
 import React from 'react';
-import { Toaster as Sonner } from '@/components/ui/sonner';
-import { Toaster } from '@/components/ui/toaster';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { Notifications } from '@mantine/notifications';
+import { ModalsProvider } from '@mantine/modals';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
 import { useAppConfig } from '@/hooks/useAppConfig';
 import { useLanguageSync } from '@/hooks/useLanguageSync';
 import { NotificationProvider } from '@/providers/NotificationProvider';
-import { ThemeProvider } from '@/providers/theme-provider';
+import { ColorSchemeSync } from '@/providers/ColorSchemeSync';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { configureApiClient } from './config/apiClient';
@@ -25,10 +24,12 @@ import MyItems from './pages/MyItems';
 import NotFound from './pages/NotFound';
 import Profile from './pages/Profile';
 import { Header } from './components/layout/Header';
-import { MantineProvider } from '@mantine/core';
+import { localStorageColorSchemeManager, MantineProvider } from '@mantine/core';
 import { mantineTheme } from './theme/mantine';
 
 const queryClient = new QueryClient();
+
+const colorSchemeManager = localStorageColorSchemeManager({ key: 'bubble-theme' });
 
 // Configure the API client once at startup
 configureApiClient();
@@ -150,22 +151,24 @@ const ProtectedRoutes = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <MantineProvider theme={mantineTheme} defaultColorScheme="auto">
-      <ThemeProvider defaultTheme="system" storageKey="bubble-theme">
+    <MantineProvider
+      theme={mantineTheme}
+      defaultColorScheme="auto"
+      colorSchemeManager={colorSchemeManager}
+    >
+      <ColorSchemeSync />
+      <ModalsProvider>
         <LanguageProvider>
           <AuthProvider>
             <NotificationProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <ProtectedRoutes />
-                </BrowserRouter>
-              </TooltipProvider>
+              <Notifications />
+              <BrowserRouter>
+                <ProtectedRoutes />
+              </BrowserRouter>
             </NotificationProvider>
           </AuthProvider>
         </LanguageProvider>
-      </ThemeProvider>
+      </ModalsProvider>
     </MantineProvider>
   </QueryClientProvider>
 );

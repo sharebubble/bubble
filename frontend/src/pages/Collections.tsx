@@ -1,35 +1,4 @@
 import { CollectionCard } from '@/components/collections/CollectionCard';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -37,8 +6,21 @@ import {
   useCreateCollection,
   useDeleteCollection,
 } from '@/hooks/useCollections';
+import {
+  ActionIcon,
+  Badge,
+  Button,
+  Checkbox,
+  Group,
+  Modal,
+  Table,
+  Text,
+  TextInput,
+  Textarea,
+} from '@mantine/core';
+import { modals } from '@mantine/modals';
 import { BookMarked, ChevronRight, Grid3X3, List, Plus, Search, Trash2 } from 'lucide-react';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const LS_KEY = 'collectionsViewMode';
@@ -54,15 +36,11 @@ const Collections = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDescription, setNewDescription] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const [onlyMine, setOnlyMine] = useState(false);
   const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
-
-  useEffect(() => {
-    const saved = localStorage.getItem(LS_KEY) as 'list' | 'cards' | null;
-    if (saved) setViewMode(saved);
-  }, []);
+  const [viewMode, setViewMode] = useState<'list' | 'cards'>(
+    () => (localStorage.getItem(LS_KEY) as 'list' | 'cards' | null) ?? 'list',
+  );
 
   const toggleViewMode = (mode: 'list' | 'cards') => {
     setViewMode(mode);
@@ -95,10 +73,14 @@ const Collections = () => {
     setNewDescription('');
   };
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    await deleteMutation.mutateAsync(deleteTarget);
-    setDeleteTarget(null);
+  const confirmDelete = (id: string) => {
+    modals.openConfirmModal({
+      title: t('collections.deleteCollection'),
+      children: <Text size="sm">{t('collections.confirmDelete')}</Text>,
+      labels: { confirm: t('common.delete'), cancel: t('common.cancel') },
+      confirmProps: { color: 'red' },
+      onConfirm: () => deleteMutation.mutate(id),
+    });
   };
 
   return (
@@ -112,28 +94,29 @@ const Collections = () => {
         <div className="flex items-center gap-2">
           {/* View mode toggle */}
           <div className="flex items-center gap-1 border rounded-lg p-1">
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
+            <ActionIcon
+              variant={viewMode === 'list' ? 'filled' : 'subtle'}
+              color={viewMode === 'list' ? 'green' : 'gray'}
+              size="md"
               onClick={() => toggleViewMode('list')}
-              className="h-8 w-8 p-0"
               title={t('collections.viewList')}
+              aria-label={t('collections.viewList')}
             >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'cards' ? 'default' : 'ghost'}
-              size="sm"
+              <List size={16} />
+            </ActionIcon>
+            <ActionIcon
+              variant={viewMode === 'cards' ? 'filled' : 'subtle'}
+              color={viewMode === 'cards' ? 'green' : 'gray'}
+              size="md"
               onClick={() => toggleViewMode('cards')}
-              className="h-8 w-8 p-0"
               title={t('collections.viewGrid')}
+              aria-label={t('collections.viewGrid')}
             >
-              <Grid3X3 className="h-4 w-4" />
-            </Button>
+              <Grid3X3 size={16} />
+            </ActionIcon>
           </div>
           {user && (
-            <Button size="sm" className="gap-2" onClick={() => setShowCreate(true)}>
-              <Plus className="h-4 w-4" />
+            <Button size="sm" leftSection={<Plus size={16} />} onClick={() => setShowCreate(true)}>
               <span className="sm:hidden">{t('collections.newCollectionShort')}</span>
               <span className="hidden sm:inline">{t('collections.newCollection')}</span>
             </Button>
@@ -143,105 +126,112 @@ const Collections = () => {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          <Input
-            className="pl-9 h-9 text-sm"
-            placeholder={t('collections.searchPlaceholder')}
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-        <label className="flex items-center gap-2 cursor-pointer select-none shrink-0">
-          <Checkbox checked={onlyMine} onCheckedChange={v => setOnlyMine(!!v)} />
-          <span className="text-sm">{t('collections.onlyMine')}</span>
-        </label>
+        <TextInput
+          className="w-full flex-1"
+          size="sm"
+          leftSection={<Search size={16} />}
+          placeholder={t('collections.searchPlaceholder')}
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        <Checkbox
+          className="shrink-0"
+          checked={onlyMine}
+          onChange={e => setOnlyMine(e.currentTarget.checked)}
+          label={t('collections.onlyMine')}
+        />
       </div>
 
       {/* Loading */}
       {isLoading && (
-        <div className="text-center py-16 text-muted-foreground">{t('common.loading')}</div>
+        <Text component="div" c="dimmed" className="text-center py-16">
+          {t('common.loading')}
+        </Text>
       )}
 
       {/* Empty state */}
       {!isLoading && filtered.length === 0 && (
-        <div className="text-center py-16 text-muted-foreground">
+        <Text component="div" c="dimmed" className="text-center py-16">
           <BookMarked className="mx-auto h-12 w-12 mb-4 opacity-40" />
           <p>{t('collections.noCollections')}</p>
-        </div>
+        </Text>
       )}
 
       {/* List view */}
       {!isLoading && filtered.length > 0 && viewMode === 'list' && (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('collections.name')}</TableHead>
-                <TableHead>{t('collections.description')}</TableHead>
-                <TableHead>{t('collections.owner')}</TableHead>
-                <TableHead className="text-center">
+        <div className="rounded-lg border overflow-hidden">
+          <Table highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>{t('collections.name')}</Table.Th>
+                <Table.Th>{t('collections.description')}</Table.Th>
+                <Table.Th>{t('collections.owner')}</Table.Th>
+                <Table.Th className="text-center">
                   {t('collections.itemCount').replace('{count}', '')}
-                </TableHead>
-                <TableHead className="w-20"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+                </Table.Th>
+                <Table.Th className="w-20"></Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
               {filtered.map(col => {
                 const isOwner = user?.username === col.owner;
                 return (
-                  <TableRow
+                  <Table.Tr
                     key={col.id}
-                    className="cursor-pointer hover:bg-muted/50"
+                    className="cursor-pointer"
                     onClick={() => navigate(`/collections/${col.id}`)}
                   >
-                    <TableCell>
+                    <Table.Td>
                       <div className="flex items-center gap-2">
                         <BookMarked className="h-4 w-4 text-primary shrink-0" />
                         <span className="font-medium truncate max-w-40">{col.name}</span>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground truncate max-w-48 block">
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" c="dimmed" truncate className="max-w-48 block">
                         {col.description || '—'}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-muted-foreground">{col.owner}</span>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="secondary" className="text-xs">
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>
+                      <Text size="sm" c="dimmed">
+                        {col.owner}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td className="text-center">
+                      <Badge variant="light" size="sm">
                         {col.items_count}
                       </Badge>
-                    </TableCell>
-                    <TableCell onClick={e => e.stopPropagation()}>
+                    </Table.Td>
+                    <Table.Td onClick={e => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
                         {isOwner && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          <ActionIcon
+                            variant="subtle"
+                            color="red"
+                            size="sm"
                             title={t('collections.deleteCollection')}
-                            onClick={() => setDeleteTarget(col.id)}
+                            aria-label={t('collections.deleteCollection')}
+                            onClick={() => confirmDelete(col.id)}
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+                            <Trash2 size={14} />
+                          </ActionIcon>
                         )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          size="sm"
                           title={t('common.open')}
+                          aria-label={t('common.open')}
                           onClick={() => navigate(`/collections/${col.id}`)}
                         >
-                          <ChevronRight className="h-4 w-4" />
-                        </Button>
+                          <ChevronRight size={16} />
+                        </ActionIcon>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </Table.Td>
+                  </Table.Tr>
                 );
               })}
-            </TableBody>
+            </Table.Tbody>
           </Table>
         </div>
       )}
@@ -254,63 +244,44 @@ const Collections = () => {
               key={col.id}
               collection={col}
               isOwner={user?.username === col.owner}
-              onDelete={id => setDeleteTarget(id)}
+              onDelete={id => confirmDelete(id)}
             />
           ))}
         </div>
       )}
 
       {/* Create dialog */}
-      <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('collections.createCollection')}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1">
-              <Label>{t('collections.name')}</Label>
-              <Input
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                placeholder={t('collections.namePlaceholder')}
-                onKeyDown={e => e.key === 'Enter' && handleCreate()}
-                autoFocus
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>{t('collections.description')}</Label>
-              <Textarea
-                value={newDescription}
-                onChange={e => setNewDescription(e.target.value)}
-                placeholder={t('collections.descriptionPlaceholder')}
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreate(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button onClick={handleCreate} disabled={!newName.trim() || createMutation.isPending}>
-              {createMutation.isPending ? t('common.saving') : t('collections.createCollection')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete confirmation */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('collections.deleteCollection')}</AlertDialogTitle>
-            <AlertDialogDescription>{t('collections.confirmDelete')}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>{t('common.delete')}</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Modal
+        opened={showCreate}
+        onClose={() => setShowCreate(false)}
+        title={t('collections.createCollection')}
+      >
+        <div className="space-y-4 py-2">
+          <TextInput
+            label={t('collections.name')}
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            placeholder={t('collections.namePlaceholder')}
+            onKeyDown={e => e.key === 'Enter' && handleCreate()}
+            data-autofocus
+          />
+          <Textarea
+            label={t('collections.description')}
+            value={newDescription}
+            onChange={e => setNewDescription(e.target.value)}
+            placeholder={t('collections.descriptionPlaceholder')}
+            rows={3}
+          />
+        </div>
+        <Group justify="flex-end" mt="md">
+          <Button variant="outline" onClick={() => setShowCreate(false)}>
+            {t('common.cancel')}
+          </Button>
+          <Button onClick={handleCreate} disabled={!newName.trim() || createMutation.isPending}>
+            {createMutation.isPending ? t('common.saving') : t('collections.createCollection')}
+          </Button>
+        </Group>
+      </Modal>
     </div>
   );
 };

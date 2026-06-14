@@ -1,6 +1,4 @@
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { ActionIcon, Badge, Button, Card, Text, Title } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyBookings, useUpdateBooking } from '@/hooks/useBookings';
@@ -74,33 +72,37 @@ const BookingRow = ({
 
   const stateBadge =
     state === 'active' ? (
-      <Badge className="bg-emerald-500 text-white text-xs shrink-0">{t('bookings.active')}</Badge>
+      <Badge color="teal" size="sm" className="shrink-0">
+        {t('bookings.active')}
+      </Badge>
     ) : state === 'upcoming' ? (
-      <Badge variant="secondary" className="text-xs shrink-0">
+      <Badge variant="light" color="gray" size="sm" className="shrink-0">
         {t('bookings.upcoming')}
       </Badge>
     ) : (
-      <Badge variant="outline" className="text-xs shrink-0">
+      <Badge variant="outline" color="gray" size="sm" className="shrink-0">
         {t('bookings.past')}
       </Badge>
     );
 
   return (
     <Card
+      withBorder
+      padding="sm"
       className={cn(
-        'transition-all cursor-pointer hover:bg-accent',
+        'transition-all cursor-pointer hover:bg-[var(--mantine-color-gray-0)]',
         state === 'past' && 'opacity-60',
       )}
       onClick={() => onClick(booking.id!)}
     >
-      <CardContent className="p-3 flex gap-3 items-center">
+      <div className="flex gap-3 items-center">
         {/* Thumbnail */}
-        <div className="w-12 h-12 rounded overflow-hidden bg-muted shrink-0">
+        <div className="w-12 h-12 rounded overflow-hidden bg-[var(--mantine-color-gray-1)] shrink-0">
           {itemImage ? (
             <img src={itemImage} alt={itemTitle} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Package className="h-5 w-5 text-muted-foreground" />
+              <Package size={20} color="var(--mantine-color-dimmed)" />
             </div>
           )}
         </div>
@@ -108,52 +110,56 @@ const BookingRow = ({
         {/* Details */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="font-semibold text-sm truncate">{itemTitle}</span>
+            <Text component="span" size="sm" fw={600} truncate>
+              {itemTitle}
+            </Text>
             {stateBadge}
           </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-muted-foreground">
+          <Text component="div" size="xs" c="dimmed" className="flex flex-wrap gap-x-4 gap-y-0.5">
             <span className="flex items-center gap-1">
-              <User className="h-3 w-3 shrink-0" />
+              <User size={12} className="shrink-0" />
               {userName}
             </span>
             <span className="flex items-center gap-1">
-              <Calendar className="h-3 w-3 shrink-0" />
+              <Calendar size={12} className="shrink-0" />
               {booking.time_from ? format(parseISO(booking.time_from), 'dd MMM yy, HH:mm') : '—'}
               {booking.time_to && <> → {format(parseISO(booking.time_to), 'dd MMM yy, HH:mm')}</>}
               {!booking.time_to && state === 'active' && (
-                <span className="text-emerald-600 font-medium ml-1">{t('bookings.ongoing')}</span>
+                <Text component="span" size="xs" c="teal.7" fw={500} className="ml-1">
+                  {t('bookings.ongoing')}
+                </Text>
               )}
             </span>
             <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3 shrink-0" />
+              <Clock size={12} className="shrink-0" />
               {booking.time_from ? formatBookedDuration(booking.time_from, booking.time_to) : '—'}
             </span>
             {price && (
-              <span className="font-medium text-foreground">
+              <Text component="span" size="xs" fw={500} c="var(--mantine-color-text)">
                 {formatPrice(price, currency)}
                 {booking.item_details?.sales_type === 'rent' && ' /h'}
-              </span>
+              </Text>
             )}
-          </div>
+          </Text>
         </div>
 
         {/* End booking button — only for active bookings owned by the current user */}
         {state === 'active' && isOwner && (
           <Button
-            size="sm"
-            variant="destructive"
-            className="shrink-0 gap-1"
+            size="xs"
+            color="red"
+            className="shrink-0"
             disabled={isEnding}
+            leftSection={<Square size={12} />}
             onClick={e => {
               e.stopPropagation();
               onEnd(booking.id!);
             }}
           >
-            <Square className="h-3 w-3" />
             <span className="hidden sm:inline">{t('bookings.endBooking')}</span>
           </Button>
         )}
-      </CardContent>
+      </div>
     </Card>
   );
 };
@@ -235,17 +241,16 @@ const MyBookingsPage = () => {
     <div className="container mx-auto p-4 max-w-4xl">
       {/* Header */}
       <div className="flex items-center justify-between gap-4 mb-1">
-        <h1 className="text-3xl font-bold">{t('bookings.title')}</h1>
+        <Title order={1}>{t('bookings.title')}</Title>
 
         {/* Role filter */}
         <div className="flex items-center gap-2">
           {(['', 'owner', 'renter'] as const).map(r => (
             <Button
               key={r}
-              size="sm"
-              variant={role === r ? 'default' : 'outline'}
+              size="xs"
+              variant={role === r ? 'filled' : 'outline'}
               onClick={() => setRole(r)}
-              className="h-8"
             >
               {r === ''
                 ? t('bookings.filterAll')
@@ -259,32 +264,29 @@ const MyBookingsPage = () => {
 
       {/* Time window navigator */}
       <div className="flex items-center gap-2 mb-6">
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7"
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          size="sm"
           onClick={() => setOffset(offset - 1)}
           aria-label={t('bookings.prevPeriod')}
         >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <span className="text-sm text-muted-foreground">{rangeLabel}</span>
-        <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7"
+          <ChevronLeft size={16} />
+        </ActionIcon>
+        <Text component="span" size="sm" c="dimmed">
+          {rangeLabel}
+        </Text>
+        <ActionIcon
+          variant="subtle"
+          color="gray"
+          size="sm"
           onClick={() => setOffset(offset + 1)}
           aria-label={t('bookings.nextPeriod')}
         >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+          <ChevronRight size={16} />
+        </ActionIcon>
         {offset !== 0 && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-xs text-muted-foreground"
-            onClick={() => setOffset(0)}
-          >
+          <Button size="compact-sm" variant="subtle" color="gray" onClick={() => setOffset(0)}>
             {t('bookings.today')}
           </Button>
         )}
@@ -293,12 +295,12 @@ const MyBookingsPage = () => {
       {/* Content */}
       {isLoading ? (
         <div className="flex items-center justify-center py-24">
-          <p className="text-muted-foreground">{t('common.loading')}</p>
+          <Text c="dimmed">{t('common.loading')}</Text>
         </div>
       ) : annotated.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-3">
-          <Calendar className="h-14 w-14 opacity-40" />
-          <p>{t('bookings.noBookings')}</p>
+        <div className="flex flex-col items-center justify-center py-24 gap-3">
+          <Calendar size={56} color="var(--mantine-color-dimmed)" className="opacity-40" />
+          <Text c="dimmed">{t('bookings.noBookings')}</Text>
         </div>
       ) : (
         <div className="flex flex-col gap-2">

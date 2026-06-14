@@ -47,8 +47,7 @@ To update types after backend changes, run `npm run types:openapi` to regenerate
 ### Frontend
 
 - **API Access:** Always use the generated SDK in `src/services/django/`. Do not write raw fetch calls for backend endpoints.
-- **Styling:** Use Mantine components for new UI work. Tailwind CSS utilities are still allowed for layout and spacing.
-- **Migration policy:** Existing components under `src/components/ui/` remain supported during migration. When touching old shadcn-based flows, prefer migrating that touched surface to Mantine instead of adding new shadcn usage.
+- **Styling:** Use Mantine components for all UI work; component styling belongs in the Mantine theme (`src/theme/mantine.ts`). Tailwind CSS utilities are allowed for layout and spacing only. shadcn/ui has been fully removed — do not add `@radix-ui` or shadcn-style wrapper components.
 - **Hooks:** Business logic should reside in custom hooks under `src/hooks/`.
 - **Absolute Imports:** Use `@/` prefix for imports within the `src` directory.
 

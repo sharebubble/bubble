@@ -1,17 +1,7 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { Button, Paper, Switch, Text, TextInput } from '@mantine/core';
+import { useForm } from '@mantine/form';
+import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
 import { useCreateLocation, useUpdateLocation } from '@/hooks/useUserLocations';
 import { Loader2 } from 'lucide-react';
 
@@ -43,8 +33,8 @@ export const LocationForm = ({ location, onSuccess }: LocationFormProps) => {
   const isEditing = !!location;
 
   const form = useForm<LocationFormData>({
-    resolver: zodResolver(locationSchema),
-    defaultValues: {
+    validate: zod4Resolver(locationSchema),
+    initialValues: {
       name: location?.name || '',
       address: location?.address || '',
       latitude: location?.latitude || undefined,
@@ -73,105 +63,59 @@ export const LocationForm = ({ location, onSuccess }: LocationFormProps) => {
   const isPending = createLocation.isPending || updateLocation.isPending;
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Location Name</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g., Home, Office, Warehouse" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+    <form onSubmit={form.onSubmit(onSubmit)} className="space-y-4">
+      <TextInput
+        label="Location Name"
+        placeholder="e.g., Home, Office, Warehouse"
+        {...form.getInputProps('name')}
+      />
+
+      <TextInput label="Address" placeholder="Full address" {...form.getInputProps('address')} />
+
+      <div className="grid grid-cols-2 gap-4">
+        <TextInput
+          type="number"
+          step="any"
+          label="Latitude (Optional)"
+          placeholder="0.000000"
+          {...form.getInputProps('latitude')}
+          value={form.getValues().latitude ?? ''}
+          onChange={e =>
+            form.setFieldValue('latitude', e.target.value ? parseFloat(e.target.value) : undefined)
+          }
         />
 
-        <FormField
-          control={form.control}
-          name="address"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Address</FormLabel>
-              <FormControl>
-                <Input placeholder="Full address" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+        <TextInput
+          type="number"
+          step="any"
+          label="Longitude (Optional)"
+          placeholder="0.000000"
+          {...form.getInputProps('longitude')}
+          value={form.getValues().longitude ?? ''}
+          onChange={e =>
+            form.setFieldValue('longitude', e.target.value ? parseFloat(e.target.value) : undefined)
+          }
         />
+      </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="latitude"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Latitude (Optional)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="any"
-                    placeholder="0.000000"
-                    {...field}
-                    onChange={e =>
-                      field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="longitude"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Longitude (Optional)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="any"
-                    placeholder="0.000000"
-                    {...field}
-                    onChange={e =>
-                      field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      <Paper withBorder radius="lg" p="md" className="flex flex-row items-center justify-between">
+        <div className="space-y-0.5">
+          <Text fw={500}>Default Location</Text>
+          <Text size="sm" c="dimmed">
+            Set this as your default location for new items
+          </Text>
         </div>
+        <Switch {...form.getInputProps('is_default', { type: 'checkbox' })} />
+      </Paper>
 
-        <FormField
-          control={form.control}
-          name="is_default"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">Default Location</FormLabel>
-                <div className="text-sm text-muted-foreground">
-                  Set this as your default location for new items
-                </div>
-              </div>
-              <FormControl>
-                <Switch checked={field.value} onCheckedChange={field.onChange} />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-
-        <Button type="submit" disabled={isPending} className="w-full">
-          {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isEditing ? 'Update Location' : 'Add Location'}
-        </Button>
-      </form>
-    </Form>
+      <Button
+        type="submit"
+        disabled={isPending}
+        fullWidth
+        leftSection={isPending ? <Loader2 size={16} className="animate-spin" /> : undefined}
+      >
+        {isEditing ? 'Update Location' : 'Add Location'}
+      </Button>
+    </form>
   );
 };

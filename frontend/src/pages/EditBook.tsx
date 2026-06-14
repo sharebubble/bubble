@@ -1,13 +1,8 @@
 import { BarcodeScanner } from '@/components/items/BarcodeScanner';
-import { Button } from '@/components/ui/button';
-import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useUpdateItem } from '@/hooks/useCreateItem';
 import { FieldStates } from '@/hooks/useFieldAutoSave';
-import { cn } from '@/lib/utils';
 import {
   BookWritable,
   CategoryEnum,
@@ -22,6 +17,7 @@ import {
   booksPartialUpdate,
   booksRetrieve,
 } from '@/services/django/sdk.gen';
+import { Button, Menu, NumberInput, TextInput } from '@mantine/core';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, Loader2, RefreshCw } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
@@ -317,15 +313,16 @@ const EditBook = () => {
     <Button
       type="button"
       variant="outline"
-      className="gap-2"
       disabled={!formData.isbn || isbnUpdateMutation.isPending}
+      leftSection={
+        <RefreshCw size={16} className={isbnUpdateMutation.isPending ? 'animate-spin' : ''} />
+      }
       onClick={() => {
         if (editItemUuid && formData.isbn) {
           isbnUpdateMutation.mutate({ id: editItemUuid, isbn: formData.isbn as string });
         }
       }}
     >
-      <RefreshCw className={`h-4 w-4 ${isbnUpdateMutation.isPending ? 'animate-spin' : ''}`} />
       {t('editItem.refetchIsbn')}
     </Button>
   );
@@ -334,17 +331,19 @@ const EditBook = () => {
     formData: EditItemFormData,
     _setFormData: React.Dispatch<React.SetStateAction<EditItemFormData>>,
   ) => (
-    <DropdownMenuItem
+    <Menu.Item
       disabled={!formData.isbn || isbnUpdateMutation.isPending}
-      onSelect={() => {
+      leftSection={
+        <RefreshCw size={16} className={isbnUpdateMutation.isPending ? 'animate-spin' : ''} />
+      }
+      onClick={() => {
         if (editItemUuid && formData.isbn) {
           isbnUpdateMutation.mutate({ id: editItemUuid, isbn: formData.isbn as string });
         }
       }}
     >
-      <RefreshCw className={`h-4 w-4 mr-2 ${isbnUpdateMutation.isPending ? 'animate-spin' : ''}`} />
       {t('editItem.refetchIsbn')}
-    </DropdownMenuItem>
+    </Menu.Item>
   );
 
   const renderExtraFields = (
@@ -358,161 +357,131 @@ const EditBook = () => {
     };
 
     const fieldState = (name: string) => bookFieldStates[name];
-    const borderClass = (name: string) => {
+
+    const fieldRightSection = (name: string) => {
       const s = fieldState(name);
-      if (s?.status === 'success') return 'border-green-500 focus-visible:ring-green-500';
-      if (s?.status === 'error') return 'border-red-500 focus-visible:ring-red-500';
-      return '';
+      if (s?.status === 'saving') {
+        return <Loader2 size={16} className="animate-spin" color="var(--mantine-color-dimmed)" />;
+      }
+      if (s?.status === 'success') {
+        return <Check size={16} color="var(--mantine-color-green-6)" />;
+      }
+      return undefined;
     };
 
-    const FieldIndicator = ({ name }: { name: string }) => {
-      const s = fieldState(name);
-      if (s?.status === 'saving')
-        return (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2">
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          </div>
-        );
-      if (s?.status === 'success')
-        return (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2">
-            <Check className="h-4 w-4 text-green-600" />
-          </div>
-        );
-      return null;
-    };
+    const fieldError = (name: string) => (fieldState(name)?.status === 'error' ? true : undefined);
+
+    const fieldStyles = (name: string) =>
+      fieldState(name)?.status === 'success'
+        ? { input: { borderColor: 'var(--mantine-color-green-6)' } }
+        : undefined;
 
     return (
       <>
         {/* ISBN, Year, Topic */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="isbn">{t('editItem.isbn')}</Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  id="isbn"
-                  type="text"
-                  placeholder={t('editItem.enterIsbn')}
-                  value={(formData.isbn as string) || ''}
-                  onChange={e => setFormData(prev => ({ ...prev, isbn: e.target.value }))}
-                  onBlur={() => handleIsbnBlur((formData.isbn as string) || '')}
-                  disabled={disabled}
-                  className={cn('pr-8', borderClass('isbn'))}
-                />
-                <FieldIndicator name="isbn" />
-              </div>
-              <BarcodeScanner onScan={handleBarcodeScan} title={t('editItem.scanIsbn')} />
-            </div>
+          <div className="flex items-end gap-2">
+            <TextInput
+              id="isbn"
+              label={t('editItem.isbn')}
+              placeholder={t('editItem.enterIsbn')}
+              value={(formData.isbn as string) || ''}
+              onChange={e => setFormData(prev => ({ ...prev, isbn: e.target.value }))}
+              onBlur={() => handleIsbnBlur((formData.isbn as string) || '')}
+              disabled={disabled}
+              rightSection={fieldRightSection('isbn')}
+              error={fieldError('isbn')}
+              styles={fieldStyles('isbn')}
+              className="flex-1"
+            />
+            <BarcodeScanner onScan={handleBarcodeScan} title={t('editItem.scanIsbn')} />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="year">{t('editItem.year')}</Label>
-            <div className="relative">
-              <Input
-                id="year"
-                type="number"
-                placeholder={t('editItem.enterYear')}
-                value={(formData.year as string) || ''}
-                onChange={e => setFormData(prev => ({ ...prev, year: e.target.value }))}
-                onBlur={() => handleBookFieldBlur('year', formData.year)}
-                disabled={disabled}
-                className={cn('pr-8', borderClass('year'))}
-              />
-              <FieldIndicator name="year" />
-            </div>
-          </div>
+          <NumberInput
+            id="year"
+            label={t('editItem.year')}
+            placeholder={t('editItem.enterYear')}
+            value={(formData.year as string) || ''}
+            onChange={value =>
+              setFormData(prev => ({ ...prev, year: value === '' ? '' : String(value) }))
+            }
+            onBlur={() => handleBookFieldBlur('year', formData.year)}
+            disabled={disabled}
+            rightSection={fieldRightSection('year')}
+            error={fieldError('year')}
+            styles={fieldStyles('year')}
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="topic">{t('editItem.topic')}</Label>
-            <div className="relative">
-              <Input
-                id="topic"
-                type="text"
-                placeholder={t('editItem.enterTopic')}
-                value={(formData.topic as string) || ''}
-                onChange={e => setFormData(prev => ({ ...prev, topic: e.target.value }))}
-                onBlur={() => handleBookFieldBlur('topic', formData.topic)}
-                disabled={disabled}
-                className={cn('pr-8', borderClass('topic'))}
-              />
-              <FieldIndicator name="topic" />
-            </div>
-          </div>
+          <TextInput
+            id="topic"
+            label={t('editItem.topic')}
+            placeholder={t('editItem.enterTopic')}
+            value={(formData.topic as string) || ''}
+            onChange={e => setFormData(prev => ({ ...prev, topic: e.target.value }))}
+            onBlur={() => handleBookFieldBlur('topic', formData.topic)}
+            disabled={disabled}
+            rightSection={fieldRightSection('topic')}
+            error={fieldError('topic')}
+            styles={fieldStyles('topic')}
+          />
         </div>
 
         {/* Authors and Genres */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="authors">{t('editItem.authors')}</Label>
-            <div className="relative">
-              <Input
-                id="authors"
-                type="text"
-                placeholder={t('editItem.enterAuthors')}
-                value={(formData.authors as string) || ''}
-                onChange={e => setFormData(prev => ({ ...prev, authors: e.target.value }))}
-                onBlur={() => handleBookFieldBlur('authors', formData.authors)}
-                disabled={disabled}
-                className={cn('pr-8', borderClass('authors'))}
-              />
-              <FieldIndicator name="authors" />
-            </div>
-          </div>
+          <TextInput
+            id="authors"
+            label={t('editItem.authors')}
+            placeholder={t('editItem.enterAuthors')}
+            value={(formData.authors as string) || ''}
+            onChange={e => setFormData(prev => ({ ...prev, authors: e.target.value }))}
+            onBlur={() => handleBookFieldBlur('authors', formData.authors)}
+            disabled={disabled}
+            rightSection={fieldRightSection('authors')}
+            error={fieldError('authors')}
+            styles={fieldStyles('authors')}
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="genres">{t('editItem.genres')}</Label>
-            <div className="relative">
-              <Input
-                id="genres"
-                type="text"
-                placeholder={t('editItem.enterGenres')}
-                value={(formData.genres as string) || ''}
-                onChange={e => setFormData(prev => ({ ...prev, genres: e.target.value }))}
-                onBlur={() => handleBookFieldBlur('genres', formData.genres)}
-                disabled={disabled}
-                className={cn('pr-8', borderClass('genres'))}
-              />
-              <FieldIndicator name="genres" />
-            </div>
-          </div>
+          <TextInput
+            id="genres"
+            label={t('editItem.genres')}
+            placeholder={t('editItem.enterGenres')}
+            value={(formData.genres as string) || ''}
+            onChange={e => setFormData(prev => ({ ...prev, genres: e.target.value }))}
+            onBlur={() => handleBookFieldBlur('genres', formData.genres)}
+            disabled={disabled}
+            rightSection={fieldRightSection('genres')}
+            error={fieldError('genres')}
+            styles={fieldStyles('genres')}
+          />
         </div>
 
         {/* Publisher and Shelf */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="publisher">{t('editItem.publisher')}</Label>
-            <div className="relative">
-              <Input
-                id="publisher"
-                type="text"
-                placeholder={t('editItem.enterPublisher')}
-                value={(formData.publisher as string) || ''}
-                onChange={e => setFormData(prev => ({ ...prev, publisher: e.target.value }))}
-                onBlur={() => handleBookFieldBlur('publisher', formData.publisher)}
-                disabled={disabled}
-                className={cn('pr-8', borderClass('publisher'))}
-              />
-              <FieldIndicator name="publisher" />
-            </div>
-          </div>
+          <TextInput
+            id="publisher"
+            label={t('editItem.publisher')}
+            placeholder={t('editItem.enterPublisher')}
+            value={(formData.publisher as string) || ''}
+            onChange={e => setFormData(prev => ({ ...prev, publisher: e.target.value }))}
+            onBlur={() => handleBookFieldBlur('publisher', formData.publisher)}
+            disabled={disabled}
+            rightSection={fieldRightSection('publisher')}
+            error={fieldError('publisher')}
+            styles={fieldStyles('publisher')}
+          />
 
-          <div className="space-y-2">
-            <Label htmlFor="shelf">{t('editItem.shelf')}</Label>
-            <div className="relative">
-              <Input
-                id="shelf"
-                type="text"
-                placeholder={t('editItem.enterShelf')}
-                value={(formData.shelf as string) || ''}
-                onChange={e => setFormData(prev => ({ ...prev, shelf: e.target.value }))}
-                onBlur={() => handleBookFieldBlur('shelf', formData.shelf)}
-                disabled={disabled}
-                className={cn('pr-8', borderClass('shelf'))}
-              />
-              <FieldIndicator name="shelf" />
-            </div>
-          </div>
+          <TextInput
+            id="shelf"
+            label={t('editItem.shelf')}
+            placeholder={t('editItem.enterShelf')}
+            value={(formData.shelf as string) || ''}
+            onChange={e => setFormData(prev => ({ ...prev, shelf: e.target.value }))}
+            onBlur={() => handleBookFieldBlur('shelf', formData.shelf)}
+            disabled={disabled}
+            rightSection={fieldRightSection('shelf')}
+            error={fieldError('shelf')}
+            styles={fieldStyles('shelf')}
+          />
         </div>
       </>
     );

@@ -1,15 +1,4 @@
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button, Group, Modal, NumberInput, Stack, Text, TextInput } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUpdateBooking } from '@/hooks/useBookings';
 import { useEffect, useState } from 'react';
@@ -125,66 +114,54 @@ const BookingEditDialog = ({ booking }: Props) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          {t('requests.editBooking')}
-        </Button>
-      </DialogTrigger>
-      <DialogContent onPointerDownOutside={handleCancel} onEscapeKeyDown={handleCancel}>
+    <>
+      <Button size="xs" variant="outline" onClick={() => setOpen(true)}>
+        {t('requests.editBooking')}
+      </Button>
+      <Modal opened={open} onClose={handleCancel} title={t('requests.editBooking')}>
         <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>{t('requests.editBooking')}</DialogTitle>
-            <DialogDescription>{t('requests.editBookingDescription')}</DialogDescription>
-          </DialogHeader>
+          <Stack gap="md">
+            <Text size="sm" c="dimmed">
+              {t('requests.editBookingDescription')}
+            </Text>
 
-          <div className="grid gap-4 py-4">
             {isRental && (
               <>
-                <div className="space-y-2">
-                  <Label htmlFor="timeFrom">{t('booking.rentalStart')}</Label>
-                  <Input
-                    id="timeFrom"
-                    type="datetime-local"
-                    value={timeFrom}
-                    onChange={e => setTimeFrom(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="timeTo">{t('booking.rentalEnd')}</Label>
-                  <Input
-                    id="timeTo"
-                    type="datetime-local"
-                    value={timeTo}
-                    onChange={e => setTimeTo(e.target.value)}
-                  />
-                </div>
+                <TextInput
+                  label={t('booking.rentalStart')}
+                  type="datetime-local"
+                  value={timeFrom}
+                  onChange={e => setTimeFrom(e.currentTarget.value)}
+                />
+                <TextInput
+                  label={t('booking.rentalEnd')}
+                  type="datetime-local"
+                  value={timeTo}
+                  onChange={e => setTimeTo(e.currentTarget.value)}
+                />
               </>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="offer">{t('booking.enterYourOffer')}</Label>
-              <Input
-                id="offer"
-                type="number"
-                step="0.01"
-                value={offer ?? ''}
-                onChange={e => setOffer(e.target.value)}
-              />
-            </div>
-          </div>
+            <NumberInput
+              label={t('booking.enterYourOffer')}
+              step={0.01}
+              decimalScale={2}
+              value={offer ?? ''}
+              onChange={v => setOffer(v === '' ? '' : String(v))}
+            />
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleCancel}>
-              {t('common.cancel')}
-            </Button>
-            <Button type="submit" disabled={updateBooking.isPending}>
-              {t('requests.update')}
-            </Button>
-          </DialogFooter>
+            <Group justify="flex-end" mt="md">
+              <Button type="button" variant="outline" onClick={handleCancel}>
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit" disabled={updateBooking.isPending}>
+                {t('requests.update')}
+              </Button>
+            </Group>
+          </Stack>
         </form>
-      </DialogContent>
-    </Dialog>
+      </Modal>
+    </>
   );
 };
 

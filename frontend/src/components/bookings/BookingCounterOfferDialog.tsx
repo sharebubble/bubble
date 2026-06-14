@@ -1,15 +1,4 @@
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button, Group, Modal, NumberInput, Stack, Text } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useUpdateBooking } from '@/hooks/useBookings';
 import { useEffect, useState } from 'react';
@@ -44,44 +33,42 @@ const BookingCounterOfferDialog = ({ booking }: Props) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button size="sm" variant="outline">
-          {t('requests.counterOffer')}
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
+    <>
+      <Button size="xs" variant="outline" onClick={() => setOpen(true)}>
+        {t('requests.counterOffer')}
+      </Button>
+      <Modal
+        opened={open}
+        onClose={() => setOpen(false)}
+        title={t('requests.counterOfferDialogTitle')}
+      >
         <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>{t('requests.counterOfferDialogTitle')}</DialogTitle>
-            <DialogDescription>{t('requests.counterOfferDialogDescription')}</DialogDescription>
-          </DialogHeader>
+          <Stack gap="md">
+            <Text size="sm" c="dimmed">
+              {t('requests.counterOfferDialogDescription')}
+            </Text>
 
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="counterOffer">{t('requests.counterOffer')}</Label>
-              <Input
-                id="counterOffer"
-                type="number"
-                step="0.01"
-                value={value ?? ''}
-                onChange={e => setValue(e.target.value)}
-                placeholder={t('booking.enterYourOffer')}
-              />
-            </div>
-          </div>
+            <NumberInput
+              label={t('requests.counterOffer')}
+              step={0.01}
+              decimalScale={2}
+              value={value ?? ''}
+              onChange={v => setValue(v === '' ? '' : String(v))}
+              placeholder={t('booking.enterYourOffer')}
+            />
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              {t('common.cancel')}
-            </Button>
-            <Button type="submit" disabled={updateBooking.isPending}>
-              {t('requests.counterOfferSubmit')}
-            </Button>
-          </DialogFooter>
+            <Group justify="flex-end" mt="md">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit" disabled={updateBooking.isPending}>
+                {t('requests.counterOfferSubmit')}
+              </Button>
+            </Group>
+          </Stack>
         </form>
-      </DialogContent>
-    </Dialog>
+      </Modal>
+    </>
   );
 };
 

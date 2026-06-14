@@ -1,23 +1,5 @@
 import BookingCounterOfferDialog from '@/components/bookings/BookingCounterOfferDialog';
 import BookingEditDialog from '@/components/bookings/BookingEditDialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useBooking, useBookings, useUpdateBooking } from '@/hooks/useBookings';
@@ -25,6 +7,20 @@ import { useItem } from '@/hooks/useItem';
 import { useCreateMessage, useMarkMessageAsRead, useMessages } from '@/hooks/useMessages';
 import { formatPrice } from '@/lib/currency';
 import { cn } from '@/lib/utils';
+import {
+  ActionIcon,
+  Badge,
+  Box,
+  Button,
+  Card,
+  Divider,
+  Drawer,
+  ScrollArea,
+  Text,
+  TextInput,
+  Title,
+} from '@mantine/core';
+import { modals } from '@mantine/modals';
 import { format } from 'date-fns';
 import { Calendar, Clock, Menu, Package, RefreshCw, Send, User } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -55,9 +51,6 @@ const Requests = () => {
   const { data: selectedItemDetails } = useItem(selectedBookingDetails?.item_details?.id);
   const [messageText, setMessageText] = useState('');
   const updateBookingMutation = useUpdateBooking();
-  // Dialog state for confirming acceptance when offer differs
-  const [showAcceptWarning, setShowAcceptWarning] = useState(false);
-  const [pendingAcceptBookingId, setPendingAcceptBookingId] = useState<string | null>(null);
   const {
     data: messagesData,
     refetch: refetchMessages,
@@ -132,21 +125,33 @@ const Requests = () => {
   const getStatusBadge = (status?: number) => {
     switch (status) {
       case 1:
-        return <Badge variant="secondary">{t('requests.status.pending')}</Badge>;
-      case 2:
-        return <Badge variant="outline">{t('requests.status.cancelled')}</Badge>;
-      case 3:
         return (
-          <Badge variant="default" className="bg-green-500">
-            {t('requests.status.confirmed')}
+          <Badge variant="light" color="gray">
+            {t('requests.status.pending')}
           </Badge>
         );
+      case 2:
+        return (
+          <Badge variant="outline" color="gray">
+            {t('requests.status.cancelled')}
+          </Badge>
+        );
+      case 3:
+        return <Badge color="green">{t('requests.status.confirmed')}</Badge>;
       case 4:
-        return <Badge variant="outline">{t('requests.status.completed')}</Badge>;
+        return (
+          <Badge variant="outline" color="gray">
+            {t('requests.status.completed')}
+          </Badge>
+        );
       case 5:
-        return <Badge variant="destructive">{t('requests.status.rejected')}</Badge>;
+        return <Badge color="red">{t('requests.status.rejected')}</Badge>;
       default:
-        return <Badge variant="secondary">{t('requests.status.unknown')}</Badge>;
+        return (
+          <Badge variant="light" color="gray">
+            {t('requests.status.unknown')}
+          </Badge>
+        );
     }
   };
 
@@ -178,10 +183,100 @@ const Requests = () => {
     }
   };
 
+  const renderBookingList = (onCardClick: (bookingUuid: string) => void) => {
+    if (!bookings?.results || bookings.results.length === 0) {
+      return (
+        <Text component="div" c="dimmed" ta="center" className="py-8">
+          <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
+          <p>{t('requests.noBookings')}</p>
+        </Text>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {bookings.results.map(booking => {
+          const isSelected = selectedBookingId === booking.id;
+          const itemTitle = booking.item_details?.name || t('requests.unknownItem');
+          const itemImage = booking.item_details?.first_image;
+
+          return (
+            <Card
+              key={booking.id}
+              withBorder
+              padding="sm"
+              bg={isSelected ? 'var(--mantine-color-green-light)' : undefined}
+              style={
+                isSelected
+                  ? { borderColor: 'var(--mantine-color-green-4)', borderWidth: 2 }
+                  : undefined
+              }
+              className={cn(
+                'cursor-pointer transition-colors',
+                !isSelected && 'hover:bg-[var(--mantine-color-default-hover)]',
+              )}
+              onClick={() => onCardClick(booking.id!)}
+            >
+              <div className="flex gap-3">
+                {/* Item Thumbnail */}
+                <Box
+                  className="w-16 h-16 rounded overflow-hidden shrink-0"
+                  bg="var(--mantine-color-default-hover)"
+                >
+                  {itemImage ? (
+                    <img src={itemImage} alt={itemTitle} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Package className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                  )}
+                </Box>
+
+                {/* Booking Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex justify-between items-start gap-2 mb-1">
+                    <Text component="span" size="sm" fw={600} className="line-clamp-1">
+                      {itemTitle}
+                    </Text>
+                    <div className="flex items-center gap-1">
+                      {booking.unread_messages_count !== null &&
+                        booking.unread_messages_count > 0 && (
+                          <Badge color="red" size="sm" className="shrink-0">
+                            {booking.unread_messages_count}
+                          </Badge>
+                        )}
+                      {getStatusBadge(booking.status)}
+                    </div>
+                  </div>
+                  <Text
+                    component="div"
+                    size="xs"
+                    c="dimmed"
+                    className="flex items-center gap-1 mb-1"
+                  >
+                    <User className="h-3 w-3" />
+                    <span className="line-clamp-1">
+                      {t('requests.requestFrom')}{' '}
+                      {booking.user?.name || booking.user?.username || 'Unknown'}
+                    </span>
+                  </Text>
+                  <Text component="div" size="xs" c="dimmed" className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    <span className="line-clamp-1">{formatDateTime(booking.created_at)}</span>
+                  </Text>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
-        <p className="text-muted-foreground">{t('common.loading')}</p>
+        <Text c="dimmed">{t('common.loading')}</Text>
       </div>
     );
   }
@@ -191,195 +286,52 @@ const Requests = () => {
       <div className="flex flex-col h-full">
         <div className="flex items-center gap-2 mb-4">
           {/* Mobile Menu Trigger */}
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="md:hidden">
-                <Menu className="h-4 w-4" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[90vw] sm:w-[400px] p-0">
-              <SheetHeader className="p-4 border-b">
-                <SheetTitle>{t('requests.allBookings')}</SheetTitle>
-              </SheetHeader>
-              <ScrollArea className="h-[calc(100vh-5rem)]">
-                <div className="p-4">
-                  {!bookings?.results || bookings.results.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                      <p>{t('requests.noBookings')}</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {bookings.results.map(booking => {
-                        const isSelected = selectedBookingId === booking.id;
-                        const itemTitle = booking.item_details?.name || t('requests.unknownItem');
-                        const itemImage = booking.item_details?.first_image;
-                        const itemUuid = booking.item_details?.id || booking.item;
-
-                        return (
-                          <Card
-                            key={booking.id}
-                            className={cn(
-                              'cursor-pointer transition-colors hover:bg-accent',
-                              isSelected && 'bg-accent dark:bg-accent border-green-200 border-2',
-                            )}
-                            onClick={() => handleBookingCardClick(booking.id!)}
-                          >
-                            <CardContent className="p-3">
-                              <div className="flex gap-3">
-                                {/* Item Thumbnail */}
-                                <div className="w-16 h-16 rounded overflow-hidden bg-muted">
-                                  {itemImage ? (
-                                    <img
-                                      src={itemImage}
-                                      alt={itemTitle}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  ) : (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                      <Package className="h-6 w-6 text-muted-foreground" />
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Booking Info */}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex justify-between items-start gap-2 mb-1">
-                                    <span className="font-semibold text-sm line-clamp-1">
-                                      {itemTitle}
-                                    </span>
-                                    <div className="flex items-center gap-1">
-                                      {booking.unread_messages_count !== null &&
-                                        booking.unread_messages_count > 0 && (
-                                          <Badge
-                                            variant="destructive"
-                                            className="h-5 min-w-[20px] px-1 text-xs"
-                                          >
-                                            {booking.unread_messages_count}
-                                          </Badge>
-                                        )}
-                                      {getStatusBadge(booking.status)}
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                                    <User className="h-3 w-3" />
-                                    <span className="line-clamp-1">
-                                      {t('requests.requestFrom')}{' '}
-                                      {booking.user?.name || booking.user?.username || 'Unknown'}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <Clock className="h-3 w-3" />
-                                    <span className="line-clamp-1">
-                                      {formatDateTime(booking.created_at)}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
-            </SheetContent>
-          </Sheet>
-          <h1 className="text-3xl font-bold">{t('requests.title')}</h1>
+          <ActionIcon
+            variant="outline"
+            size="lg"
+            className="md:hidden"
+            onClick={() => setIsMenuOpen(true)}
+            aria-label={t('requests.allBookings')}
+          >
+            <Menu className="h-4 w-4" />
+          </ActionIcon>
+          <Drawer
+            opened={isMenuOpen}
+            onClose={() => setIsMenuOpen(false)}
+            position="left"
+            size="min(90vw, 400px)"
+            title={t('requests.allBookings')}
+            styles={{
+              body: { padding: 0 },
+              title: { fontWeight: 600, fontSize: 'var(--mantine-font-size-lg)' },
+            }}
+          >
+            <ScrollArea className="h-[calc(100vh-5rem)]">
+              <div className="p-4">{renderBookingList(handleBookingCardClick)}</div>
+            </ScrollArea>
+          </Drawer>
+          <Title order={1}>{t('requests.title')}</Title>
         </div>
 
         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0">
           {/* Bookings List - Left Side (Desktop Only) */}
-          <Card className="hidden md:block col-span-1">
+          <Card withBorder padding={0} className="hidden md:flex flex-col col-span-1">
             <ScrollArea className="h-full">
               <div className="p-4">
-                <h2 className="text-lg font-semibold mb-4">{t('requests.allBookings')}</h2>
-                {!bookings?.results || bookings.results.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Calendar className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>{t('requests.noBookings')}</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {bookings.results.map(booking => {
-                      const isSelected = selectedBookingId === booking.id;
-                      const itemTitle = booking.item_details?.name || t('requests.unknownItem');
-                      const itemImage = booking.item_details?.first_image;
-                      const itemUuid = booking.item_details?.id || booking.item;
-
-                      return (
-                        <Card
-                          key={booking.id}
-                          className={cn(
-                            'cursor-pointer transition-colors hover:bg-accent',
-                            isSelected && 'bg-accent dark:bg-accent border-green-200 border-2',
-                          )}
-                          onClick={() => handleSelectBooking(booking.id!)}
-                        >
-                          <CardContent className="p-3">
-                            <div className="flex gap-3">
-                              {/* Item Thumbnail */}
-                              <div className="w-16 h-16 rounded overflow-hidden bg-muted">
-                                {itemImage ? (
-                                  <img
-                                    src={itemImage}
-                                    alt={itemTitle}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <div className="w-full h-full flex items-center justify-center">
-                                    <Package className="h-6 w-6 text-muted-foreground" />
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Booking Info */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-start gap-2 mb-1">
-                                  <span className="font-semibold text-sm line-clamp-1">
-                                    {itemTitle}
-                                  </span>
-                                  <div className="flex items-center gap-1">
-                                    {booking.unread_messages_count !== null &&
-                                      booking.unread_messages_count > 0 && (
-                                        <Badge
-                                          variant="destructive"
-                                          className="h-5 min-w-[20px] px-1 text-xs"
-                                        >
-                                          {booking.unread_messages_count}
-                                        </Badge>
-                                      )}
-                                    {getStatusBadge(booking.status)}
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                                  <User className="h-3 w-3" />
-                                  <span className="line-clamp-1">
-                                    {t('requests.requestFrom')}{' '}
-                                    {booking.user?.name || booking.user?.username || 'Unknown'}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                  <Clock className="h-3 w-3" />
-                                  <span className="line-clamp-1">
-                                    {formatDateTime(booking.created_at)}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
+                <Title order={4} className="mb-4">
+                  {t('requests.allBookings')}
+                </Title>
+                {renderBookingList(handleSelectBooking)}
               </div>
             </ScrollArea>
           </Card>
 
           {/* Booking Details & Messages - Right Side */}
-          <Card className="col-span-1 md:col-span-2 flex flex-col h-[calc(100vh-12rem)]">
+          <Card
+            withBorder
+            padding={0}
+            className="col-span-1 md:col-span-2 flex flex-col h-[calc(100vh-12rem)]"
+          >
             {selectedBooking ? (
               <>
                 {/* Booking Header */}
@@ -390,7 +342,10 @@ const Requests = () => {
                       href={`/item/${selectedBooking.item_details?.id || selectedBooking.item}`}
                       className="shrink-0"
                     >
-                      <div className="w-20 h-20 rounded overflow-hidden bg-muted">
+                      <Box
+                        className="w-20 h-20 rounded overflow-hidden"
+                        bg="var(--mantine-color-default-hover)"
+                      >
                         {selectedBooking.item_details?.first_image ? (
                           <img
                             src={selectedBooking.item_details.first_image}
@@ -402,7 +357,7 @@ const Requests = () => {
                             <Package className="h-8 w-8 text-muted-foreground" />
                           </div>
                         )}
-                      </div>
+                      </Box>
                     </a>
 
                     {/* Item Info */}
@@ -414,7 +369,7 @@ const Requests = () => {
                         {selectedBooking.item_details?.name || t('requests.unknownItem')}
                       </a>
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm">
+                        <Text component="div" size="sm" className="flex items-center gap-2">
                           <User className="h-4 w-4 text-muted-foreground" />
                           <span>
                             {t('requests.requestFrom')}{' '}
@@ -424,11 +379,16 @@ const Requests = () => {
                                 'Unknown'}
                             </span>
                           </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        </Text>
+                        <Text
+                          component="div"
+                          size="sm"
+                          c="dimmed"
+                          className="flex items-center gap-2"
+                        >
                           <Clock className="h-4 w-4" />
                           <span>{formatDateTime(selectedBooking.created_at)}</span>
-                        </div>
+                        </Text>
                       </div>
                     </div>
 
@@ -437,16 +397,19 @@ const Requests = () => {
                   </div>
 
                   {/* Booking Details */}
-                  <div className="grid grid-cols-3 md:grid-cols-3 gap-4 p-4 bg-muted rounded-lg">
+                  <Box
+                    bg="var(--mantine-color-default-hover)"
+                    className="grid grid-cols-3 md:grid-cols-3 gap-4 p-4 rounded-lg"
+                  >
                     {/* Original Item Price */}
                     {selectedItemDetails && selectedItemDetails.price && (
                       <div>
-                        <p className="text-xs font-medium mb-1">
+                        <Text size="xs" fw={500} className="mb-1">
                           {selectedItemDetails.sales_type === 'rent'
                             ? t('booking.listedRentalPrice')
                             : t('booking.listedPrice')}
-                        </p>
-                        <p className="text-lg text-muted-foreground">
+                        </Text>
+                        <Text size="lg" c="dimmed">
                           {selectedItemDetails.sales_type === 'rent'
                             ? `${formatPrice(
                                 selectedItemDetails.price,
@@ -456,39 +419,45 @@ const Requests = () => {
                                 selectedItemDetails.price,
                                 selectedItemDetails.price_currency,
                               )}
-                        </p>
+                        </Text>
                       </div>
                     )}
                     {selectedBooking.offer && (
                       <div>
-                        <p className="text-xs mb-1">{t('requests.offerAmount')}</p>
-                        <p className="text-lg font-bold">
+                        <Text size="xs" className="mb-1">
+                          {t('requests.offerAmount')}
+                        </Text>
+                        <Text size="lg" fw={700}>
                           {formatPrice(selectedBooking.offer, 'EUR')}
-                        </p>
+                        </Text>
                       </div>
                     )}
                     {selectedBooking.time_from && selectedBooking.time_to && (
                       <div>
-                        <p className="text-sm font-medium mb-1">{t('requests.rentalPeriod')}</p>
-                        <p className="text-sm">
+                        <Text size="sm" fw={500} className="mb-1">
+                          {t('requests.rentalPeriod')}
+                        </Text>
+                        <Text size="sm">
                           <Clock className="inline h-3 w-3 mr-1" />
                           {formatDateTime(selectedBooking.time_from)}
-                        </p>
-                        <p className="text-sm">
+                        </Text>
+                        <Text size="sm">
                           <Clock className="inline h-3 w-3 mr-1" />
                           {formatDateTime(selectedBooking.time_to)}
-                        </p>
+                        </Text>
                       </div>
                     )}
                     {selectedBooking.counter_offer && (
                       <div>
-                        <p className="text-xs font-medium mb-1">{t('requests.counterOffer')}</p>
-                        <p className="text-lg font-bold text-orange-500">
+                        <Text size="xs" fw={500} className="mb-1">
+                          {t('requests.counterOffer')}
+                        </Text>
+                        <Text size="lg" fw={700} c="orange.5">
                           {formatPrice(selectedBooking.counter_offer, 'EUR')}
-                        </p>
+                        </Text>
                       </div>
                     )}
-                  </div>
+                  </Box>
 
                   {/* Action Buttons - For pending bookings */}
                   {selectedBooking.status === 1 && (
@@ -502,8 +471,7 @@ const Requests = () => {
                             {selectedBooking.counter_offer &&
                               selectedBooking.counter_offer !== selectedBooking.offer && (
                                 <Button
-                                  size="sm"
-                                  className="bg-emerald-500 hover:bg-emerald-600"
+                                  color="teal"
                                   onClick={async () => {
                                     try {
                                       await updateBookingMutation.mutateAsync({
@@ -526,8 +494,7 @@ const Requests = () => {
 
                             <BookingEditDialog booking={selectedBooking} />
                             <Button
-                              size="sm"
-                              variant="destructive"
+                              color="red"
                               onClick={async () => {
                                 try {
                                   await updateBookingMutation.mutateAsync({
@@ -550,71 +517,36 @@ const Requests = () => {
                           <>
                             <BookingCounterOfferDialog booking={selectedBooking} />
 
-                            <AlertDialog
-                              open={showAcceptWarning}
-                              onOpenChange={setShowAcceptWarning}
-                            >
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  className="bg-green-500 hover:bg-green-600"
-                                  onClick={e => {
-                                    // Determine if we must warn: offer differs from item price and differs from counter_offer
-                                    const itemPrice = selectedItemDetails?.price;
-                                    const offerDiffersFromItem =
-                                      !!selectedBooking.offer &&
-                                      selectedBooking.offer !== itemPrice;
-                                    const offerDiffersFromCounter =
-                                      !!selectedBooking.counter_offer &&
-                                      selectedBooking.offer !== selectedBooking.counter_offer;
+                            <Button
+                              color="green"
+                              onClick={() => {
+                                // Determine if we must warn: offer differs from item price and differs from counter_offer
+                                const itemPrice = selectedItemDetails?.price;
+                                const offerDiffersFromItem =
+                                  !!selectedBooking.offer && selectedBooking.offer !== itemPrice;
+                                const offerDiffersFromCounter =
+                                  !!selectedBooking.counter_offer &&
+                                  selectedBooking.offer !== selectedBooking.counter_offer;
 
-                                    if (offerDiffersFromItem && offerDiffersFromCounter) {
-                                      e.preventDefault();
-                                      setPendingAcceptBookingId(selectedBooking.id);
-                                      setShowAcceptWarning(true);
-                                      return;
-                                    }
-
-                                    // Otherwise, proceed directly
-                                    (async () => {
+                                if (offerDiffersFromItem && offerDiffersFromCounter) {
+                                  modals.openConfirmModal({
+                                    title: t('requests.acceptWarningTitle'),
+                                    children: (
+                                      <Text size="sm">
+                                        {t('requests.acceptWarningDescription')?.replace(
+                                          '{amount}',
+                                          String(selectedBooking.offer ?? ''),
+                                        )}
+                                      </Text>
+                                    ),
+                                    labels: {
+                                      confirm: t('requests.accept'),
+                                      cancel: t('common.cancel'),
+                                    },
+                                    onConfirm: async () => {
                                       try {
                                         await updateBookingMutation.mutateAsync({
                                           id: selectedBooking.id,
-                                          data: { status: 3 },
-                                        });
-                                      } catch (error) {
-                                        console.error('Error accepting booking:', error);
-                                      }
-                                    })();
-                                  }}
-                                  disabled={updateBookingMutation.isPending}
-                                >
-                                  {updateBookingMutation.isPending
-                                    ? t('common.submitting')
-                                    : t('requests.accept')}
-                                </Button>
-                              </AlertDialogTrigger>
-
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>
-                                    {t('requests.acceptWarningTitle')}
-                                  </AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    {t('requests.acceptWarningDescription')?.replace(
-                                      '{amount}',
-                                      String(selectedBooking.offer ?? ''),
-                                    )}
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={async () => {
-                                      if (!pendingAcceptBookingId) return;
-                                      try {
-                                        await updateBookingMutation.mutateAsync({
-                                          id: pendingAcceptBookingId,
                                           data: { status: 3 },
                                         });
                                       } catch (error) {
@@ -622,20 +554,32 @@ const Requests = () => {
                                           'Error accepting booking after warning:',
                                           error,
                                         );
-                                      } finally {
-                                        setShowAcceptWarning(false);
-                                        setPendingAcceptBookingId(null);
                                       }
-                                    }}
-                                  >
-                                    {t('requests.accept')}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                                    },
+                                  });
+                                  return;
+                                }
+
+                                // Otherwise, proceed directly
+                                (async () => {
+                                  try {
+                                    await updateBookingMutation.mutateAsync({
+                                      id: selectedBooking.id,
+                                      data: { status: 3 },
+                                    });
+                                  } catch (error) {
+                                    console.error('Error accepting booking:', error);
+                                  }
+                                })();
+                              }}
+                              disabled={updateBookingMutation.isPending}
+                            >
+                              {updateBookingMutation.isPending
+                                ? t('common.submitting')
+                                : t('requests.accept')}
+                            </Button>
                             <Button
-                              size="sm"
-                              variant="destructive"
+                              color="red"
                               onClick={async () => {
                                 try {
                                   await updateBookingMutation.mutateAsync({
@@ -657,9 +601,9 @@ const Requests = () => {
                       </div>
 
                       <div className="ml-auto">
-                        <Button
-                          size="icon"
-                          variant="ghost"
+                        <ActionIcon
+                          variant="subtle"
+                          size="lg"
                           onClick={handleRefreshMessages}
                           disabled={!selectedBookingId || isFetchingMessages}
                           aria-label={t('requests.refresh')}
@@ -667,7 +611,7 @@ const Requests = () => {
                           <RefreshCw
                             className={isFetchingMessages ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
                           />
-                        </Button>
+                        </ActionIcon>
                       </div>
                     </div>
                   )}
@@ -676,7 +620,6 @@ const Requests = () => {
                   {selectedBooking.status === 3 && (
                     <div className="flex items-center gap-2 mt-4">
                       <Button
-                        size="sm"
                         variant="outline"
                         onClick={async () => {
                           try {
@@ -696,9 +639,9 @@ const Requests = () => {
                       </Button>
 
                       <div className="ml-auto">
-                        <Button
-                          size="icon"
-                          variant="ghost"
+                        <ActionIcon
+                          variant="subtle"
+                          size="lg"
                           onClick={handleRefreshMessages}
                           disabled={!selectedBookingId || isFetchingMessages}
                           aria-label={t('requests.refresh')}
@@ -706,7 +649,7 @@ const Requests = () => {
                           <RefreshCw
                             className={isFetchingMessages ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
                           />
-                        </Button>
+                        </ActionIcon>
                       </div>
                     </div>
                   )}
@@ -717,10 +660,12 @@ const Requests = () => {
                   <ScrollArea className="flex-1">
                     <div className="space-y-4 p-4">
                       {messages.length === 0 ? (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <p className="text-sm">{t('requests.noMessages')}</p>
-                          <p className="text-xs mt-2">{t('requests.startConversation')}</p>
-                        </div>
+                        <Text component="div" c="dimmed" ta="center" className="py-8">
+                          <Text size="sm">{t('requests.noMessages')}</Text>
+                          <Text size="xs" className="mt-2">
+                            {t('requests.startConversation')}
+                          </Text>
+                        </Text>
                       ) : (
                         <>
                           {messages.map(message => {
@@ -733,38 +678,30 @@ const Requests = () => {
                                   isOwnMessage ? 'justify-end' : 'justify-start',
                                 )}
                               >
-                                <div
-                                  className={cn(
-                                    'max-w-[70%] rounded-lg p-3 space-y-1',
+                                <Box
+                                  className="max-w-[70%] rounded-lg p-3 space-y-1"
+                                  bg={
                                     isOwnMessage
-                                      ? 'bg-primary text-primary-foreground'
-                                      : 'bg-muted',
-                                  )}
+                                      ? 'var(--mantine-color-green-6)'
+                                      : 'var(--mantine-color-default-hover)'
+                                  }
+                                  c={isOwnMessage ? 'white' : undefined}
                                 >
-                                  <p
-                                    className={cn(
-                                      'text-xs font-semibold mb-1',
-                                      isOwnMessage
-                                        ? 'text-primary-foreground/90'
-                                        : 'text-foreground',
-                                    )}
+                                  <Text
+                                    size="xs"
+                                    fw={600}
+                                    className="mb-1"
+                                    c={isOwnMessage ? 'gray.1' : undefined}
                                   >
                                     {message.sender}
-                                  </p>
-                                  <p className="text-sm whitespace-pre-wrap break-words">
+                                  </Text>
+                                  <Text size="sm" className="whitespace-pre-wrap break-words">
                                     {message.message}
-                                  </p>
-                                  <p
-                                    className={cn(
-                                      'text-xs',
-                                      isOwnMessage
-                                        ? 'text-primary-foreground/70'
-                                        : 'text-muted-foreground',
-                                    )}
-                                  >
+                                  </Text>
+                                  <Text size="xs" c={isOwnMessage ? 'gray.3' : 'dimmed'}>
                                     {format(new Date(message.created_at), 'MMM d, HH:mm')}
-                                  </p>
-                                </div>
+                                  </Text>
+                                </Box>
                               </div>
                             );
                           })}
@@ -777,11 +714,12 @@ const Requests = () => {
                 </div>
 
                 {/* Message Input */}
-                <Separator />
+                <Divider />
                 <div className="p-4 shrink-0">
                   <div className="flex gap-2">
-                    <Input
+                    <TextInput
                       ref={messageInputRef}
+                      className="flex-1"
                       placeholder={t('requests.typeMessage')}
                       value={messageText}
                       onChange={e => setMessageText(e.target.value)}
@@ -793,22 +731,23 @@ const Requests = () => {
                       }}
                       disabled={createMessageMutation.isPending}
                     />
-                    <Button
-                      size="icon"
+                    <ActionIcon
+                      variant="filled"
+                      size="input-sm"
                       onClick={handleSendMessage}
                       disabled={!messageText.trim() || createMessageMutation.isPending}
                     >
                       <Send className="h-4 w-4" />
-                    </Button>
+                    </ActionIcon>
                   </div>
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
+              <div className="flex-1 flex items-center justify-center">
+                <Text component="div" c="dimmed" ta="center">
                   <Calendar className="h-16 w-16 mx-auto mb-4 opacity-50" />
                   <p>{t('requests.selectBooking')}</p>
-                </div>
+                </Text>
               </div>
             )}
           </Card>

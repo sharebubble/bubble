@@ -1,15 +1,8 @@
-import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { ActionIcon, Alert, Button, Group, Loader, Modal, Stack, Text } from '@mantine/core';
 import { BarcodeDetector, prepareZXingModule } from 'barcode-detector/ponyfill';
 
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Loader, Scan, X } from 'lucide-react';
+import { Scan, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 // Log library versions for debugging (values injected at build time by Vite define)
@@ -301,97 +294,98 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, title, f
           variant="outline"
           onClick={() => handleOpenChange(true)}
           disabled={!isInitialized}
-          className="w-full gap-2"
+          fullWidth
+          leftSection={!isInitialized ? <Loader size={16} /> : <Scan size={16} />}
         >
-          {!isInitialized ? (
-            <Loader className="h-4 w-4 animate-spin" />
-          ) : (
-            <Scan className="h-4 w-4" />
-          )}
           {title ?? t('scanner.open')}
         </Button>
       ) : (
-        <Button
-          type="button"
+        <ActionIcon
           variant="outline"
-          size="icon"
+          size="lg"
           onClick={() => handleOpenChange(true)}
           title={title ?? t('scanner.open')}
+          aria-label={title ?? t('scanner.open')}
           disabled={!isInitialized}
+          loading={!isInitialized}
         >
-          {!isInitialized ? (
-            <Loader className="h-4 w-4 animate-spin" />
-          ) : (
-            <Scan className="h-4 w-4" />
-          )}
-        </Button>
+          <Scan size={16} />
+        </ActionIcon>
       )}
 
-      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>{title ?? t('scanner.title')}</DialogTitle>
-            <DialogDescription>{t('scanner.description')}</DialogDescription>
-            <div className="mt-2 text-xs text-muted-foreground">
+      <Modal
+        opened={isOpen}
+        onClose={() => handleOpenChange(false)}
+        title={title ?? t('scanner.title')}
+        size={600}
+      >
+        <Stack gap="md">
+          <div>
+            <Text size="sm" c="dimmed">
+              {t('scanner.description')}
+            </Text>
+            <Text size="xs" c="dimmed" mt={8}>
               {isNativeBarcodeDetector ? t('scanner.usingNative') : t('scanner.usingPolyfill')}
-            </div>
-          </DialogHeader>
+            </Text>
+          </div>
 
-          <div className="space-y-4">
-            {error && (
-              <div className="p-3 bg-destructive/10 border border-destructive rounded-md">
-                <p className="text-sm text-destructive">{error}</p>
+          {error && (
+            <Alert color="red" variant="light">
+              {error}
+            </Alert>
+          )}
+
+          <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
+            <video
+              ref={videoRef}
+              className="w-full h-full object-cover"
+              playsInline
+              muted
+              autoPlay
+              webkit-playsinline="true"
+            />
+
+            {/* Scanning overlay */}
+            {isScanning && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-64 h-48 border-4 border-[var(--mantine-color-green-6)] rounded-lg">
+                  <div className="absolute inset-x-0 top-1/2 h-0.5 bg-[var(--mantine-color-green-6)] animate-pulse" />
+                </div>
               </div>
             )}
 
-            <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                playsInline
-                muted
-                autoPlay
-                webkit-playsinline="true"
-              />
-
-              {/* Scanning overlay */}
-              {isScanning && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-64 h-48 border-4 border-primary rounded-lg">
-                    <div className="absolute inset-x-0 top-1/2 h-0.5 bg-primary animate-pulse" />
-                  </div>
+            {/* Loading indicator */}
+            {!isScanning && !error && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <div className="text-center space-y-2">
+                  <Loader color="white" size={32} className="mx-auto" />
+                  <p className="text-white text-sm">{t('scanner.initializingCamera')}</p>
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Loading indicator */}
-              {!isScanning && !error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                  <div className="text-center space-y-2">
-                    <Loader className="h-8 w-8 text-white animate-spin mx-auto" />
-                    <p className="text-white text-sm">{t('scanner.initializingCamera')}</p>
-                  </div>
-                </div>
-              )}
-
-              {/* Detected barcode display */}
-              {detectedBarcode && (
-                <div className="absolute bottom-4 left-4 right-4 p-3 bg-green-500/90 rounded-md">
-                  <p className="text-sm text-white font-medium text-center">
-                    {t('scanner.detected')}: {detectedBarcode}
-                  </p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-                <X className="h-4 w-4 mr-2" />
-                {t('common.cancel')}
-              </Button>
-            </div>
+            {/* Detected barcode display */}
+            {detectedBarcode && (
+              <div className="absolute bottom-4 left-4 right-4 p-3 bg-green-500/90 rounded-md">
+                <p className="text-sm text-white font-medium text-center">
+                  {t('scanner.detected')}: {detectedBarcode}
+                </p>
+              </div>
+            )}
           </div>
-        </DialogContent>
-      </Dialog>
+
+          <Group justify="flex-end" gap="xs">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              leftSection={<X size={16} />}
+            >
+              {t('common.cancel')}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </>
   );
 };

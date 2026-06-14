@@ -1,16 +1,5 @@
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { FieldStates } from '@/hooks/useFieldAutoSave';
-import { cn } from '@/lib/utils';
 import {
   CategoryEnum,
   ConditionEnum,
@@ -19,44 +8,33 @@ import {
   StatusB0aEnum,
   VisibilityEnum,
 } from '@/services/django';
+import { Checkbox, NumberInput, Select, Text, Textarea, TextInput } from '@mantine/core';
 import { Check, Loader2 } from 'lucide-react';
 
-type FieldWrapperProps = {
-  fieldName: string;
-  fieldStates?: FieldStates;
-  children: React.ReactNode;
-  className?: string;
-};
-
-const FieldWrapper = ({ fieldName, fieldStates, children, className }: FieldWrapperProps) => {
+/** Right-section indicator for the field auto-save state (spinner while saving, check on success). */
+const getFieldRightSection = (fieldName: string, fieldStates?: FieldStates) => {
   const state = fieldStates?.[fieldName];
-
-  return (
-    <div className={cn('relative', className)}>
-      {children}
-      {state?.status === 'saving' && (
-        <div className="absolute right-2 top-1/2 -translate-y-1/2">
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        </div>
-      )}
-      {state?.status === 'success' && (
-        <div className="absolute right-2 top-1/2 -translate-y-1/2">
-          <Check className="h-4 w-4 text-green-600" />
-        </div>
-      )}
-      {state?.status === 'error' && state.errorMessage && (
-        <p className="text-xs text-red-600 mt-1">{state.errorMessage}</p>
-      )}
-    </div>
-  );
+  if (state?.status === 'saving') {
+    return <Loader2 size={16} className="animate-spin" color="var(--mantine-color-dimmed)" />;
+  }
+  if (state?.status === 'success') {
+    return <Check size={16} color="var(--mantine-color-green-6)" />;
+  }
+  return undefined;
 };
 
-const getFieldBorderClass = (fieldName: string, fieldStates?: FieldStates) => {
+/** Error prop for the field auto-save state (message if present, red border otherwise). */
+const getFieldError = (fieldName: string, fieldStates?: FieldStates) => {
   const state = fieldStates?.[fieldName];
-  if (state?.status === 'success') return 'border-green-500 focus-visible:ring-green-500';
-  if (state?.status === 'error') return 'border-red-500 focus-visible:ring-red-500';
-  return '';
+  if (state?.status === 'error') return state.errorMessage || true;
+  return undefined;
 };
+
+/** Green border on successful auto-save. */
+const getFieldStyles = (fieldName: string, fieldStates?: FieldStates) =>
+  fieldStates?.[fieldName]?.status === 'success'
+    ? { input: { borderColor: 'var(--mantine-color-green-6)' } }
+    : undefined;
 
 interface BasicFieldsProps {
   formData: {
@@ -82,38 +60,40 @@ export const BasicFields = ({
 
   return (
     <>
-      <div className="space-y-2">
-        <Label htmlFor="name">{t('editItem.name')} *</Label>
-        <FieldWrapper fieldName="name" fieldStates={fieldStates}>
-          <Input
-            id="name"
-            type="text"
-            placeholder={t('editItem.enterName')}
-            value={formData.name}
-            onChange={e => setFormData({ ...formData, name: e.target.value })}
-            onBlur={() => onFieldBlur?.('name', formData.name)}
-            disabled={disabled}
-            required
-            className={cn(getFieldBorderClass('name', fieldStates), 'pr-8')}
-          />
-        </FieldWrapper>
-      </div>
+      <TextInput
+        id="name"
+        label={t('editItem.name')}
+        placeholder={t('editItem.enterName')}
+        value={formData.name}
+        onChange={e => setFormData({ ...formData, name: e.target.value })}
+        onBlur={() => onFieldBlur?.('name', formData.name)}
+        disabled={disabled}
+        required
+        rightSection={getFieldRightSection('name', fieldStates)}
+        error={getFieldError('name', fieldStates)}
+        styles={getFieldStyles('name', fieldStates)}
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="description">{t('editItem.description')}</Label>
-        <FieldWrapper fieldName="description" fieldStates={fieldStates}>
-          <Textarea
-            id="description"
-            ref={descriptionRef}
-            placeholder={t('editItem.enterDescription')}
-            value={formData.description}
-            onChange={e => setFormData({ ...formData, description: e.target.value })}
-            onBlur={() => onFieldBlur?.('description', formData.description)}
-            disabled={disabled}
-            className={cn('min-h-[100px] pr-8', getFieldBorderClass('description', fieldStates))}
-          />
-        </FieldWrapper>
-      </div>
+      <Textarea
+        id="description"
+        ref={descriptionRef}
+        label={t('editItem.description')}
+        placeholder={t('editItem.enterDescription')}
+        value={formData.description}
+        onChange={e => setFormData({ ...formData, description: e.target.value })}
+        onBlur={() => onFieldBlur?.('description', formData.description)}
+        disabled={disabled}
+        rightSection={getFieldRightSection('description', fieldStates)}
+        error={getFieldError('description', fieldStates)}
+        styles={{
+          input: {
+            minHeight: 100,
+            ...(fieldStates?.description?.status === 'success'
+              ? { borderColor: 'var(--mantine-color-green-6)' }
+              : {}),
+          },
+        }}
+      />
     </>
   );
 };
@@ -150,68 +130,56 @@ export const CategoryConditionFields = ({
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div className="space-y-2">
-        <Label htmlFor="category">{t('editItem.category')} *</Label>
-        <FieldWrapper fieldName="category" fieldStates={fieldStates}>
-          <Select
-            key={formData.category || 'empty'}
-            value={formData.category}
-            onValueChange={(value: CategoryEnum) => {
-              if (value) {
-                setFormData({ ...formData, category: value });
-                onCategoryChange?.(value);
-                onFieldChange?.('category', value);
-              }
-            }}
-            disabled={disabled}
-            required
-          >
-            <SelectTrigger className={cn(getFieldBorderClass('category', fieldStates), 'pr-8')}>
-              <SelectValue placeholder={t('editItem.selectCategory')} />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map(category => (
-                <SelectItem key={category} value={category}>
-                  {t(`categories.${category}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FieldWrapper>
-      </div>
+      <Select
+        id="category"
+        label={t('editItem.category')}
+        placeholder={t('editItem.selectCategory')}
+        value={formData.category || null}
+        onChange={value => {
+          if (value) {
+            setFormData({ ...formData, category: value });
+            onCategoryChange?.(value as CategoryEnum);
+            onFieldChange?.('category', value);
+          }
+        }}
+        data={categories.map(category => ({
+          value: category,
+          label: t(`categories.${category}`),
+        }))}
+        disabled={disabled}
+        required
+        allowDeselect={false}
+        rightSection={getFieldRightSection('category', fieldStates)}
+        error={getFieldError('category', fieldStates)}
+        styles={getFieldStyles('category', fieldStates)}
+      />
 
-      <div className="space-y-2">
-        <Label htmlFor="condition">{t('editItem.condition')} *</Label>
-        <FieldWrapper fieldName="condition" fieldStates={fieldStates}>
-          <Select
-            key={formData.condition.toString()}
-            value={formData.condition.toString()}
-            onValueChange={value => {
-              if (value) {
-                const conditionValue = parseInt(value) as ConditionEnum;
-                setFormData({
-                  ...formData,
-                  condition: conditionValue,
-                });
-                onFieldChange?.('condition', conditionValue);
-              }
-            }}
-            disabled={disabled}
-            required
-          >
-            <SelectTrigger className={cn(getFieldBorderClass('condition', fieldStates), 'pr-8')}>
-              <SelectValue placeholder={t('editItem.selectCondition')} />
-            </SelectTrigger>
-            <SelectContent>
-              {conditions.map(condition => (
-                <SelectItem key={condition.value} value={condition.value.toString()}>
-                  {t(`condition.${condition.key}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </FieldWrapper>
-      </div>
+      <Select
+        id="condition"
+        label={t('editItem.condition')}
+        placeholder={t('editItem.selectCondition')}
+        value={formData.condition === '' ? null : String(formData.condition)}
+        onChange={value => {
+          if (value !== null) {
+            const conditionValue = Number(value) as ConditionEnum;
+            setFormData({
+              ...formData,
+              condition: conditionValue,
+            });
+            onFieldChange?.('condition', conditionValue);
+          }
+        }}
+        data={conditions.map(condition => ({
+          value: String(condition.value),
+          label: t(`condition.${condition.key}`),
+        }))}
+        disabled={disabled}
+        required
+        allowDeselect={false}
+        rightSection={getFieldRightSection('condition', fieldStates)}
+        error={getFieldError('condition', fieldStates)}
+        styles={getFieldStyles('condition', fieldStates)}
+      />
     </div>
   );
 };
@@ -280,117 +248,107 @@ export const PricingFields = ({
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="sales_type">{t('item.salesType.label')} *</Label>
-          <FieldWrapper fieldName="sales_type" fieldStates={fieldStates}>
-            <Select
-              key={salesType || 'empty'}
-              value={salesType}
-              onValueChange={handleSalesTypeChange}
-              disabled={disabled}
-              required
-            >
-              <SelectTrigger className={cn(getFieldBorderClass('sales_type', fieldStates), 'pr-8')}>
-                <SelectValue placeholder={t('item.salesType.label')} />
-              </SelectTrigger>
-              <SelectContent>
-                {SALES_TYPE_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {t(opt.labelKey)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </FieldWrapper>
-        </div>
+        <Select
+          id="sales_type"
+          label={t('item.salesType.label')}
+          placeholder={t('item.salesType.label')}
+          value={salesType || null}
+          onChange={value => {
+            if (value) {
+              handleSalesTypeChange(value as SalesTypeEnum);
+            }
+          }}
+          data={SALES_TYPE_OPTIONS.map(opt => ({
+            value: opt.value,
+            label: t(opt.labelKey),
+          }))}
+          disabled={disabled}
+          required
+          allowDeselect={false}
+          rightSection={getFieldRightSection('sales_type', fieldStates)}
+          error={getFieldError('sales_type', fieldStates)}
+          styles={getFieldStyles('sales_type', fieldStates)}
+        />
 
         {showPrice && (
-          <div className="space-y-2">
-            <Label htmlFor="price">
-              {salesType === 'rent' ? t('editItem.rentalPrice') : t('editItem.price')}
-              {PRICE_REQUIRED_TYPES.includes(salesType as SalesTypeEnum) ? ' *' : ''}
-            </Label>
-            <FieldWrapper fieldName="price" fieldStates={fieldStates}>
-              <Input
-                id="price"
-                type="number"
-                step="1.00"
-                placeholder={t('editItem.enterPrice')}
-                value={formData.price}
-                onChange={e => setFormData({ ...formData, price: e.target.value })}
-                onBlur={() => onFieldBlur?.('price', formData.price === '' ? null : formData.price)}
-                disabled={disabled}
-                required={PRICE_REQUIRED_TYPES.includes(salesType as SalesTypeEnum)}
-                className={cn(getFieldBorderClass('price', fieldStates), 'pr-8')}
-              />
-            </FieldWrapper>
-          </div>
+          <NumberInput
+            id="price"
+            label={salesType === 'rent' ? t('editItem.rentalPrice') : t('editItem.price')}
+            placeholder={t('editItem.enterPrice')}
+            value={formData.price}
+            onChange={value =>
+              setFormData({ ...formData, price: value === '' ? '' : String(value) })
+            }
+            onBlur={() => onFieldBlur?.('price', formData.price === '' ? null : formData.price)}
+            disabled={disabled}
+            required={PRICE_REQUIRED_TYPES.includes(salesType as SalesTypeEnum)}
+            step={1}
+            rightSection={getFieldRightSection('price', fieldStates)}
+            error={getFieldError('price', fieldStates)}
+            styles={getFieldStyles('price', fieldStates)}
+          />
         )}
       </div>
 
       {showRentalOptions && (
         <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Select
+              id="rental_period"
+              label={t('editItem.rentalPeriod')}
+              placeholder={t('editItem.selectRentalPeriod')}
+              value={formData.rental_period || null}
+              onChange={value => {
+                if (value) {
+                  setFormData({ ...formData, rental_period: value });
+                  onFieldChange?.('rental_period', value);
+                }
+              }}
+              data={[
+                { value: 'h', label: t('rentalPeriod.h') },
+                { value: 'd', label: t('rentalPeriod.d') },
+                { value: 'w', label: t('rentalPeriod.w') },
+              ]}
+              disabled={disabled}
+              required
+              allowDeselect={false}
+              rightSection={getFieldRightSection('rental_period', fieldStates)}
+              error={getFieldError('rental_period', fieldStates)}
+              styles={getFieldStyles('rental_period', fieldStates)}
+            />
+
             <div className="space-y-2">
-              <Label htmlFor="rental_period">{t('editItem.rentalPeriod')}</Label>
-              <FieldWrapper fieldName="rental_period" fieldStates={fieldStates}>
-                <Select
-                  value={formData.rental_period}
-                  onValueChange={(value: RentalPeriodEnum) => {
-                    setFormData({ ...formData, rental_period: value });
-                    onFieldChange?.('rental_period', value);
+              <Text size="sm" fw={500}>
+                {t('editItem.rentalOptions')}
+              </Text>
+              <div className="flex flex-col gap-2">
+                <Checkbox
+                  label={t('editItem.rentalSelfService')}
+                  checked={formData.rental_self_service}
+                  onChange={e => {
+                    const checked = e.currentTarget.checked;
+                    setFormData({
+                      ...formData,
+                      rental_self_service: checked,
+                    });
+                    onFieldChange?.('rental_self_service', checked);
                   }}
                   disabled={disabled}
-                  required
-                >
-                  <SelectTrigger
-                    className={cn(getFieldBorderClass('rental_period', fieldStates), 'pr-8')}
-                  >
-                    <SelectValue placeholder={t('editItem.selectRentalPeriod')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="h">{t('rentalPeriod.h')}</SelectItem>
-                    <SelectItem value="d">{t('rentalPeriod.d')}</SelectItem>
-                    <SelectItem value="w">{t('rentalPeriod.w')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </FieldWrapper>
-            </div>
+                />
 
-            <div className="space-y-2">
-              <Label className="text-sm">{t('editItem.rentalOptions')}</Label>
-              <div className="flex flex-col gap-2">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.rental_self_service}
-                    onChange={e => {
-                      setFormData({
-                        ...formData,
-                        rental_self_service: e.target.checked,
-                      });
-                      onFieldChange?.('rental_self_service', e.target.checked);
-                    }}
-                    disabled={disabled}
-                  />
-                  <span className="text-sm">{t('editItem.rentalSelfService')}</span>
-                </label>
-
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.rental_open_end}
-                    onChange={e => {
-                      setFormData({
-                        ...formData,
-                        rental_open_end: e.target.checked,
-                      });
-                      onFieldChange?.('rental_open_end', e.target.checked);
-                    }}
-                    disabled={disabled}
-                  />
-                  <span className="text-sm">{t('editItem.rentalOpenEnd')}</span>
-                </label>
+                <Checkbox
+                  label={t('editItem.rentalOpenEnd')}
+                  checked={formData.rental_open_end}
+                  onChange={e => {
+                    const checked = e.currentTarget.checked;
+                    setFormData({
+                      ...formData,
+                      rental_open_end: checked,
+                    });
+                    onFieldChange?.('rental_open_end', checked);
+                  }}
+                  disabled={disabled}
+                />
               </div>
             </div>
           </div>
@@ -454,38 +412,32 @@ export const StatusField = ({
   const statuses = getStatusesForSalesType(formData.sales_type);
 
   return (
-    <div className="flex-1 max-w-xs space-y-2">
-      <Label htmlFor="status" className="text-sm">
-        {t('editItem.status')}
-      </Label>
-      <FieldWrapper fieldName="status" fieldStates={fieldStates}>
-        <Select
-          key={formData.status.toString()}
-          value={formData.status.toString()}
-          onValueChange={value => {
-            if (value !== '') {
-              const statusValue = parseInt(value) as StatusB0aEnum;
-              setFormData({
-                ...formData,
-                status: statusValue,
-              });
-              onFieldChange?.('status', statusValue);
-            }
-          }}
-          disabled={disabled}
-        >
-          <SelectTrigger className={cn(getFieldBorderClass('status', fieldStates), 'pr-8')}>
-            <SelectValue placeholder={t('editItem.selectStatus')} />
-          </SelectTrigger>
-          <SelectContent>
-            {statuses.map(status => (
-              <SelectItem key={status.value} value={status.value.toString()}>
-                {t(`status.${status.label}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </FieldWrapper>
+    <div className="flex-1 max-w-xs">
+      <Select
+        id="status"
+        label={t('editItem.status')}
+        placeholder={t('editItem.selectStatus')}
+        value={formData.status === '' ? null : String(formData.status)}
+        onChange={value => {
+          if (value !== null) {
+            const statusValue = Number(value) as StatusB0aEnum;
+            setFormData({
+              ...formData,
+              status: statusValue,
+            });
+            onFieldChange?.('status', statusValue);
+          }
+        }}
+        data={statuses.map(status => ({
+          value: String(status.value),
+          label: t(`status.${status.label}`),
+        }))}
+        disabled={disabled}
+        allowDeselect={false}
+        rightSection={getFieldRightSection('status', fieldStates)}
+        error={getFieldError('status', fieldStates)}
+        styles={getFieldStyles('status', fieldStates)}
+      />
     </div>
   );
 };
@@ -517,38 +469,32 @@ export const VisibilityField = ({
   ];
 
   return (
-    <div className="flex-1 max-w-xs space-y-2">
-      <Label htmlFor="visibility" className="text-sm">
-        {t('editItem.visibility')}
-      </Label>
-      <FieldWrapper fieldName="visibility" fieldStates={fieldStates}>
-        <Select
-          key={formData.visibility !== '' ? formData.visibility.toString() : 'empty'}
-          value={formData.visibility !== '' ? formData.visibility.toString() : ''}
-          onValueChange={value => {
-            if (value !== '') {
-              const visibilityValue = parseInt(value) as VisibilityEnum;
-              setFormData({
-                ...formData,
-                visibility: visibilityValue,
-              });
-              onFieldChange?.('visibility', visibilityValue);
-            }
-          }}
-          disabled={disabled}
-        >
-          <SelectTrigger className={cn(getFieldBorderClass('visibility', fieldStates), 'pr-8')}>
-            <SelectValue placeholder={t('editItem.selectVisibility')} />
-          </SelectTrigger>
-          <SelectContent>
-            {visibilities.map(v => (
-              <SelectItem key={v.value} value={v.value.toString()}>
-                {t(`visibility.${v.label}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </FieldWrapper>
+    <div className="flex-1 max-w-xs">
+      <Select
+        id="visibility"
+        label={t('editItem.visibility')}
+        placeholder={t('editItem.selectVisibility')}
+        value={formData.visibility !== '' ? String(formData.visibility) : null}
+        onChange={value => {
+          if (value !== null) {
+            const visibilityValue = Number(value) as VisibilityEnum;
+            setFormData({
+              ...formData,
+              visibility: visibilityValue,
+            });
+            onFieldChange?.('visibility', visibilityValue);
+          }
+        }}
+        data={visibilities.map(v => ({
+          value: String(v.value),
+          label: t(`visibility.${v.label}`),
+        }))}
+        disabled={disabled}
+        allowDeselect={false}
+        rightSection={getFieldRightSection('visibility', fieldStates)}
+        error={getFieldError('visibility', fieldStates)}
+        styles={getFieldStyles('visibility', fieldStates)}
+      />
     </div>
   );
 };

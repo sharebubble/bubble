@@ -1,6 +1,3 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
   groupsList,
@@ -13,6 +10,7 @@ import {
   usersList,
   VisibilityEnum,
 } from '@/services/django';
+import { ActionIcon, Button, Divider, Group, Paper, Text, TextInput } from '@mantine/core';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useState, useRef } from 'react';
@@ -35,12 +33,19 @@ interface AccessManagerProps {
 
 /** Reusable row for removing a user or group from a list. */
 const AccessRow = ({ label, onRemove }: { label: string; onRemove: () => void }) => (
-  <div className="flex items-center justify-between py-1 px-2 rounded bg-muted text-sm">
-    <span>{label}</span>
-    <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={onRemove}>
-      <X className="h-3 w-3" />
-    </Button>
-  </div>
+  <Group
+    justify="space-between"
+    wrap="nowrap"
+    py={4}
+    px={8}
+    bg="gray.1"
+    style={{ borderRadius: 'var(--mantine-radius-sm)' }}
+  >
+    <Text size="sm">{label}</Text>
+    <ActionIcon variant="subtle" color="gray" size="sm" onClick={onRemove}>
+      <X size={12} />
+    </ActionIcon>
+  </Group>
 );
 
 /** Panel for managing either co-owners or viewers. */
@@ -114,16 +119,26 @@ const AccessPanel = ({
   return (
     <div className="space-y-4">
       <div>
-        <h4 className="font-medium text-sm">{title}</h4>
-        <p className="text-xs text-muted-foreground">{description}</p>
+        <Text size="sm" fw={500}>
+          {title}
+        </Text>
+        <Text size="xs" c="dimmed">
+          {description}
+        </Text>
       </div>
 
-      {isLoading && <p className="text-xs text-muted-foreground">{t('common.loading')}</p>}
+      {isLoading && (
+        <Text size="xs" c="dimmed">
+          {t('common.loading')}
+        </Text>
+      )}
 
       {/* Current users */}
       {(data?.users ?? []).length > 0 && (
         <div className="space-y-1">
-          <Label className="text-xs">{t('accessManager.users')}</Label>
+          <Text size="xs" fw={500}>
+            {t('accessManager.users')}
+          </Text>
           {data!.users.map(u => (
             <AccessRow
               key={`user-${u.id}`}
@@ -137,7 +152,9 @@ const AccessPanel = ({
       {/* Current groups */}
       {(data?.groups ?? []).length > 0 && (
         <div className="space-y-1">
-          <Label className="text-xs">{t('accessManager.groups')}</Label>
+          <Text size="xs" fw={500}>
+            {t('accessManager.groups')}
+          </Text>
           {data!.groups.map(g => (
             <AccessRow
               key={`group-${g.id}`}
@@ -150,8 +167,9 @@ const AccessPanel = ({
 
       {/* Add user */}
       <div className="space-y-1 relative">
-        <Label className="text-xs">{t('accessManager.addUser')}</Label>
-        <Input
+        <TextInput
+          size="xs"
+          label={t('accessManager.addUser')}
           placeholder={t('accessManager.searchUsers')}
           value={userSearch}
           onChange={e => setUserSearch(e.target.value)}
@@ -162,17 +180,24 @@ const AccessPanel = ({
           onBlur={() => {
             userBlurTimer.current = setTimeout(() => setUserFocused(false), 150);
           }}
-          className="h-8 text-sm"
           disabled={mutating}
           autoComplete="off"
         />
         {showUserDropdown && (
-          <div className="absolute z-10 left-0 right-0 border rounded bg-popover shadow-md p-1 space-y-1 max-h-40 overflow-y-auto">
+          <Paper
+            withBorder
+            shadow="md"
+            className="absolute z-10 left-0 right-0 p-1 space-y-1 max-h-40 overflow-y-auto"
+          >
             {filteredUsers.map(u => (
-              <button
+              <Button
                 key={u.id}
                 type="button"
-                className="w-full text-left text-sm px-2 py-1 rounded hover:bg-muted"
+                variant="subtle"
+                color="gray"
+                size="compact-sm"
+                fullWidth
+                justify="flex-start"
                 onMouseDown={e => e.preventDefault()} // keep focus on input during click
                 onClick={() => {
                   onAddUser(u.id);
@@ -182,16 +207,17 @@ const AccessPanel = ({
                 disabled={mutating}
               >
                 {u.username}
-              </button>
+              </Button>
             ))}
-          </div>
+          </Paper>
         )}
       </div>
 
       {/* Add group */}
       <div className="space-y-1 relative">
-        <Label className="text-xs">{t('accessManager.addGroup')}</Label>
-        <Input
+        <TextInput
+          size="xs"
+          label={t('accessManager.addGroup')}
           placeholder={t('accessManager.searchGroups')}
           value={groupSearch}
           onChange={e => setGroupSearch(e.target.value)}
@@ -202,17 +228,24 @@ const AccessPanel = ({
           onBlur={() => {
             groupBlurTimer.current = setTimeout(() => setGroupFocused(false), 150);
           }}
-          className="h-8 text-sm"
           disabled={mutating}
           autoComplete="off"
         />
         {showGroupDropdown && (
-          <div className="absolute z-10 left-0 right-0 border rounded bg-popover shadow-md p-1 space-y-1 max-h-40 overflow-y-auto">
+          <Paper
+            withBorder
+            shadow="md"
+            className="absolute z-10 left-0 right-0 p-1 space-y-1 max-h-40 overflow-y-auto"
+          >
             {filteredGroups.map(g => (
-              <button
+              <Button
                 key={g.id}
                 type="button"
-                className="w-full text-left text-sm px-2 py-1 rounded hover:bg-muted"
+                variant="subtle"
+                color="gray"
+                size="compact-sm"
+                fullWidth
+                justify="flex-start"
                 onMouseDown={e => e.preventDefault()}
                 onClick={() => {
                   onAddGroup(g.id);
@@ -222,9 +255,9 @@ const AccessPanel = ({
                 disabled={mutating}
               >
                 {g.name}
-              </button>
+              </Button>
             ))}
-          </div>
+          </Paper>
         )}
       </div>
     </div>
@@ -248,7 +281,7 @@ export const AccessManager = ({ itemId, visibility }: AccessManagerProps) => {
     queryKey: coOwnersKey,
     queryFn: async () => {
       const res = await itemsCoOwnersRetrieve({ path: { id: itemId } });
-      return (res.data ?? { users: [], groups: [] }) as AccessList;
+      return (res.data ?? { users: [], groups: [] }) as unknown as AccessList;
     },
   });
 
@@ -256,7 +289,7 @@ export const AccessManager = ({ itemId, visibility }: AccessManagerProps) => {
     queryKey: viewersKey,
     queryFn: async () => {
       const res = await itemsViewersRetrieve({ path: { id: itemId } });
-      return (res.data ?? { users: [], groups: [] }) as AccessList;
+      return (res.data ?? { users: [], groups: [] }) as unknown as AccessList;
     },
     enabled: visibility === 2,
   });
@@ -337,7 +370,7 @@ export const AccessManager = ({ itemId, visibility }: AccessManagerProps) => {
       )}
 
       {/* Divider only when both panels are visible */}
-      {visibility === 2 && <div className="border-t" />}
+      {visibility === 2 && <Divider />}
 
       {/* Co-owners panel — always shown */}
       <AccessPanel

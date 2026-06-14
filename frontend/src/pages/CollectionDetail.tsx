@@ -1,30 +1,5 @@
 import { CollectionHistoryDialog } from '@/components/collections/CollectionHistoryDialog';
 import { CollectionPermissionsPanel } from '@/components/collections/CollectionPermissionsPanel';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -35,6 +10,19 @@ import {
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import { formatPrice } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
+import {
+  Badge,
+  Button,
+  Card,
+  Divider,
+  Group,
+  Modal,
+  Tabs,
+  Text,
+  TextInput,
+  Textarea,
+} from '@mantine/core';
+import { modals } from '@mantine/modals';
 import { ArrowLeft, BookMarked, Edit3, History, ShoppingCart, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -53,7 +41,6 @@ const CollectionDetail = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
-  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
 
   const isOwner = user && collection && user.username === collection.owner;
   const canRemoveItems = isOwner || !!collection?.can_remove_items;
@@ -75,26 +62,31 @@ const CollectionDetail = () => {
     setShowEdit(false);
   };
 
-  const handleRemove = async () => {
-    if (!removeTarget || !collectionId) return;
-    await removeMutation.mutateAsync({ collectionId, itemId: removeTarget });
-    setRemoveTarget(null);
+  const confirmRemove = (itemId: string) => {
+    if (!collectionId) return;
+    modals.openConfirmModal({
+      title: t('collections.removeFromCollection'),
+      children: <Text size="sm">{t('collections.confirmDelete')}</Text>,
+      labels: { confirm: t('common.delete'), cancel: t('common.cancel') },
+      confirmProps: { color: 'red' },
+      onConfirm: () => removeMutation.mutate({ collectionId, itemId }),
+    });
   };
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center text-muted-foreground">
+      <Text component="div" c="dimmed" className="container mx-auto px-4 py-8 text-center">
         {t('common.loading')}
-      </div>
+      </Text>
     );
   }
 
   if (error || !collection) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
-        <p className="text-destructive">{error?.message ?? 'Collection not found.'}</p>
-        <Button asChild className="mt-4">
-          <Link to="/collections">{t('collections.backToCollections')}</Link>
+        <Text c="red">{error?.message ?? 'Collection not found.'}</Text>
+        <Button component={Link} to="/collections" className="mt-4">
+          {t('collections.backToCollections')}
         </Button>
       </div>
     );
@@ -103,8 +95,11 @@ const CollectionDetail = () => {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 space-y-6">
       {/* Back button */}
-      <Button variant="ghost" onClick={() => navigate('/collections')} className="gap-2">
-        <ArrowLeft className="h-4 w-4" />
+      <Button
+        variant="subtle"
+        leftSection={<ArrowLeft size={16} />}
+        onClick={() => navigate('/collections')}
+      >
         {t('collections.backToCollections')}
       </Button>
 
@@ -115,47 +110,54 @@ const CollectionDetail = () => {
           <div className="min-w-0">
             <h1 className="text-2xl font-bold truncate">{collection.name}</h1>
             {collection.description && (
-              <p className="text-sm text-muted-foreground mt-1">{collection.description}</p>
+              <Text size="sm" c="dimmed" className="mt-1">
+                {collection.description}
+              </Text>
             )}
-            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+            <Text component="div" size="xs" c="dimmed" className="flex items-center gap-3 mt-2">
               <span>
                 {t('collections.owner')}: <span className="font-medium">{collection.owner}</span>
               </span>
               <span>
                 {t('collections.created')}: {formatDate(collection.created_at, language)}
               </span>
-              <Badge variant="secondary">
+              <Badge variant="light">
                 {t('collections.itemCount').replace('{count}', collection.items_count)}
               </Badge>
-            </div>
+            </Text>
           </div>
         </div>
 
         {isOwner && (
-          <Button variant="outline" size="sm" className="gap-2 shrink-0" onClick={openEdit}>
-            <Edit3 className="h-4 w-4" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            leftSection={<Edit3 size={16} />}
+            onClick={openEdit}
+          >
             {t('collections.editCollection')}
           </Button>
         )}
         <Button
           variant="outline"
           size="sm"
-          className="gap-2 shrink-0"
+          className="shrink-0"
+          leftSection={<History size={16} />}
           onClick={() => setShowHistory(true)}
         >
-          <History className="h-4 w-4" />
           {t('collections.historyButton')}
         </Button>
       </div>
 
-      <Separator />
+      <Divider />
 
       {/* Items grid */}
       {collection.collection_items.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
+        <Text component="div" c="dimmed" className="text-center py-16">
           <ShoppingCart className="mx-auto h-12 w-12 mb-4 opacity-40" />
           <p>{t('collections.noItems')}</p>
-        </div>
+        </Text>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {collection.collection_items.map(ci => {
@@ -163,6 +165,8 @@ const CollectionDetail = () => {
             return (
               <Card
                 key={ci.id}
+                withBorder
+                padding={0}
                 className="group overflow-hidden cursor-pointer transition-all duration-200 hover:shadow-strong hover:scale-105"
                 onClick={() => navigate(`/item/${item.id}`)}
               >
@@ -176,7 +180,9 @@ const CollectionDetail = () => {
                     />
                   ) : (
                     (() => {
-                      const CategoryIcon = getCategoryIcon(item.category);
+                      const CategoryIcon = getCategoryIcon(
+                        (item as { category?: string }).category,
+                      );
                       return (
                         <div className="flex h-full w-full items-center justify-center">
                           <CategoryIcon className="h-16 w-16 text-muted-foreground/50" />
@@ -186,9 +192,7 @@ const CollectionDetail = () => {
                   )}
                   {item.sales_type && (
                     <div className="absolute top-2 right-2">
-                      <Badge className="text-xs">
-                        {t(`item.salesType.badge.${item.sales_type}`)}
-                      </Badge>
+                      <Badge size="sm">{t(`item.salesType.badge.${item.sales_type}`)}</Badge>
                     </div>
                   )}
                 </div>
@@ -204,7 +208,9 @@ const CollectionDetail = () => {
                     </p>
                   )}
                   {ci.note && (
-                    <p className="text-xs text-muted-foreground line-clamp-2">{ci.note}</p>
+                    <Text size="xs" c="dimmed" lineClamp={2}>
+                      {ci.note}
+                    </Text>
                   )}
                 </div>
 
@@ -212,15 +218,16 @@ const CollectionDetail = () => {
                 {canRemoveItems && (
                   <div className="px-3 pb-3" onClick={e => e.stopPropagation()}>
                     <Button
-                      variant="ghost"
+                      variant="subtle"
+                      color="red"
                       size="sm"
-                      className="w-full text-muted-foreground hover:text-destructive gap-2"
+                      fullWidth
+                      leftSection={<Trash2 size={12} />}
                       onClick={e => {
                         e.stopPropagation();
-                        setRemoveTarget(item.id);
+                        confirmRemove(item.id);
                       }}
                     >
-                      <Trash2 className="h-3 w-3" />
                       {t('collections.removeFromCollection')}
                     </Button>
                   </div>
@@ -241,81 +248,55 @@ const CollectionDetail = () => {
       )}
 
       {/* Edit dialog — tabbed: Details + Permissions (owner only) */}
-      <Dialog open={showEdit} onOpenChange={setShowEdit}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t('collections.editCollection')}</DialogTitle>
-          </DialogHeader>
+      <Modal
+        opened={showEdit}
+        onClose={() => setShowEdit(false)}
+        title={t('collections.editCollection')}
+        size="lg"
+      >
+        <Tabs defaultValue="details">
+          <Tabs.List grow>
+            <Tabs.Tab value="details">{t('collections.detailsTab')}</Tabs.Tab>
+            <Tabs.Tab value="permissions">{t('collections.permissionsTab')}</Tabs.Tab>
+          </Tabs.List>
 
-          <Tabs defaultValue="details">
-            <TabsList className="w-full">
-              <TabsTrigger value="details" className="flex-1">
-                {t('collections.detailsTab')}
-              </TabsTrigger>
-              <TabsTrigger value="permissions" className="flex-1">
-                {t('collections.permissionsTab')}
-              </TabsTrigger>
-            </TabsList>
+          {/* Details tab */}
+          <Tabs.Panel value="details" className="space-y-4 pt-4">
+            <TextInput
+              label={t('collections.name')}
+              value={editName}
+              onChange={e => setEditName(e.target.value)}
+              placeholder={t('collections.namePlaceholder')}
+              data-autofocus
+            />
+            <Textarea
+              label={t('collections.description')}
+              value={editDescription}
+              onChange={e => setEditDescription(e.target.value)}
+              placeholder={t('collections.descriptionPlaceholder')}
+              rows={3}
+            />
+            <Group justify="flex-end">
+              <Button variant="outline" onClick={() => setShowEdit(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button onClick={handleSave} disabled={!editName.trim() || updateMutation.isPending}>
+                {updateMutation.isPending ? t('common.saving') : t('collections.saveChanges')}
+              </Button>
+            </Group>
+          </Tabs.Panel>
 
-            {/* Details tab */}
-            <TabsContent value="details" className="space-y-4 pt-4">
-              <div className="space-y-1">
-                <Label>{t('collections.name')}</Label>
-                <Input
-                  value={editName}
-                  onChange={e => setEditName(e.target.value)}
-                  placeholder={t('collections.namePlaceholder')}
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>{t('collections.description')}</Label>
-                <Textarea
-                  value={editDescription}
-                  onChange={e => setEditDescription(e.target.value)}
-                  placeholder={t('collections.descriptionPlaceholder')}
-                  rows={3}
-                />
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowEdit(false)}>
-                  {t('common.cancel')}
-                </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={!editName.trim() || updateMutation.isPending}
-                >
-                  {updateMutation.isPending ? t('common.saving') : t('collections.saveChanges')}
-                </Button>
-              </DialogFooter>
-            </TabsContent>
-
-            {/* Permissions tab */}
-            <TabsContent value="permissions" className="pt-4">
-              {collectionId && (
-                <CollectionPermissionsPanel
-                  collectionId={collectionId}
-                  ownerUsername={collection?.owner}
-                />
-              )}
-            </TabsContent>
-          </Tabs>
-        </DialogContent>
-      </Dialog>
-
-      {/* Remove item confirmation */}
-      <AlertDialog open={!!removeTarget} onOpenChange={open => !open && setRemoveTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('collections.removeFromCollection')}</AlertDialogTitle>
-            <AlertDialogDescription>{t('collections.confirmDelete')}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRemove}>{t('common.delete')}</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+          {/* Permissions tab */}
+          <Tabs.Panel value="permissions" className="pt-4">
+            {collectionId && (
+              <CollectionPermissionsPanel
+                collectionId={collectionId}
+                ownerUsername={collection?.owner}
+              />
+            )}
+          </Tabs.Panel>
+        </Tabs>
+      </Modal>
     </div>
   );
 };
