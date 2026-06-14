@@ -122,7 +122,7 @@ export const Header = () => {
 
           {/* Search Bar */}
           <form className="flex-1 max-w-lg" onSubmit={handleSubmit}>
-            <div className={cn('relative transition-all duration-300 focus-within:scale-105')}>
+            <div className="relative">
               <TextInput
                 placeholder={t('header.search')}
                 leftSection={<Search size={16} aria-hidden="true" />}
