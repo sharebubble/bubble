@@ -493,6 +493,20 @@ class TestCollectionSlug:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
+    def test_create_rejects_uuid_form_slug(self, owner):
+        """A slug shaped like a UUID is rejected so it stays slug-resolvable."""
+        client = APIClient()
+        client.force_authenticate(owner)
+
+        response = client.post(
+            reverse("api:collection-list"),
+            {"name": "Anything", "slug": "12345678-1234-1234-1234-123456789012"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "slug" in response.data
+
     def test_update_slug(self, collection, owner):
         """The owner can edit a collection's slug."""
         client = APIClient()

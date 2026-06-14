@@ -18,8 +18,8 @@ def populate_slugs(apps, schema_editor):
         ):
             new_slug = f"{base_slug}-{counter}"
             counter += 1
-        collection.slug = new_slug
-        collection.save(update_fields=["slug"])
+        # Use a direct UPDATE to avoid bumping the auto_now `updated_at` column.
+        Collection.objects.filter(pk=collection.pk).update(slug=new_slug)
 
 
 def reverse_noop(apps, schema_editor):

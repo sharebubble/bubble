@@ -69,10 +69,9 @@ class Collection(models.Model):
 
     def save(self, *args, **kwargs):
         # Generate a slug from the explicit value (if provided) or fall back to
-        # the name. Guarantee uniqueness by appending an incrementing suffix.
-        base_slug = slugify(self.slug) if self.slug else slugify(self.name)
-        if not base_slug:
-            base_slug = slugify(self.name)
+        # the name, and finally to a constant so the slug is never empty.
+        # Guarantee uniqueness by appending an incrementing suffix.
+        base_slug = slugify(self.slug) or slugify(self.name) or "collection"
 
         new_slug = base_slug
         queryset = self._meta.model.objects.all()

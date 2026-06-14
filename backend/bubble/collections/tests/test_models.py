@@ -72,6 +72,12 @@ class TestCollection:
 
         assert collection.slug == "custom-slug"
 
+    def test_slug_falls_back_when_name_has_no_slug_chars(self, user):
+        """A name that slugifies to empty still yields a usable slug."""
+        collection = Collection.objects.create(name="!!!", owner=user)
+
+        assert collection.slug == "collection"
+
     def test_slug_stable_across_saves(self, user):
         """Re-saving a collection without changing the slug keeps it intact."""
         collection = Collection.objects.create(name="Stable", owner=user)

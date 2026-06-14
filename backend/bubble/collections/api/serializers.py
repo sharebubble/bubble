@@ -1,5 +1,7 @@
 """Serializers for collections API."""
 
+import uuid
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
@@ -151,6 +153,18 @@ class CollectionSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "owner", "created_at", "updated_at"]
+
+    def validate_slug(self, value):
+        """Reject slugs that look like a UUID.
+
+        The detail endpoint resolves a UUID-shaped lookup value as a primary
+        key, so a slug in that form would never be reachable via the slug.
+        """
+        try:
+            uuid.UUID(str(value))
+        except (ValueError, TypeError):
+            return value
+        raise serializers.ValidationError(_("Slug may not be in the form of a UUID."))
 
     def get_items_count(self, obj):
         """Get the number of items in the collection."""
