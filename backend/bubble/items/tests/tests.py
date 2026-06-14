@@ -14,6 +14,7 @@ from PIL import Image as PILImage
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from bubble.collections.models import Collection, CollectionItem
 from bubble.core.permissions_config import DefaultGroup
 from bubble.items.ai.image_analyze import ItemImageResult
 from bubble.items.models import Image, Item, ItemStatus, SalesType, VisibilityType
@@ -1230,3 +1231,116 @@ class ItemSerializerValidationTestCase(TestCase):
         assert response.status_code == status.HTTP_200_OK
         item.refresh_from_db()
         assert item.price.amount == Decimal("25.00")
+
+
+class PublicItemFacetTestCase(TestCase):
+    """Tests for the owner / category facet endpoints and collection filter."""
+
+    def setUp(self):
+        """Create published items owned by two users across categories."""
+        config.REQUIRE_LOGIN = False
+        self.client = APIClient()
+
+        self.alice = ItemOwnerUserFactory(
+            username="alice", email="alice@example.com", password=TEST_PASSWORD
+        )
+        self.bob = ItemOwnerUserFactory(
+            username="bob", email="bob@example.com", password=TEST_PASSWORD
+        )
+
+        # Two published tools owned by alice.
+        self.alice_tool = Item.objects.create(
+            name="Alice Hammer",
+            user=self.alice,
+            sales_type=SalesType.SELL,
+            status=ItemStatus.AVAILABLE,
+            visibility=VisibilityType.PUBLIC,
+            category="tools",
+        )
+        self.alice_book = Item.objects.create(
+            name="Alice Novel",
+            user=self.alice,
+            sales_type=SalesType.SELL,
+            status=ItemStatus.AVAILABLE,
+            visibility=VisibilityType.PUBLIC,
+            category="books",
+        )
+        # One published tool owned by bob.
+        self.bob_tool = Item.objects.create(
+            name="Bob Wrench",
+            user=self.bob,
+            sales_type=SalesType.SELL,
+            status=ItemStatus.AVAILABLE,
+            visibility=VisibilityType.PUBLIC,
+            category="tools",
+        )
+        # A draft item should not contribute to any facet.
+        self.bob_draft = Item.objects.create(
+            name="Bob Draft Saw",
+            user=self.bob,
+            sales_type=SalesType.SELL,
+            status=ItemStatus.DRAFT,
+            visibility=VisibilityType.PUBLIC,
+            category="tools",
+        )
+
+    def tearDown(self):
+        """Restore default constance config."""
+        config.REQUIRE_LOGIN = True
+
+    def test_owners_endpoint_lists_owners_with_counts(self):
+        """The owners facet returns each owner of published items with a count."""
+        url = reverse("api:public-item-owners")
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        by_username = {row["username"]: row for row in response.json()}
+
+        # alice has two published items, bob has one (his draft is excluded).
+        counts = {username: row["item_count"] for username, row in by_username.items()}
+        assert counts == {"alice": 2, "bob": 1}
+        assert by_username["alice"]["id"] == str(self.alice.pk)
+
+    def test_categories_endpoint_lists_categories_with_counts(self):
+        """The category facet returns each category with its published count."""
+        url = reverse("api:public-item-categories")
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        counts = {row["category"]: row["count"] for row in response.json()}
+
+        # tools: alice_tool + bob_tool (bob_draft excluded), books: alice_book.
+        assert counts == {"tools": 2, "books": 1}
+
+    def test_owners_endpoint_excludes_unpublished_only_owners(self):
+        """A user with only draft items must not appear in the owners facet."""
+        carol = ItemOwnerUserFactory(
+            username="carol", email="carol@example.com", password=TEST_PASSWORD
+        )
+        Item.objects.create(
+            name="Carol Draft",
+            user=carol,
+            sales_type=SalesType.SELL,
+            status=ItemStatus.DRAFT,
+            visibility=VisibilityType.PUBLIC,
+            category="tools",
+        )
+        url = reverse("api:public-item-owners")
+        response = self.client.get(url)
+
+        usernames = {row["username"] for row in response.json()}
+        assert "carol" not in usernames
+
+    def test_collection_filter_restricts_to_collection_items(self):
+        """The collection filter returns only items contained in the collection."""
+        collection = Collection.objects.create(name="Alice Picks", owner=self.alice)
+        CollectionItem.objects.create(
+            collection=collection, item=self.alice_tool, added_by=self.alice
+        )
+
+        url = reverse("api:public-item-list") + f"?collection={collection.pk}"
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        names = {item["name"] for item in response.json()["results"]}
+        assert names == {self.alice_tool.name}

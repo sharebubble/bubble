@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema
 from guardian.shortcuts import (
     assign_perm,
     get_groups_with_perms,
@@ -102,6 +103,22 @@ class ItemBaseViewSet(viewsets.GenericViewSet):
         return ItemSerializer
 
 
+class ItemOwnerSerializer(serializers.Serializer):
+    """Read-only serializer describing a user who owns visible published items."""
+
+    id = serializers.CharField()
+    username = serializers.CharField()
+    name = serializers.CharField(allow_blank=True)
+    item_count = serializers.IntegerField()
+
+
+class CategoryFacetSerializer(serializers.Serializer):
+    """Read-only serializer describing a category and its visible item count."""
+
+    category = serializers.CharField()
+    count = serializers.IntegerField()
+
+
 class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
     """
     ViewSet for retrieving published items.
@@ -147,6 +164,51 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
             # PRIVATE: owner + co-owners get view_item in Item.save()
             | models.Q(visibility=VisibilityType.PRIVATE, pk__in=explicitly_visible)
         )
+
+    @extend_schema(responses=ItemOwnerSerializer(many=True))
+    @action(detail=False, methods=["get"])
+    def owners(self, request):
+        """List distinct owners of items visible to the requesting user.
+
+        Powers the "owner" facet of the search bar: every user who has at
+        least one shared (published and visible) item, with the number of
+        such items. Results are ordered alphabetically by username.
+        """
+        owners = (
+            self.get_queryset()
+            .values("user__id", "user__username", "user__name")
+            .annotate(item_count=models.Count("id"))
+            .order_by("user__username")
+        )
+        data = [
+            {
+                "id": str(owner["user__id"]),
+                "username": owner["user__username"],
+                "name": owner["user__name"] or "",
+                "item_count": owner["item_count"],
+            }
+            for owner in owners
+        ]
+        return Response(ItemOwnerSerializer(data, many=True).data)
+
+    @extend_schema(responses=CategoryFacetSerializer(many=True))
+    @action(detail=False, methods=["get"])
+    def categories(self, request):
+        """List categories present among items visible to the requesting user.
+
+        Powers the "category" facet of the search bar: each category that has
+        at least one shared (published and visible) item, together with the
+        number of such items. Results are ordered alphabetically by category.
+        """
+        rows = (
+            self.get_queryset()
+            .exclude(category="")
+            .values("category")
+            .annotate(count=models.Count("id"))
+            .order_by("category")
+        )
+        data = [{"category": row["category"], "count": row["count"]} for row in rows]
+        return Response(CategoryFacetSerializer(data, many=True).data)
 
 
 class ItemViewSet(viewsets.ModelViewSet, ItemBaseViewSet):
