@@ -126,12 +126,22 @@ class CollectionSerializer(serializers.ModelSerializer):
     items_count = serializers.SerializerMethodField()
     collection_items = CollectionItemSerializer(many=True, read_only=True)
     can_remove_items = serializers.SerializerMethodField()
+    # Optional on write: when omitted or blank the model generates one from the
+    # name. Skip the default unique validator so the model's save() can resolve
+    # collisions by appending a numeric suffix instead of raising.
+    slug = serializers.SlugField(
+        max_length=200,
+        required=False,
+        allow_blank=True,
+        validators=[],
+    )
 
     class Meta:
         model = Collection
         fields = [
             "id",
             "name",
+            "slug",
             "description",
             "owner",
             "items_count",
@@ -166,6 +176,7 @@ class CollectionListSerializer(CollectionSerializer):
         fields = [
             "id",
             "name",
+            "slug",
             "description",
             "owner",
             "items_count",

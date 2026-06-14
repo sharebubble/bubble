@@ -2,6 +2,7 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from guardian.shortcuts import assign_perm, get_objects_for_user
@@ -30,6 +31,15 @@ class Collection(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
+    slug = models.SlugField(
+        max_length=200,
+        unique=True,
+        blank=True,
+        help_text=_(
+            "URL-friendly identifier. Generated from the name by default, "
+            "but can be customised."
+        ),
+    )
     description = models.TextField(blank=True)
     owner = models.ForeignKey(
         AUTH_USER_MODEL,
@@ -58,6 +68,23 @@ class Collection(models.Model):
         return self.name
 
     def save(self, *args, **kwargs):
+        # Generate a slug from the explicit value (if provided) or fall back to
+        # the name. Guarantee uniqueness by appending an incrementing suffix.
+        base_slug = slugify(self.slug) if self.slug else slugify(self.name)
+        if not base_slug:
+            base_slug = slugify(self.name)
+
+        new_slug = base_slug
+        queryset = self._meta.model.objects.all()
+        if self.pk:
+            queryset = queryset.exclude(pk=self.pk)
+
+        counter = 1
+        while queryset.filter(slug=new_slug).exists():
+            new_slug = f"{base_slug}-{counter}"
+            counter += 1
+        self.slug = new_slug
+
         # Check if this is a new object by checking if it exists in the database
         is_new = self._state.adding
         super().save(*args, **kwargs)

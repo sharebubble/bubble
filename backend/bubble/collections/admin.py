@@ -14,14 +14,15 @@ class CollectionItemInline(admin.TabularInline):
 
 @admin.register(Collection)
 class CollectionAdmin(GuardedModelAdmin):
-    list_display = ["name", "owner", "item_count", "created_at", "updated_at"]
+    list_display = ["name", "slug", "owner", "item_count", "created_at", "updated_at"]
     list_filter = ["created_at", "updated_at"]
-    search_fields = ["name", "description", "owner__username"]
+    search_fields = ["name", "slug", "description", "owner__username"]
     autocomplete_fields = ["owner"]
+    prepopulated_fields = {"slug": ["name"]}
     inlines = [CollectionItemInline]
     readonly_fields = ["created_at", "updated_at"]
     fieldsets = [
-        (None, {"fields": ["name", "description", "owner"]}),
+        (None, {"fields": ["name", "slug", "description", "owner"]}),
         ("Timestamps", {"fields": ["created_at", "updated_at"]}),
     ]
 

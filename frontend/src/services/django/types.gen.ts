@@ -334,6 +334,7 @@ export type CategoryEnum = 'books' | 'clothing' | 'electronics' | 'furniture' | 
 export type Collection = {
     readonly id: string;
     name: string;
+    slug?: string;
     description?: string;
     readonly owner: string;
     readonly items_count: string;
@@ -393,6 +394,7 @@ export type CollectionItem = {
 export type CollectionList = {
     readonly id: string;
     name: string;
+    slug?: string;
     description?: string;
     readonly owner: string;
     readonly items_count: string;
@@ -961,6 +963,7 @@ export type PatchedBooking = {
 export type PatchedCollection = {
     readonly id?: string;
     name?: string;
+    slug?: string;
     description?: string;
     readonly owner?: string;
     readonly items_count?: string;
@@ -1505,6 +1508,7 @@ export type BookingListWritable = {
  */
 export type CollectionWritable = {
     name: string;
+    slug?: string;
     description?: string;
 };
 
@@ -1526,6 +1530,7 @@ export type CollectionItemWritable = {
  */
 export type CollectionListWritable = {
     name: string;
+    slug?: string;
     description?: string;
 };
 
@@ -1979,6 +1984,7 @@ export type PatchedBookingWritable = {
  */
 export type PatchedCollectionWritable = {
     name?: string;
+    slug?: string;
     description?: string;
 };
 
