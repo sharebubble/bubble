@@ -4,6 +4,7 @@ import uuid
 
 from django.db import transaction
 from django.db.models import Count
+from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import extend_schema
 from guardian.shortcuts import get_objects_for_user
@@ -52,6 +53,25 @@ class CollectionViewSet(viewsets.ModelViewSet):
         return Collection.objects.get_for_user(self.request.user).annotate(
             annotated_items_count=Count("items", distinct=True)
         )
+
+    def get_object(self):
+        """Look up a collection by UUID primary key or by slug.
+
+        This lets collections be referenced by their human-readable slug while
+        keeping existing UUID-based URLs working.
+        """
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_value = self.kwargs.get(self.lookup_field)
+
+        try:
+            uuid.UUID(str(lookup_value))
+        except (ValueError, TypeError):
+            obj = get_object_or_404(queryset, slug=lookup_value)
+        else:
+            obj = get_object_or_404(queryset, pk=lookup_value)
+
+        self.check_object_permissions(self.request, obj)
+        return obj
 
     def get_serializer_class(self):
         """Return appropriate serializer class based on action."""

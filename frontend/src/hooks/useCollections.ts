@@ -66,8 +66,16 @@ export const useCreateCollection = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ name, description }: { name: string; description?: string }) => {
-      const response = await collectionsCreate({ body: { name, description } });
+    mutationFn: async ({
+      name,
+      description,
+      slug,
+    }: {
+      name: string;
+      description?: string;
+      slug?: string;
+    }) => {
+      const response = await collectionsCreate({ body: { name, description, slug } });
       return response.data;
     },
     onSuccess: () => {
@@ -97,14 +105,16 @@ export const useUpdateCollection = () => {
       id,
       name,
       description,
+      slug,
     }: {
       id: string;
       name: string;
       description?: string;
+      slug?: string;
     }) => {
       const response = await collectionsPartialUpdate({
         path: { id },
-        body: { name, description },
+        body: { name, description, slug },
       });
       return response.data;
     },

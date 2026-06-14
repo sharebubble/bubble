@@ -1,5 +1,7 @@
 """Serializers for collections API."""
 
+import uuid
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
@@ -126,12 +128,22 @@ class CollectionSerializer(serializers.ModelSerializer):
     items_count = serializers.SerializerMethodField()
     collection_items = CollectionItemSerializer(many=True, read_only=True)
     can_remove_items = serializers.SerializerMethodField()
+    # Optional on write: when omitted or blank the model generates one from the
+    # name. Skip the default unique validator so the model's save() can resolve
+    # collisions by appending a numeric suffix instead of raising.
+    slug = serializers.SlugField(
+        max_length=200,
+        required=False,
+        allow_blank=True,
+        validators=[],
+    )
 
     class Meta:
         model = Collection
         fields = [
             "id",
             "name",
+            "slug",
             "description",
             "owner",
             "items_count",
@@ -141,6 +153,18 @@ class CollectionSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "owner", "created_at", "updated_at"]
+
+    def validate_slug(self, value):
+        """Reject slugs that look like a UUID.
+
+        The detail endpoint resolves a UUID-shaped lookup value as a primary
+        key, so a slug in that form would never be reachable via the slug.
+        """
+        try:
+            uuid.UUID(str(value))
+        except (ValueError, TypeError):
+            return value
+        raise serializers.ValidationError(_("Slug may not be in the form of a UUID."))
 
     def get_items_count(self, obj):
         """Get the number of items in the collection."""
@@ -166,6 +190,7 @@ class CollectionListSerializer(CollectionSerializer):
         fields = [
             "id",
             "name",
+            "slug",
             "description",
             "owner",
             "items_count",

@@ -40,6 +40,7 @@ const CollectionDetail = () => {
   const [showEdit, setShowEdit] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [editName, setEditName] = useState('');
+  const [editSlug, setEditSlug] = useState('');
   const [editDescription, setEditDescription] = useState('');
 
   const isOwner = user && collection && user.username === collection.owner;
@@ -48,6 +49,7 @@ const CollectionDetail = () => {
   const openEdit = () => {
     if (!collection) return;
     setEditName(collection.name);
+    setEditSlug(collection.slug ?? '');
     setEditDescription(collection.description ?? '');
     setShowEdit(true);
   };
@@ -57,6 +59,7 @@ const CollectionDetail = () => {
     await updateMutation.mutateAsync({
       id: collection.id,
       name: editName.trim(),
+      slug: editSlug.trim() || undefined,
       description: editDescription.trim() || undefined,
     });
     setShowEdit(false);
@@ -268,6 +271,13 @@ const CollectionDetail = () => {
               onChange={e => setEditName(e.target.value)}
               placeholder={t('collections.namePlaceholder')}
               data-autofocus
+            />
+            <TextInput
+              label={t('collections.slug')}
+              value={editSlug}
+              onChange={e => setEditSlug(e.target.value)}
+              placeholder={t('collections.slugPlaceholder')}
+              description={t('collections.slugHelp')}
             />
             <Textarea
               label={t('collections.description')}

@@ -50,6 +50,44 @@ class TestCollection:
         assert collection_item.item == item
         assert collection_item.added_by == user
 
+    def test_slug_generated_from_name(self, user):
+        """A slug is auto-generated from the name when none is provided."""
+        collection = Collection.objects.create(name="Weekend Camping Gear", owner=user)
+
+        assert collection.slug == "weekend-camping-gear"
+
+    def test_slug_collision_gets_suffix(self, user):
+        """Collections with the same name get distinct, suffixed slugs."""
+        first = Collection.objects.create(name="My Stuff", owner=user)
+        second = Collection.objects.create(name="My Stuff", owner=user)
+
+        assert first.slug == "my-stuff"
+        assert second.slug == "my-stuff-1"
+
+    def test_custom_slug_is_respected(self, user):
+        """An explicitly provided slug is normalised but otherwise kept."""
+        collection = Collection.objects.create(
+            name="My Stuff", slug="Custom Slug", owner=user
+        )
+
+        assert collection.slug == "custom-slug"
+
+    def test_slug_falls_back_when_name_has_no_slug_chars(self, user):
+        """A name that slugifies to empty still yields a usable slug."""
+        collection = Collection.objects.create(name="!!!", owner=user)
+
+        assert collection.slug == "collection"
+
+    def test_slug_stable_across_saves(self, user):
+        """Re-saving a collection without changing the slug keeps it intact."""
+        collection = Collection.objects.create(name="Stable", owner=user)
+        original_slug = collection.slug
+
+        collection.description = "updated"
+        collection.save()
+
+        assert collection.slug == original_slug
+
     def test_get_for_user(self, user, user2):
         """Test getting collections for a user."""
         # Create collections
