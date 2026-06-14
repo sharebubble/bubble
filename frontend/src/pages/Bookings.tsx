@@ -273,6 +273,12 @@ const MyBookingsPage = () => {
   const totalCount = data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
+  // Keep the current page in range if the result set shrinks (e.g. after a
+  // booking is ended and the list refetches with a smaller total).
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
   const annotated = useMemo(
     () => bookings.map(b => ({ booking: b, state: getBookingState(b) })),
     [bookings],
@@ -293,6 +299,7 @@ const MyBookingsPage = () => {
             className="w-full flex-1"
             leftSection={<Search size={16} />}
             placeholder={t('bookings.searchPlaceholder')}
+            aria-label={t('bookings.searchPlaceholder')}
             value={searchInput}
             onChange={e => setSearchInput(e.currentTarget.value)}
           />
