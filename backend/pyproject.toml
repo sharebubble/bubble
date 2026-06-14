@@ -5,7 +5,7 @@ description = "Treibhaus donaufeld sharing platform"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "anthropic>=0.105.2",
+    "anthropic>=0.109.0",
     "argon2-cffi",
     "channels-redis",
     "channels[daphne]",
