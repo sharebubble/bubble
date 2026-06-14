@@ -49,6 +49,5 @@ updates:
       prefix: 'chore'
     groups:
       python:
-        update-types:
-          - 'minor'
-          - 'patch'
+        patterns:
+          - '*'
