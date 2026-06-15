@@ -160,79 +160,81 @@ const Collections = () => {
       {/* List view */}
       {!isLoading && filtered.length > 0 && viewMode === 'list' && (
         <div className="rounded-lg border overflow-hidden">
-          <Table highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>{t('collections.name')}</Table.Th>
-                <Table.Th>{t('collections.description')}</Table.Th>
-                <Table.Th>{t('collections.owner')}</Table.Th>
-                <Table.Th className="text-center">
-                  {t('collections.itemCount').replace('{count}', '')}
-                </Table.Th>
-                <Table.Th className="w-20"></Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {filtered.map(col => {
-                const isOwner = user?.username === col.owner;
-                return (
-                  <Table.Tr
-                    key={col.id}
-                    className="cursor-pointer"
-                    onClick={() => navigate(`/collections/${col.id}`)}
-                  >
-                    <Table.Td>
-                      <div className="flex items-center gap-2">
-                        <BookMarked className="h-4 w-4 text-primary shrink-0" />
-                        <span className="font-medium truncate max-w-40">{col.name}</span>
-                      </div>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" c="dimmed" truncate className="max-w-48 block">
-                        {col.description || '—'}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" c="dimmed">
-                        {col.owner}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td className="text-center">
-                      <Badge variant="light" size="sm">
-                        {col.items_count}
-                      </Badge>
-                    </Table.Td>
-                    <Table.Td onClick={e => e.stopPropagation()}>
-                      <div className="flex items-center justify-end gap-1">
-                        {isOwner && (
+          <Table.ScrollContainer minWidth={640} type="native">
+            <Table highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>{t('collections.name')}</Table.Th>
+                  <Table.Th>{t('collections.description')}</Table.Th>
+                  <Table.Th>{t('collections.owner')}</Table.Th>
+                  <Table.Th className="text-center">
+                    {t('collections.itemCount').replace('{count}', '')}
+                  </Table.Th>
+                  <Table.Th className="w-20"></Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {filtered.map(col => {
+                  const isOwner = user?.username === col.owner;
+                  return (
+                    <Table.Tr
+                      key={col.id}
+                      className="cursor-pointer"
+                      onClick={() => navigate(`/collections/${col.id}`)}
+                    >
+                      <Table.Td>
+                        <div className="flex items-center gap-2">
+                          <BookMarked className="h-4 w-4 text-primary shrink-0" />
+                          <span className="font-medium truncate max-w-40">{col.name}</span>
+                        </div>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" c="dimmed" truncate className="max-w-48 block">
+                          {col.description || '—'}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" c="dimmed">
+                          {col.owner}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td className="text-center">
+                        <Badge variant="light" size="sm">
+                          {col.items_count}
+                        </Badge>
+                      </Table.Td>
+                      <Table.Td onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1">
+                          {isOwner && (
+                            <ActionIcon
+                              variant="subtle"
+                              color="red"
+                              size="sm"
+                              title={t('collections.deleteCollection')}
+                              aria-label={t('collections.deleteCollection')}
+                              onClick={() => confirmDelete(col.id)}
+                            >
+                              <Trash2 size={14} />
+                            </ActionIcon>
+                          )}
                           <ActionIcon
                             variant="subtle"
-                            color="red"
+                            color="gray"
                             size="sm"
-                            title={t('collections.deleteCollection')}
-                            aria-label={t('collections.deleteCollection')}
-                            onClick={() => confirmDelete(col.id)}
+                            title={t('common.open')}
+                            aria-label={t('common.open')}
+                            onClick={() => navigate(`/collections/${col.id}`)}
                           >
-                            <Trash2 size={14} />
+                            <ChevronRight size={16} />
                           </ActionIcon>
-                        )}
-                        <ActionIcon
-                          variant="subtle"
-                          color="gray"
-                          size="sm"
-                          title={t('common.open')}
-                          aria-label={t('common.open')}
-                          onClick={() => navigate(`/collections/${col.id}`)}
-                        >
-                          <ChevronRight size={16} />
-                        </ActionIcon>
-                      </div>
-                    </Table.Td>
-                  </Table.Tr>
-                );
-              })}
-            </Table.Tbody>
-          </Table>
+                        </div>
+                      </Table.Td>
+                    </Table.Tr>
+                  );
+                })}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
         </div>
       )}
 

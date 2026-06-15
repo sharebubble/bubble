@@ -225,106 +225,108 @@ const MyItems = () => {
         </div>
       ) : viewMode === 'list' ? (
         <div className="rounded-lg border overflow-hidden">
-          <Table highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th className="w-20">Image</Table.Th>
-                <Table.Th>Title</Table.Th>
-                <Table.Th>Status</Table.Th>
-                <Table.Th>Category</Table.Th>
-                <Table.Th>Price</Table.Th>
-                <Table.Th>Created</Table.Th>
-                <Table.Th className="w-20">Actions</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {items.map(item => {
-                const primaryImage = item.first_image;
+          <Table.ScrollContainer minWidth={760} type="native">
+            <Table highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th className="w-20">Image</Table.Th>
+                  <Table.Th>Title</Table.Th>
+                  <Table.Th>Status</Table.Th>
+                  <Table.Th>Category</Table.Th>
+                  <Table.Th>Price</Table.Th>
+                  <Table.Th>Created</Table.Th>
+                  <Table.Th className="w-20">Actions</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {items.map(item => {
+                  const primaryImage = item.first_image;
 
-                return (
-                  <Table.Tr
-                    key={item.id}
-                    className="cursor-pointer"
-                    onClick={() => navigate(getEditUrl(item))}
-                  >
-                    <Table.Td>
-                      <div className="w-12 h-12 rounded-lg overflow-hidden">
-                        {primaryImage ? (
-                          <img
-                            src={primaryImage}
-                            alt={item.name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          (() => {
-                            const CategoryIcon = getCategoryIcon(item.category);
-                            return (
-                              <div className="flex h-full w-full items-center justify-center bg-gradient-subtle">
-                                <CategoryIcon className="h-6 w-6 text-muted-foreground/50" />
-                              </div>
-                            );
-                          })()
+                  return (
+                    <Table.Tr
+                      key={item.id}
+                      className="cursor-pointer"
+                      onClick={() => navigate(getEditUrl(item))}
+                    >
+                      <Table.Td>
+                        <div className="w-12 h-12 rounded-lg overflow-hidden">
+                          {primaryImage ? (
+                            <img
+                              src={primaryImage}
+                              alt={item.name}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            (() => {
+                              const CategoryIcon = getCategoryIcon(item.category);
+                              return (
+                                <div className="flex h-full w-full items-center justify-center bg-gradient-subtle">
+                                  <CategoryIcon className="h-6 w-6 text-muted-foreground/50" />
+                                </div>
+                              );
+                            })()
+                          )}
+                        </div>
+                      </Table.Td>
+                      <Table.Td>
+                        <div className="font-medium max-w-48 truncate">{item.name}</div>
+                        {item.description && (
+                          <Text size="sm" c="dimmed" className="truncate max-w-48">
+                            {item.description}
+                          </Text>
                         )}
-                      </div>
-                    </Table.Td>
-                    <Table.Td>
-                      <div className="font-medium max-w-48 truncate">{item.name}</div>
-                      {item.description && (
-                        <Text size="sm" c="dimmed" className="truncate max-w-48">
-                          {item.description}
-                        </Text>
-                      )}
-                    </Table.Td>
-                    <Table.Td onClick={e => e.stopPropagation()}>
-                      <Select
-                        className="w-32"
-                        value={item.status !== undefined ? item.status.toString() : null}
-                        data={getStatusOptions(item.sales_type as SalesTypeEnum | undefined)}
-                        onChange={value => handleStatusSelectChange(item.id, value)}
-                        disabled={updateStatusMutation.isPending}
-                        allowDeselect={false}
-                      />
-                    </Table.Td>
-                    <Table.Td>
-                      <div className="flex flex-wrap items-center gap-1">
-                        <Badge variant="outline" color="gray" size="sm">
-                          {t(`categories.${item.category}`)}
-                        </Badge>
-                        {item.sales_type && (
-                          <Badge
-                            size="sm"
-                            {...getSalesTypeBadgeProps(item.sales_type as SalesTypeEnum)}
-                          >
-                            {t(`item.salesType.badge.${item.sales_type}`)}
+                      </Table.Td>
+                      <Table.Td onClick={e => e.stopPropagation()}>
+                        <Select
+                          className="w-32"
+                          value={item.status !== undefined ? item.status.toString() : null}
+                          data={getStatusOptions(item.sales_type as SalesTypeEnum | undefined)}
+                          onChange={value => handleStatusSelectChange(item.id, value)}
+                          disabled={updateStatusMutation.isPending}
+                          allowDeselect={false}
+                        />
+                      </Table.Td>
+                      <Table.Td>
+                        <div className="flex flex-wrap items-center gap-1">
+                          <Badge variant="outline" color="gray" size="sm">
+                            {t(`categories.${item.category}`)}
                           </Badge>
-                        )}
-                      </div>
-                    </Table.Td>
-                    <Table.Td>
-                      <div className="text-sm font-medium">
-                        {item.price && (
-                          <div className="flex items-center gap-1">
-                            {formatPrice(item.price, item.price_currency)}
-                            {item.sales_type === 'rent' && (
-                              <Text component="span" size="xs" c="dimmed">
-                                {t('time.perHour')}
-                              </Text>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text size="sm" c="dimmed">
-                        {formatDate(item.created_at, language)}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td onClick={e => e.stopPropagation()}>{renderItemMenu(item)}</Table.Td>
-                  </Table.Tr>
-                );
-              })}
-            </Table.Tbody>
-          </Table>
+                          {item.sales_type && (
+                            <Badge
+                              size="sm"
+                              {...getSalesTypeBadgeProps(item.sales_type as SalesTypeEnum)}
+                            >
+                              {t(`item.salesType.badge.${item.sales_type}`)}
+                            </Badge>
+                          )}
+                        </div>
+                      </Table.Td>
+                      <Table.Td>
+                        <div className="text-sm font-medium">
+                          {item.price && (
+                            <div className="flex items-center gap-1">
+                              {formatPrice(item.price, item.price_currency)}
+                              {item.sales_type === 'rent' && (
+                                <Text component="span" size="xs" c="dimmed">
+                                  {t('time.perHour')}
+                                </Text>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" c="dimmed">
+                          {formatDate(item.created_at, language)}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td onClick={e => e.stopPropagation()}>{renderItemMenu(item)}</Table.Td>
+                    </Table.Tr>
+                  );
+                })}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
