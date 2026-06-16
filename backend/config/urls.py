@@ -27,6 +27,8 @@ urlpatterns = [
     path(".well-known/", include((wellknown_patterns, "federation-wellknown"))),
     # Federation — actor and inbox endpoints (/federation/*, /nodeinfo/*)
     path("federation/", include((federation_patterns, "federation"))),
+    # Calendar feeds + private CalDAV server (/caldav/*)
+    path("caldav/", include("bubble.caldav.urls")),
 ]
 
 if settings.DEBUG:
@@ -37,6 +39,8 @@ if settings.DEBUG:
 urlpatterns += [
     # API base url
     path("api/", include("config.api_router")),
+    # Calendar link management (item/collection feeds, personal CalDAV)
+    path("api/", include("bubble.caldav.api.urls")),
     path("api/config/", ConfigView.as_view(), name="config"),
     # Include the API endpoints:
     path("api/_allauth/", include("allauth.headless.urls")),

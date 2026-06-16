@@ -127,6 +127,7 @@ LOCAL_APPS = [
     "bubble.collections.apps.CollectionsConfig",
     "bubble.notifications.apps.NotificationsConfig",
     "bubble.federation.apps.FederationConfig",
+    "bubble.caldav.apps.CaldavConfig",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS

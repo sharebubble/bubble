@@ -603,6 +603,29 @@ const translations = {
     'collections.onlyMine': 'Only mine',
     'collections.viewList': 'List view',
     'collections.viewGrid': 'Grid view',
+
+    // Calendar subscription (CalDAV / iCalendar)
+    'calendar.title': 'Calendar subscription',
+    'calendar.item.description':
+      'Share a private link to subscribe to this item’s bookings in any calendar app that supports iCalendar. Pending bookings appear as tentative, confirmed ones as busy.',
+    'calendar.collection.description':
+      'Subscribe to all bookings of this collection in your calendar app. Each entry shows the booked item and who booked it.',
+    'calendar.personal.title': 'Your personal booking calendar',
+    'calendar.personal.description':
+      'Add this private CalDAV calendar to your calendar app to see availability of bookable items. Creating an event in an item’s calendar sends a booking request for that time.',
+    'calendar.copy': 'Copy link',
+    'calendar.copied': 'Link copied to clipboard',
+    'calendar.subscribe': 'Subscribe',
+    'calendar.regenerate': 'Regenerate link',
+    'calendar.regenerateConfirm':
+      'Generate a new link? The current link will stop working immediately.',
+    'calendar.regenerated': 'A new calendar link was generated',
+    'calendar.revoke': 'Disable',
+    'calendar.revoked': 'Calendar link disabled',
+    'calendar.show': 'Show calendar link',
+    'calendar.hide': 'Hide',
+    'calendar.secretHint': 'Anyone with this link can view the calendar — keep it private.',
+    'calendar.loadError': 'Could not load the calendar link.',
   },
   de: {
     // Header
@@ -1207,6 +1230,29 @@ const translations = {
     'collections.onlyMine': 'Nur meine',
     'collections.viewList': 'Listenansicht',
     'collections.viewGrid': 'Rasteransicht',
+
+    // Calendar subscription (CalDAV / iCalendar)
+    'calendar.title': 'Kalender-Abo',
+    'calendar.item.description':
+      'Teile einen privaten Link, um die Buchungen dieses Artikels in jeder Kalender-App zu abonnieren, die iCalendar unterstützt. Ausstehende Buchungen erscheinen als vorläufig, bestätigte als belegt.',
+    'calendar.collection.description':
+      'Abonniere alle Buchungen dieser Sammlung in deiner Kalender-App. Jeder Eintrag zeigt den gebuchten Artikel und wer ihn gebucht hat.',
+    'calendar.personal.title': 'Dein persönlicher Buchungskalender',
+    'calendar.personal.description':
+      'Füge diesen privaten CalDAV-Kalender zu deiner Kalender-App hinzu, um die Verfügbarkeit buchbarer Artikel zu sehen. Wenn du im Kalender eines Artikels einen Termin erstellst, wird daraus eine Buchungsanfrage für diese Zeit.',
+    'calendar.copy': 'Link kopieren',
+    'calendar.copied': 'Link in die Zwischenablage kopiert',
+    'calendar.subscribe': 'Abonnieren',
+    'calendar.regenerate': 'Link neu erstellen',
+    'calendar.regenerateConfirm':
+      'Neuen Link erstellen? Der aktuelle Link funktioniert dann sofort nicht mehr.',
+    'calendar.regenerated': 'Ein neuer Kalender-Link wurde erstellt',
+    'calendar.revoke': 'Deaktivieren',
+    'calendar.revoked': 'Kalender-Link deaktiviert',
+    'calendar.show': 'Kalender-Link anzeigen',
+    'calendar.hide': 'Ausblenden',
+    'calendar.secretHint': 'Jeder mit diesem Link kann den Kalender sehen — halte ihn privat.',
+    'calendar.loadError': 'Kalender-Link konnte nicht geladen werden.',
   },
 };
 

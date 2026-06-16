@@ -1,4 +1,5 @@
 import { Text, Title } from '@mantine/core';
+import { CalendarSubscription } from '@/components/calendar/CalendarSubscription';
 import { ProfileForm } from '@/components/profile/ProfileForm';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -14,6 +15,9 @@ const Profile = () => {
         </Text>
       </div>
       <ProfileForm />
+      <div className="mt-8">
+        <CalendarSubscription kind="user" />
+      </div>
     </div>
   );
 };

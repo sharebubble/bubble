@@ -1,4 +1,5 @@
 import { BookingDialog } from '@/components/items/BookingDialog';
+import { CalendarSubscription } from '@/components/calendar/CalendarSubscription';
 import { ItemImageCarousel } from '@/components/items/ItemImageCarousel';
 import { RentalCalendar } from '@/components/items/RentalCalendar';
 import {
@@ -356,6 +357,13 @@ const ItemDetail = () => {
             selectedEnd={selectedEndDate}
             onBookNow={handleBookNowFromCalendar}
           />
+        </div>
+      )}
+
+      {/* Calendar subscription link — owners of bookable items only */}
+      {isRental && isOwner && itemUuid && (
+        <div className="mt-10">
+          <CalendarSubscription kind="item" id={itemUuid} />
         </div>
       )}
     </div>
