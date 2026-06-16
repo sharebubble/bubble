@@ -49,6 +49,18 @@ updates:
       prefix: 'chore'
     groups:
       python:
-        update-types:
-          - 'minor'
-          - 'patch'
+        patterns:
+          - '*'
+
+  # Enable version updates for npm (frontend)
+  - package-ecosystem: 'npm'
+    directory: '/frontend/'
+    # Every weekday
+    schedule:
+      interval: 'daily'
+    commit-message:
+      prefix: 'chore'
+    groups:
+      npm:
+        patterns:
+          - '*'
