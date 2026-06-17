@@ -6,7 +6,15 @@ import { ActionIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { EmblaCarouselType } from 'embla-carousel';
 import { ChevronLeft, ChevronRight, Expand, X } from 'lucide-react';
-import { type KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useState } from 'react';
+import {
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 interface ItemImageCarouselProps {
   images: Image[];
@@ -37,6 +45,24 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
 
   const scrollPrev = useCallback((api: EmblaCarouselType | null) => api?.scrollPrev(), []);
   const scrollNext = useCallback((api: EmblaCarouselType | null) => api?.scrollNext(), []);
+
+  // Track the pointer-down position so we can tell a real click apart from the
+  // click that fires at the end of a drag/swipe (Embla doesn't expose this here).
+  const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
+  const DRAG_THRESHOLD = 10; // px
+
+  const handlePointerDown = (e: ReactPointerEvent) => {
+    pointerDownRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const wasTap = (e: ReactMouseEvent) => {
+    const start = pointerDownRef.current;
+    if (!start) return true;
+    return (
+      Math.abs(e.clientX - start.x) < DRAG_THRESHOLD &&
+      Math.abs(e.clientY - start.y) < DRAG_THRESHOLD
+    );
+  };
 
   const openFullscreen = (index: number) => {
     setActiveIndex(index);
@@ -108,7 +134,11 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
             <Carousel.Slide key={image.id ?? index}>
               <button
                 type="button"
-                onClick={() => openFullscreen(index)}
+                onPointerDown={handlePointerDown}
+                onClick={e => {
+                  // Ignore the click that ends a drag/swipe.
+                  if (wasTap(e)) openFullscreen(index);
+                }}
                 aria-label={t('itemDetail.openImage')}
                 className="relative block h-full w-full cursor-zoom-in"
               >
@@ -217,7 +247,11 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
                   <img
                     src={image.original || imageSrc(image)}
                     alt={`${itemName} — ${index + 1}`}
-                    onClick={fullscreen.close}
+                    onPointerDown={handlePointerDown}
+                    onClick={e => {
+                      // Only close on a real click, not at the end of a drag/swipe.
+                      if (wasTap(e)) fullscreen.close();
+                    }}
                     className="max-h-[90vh] max-w-[92vw] cursor-zoom-out object-contain"
                   />
                 </Carousel.Slide>
