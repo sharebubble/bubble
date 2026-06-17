@@ -217,7 +217,8 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
                   <img
                     src={image.original || imageSrc(image)}
                     alt={`${itemName} — ${index + 1}`}
-                    className="max-h-[90vh] max-w-[92vw] object-contain"
+                    onClick={fullscreen.close}
+                    className="max-h-[90vh] max-w-[92vw] cursor-zoom-out object-contain"
                   />
                 </Carousel.Slide>
               ))}
