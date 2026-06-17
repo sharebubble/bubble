@@ -89,7 +89,7 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
     <>
       {/* Inline gallery */}
       <div
-        className="group relative overflow-hidden rounded-xl bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mantine-primary-color-filled)]"
+        className="group relative self-start overflow-hidden rounded-xl bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mantine-primary-color-filled)]"
         role="group"
         aria-roledescription="carousel"
         aria-label={itemName}
