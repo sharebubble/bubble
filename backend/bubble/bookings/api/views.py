@@ -17,6 +17,7 @@ from bubble.bookings.api.serializers import (
     MessageSerializer,
 )
 from bubble.bookings.models import Booking, BookingStatus, Message
+from bubble.core.api.pagination import SelectablePageSizePagination
 
 
 class PublicBookingViewSet(viewsets.ReadOnlyModelViewSet):
@@ -29,6 +30,7 @@ class PublicBookingViewSet(viewsets.ReadOnlyModelViewSet):
 
     lookup_field = "id"
     serializer_class = BookingSerializer
+    pagination_class = SelectablePageSizePagination
     filter_backends = [
         DjangoFilterBackend,
         filters.OrderingFilter,
@@ -36,7 +38,7 @@ class PublicBookingViewSet(viewsets.ReadOnlyModelViewSet):
     ]
     filterset_class = BookingFilter
     search_fields = ["item__name", "user__username"]
-    ordering_fields = ["created_at", "updated_at"]
+    ordering_fields = ["created_at", "updated_at", "time_from", "time_to"]
     ordering = ["-created_at"]
     permission_classes = [IsAuthenticatedOrReadOnly]
 

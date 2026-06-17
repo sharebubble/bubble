@@ -1,24 +1,42 @@
-import { ActionIcon, Badge, Button, Card, Text, Title } from '@mantine/core';
+import {
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Group,
+  Pagination,
+  SegmentedControl,
+  Select,
+  Text,
+  TextInput,
+  Title,
+} from '@mantine/core';
+import { useDebouncedValue } from '@mantine/hooks';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
-import { useMyBookings, useUpdateBooking } from '@/hooks/useBookings';
+import { type BookingsFilterParams, useMyBookings, useUpdateBooking } from '@/hooks/useBookings';
 import { formatPrice } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import type { BookingList } from '@/services/django';
 import { format, formatDuration, intervalToDuration, isAfter, isBefore, parseISO } from 'date-fns';
-import { Calendar, ChevronLeft, ChevronRight, Clock, Package, Square, User } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Calendar, Clock, Package, Search, Square, User } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+// ─── constants ────────────────────────────────────────────────────────────────
+
+const PAGE_SIZE_OPTIONS = ['10', '20', '50'];
+const DEFAULT_PAGE_SIZE = 20;
+
+// BookingStatus values (mirror of the backend IntegerChoices)
+const STATUS_PENDING = 1;
+const STATUS_CONFIRMED = 3;
+const STATUS_COMPLETED = 4;
+
+// Approved bookings shown by default; pending (1) is added via the checkbox.
+const APPROVED_STATUSES = [String(STATUS_CONFIRMED), String(STATUS_COMPLETED)];
 
 // ─── helpers ────────────────────────────────────────────────────────────────
-
-const WINDOW_DAYS = 31;
-
-const addDays = (date: Date, days: number) => {
-  const d = new Date(date);
-  d.setDate(d.getDate() + days);
-  return d;
-};
 
 const formatBookedDuration = (from: string, to: string | null | undefined): string => {
   const start = parseISO(from);
@@ -40,6 +58,14 @@ const getBookingState = (booking: BookingList): BookingState => {
   if (to && isBefore(to, now)) return 'past';
   if (isBefore(from, now) && (!to || isAfter(to, now))) return 'active';
   return 'upcoming';
+};
+
+// Left-border accent colour per state (theme-aware Mantine CSS variables).
+const accentColor = (state: BookingState, isPending: boolean): string => {
+  if (isPending) return 'var(--mantine-color-yellow-6)';
+  if (state === 'active') return 'var(--mantine-color-teal-6)';
+  if (state === 'upcoming') return 'var(--mantine-color-blue-6)';
+  return 'var(--mantine-color-gray-5)';
 };
 
 // ─── row component ───────────────────────────────────────────────────────────
@@ -64,6 +90,7 @@ const BookingRow = ({
   isEnding,
 }: BookingRowProps) => {
   const isOwner = booking.user?.username !== currentUsername;
+  const isPending = booking.status === STATUS_PENDING;
   const itemTitle = booking.item_details?.name ?? t('bookings.item');
   const itemImage = booking.item_details?.first_image;
   const userName = booking.user?.name || booking.user?.username || '—';
@@ -76,7 +103,7 @@ const BookingRow = ({
         {t('bookings.active')}
       </Badge>
     ) : state === 'upcoming' ? (
-      <Badge variant="light" color="gray" size="sm" className="shrink-0">
+      <Badge variant="light" color="blue" size="sm" className="shrink-0">
         {t('bookings.upcoming')}
       </Badge>
     ) : (
@@ -90,9 +117,15 @@ const BookingRow = ({
       withBorder
       padding="sm"
       className={cn(
-        'transition-all cursor-pointer hover:bg-[var(--mantine-color-gray-0)]',
+        'transition-all cursor-pointer',
+        state !== 'active' && 'hover:bg-[var(--mantine-color-gray-0)]',
         state === 'past' && 'opacity-60',
       )}
+      style={{
+        borderLeftWidth: 4,
+        borderLeftColor: accentColor(state, isPending),
+        backgroundColor: state === 'active' ? 'var(--mantine-color-teal-light)' : undefined,
+      }}
       onClick={() => onClick(booking.id!)}
     >
       <div className="flex gap-3 items-center">
@@ -114,6 +147,11 @@ const BookingRow = ({
               {itemTitle}
             </Text>
             {stateBadge}
+            {isPending && (
+              <Badge variant="light" color="yellow" size="sm" className="shrink-0">
+                {t('bookings.pending')}
+              </Badge>
+            )}
           </div>
           <Text component="div" size="xs" c="dimmed" className="flex flex-wrap gap-x-4 gap-y-0.5">
             <span className="flex items-center gap-1">
@@ -144,7 +182,7 @@ const BookingRow = ({
         </div>
 
         {/* End booking button — only for active bookings owned by the current user */}
-        {state === 'active' && isOwner && (
+        {state === 'active' && isOwner && !isPending && (
           <Button
             size="xs"
             color="red"
@@ -166,129 +204,157 @@ const BookingRow = ({
 
 // ─── main page ───────────────────────────────────────────────────────────────
 
+type Direction = 'upcoming' | 'past';
+type Role = '' | 'owner' | 'renter';
+
 const MyBookingsPage = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const updateBookingMutation = useUpdateBooking();
   const [endingId, setEndingId] = useState<string | null>(null);
+
+  // ── controls ───────────────────────────────────────────────────────────────
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch] = useDebouncedValue(searchInput.trim(), 300);
+  const [direction, setDirection] = useState<Direction>('upcoming');
+  const [role, setRole] = useState<Role>('');
+  const [showPending, setShowPending] = useState(false);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [page, setPage] = useState(1);
+
+  const isSearching = debouncedSearch.length > 0;
+
+  // Reset to the first page whenever any filter changes.
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, direction, role, showPending, pageSize]);
 
   const handleEndBooking = async (id: string) => {
     setEndingId(id);
     try {
       await updateBookingMutation.mutateAsync({
         id,
-        data: { status: 4, time_to: new Date().toISOString() },
+        data: { status: STATUS_COMPLETED, time_to: new Date().toISOString() },
       });
     } finally {
       setEndingId(null);
     }
   };
 
-  // ── window navigation ────────────────────────────────────────────────────
-  // offset=0 → yesterday..today+30, offset=-1 → 31 days back, offset=+1 → 31 days forward
-  const offset = parseInt(searchParams.get('offset') ?? '0', 10);
-
-  const { windowStart, windowEnd } = useMemo(() => {
-    const base = new Date();
-    base.setHours(0, 0, 0, 0);
-    const start = addDays(base, -1 + offset * WINDOW_DAYS);
-    const end = addDays(base, 30 + offset * WINDOW_DAYS);
-    return { windowStart: start, windowEnd: end };
-  }, [offset]);
-
-  const setOffset = (next: number) => {
-    const params = new URLSearchParams(searchParams);
-    if (next === 0) params.delete('offset');
-    else params.set('offset', String(next));
-    setSearchParams(params);
-  };
-
-  // ── role filter ──────────────────────────────────────────────────────────
-  const role = (searchParams.get('role') ?? '') as '' | 'owner' | 'renter';
-
-  const setRole = (r: '' | 'owner' | 'renter') => {
-    const params = new URLSearchParams(searchParams);
-    if (r) params.set('role', r);
-    else params.delete('role');
-    setSearchParams(params);
-  };
-
   // ── query ────────────────────────────────────────────────────────────────
-  const queryParams = useMemo(
-    () => ({
-      status: ['3', '4'],
-      time_from_after: windowStart.toISOString(),
-      time_from_before: windowEnd.toISOString(),
-      ...(role ? { role } : {}),
-      ordering: 'time_from',
-    }),
-    [windowStart, windowEnd, role],
+  const statuses = useMemo(
+    () => (showPending ? [String(STATUS_PENDING), ...APPROVED_STATUSES] : APPROVED_STATUSES),
+    [showPending],
   );
 
-  const { data, isLoading } = useMyBookings(queryParams);
+  const queryParams = useMemo<BookingsFilterParams>(() => {
+    const base: BookingsFilterParams = {
+      status: statuses,
+      page,
+      page_size: pageSize,
+      ...(role ? { role } : {}),
+    };
+    // When searching we span the whole timeline (past, current & upcoming),
+    // ordered newest-first so recent/upcoming matches surface at the top.
+    if (isSearching) {
+      return { ...base, search: debouncedSearch, ordering: '-time_from' };
+    }
+    // Otherwise browse one direction of the agenda at a time.
+    return {
+      ...base,
+      temporal: direction,
+      ordering: direction === 'past' ? '-time_from' : 'time_from',
+    };
+  }, [statuses, page, pageSize, role, isSearching, debouncedSearch, direction]);
+
+  const { data, isLoading, isFetching } = useMyBookings(queryParams);
   const bookings = data?.results ?? [];
+  const totalCount = data?.count ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  // Keep the current page in range if the result set shrinks (e.g. after a
+  // booking is ended and the list refetches with a smaller total).
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const annotated = useMemo(
     () => bookings.map(b => ({ booking: b, state: getBookingState(b) })),
     [bookings],
   );
 
-  const rangeLabel = `${format(windowStart, 'dd MMM yyyy')} – ${format(windowEnd, 'dd MMM yyyy')}`;
-
   return (
     <div className="container mx-auto p-4 max-w-4xl">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 mb-1">
-        <Title order={1}>{t('bookings.title')}</Title>
+      <Title order={1} className="mb-4">
+        {t('bookings.title')}
+      </Title>
 
-        {/* Role filter */}
-        <div className="flex items-center gap-2">
-          {(['', 'owner', 'renter'] as const).map(r => (
-            <Button
-              key={r}
-              size="xs"
-              variant={role === r ? 'filled' : 'outline'}
-              onClick={() => setRole(r)}
-            >
-              {r === ''
-                ? t('bookings.filterAll')
-                : r === 'owner'
-                  ? t('bookings.filterOwner')
-                  : t('bookings.filterRenter')}
-            </Button>
-          ))}
+      {/* Controls */}
+      <div className="flex flex-col gap-3 mb-5">
+        {/* Search + pending toggle */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+          <TextInput
+            className="w-full flex-1"
+            leftSection={<Search size={16} />}
+            placeholder={t('bookings.searchPlaceholder')}
+            aria-label={t('bookings.searchPlaceholder')}
+            value={searchInput}
+            onChange={e => setSearchInput(e.currentTarget.value)}
+          />
+          <Checkbox
+            className="shrink-0"
+            checked={showPending}
+            onChange={e => setShowPending(e.currentTarget.checked)}
+            label={t('bookings.showPending')}
+          />
         </div>
-      </div>
 
-      {/* Time window navigator */}
-      <div className="flex items-center gap-2 mb-6">
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          size="sm"
-          onClick={() => setOffset(offset - 1)}
-          aria-label={t('bookings.prevPeriod')}
-        >
-          <ChevronLeft size={16} />
-        </ActionIcon>
-        <Text component="span" size="sm" c="dimmed">
-          {rangeLabel}
-        </Text>
-        <ActionIcon
-          variant="subtle"
-          color="gray"
-          size="sm"
-          onClick={() => setOffset(offset + 1)}
-          aria-label={t('bookings.nextPeriod')}
-        >
-          <ChevronRight size={16} />
-        </ActionIcon>
-        {offset !== 0 && (
-          <Button size="compact-sm" variant="subtle" color="gray" onClick={() => setOffset(0)}>
-            {t('bookings.today')}
-          </Button>
+        {/* Direction + role + page size */}
+        <div className="flex flex-wrap gap-3 items-center justify-between">
+          <div className="flex flex-wrap gap-3 items-center">
+            {!isSearching && (
+              <SegmentedControl
+                value={direction}
+                onChange={value => setDirection(value as Direction)}
+                data={[
+                  { label: t('bookings.directionPast'), value: 'past' },
+                  { label: t('bookings.directionUpcoming'), value: 'upcoming' },
+                ]}
+              />
+            )}
+            <SegmentedControl
+              size="xs"
+              value={role || 'all'}
+              onChange={value => setRole(value === 'all' ? '' : (value as Role))}
+              data={[
+                { label: t('bookings.filterAll'), value: 'all' },
+                { label: t('bookings.filterOwner'), value: 'owner' },
+                { label: t('bookings.filterRenter'), value: 'renter' },
+              ]}
+            />
+          </div>
+          <Group gap="xs" wrap="nowrap">
+            <Text size="sm" c="dimmed">
+              {t('bookings.perPage')}
+            </Text>
+            <Select
+              w={84}
+              size="xs"
+              value={String(pageSize)}
+              onChange={value => value && setPageSize(Number(value))}
+              data={PAGE_SIZE_OPTIONS}
+              allowDeselect={false}
+              aria-label={t('bookings.perPage')}
+            />
+          </Group>
+        </div>
+
+        {isSearching && (
+          <Text size="xs" c="dimmed">
+            {t('bookings.searchingAll')}
+          </Text>
         )}
       </div>
 
@@ -300,10 +366,17 @@ const MyBookingsPage = () => {
       ) : annotated.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 gap-3">
           <Calendar size={56} color="var(--mantine-color-dimmed)" className="opacity-40" />
-          <Text c="dimmed">{t('bookings.noBookings')}</Text>
+          <Text c="dimmed">
+            {isSearching ? t('bookings.noSearchResults') : t('bookings.noBookings')}
+          </Text>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div
+          className={cn(
+            'flex flex-col gap-2 transition-opacity',
+            isFetching && 'opacity-60 pointer-events-none',
+          )}
+        >
           {annotated.map(({ booking, state }) => (
             <BookingRow
               key={booking.id}
@@ -316,6 +389,13 @@ const MyBookingsPage = () => {
               currentUsername={user?.username}
             />
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center pt-5">
+          <Pagination total={totalPages} value={page} onChange={setPage} />
         </div>
       )}
     </div>

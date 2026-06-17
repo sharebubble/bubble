@@ -15,6 +15,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 export type BookingsFilterParams = {
   status?: string[];
   role?: 'owner' | 'renter';
+  temporal?: 'upcoming' | 'active' | 'past';
+  search?: string;
   time_from_after?: string;
   time_from_before?: string;
   time_to_after?: string;
@@ -22,6 +24,7 @@ export type BookingsFilterParams = {
   time_to_isnull?: boolean;
   ordering?: string;
   page?: number;
+  page_size?: number;
 };
 
 export const useBookings = () => {

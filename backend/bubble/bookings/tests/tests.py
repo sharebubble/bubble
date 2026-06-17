@@ -1024,3 +1024,120 @@ class BookingOpenEndRentalTestCase(APITestCase):
         )
         assert response_null.status_code == status.HTTP_400_BAD_REQUEST
         assert "time_to" in response_null.data
+
+
+class BookingAgendaFilterTestCase(APITestCase):
+    """Test temporal/ordering/search/page-size filtering powering the agenda view.
+
+    Confirmed bookings are placed on distinct items so the overlapping-booking
+    exclusion constraint does not interfere.
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+        self.default_group, _ = Group.objects.get_or_create(name=DefaultGroup.DEFAULT)
+
+        self.user = UserFactory()
+        self.user.groups.add(self.default_group)
+
+        now = timezone.now()
+
+        # Past: ended yesterday (distinctive name for the search test).
+        self.past_item = ItemFactory(user=self.user, name="UniqueSearchableWidget")
+        self.past_booking = BookingFactory(
+            user=self.user,
+            item=self.past_item,
+            status=BookingStatus.CONFIRMED,
+            time_from=now - timedelta(days=3),
+            time_to=now - timedelta(days=2),
+        )
+
+        # Active: started an hour ago, ends in an hour.
+        self.active_item = ItemFactory(user=self.user)
+        self.active_booking = BookingFactory(
+            user=self.user,
+            item=self.active_item,
+            status=BookingStatus.CONFIRMED,
+            time_from=now - timedelta(hours=1),
+            time_to=now + timedelta(hours=1),
+        )
+
+        # Future: starts in two days.
+        self.future_item = ItemFactory(user=self.user)
+        self.future_booking = BookingFactory(
+            user=self.user,
+            item=self.future_item,
+            status=BookingStatus.CONFIRMED,
+            time_from=now + timedelta(days=2),
+            time_to=now + timedelta(days=3),
+        )
+
+        # Pending (not yet approved) future request.
+        self.pending_item = ItemFactory(user=self.user)
+        self.pending_booking = BookingFactory(
+            user=self.user,
+            item=self.pending_item,
+            status=BookingStatus.PENDING,
+            time_from=now + timedelta(days=5),
+            time_to=now + timedelta(days=6),
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def _ids(self, response):
+        return {row["id"] for row in response.data["results"]}
+
+    def test_temporal_past_returns_only_ended_confirmed(self):
+        response = self.client.get("/api/bookings/?status=3&temporal=past")
+        assert response.status_code == status.HTTP_200_OK
+        assert self._ids(response) == {str(self.past_booking.id)}
+
+    def test_temporal_upcoming_returns_active_and_future(self):
+        response = self.client.get("/api/bookings/?status=3&temporal=upcoming")
+        assert response.status_code == status.HTTP_200_OK
+        assert self._ids(response) == {
+            str(self.active_booking.id),
+            str(self.future_booking.id),
+        }
+
+    def test_temporal_active_returns_currently_running(self):
+        response = self.client.get("/api/bookings/?status=3&temporal=active")
+        assert response.status_code == status.HTTP_200_OK
+        assert self._ids(response) == {str(self.active_booking.id)}
+
+    def test_temporal_upcoming_includes_pending_when_requested(self):
+        """Pending requests appear alongside confirmed when status filter allows."""
+        response = self.client.get("/api/bookings/?status=1&status=3&temporal=upcoming")
+        assert response.status_code == status.HTTP_200_OK
+        assert self._ids(response) == {
+            str(self.active_booking.id),
+            str(self.future_booking.id),
+            str(self.pending_booking.id),
+        }
+
+    def test_ordering_by_time_from(self):
+        response = self.client.get("/api/bookings/?status=3&ordering=time_from")
+        assert response.status_code == status.HTTP_200_OK
+        ordered_ids = [row["id"] for row in response.data["results"]]
+        assert ordered_ids == [
+            str(self.past_booking.id),
+            str(self.active_booking.id),
+            str(self.future_booking.id),
+        ]
+
+    def test_selectable_page_size(self):
+        page_size = 2
+        confirmed_count = Booking.objects.filter(status=BookingStatus.CONFIRMED).count()
+        response = self.client.get(f"/api/bookings/?status=3&page_size={page_size}")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["count"] == confirmed_count
+        assert len(response.data["results"]) == page_size
+        assert response.data["next"] is not None
+
+    def test_search_spans_all_time(self):
+        """Search matches by item name regardless of past/future placement."""
+        response = self.client.get(
+            "/api/bookings/?status=3&search=UniqueSearchableWidget"
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert self._ids(response) == {str(self.past_booking.id)}
