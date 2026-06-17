@@ -89,7 +89,7 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
     <>
       {/* Inline gallery */}
       <div
-        className="group relative self-start overflow-hidden rounded-xl bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mantine-primary-color-filled)]"
+        className="group relative self-start h-64 overflow-hidden rounded-xl bg-[var(--mantine-color-default-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--mantine-primary-color-filled)] sm:h-72 md:h-80 lg:h-96"
         role="group"
         aria-roledescription="carousel"
         aria-label={itemName}
@@ -101,6 +101,8 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
           withControls={false}
           getEmblaApi={setInlineApi}
           onSlideChange={setActiveIndex}
+          className="h-full w-full"
+          styles={{ viewport: { height: '100%' }, container: { height: '100%' } }}
         >
           {images.map((image, index) => (
             <Carousel.Slide key={image.id ?? index}>
@@ -108,12 +110,12 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
                 type="button"
                 onClick={() => openFullscreen(index)}
                 aria-label={t('itemDetail.openImage')}
-                className="block h-64 w-full cursor-zoom-in sm:h-72 md:h-80 lg:h-96"
+                className="relative block h-full w-full cursor-zoom-in"
               >
                 <img
                   src={imageSrc(image)}
                   alt={`${itemName} — ${index + 1}`}
-                  className="h-full w-full object-cover"
+                  className="absolute inset-0 h-full w-full object-cover"
                   loading={index === 0 ? 'eager' : 'lazy'}
                 />
               </button>
@@ -123,7 +125,7 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
 
         {/* Counter badge */}
         {counter && (
-          <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white">
+          <div className="pointer-events-none absolute right-3 top-3 rounded-full bg-black/60 shadow-md px-2.5 py-1 text-xs font-medium text-white">
             {counter}
           </div>
         )}
@@ -136,7 +138,7 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
           size="lg"
           aria-label={t('itemDetail.openImage')}
           onClick={() => openFullscreen(activeIndex)}
-          className="absolute bottom-3 right-3 bg-black/55 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
+          className="absolute bottom-3 right-3 bg-black/60 shadow-md opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
         >
           <Expand size={18} />
         </ActionIcon>
@@ -151,7 +153,7 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
               size="lg"
               aria-label={t('itemDetail.previousImage')}
               onClick={() => scrollPrev(inlineApi)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/55 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
+              className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 shadow-md opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
             >
               <ChevronLeft size={20} />
             </ActionIcon>
@@ -162,7 +164,7 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
               size="lg"
               aria-label={t('itemDetail.nextImage')}
               onClick={() => scrollNext(inlineApi)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/55 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
+              className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 shadow-md opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
             >
               <ChevronRight size={20} />
             </ActionIcon>
