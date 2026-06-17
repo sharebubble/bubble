@@ -45,7 +45,7 @@ class CalendarLinkKind(models.TextChoices):
 
 class CalendarLink(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    kind = models.CharField(max_length=16, choices=CalendarLinkKind.choices)
+    kind = models.CharField(max_length=16, choices=CalendarLinkKind)
     secret = models.CharField(
         max_length=128,
         unique=True,
