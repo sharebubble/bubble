@@ -12,7 +12,7 @@ export type FieldStates = Record<string, FieldSaveState>;
 
 export const useFieldAutoSave = (itemUuid: string | undefined) => {
   const [fieldStates, setFieldStates] = useState<FieldStates>({});
-  const timeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
+  const timeoutRefs = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const setFieldState = useCallback((fieldName: string, state: FieldSaveState) => {
     setFieldStates(prev => ({ ...prev, [fieldName]: state }));
