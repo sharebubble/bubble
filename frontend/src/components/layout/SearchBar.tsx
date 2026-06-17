@@ -1,6 +1,5 @@
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAllCollections } from '@/hooks/useCollections';
-import { useCategoryFacets, useItemOwners } from '@/hooks/useSearchFacets';
+import { useSearchFacets } from '@/hooks/useSearchFacets';
 import { categoryTranslationKeys, getCategoryIcon } from '@/lib/categoryIcons';
 import { cn } from '@/lib/utils';
 import {
@@ -23,15 +22,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 // Types & constants
 // ---------------------------------------------------------------------------
 
-type Facet = 'owner' | 'collection' | 'category' | 'availability';
-
-const AVAILABILITY_OPTIONS = ['available', 'rented', 'sold'] as const;
+type Facet = 'category' | 'collection' | 'availability' | 'owner';
 
 const FACET_ICONS: Record<Facet, LucideIcon> = {
-  owner: User,
-  collection: BookMarked,
   category: Tag,
+  collection: BookMarked,
   availability: CircleDot,
+  owner: User,
 };
 
 // The browse/results page that the header search drives.
@@ -70,8 +67,8 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
   const facets: Facet[] = useMemo(
     () =>
       showOwner
-        ? ['owner', 'collection', 'category', 'availability']
-        : ['collection', 'category', 'availability'],
+        ? ['category', 'collection', 'availability', 'owner']
+        : ['category', 'collection', 'availability'],
     [showOwner],
   );
   const [activeFacet, setActiveFacet] = useState<Facet>(facets[0]);
@@ -89,19 +86,27 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
   }
 
   // ---------------------------------------------------------------------------
-  // Data for the facet lists
+  // Cross-filtered facet data (each facet reflects the other active filters)
   // ---------------------------------------------------------------------------
 
-  const ownersQuery = useItemOwners({ enabled: (opened && showOwner) || !!ownerId });
-  const collectionsQuery = useAllCollections({ enabled: opened || !!collectionId });
-  const categoriesQuery = useCategoryFacets({ enabled: opened });
+  const facetsQuery = useSearchFacets(
+    {
+      category: categoryValue,
+      collection: collectionId,
+      owner: ownerId,
+      availability: availabilityValue,
+      search: searchValue || undefined,
+    },
+    { enabled: opened || !!ownerId || !!collectionId },
+  );
+  const facetsData = facetsQuery.data;
 
   const resolveOwnerLabel = (id: string) => {
-    const owner = ownersQuery.data?.find(o => o.id === id);
+    const owner = facetsData?.owners.find(o => o.id === id);
     return owner ? owner.name || owner.username : '…';
   };
   const resolveCollectionLabel = (id: string) => {
-    const collection = collectionsQuery.data?.find(c => String(c.id) === id);
+    const collection = facetsData?.collections.find(c => c.id === id);
     return collection ? `${collection.name} (${collection.owner})` : '…';
   };
 
@@ -137,38 +142,43 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
     }, 300);
   };
 
-  const selectFacet = (key: Facet, value: string) => {
-    applyParams(params => params.set(key, value));
+  // Toggle a facet value: selecting the active value clears it. The popup stays
+  // open so the other facets visibly update with the new selection.
+  const toggleFacet = (key: Facet, value: string) => {
+    const isActive = currentParams.get(key) === value;
+    applyParams(params => {
+      if (isActive) params.delete(key);
+      else params.set(key, value);
+    });
     setFacetQuery('');
-    setOpened(false);
   };
 
   const clearFacet = (key: string) => applyParams(params => params.delete(key), { replace: true });
 
   // ---------------------------------------------------------------------------
-  // Active filter chips
+  // Active filter chips (ordered like the facet tabs)
   // ---------------------------------------------------------------------------
 
   const chips: { key: string; label: string }[] = [];
-  if (ownerId) chips.push({ key: 'owner', label: resolveOwnerLabel(ownerId) });
-  if (collectionId) chips.push({ key: 'collection', label: resolveCollectionLabel(collectionId) });
   if (categoryValue && categoryValue !== 'all')
     chips.push({
       key: 'category',
       label: t(categoryTranslationKeys[categoryValue] ?? categoryValue),
     });
+  if (collectionId) chips.push({ key: 'collection', label: resolveCollectionLabel(collectionId) });
   if (availabilityValue)
     chips.push({ key: 'availability', label: t(`search.availability.${availabilityValue}`) });
+  if (ownerId) chips.push({ key: 'owner', label: resolveOwnerLabel(ownerId) });
 
   // ---------------------------------------------------------------------------
   // Facet panel rendering
   // ---------------------------------------------------------------------------
 
   const facetSearchPlaceholder: Record<Facet, string> = {
-    owner: t('search.searchOwners'),
-    collection: t('search.searchCollections'),
     category: t('search.searchCategories'),
+    collection: t('search.searchCollections'),
     availability: '',
+    owner: t('search.searchOwners'),
   };
 
   const renderRow = (
@@ -176,12 +186,14 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
     {
       icon,
       label,
+      secondary,
       meta,
       active,
       onSelect,
     }: {
       icon?: React.ReactNode;
       label: string;
+      secondary?: string;
       meta?: string;
       active: boolean;
       onSelect: () => void;
@@ -196,7 +208,10 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
       )}
     >
       {icon}
-      <span className="flex-1 truncate text-sm">{label}</span>
+      <span className="min-w-0 flex-1 truncate text-sm">
+        {label}
+        {secondary && <span className="ml-1 text-muted-foreground">{secondary}</span>}
+      </span>
       {meta && (
         <Text span size="xs" c="dimmed" className="shrink-0">
           {meta}
@@ -210,30 +225,21 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
     const query = facetQuery.trim().toLowerCase();
 
     if (activeFacet === 'availability') {
-      return (
-        <div className="flex flex-col">
-          {AVAILABILITY_OPTIONS.map(value =>
-            renderRow(value, {
-              icon: <CircleDot size={16} className="text-muted-foreground" />,
-              label: t(`search.availability.${value}`),
-              active: availabilityValue === value,
-              onSelect: () => selectFacet('availability', value),
-            }),
-          )}
-        </div>
+      const rows = (facetsData?.availability ?? []).map(({ value, count }) =>
+        renderRow(value, {
+          icon: <CircleDot size={16} className="text-muted-foreground" />,
+          label: t(`search.availability.${value}`),
+          meta: `(${count})`,
+          active: availabilityValue === value,
+          onSelect: () => toggleFacet('availability', value),
+        }),
       );
+      return <div className="flex flex-col">{rows}</div>;
     }
-
-    const loading =
-      activeFacet === 'owner'
-        ? ownersQuery.isLoading
-        : activeFacet === 'collection'
-          ? collectionsQuery.isLoading
-          : categoriesQuery.isLoading;
 
     let rows: React.ReactNode[] = [];
     if (activeFacet === 'owner') {
-      rows = (ownersQuery.data ?? [])
+      rows = (facetsData?.owners ?? [])
         .filter(
           o =>
             !query ||
@@ -244,25 +250,26 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
           renderRow(o.id, {
             icon: <User size={16} className="text-muted-foreground" />,
             label: o.name || o.username,
-            meta: String(o.item_count),
+            meta: `(${o.count})`,
             active: ownerId === o.id,
-            onSelect: () => selectFacet('owner', o.id),
+            onSelect: () => toggleFacet('owner', o.id),
           }),
         );
     } else if (activeFacet === 'collection') {
-      rows = (collectionsQuery.data ?? [])
+      rows = (facetsData?.collections ?? [])
         .filter(c => !query || c.name.toLowerCase().includes(query))
         .map(c =>
-          renderRow(String(c.id), {
+          renderRow(c.id, {
             icon: <BookMarked size={16} className="text-muted-foreground" />,
             label: c.name,
-            meta: `(${c.owner})`,
-            active: collectionId === String(c.id),
-            onSelect: () => selectFacet('collection', String(c.id)),
+            secondary: `(${c.owner})`,
+            meta: `(${c.count})`,
+            active: collectionId === c.id,
+            onSelect: () => toggleFacet('collection', c.id),
           }),
         );
     } else {
-      rows = (categoriesQuery.data ?? [])
+      rows = (facetsData?.categories ?? [])
         .map(facet => {
           const label = t(categoryTranslationKeys[facet.category] ?? facet.category);
           return { facet, label };
@@ -275,7 +282,7 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
             label,
             meta: `(${facet.count})`,
             active: categoryValue === facet.category,
-            onSelect: () => selectFacet('category', facet.category),
+            onSelect: () => toggleFacet('category', facet.category),
           });
         });
     }
@@ -289,7 +296,7 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
           leftSection={<Search size={14} aria-hidden="true" />}
           onChange={e => setFacetQuery(e.currentTarget.value)}
         />
-        {loading ? (
+        {facetsQuery.isLoading ? (
           <div className="flex justify-center py-4">
             <Loader size="sm" />
           </div>

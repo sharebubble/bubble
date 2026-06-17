@@ -1,25 +1,22 @@
-import { fetchCategoryFacets, fetchItemOwners } from '@/services/custom/search';
-import { useQuery } from '@tanstack/react-query';
+import { fetchSearchFacets, type SearchFacetParams } from '@/services/custom/search';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 /**
- * Owners of shared items, for the "owner" facet of the header search.
+ * Cross-filtered search facets for the header search popup.
  *
- * Only meaningful for logged-in users, so callers should pass `enabled` to
- * avoid firing the request for anonymous visitors.
+ * `params` is the currently active selection; each facet in the response is
+ * computed over the visible items narrowed by every *other* selection, so the
+ * options and counts update as filters are picked. Previous data is kept while
+ * refetching so the lists don't flash empty when a filter changes.
  */
-export const useItemOwners = ({ enabled = true }: { enabled?: boolean } = {}) =>
+export const useSearchFacets = (
+  params: SearchFacetParams,
+  { enabled = true }: { enabled?: boolean } = {},
+) =>
   useQuery({
-    queryKey: ['public-items', 'owners'],
-    queryFn: fetchItemOwners,
+    queryKey: ['public-items', 'facets', params],
+    queryFn: () => fetchSearchFacets(params),
     enabled,
-    staleTime: 5 * 60 * 1000,
-  });
-
-/** Categories present among shared items, with item counts, for the search popup. */
-export const useCategoryFacets = ({ enabled = true }: { enabled?: boolean } = {}) =>
-  useQuery({
-    queryKey: ['public-items', 'category-facets'],
-    queryFn: fetchCategoryFacets,
-    enabled,
-    staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
+    staleTime: 60 * 1000,
   });
