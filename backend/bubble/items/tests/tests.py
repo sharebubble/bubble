@@ -1234,10 +1234,10 @@ class ItemSerializerValidationTestCase(TestCase):
 
 
 class PublicItemFacetTestCase(TestCase):
-    """Tests for the owner / category facet endpoints and collection filter."""
+    """Tests for the cross-filtering search facets and the collection filter."""
 
     def setUp(self):
-        """Create published items owned by two users across categories."""
+        """Create published items spanning owners, categories and availability."""
         config.REQUIRE_LOGIN = False
         self.client = APIClient()
 
@@ -1248,7 +1248,7 @@ class PublicItemFacetTestCase(TestCase):
             username="bob", email="bob@example.com", password=TEST_PASSWORD
         )
 
-        # Two published tools owned by alice.
+        # alice: an available tool and an available book.
         self.alice_tool = Item.objects.create(
             name="Alice Hammer",
             user=self.alice,
@@ -1265,16 +1265,15 @@ class PublicItemFacetTestCase(TestCase):
             visibility=VisibilityType.PUBLIC,
             category="books",
         )
-        # One published tool owned by bob.
+        # bob: a sold tool, plus a draft that must never count.
         self.bob_tool = Item.objects.create(
             name="Bob Wrench",
             user=self.bob,
             sales_type=SalesType.SELL,
-            status=ItemStatus.AVAILABLE,
+            status=ItemStatus.SOLD,
             visibility=VisibilityType.PUBLIC,
             category="tools",
         )
-        # A draft item should not contribute to any facet.
         self.bob_draft = Item.objects.create(
             name="Bob Draft Saw",
             user=self.bob,
@@ -1284,36 +1283,68 @@ class PublicItemFacetTestCase(TestCase):
             category="tools",
         )
 
+        # A collection owned by alice holding both of her items.
+        self.collection = Collection.objects.create(
+            name="Favorite Tools", owner=self.alice
+        )
+        CollectionItem.objects.create(
+            collection=self.collection, item=self.alice_tool, added_by=self.alice
+        )
+        CollectionItem.objects.create(
+            collection=self.collection, item=self.alice_book, added_by=self.alice
+        )
+
     def tearDown(self):
         """Restore default constance config."""
         config.REQUIRE_LOGIN = True
 
-    def test_owners_endpoint_lists_owners_with_counts(self):
-        """The owners facet returns each owner of published items with a count."""
-        url = reverse("api:public-item-owners")
-        response = self.client.get(url)
-
+    def _facets(self, **params):
+        """GET the facets endpoint and return its parsed JSON body."""
+        url = reverse("api:public-item-facets")
+        response = self.client.get(url, params)
         assert response.status_code == status.HTTP_200_OK
-        by_username = {row["username"]: row for row in response.json()}
+        return response.json()
 
-        # alice has two published items, bob has one (his draft is excluded).
-        counts = {username: row["item_count"] for username, row in by_username.items()}
-        assert counts == {"alice": 2, "bob": 1}
-        assert by_username["alice"]["id"] == str(self.alice.pk)
+    @staticmethod
+    def _by(data, key, value="count"):
+        """Collapse a facet list into a ``{key: count}`` mapping."""
+        return {row[key]: row[value] for row in data}
 
-    def test_categories_endpoint_lists_categories_with_counts(self):
-        """The category facet returns each category with its published count."""
-        url = reverse("api:public-item-categories")
-        response = self.client.get(url)
+    def test_facets_unfiltered(self):
+        """With no selection, every facet covers all visible (published) items."""
+        data = self._facets()
 
-        assert response.status_code == status.HTTP_200_OK
-        counts = {row["category"]: row["count"] for row in response.json()}
+        assert self._by(data["categories"], "category") == {"tools": 2, "books": 1}
+        assert self._by(data["owners"], "username") == {"alice": 2, "bob": 1}
+        # available: both alice items; sold: bob's tool; drafts excluded.
+        assert self._by(data["availability"], "value") == {"available": 2, "sold": 1}
+        assert self._by(data["collections"], "name") == {"Favorite Tools": 2}
+        assert data["collections"][0]["owner"] == "alice"
 
-        # tools: alice_tool + bob_tool (bob_draft excluded), books: alice_book.
-        assert counts == {"tools": 2, "books": 1}
+    def test_facets_cross_filter_by_collection(self):
+        """Selecting a collection narrows the other facets to its items."""
+        data = self._facets(collection=str(self.collection.pk))
 
-    def test_owners_endpoint_excludes_unpublished_only_owners(self):
-        """A user with only draft items must not appear in the owners facet."""
+        # Only alice's two items are in the collection.
+        assert self._by(data["categories"], "category") == {"tools": 1, "books": 1}
+        assert self._by(data["owners"], "username") == {"alice": 2}
+        assert self._by(data["availability"], "value") == {"available": 2}
+        # The collection facet excludes its own dimension, so it is unchanged.
+        assert self._by(data["collections"], "name") == {"Favorite Tools": 2}
+
+    def test_facets_cross_filter_by_category(self):
+        """Selecting a category narrows owners, availability and collections."""
+        data = self._facets(category="tools")
+
+        # Category facet keeps every category so the choice can be changed.
+        assert self._by(data["categories"], "category") == {"tools": 2, "books": 1}
+        assert self._by(data["owners"], "username") == {"alice": 1, "bob": 1}
+        assert self._by(data["availability"], "value") == {"available": 1, "sold": 1}
+        # Favorite Tools only contributes its single tool once books are excluded.
+        assert self._by(data["collections"], "name") == {"Favorite Tools": 1}
+
+    def test_facets_owners_exclude_unpublished_only_owners(self):
+        """A user with only draft items never appears in the owners facet."""
         carol = ItemOwnerUserFactory(
             username="carol", email="carol@example.com", password=TEST_PASSWORD
         )
@@ -1325,22 +1356,16 @@ class PublicItemFacetTestCase(TestCase):
             visibility=VisibilityType.PUBLIC,
             category="tools",
         )
-        url = reverse("api:public-item-owners")
-        response = self.client.get(url)
+        data = self._facets()
 
-        usernames = {row["username"] for row in response.json()}
+        usernames = {row["username"] for row in data["owners"]}
         assert "carol" not in usernames
 
     def test_collection_filter_restricts_to_collection_items(self):
-        """The collection filter returns only items contained in the collection."""
-        collection = Collection.objects.create(name="Alice Picks", owner=self.alice)
-        CollectionItem.objects.create(
-            collection=collection, item=self.alice_tool, added_by=self.alice
-        )
-
-        url = reverse("api:public-item-list") + f"?collection={collection.pk}"
+        """The item-list collection filter returns only the collection's items."""
+        url = reverse("api:public-item-list") + f"?collection={self.collection.pk}"
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         names = {item["name"] for item in response.json()["results"]}
-        assert names == {self.alice_tool.name}
+        assert names == {self.alice_tool.name, self.alice_book.name}
