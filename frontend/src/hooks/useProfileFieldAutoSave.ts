@@ -4,7 +4,7 @@ import type { FieldSaveState, FieldStates } from './useFieldAutoSave';
 
 export const useProfileFieldAutoSave = () => {
   const [fieldStates, setFieldStates] = useState<FieldStates>({});
-  const timeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
+  const timeoutRefs = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const setFieldState = useCallback((fieldName: string, state: FieldSaveState) => {
     setFieldStates(prev => ({ ...prev, [fieldName]: state }));

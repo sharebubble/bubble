@@ -67,7 +67,7 @@ const EditBook = () => {
 
   // ── Book-field auto-save ──────────────────────────────────────────────────
   const [bookFieldStates, setBookFieldStates] = useState<FieldStates>({});
-  const bookFieldTimeouts = useRef<Record<string, NodeJS.Timeout>>({});
+  const bookFieldTimeouts = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   const bookOriginalValuesRef = useRef<Record<string, unknown>>({});
 
   const setBookFieldState = useCallback((fieldName: string, state: FieldStates[string]) => {

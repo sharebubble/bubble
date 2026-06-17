@@ -960,7 +960,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
                   {t('editItem.accessSection')}
                 </Text>
               </UnstyledButton>
-              <Collapse in={accessOpen}>
+              <Collapse expanded={accessOpen}>
                 <div className="pt-4 space-y-6">
                   <VisibilityField
                     formData={formData}
