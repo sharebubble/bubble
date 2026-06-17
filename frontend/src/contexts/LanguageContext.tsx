@@ -315,6 +315,10 @@ const translations = {
     'calendar.to': 'To',
     'calendar.duration': 'Duration',
     'calendar.hours': 'hours',
+    'calendar.days': 'days',
+    'calendar.selectingPeriod': 'Selecting period',
+    'calendar.clickToSetEnd': 'Click an end tile to confirm, or hover to preview',
+    'calendar.clearSelection': 'Clear',
     'calendar.week': 'Week',
     'calendar.month': 'Month',
 
@@ -417,6 +421,11 @@ const translations = {
     'itemDetail.notFound': 'Item not found',
     'itemDetail.availability': 'Availability',
     'itemDetail.properties': 'Properties',
+    'itemDetail.previousImage': 'Previous image',
+    'itemDetail.nextImage': 'Next image',
+    'itemDetail.openImage': 'Open image in full screen',
+    'itemDetail.closeViewer': 'Close image viewer',
+    'itemDetail.goToImage': 'Go to image',
 
     // My Items
     'myItems.title': 'My Items',
@@ -889,6 +898,11 @@ const translations = {
     'calendar.to': 'Bis',
     'calendar.duration': 'Dauer',
     'calendar.hours': 'Stunden',
+    'calendar.days': 'Tage',
+    'calendar.selectingPeriod': 'Zeitraum wählen',
+    'calendar.clickToSetEnd':
+      'Klicke ein End-Feld zum Bestätigen oder bewege die Maus für eine Vorschau',
+    'calendar.clearSelection': 'Zurücksetzen',
     'calendar.week': 'Woche',
     'calendar.month': 'Monat',
 
@@ -992,6 +1006,11 @@ const translations = {
     'itemDetail.notFound': 'Artikel nicht gefunden',
     'itemDetail.availability': 'Verfügbarkeit',
     'itemDetail.properties': 'Eigenschaften',
+    'itemDetail.previousImage': 'Vorheriges Bild',
+    'itemDetail.nextImage': 'Nächstes Bild',
+    'itemDetail.openImage': 'Bild im Vollbild öffnen',
+    'itemDetail.closeViewer': 'Bildansicht schließen',
+    'itemDetail.goToImage': 'Zu Bild springen',
 
     // My Items
     'myItems.title': 'Meine Artikel',
