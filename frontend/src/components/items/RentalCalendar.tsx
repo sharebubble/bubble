@@ -580,7 +580,7 @@ export const RentalCalendar = ({
           p="md"
           radius="lg"
           withBorder
-          bg="green.0"
+          bg="var(--mantine-color-green-light)"
           className="relative flex flex-wrap items-center justify-between gap-3"
         >
           <div>
@@ -612,7 +612,14 @@ export const RentalCalendar = ({
 
       {/* Selection Summary */}
       {!selectingStart && selectedStart && selectedEnd && (
-        <Paper mt="md" p="md" radius="lg" bg="gray.1" className="relative">
+        <Paper
+          mt="md"
+          p="md"
+          radius="lg"
+          withBorder
+          bg="var(--mantine-color-default-hover)"
+          className="relative"
+        >
           <Text size="sm" fw={500} mb={4}>
             {t('calendar.selectedPeriod')}:
           </Text>
