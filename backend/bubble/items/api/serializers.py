@@ -1,5 +1,6 @@
 """Serializers for items API."""
 
+from django.db.models import Avg
 from django.utils.translation import gettext_lazy as _
 from djmoney.contrib.django_rest_framework import MoneyField
 from guardian.shortcuts import get_groups_with_perms, get_users_with_perms
@@ -34,6 +35,10 @@ class LocationSerializer(serializers.ModelSerializer):
             "description",
             "sort_order",
         ]
+
+# Sentinel used to distinguish "no annotation present" from an annotated None
+# (e.g. an item with no ratings yields ``_avg_rating = None``).
+_UNSET = object()
 
 
 class ItemOwnerException(serializers.ValidationError):
@@ -103,6 +108,9 @@ class ItemSerializer(serializers.ModelSerializer):
     # Writable via the auto-generated ``location`` PK field; this exposes the
     # resolved name/section for display without an extra request.
     location_detail = LocationSerializer(source="location", read_only=True)
+    average_rating = serializers.SerializerMethodField()
+    rating_count = serializers.SerializerMethodField()
+    comment_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Item
@@ -123,6 +131,31 @@ class ItemSerializer(serializers.ModelSerializer):
             request = self.context.get("request")
             return absolute_media_url(first_image.thumbnail, request=request)
         return None
+
+    def get_average_rating(self, obj) -> float | None:
+        """Average star rating across comments that include a rating.
+
+        Prefers the ``_avg_rating`` annotation (set on list/detail querysets)
+        and falls back to an aggregate query when it is not present.
+        """
+        value = getattr(obj, "_avg_rating", _UNSET)
+        if value is _UNSET:
+            value = obj.comments.aggregate(avg=Avg("rating"))["avg"]
+        return round(value, 1) if value is not None else None
+
+    def get_rating_count(self, obj) -> int:
+        """Number of comments that include a star rating."""
+        value = getattr(obj, "_rating_count", _UNSET)
+        if value is _UNSET:
+            value = obj.comments.filter(rating__isnull=False).count()
+        return value or 0
+
+    def get_comment_count(self, obj) -> int:
+        """Total number of comments left on the item."""
+        value = getattr(obj, "_comment_count", _UNSET)
+        if value is _UNSET:
+            value = obj.comments.count()
+        return value or 0
 
     def get_co_owners(self, obj):
         """Return list of co-owner user IDs and group IDs (those with change_item)."""

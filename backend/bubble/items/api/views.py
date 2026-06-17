@@ -58,6 +58,21 @@ from .filters import ItemFilter
 User = get_user_model()
 
 
+def annotate_comment_stats(queryset):
+    """Annotate items with aggregate comment/rating statistics.
+
+    Adds ``_avg_rating``, ``_rating_count`` and ``_comment_count`` so the item
+    serializers can expose ratings without triggering per-item queries.
+    """
+    return queryset.annotate(
+        _avg_rating=models.Avg("comments__rating"),
+        _rating_count=models.Count(
+            "comments", filter=models.Q(comments__rating__isnull=False)
+        ),
+        _comment_count=models.Count("comments", distinct=True),
+    )
+
+
 class ItemBaseViewSet(viewsets.GenericViewSet):
     """Base viewset with common settings for items."""
 
@@ -193,7 +208,7 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        base_qs = (
+        base_qs = annotate_comment_stats(
             Item.objects.published()
             .select_related("user", "location")
             .prefetch_related("images")
@@ -373,7 +388,7 @@ class ItemViewSet(viewsets.ModelViewSet, ItemBaseViewSet):
 
     def get_queryset(self):
         """Return items belonging to the authenticated user."""
-        return (
+        return annotate_comment_stats(
             Item.objects.get_for_user(self.request.user)
             .select_related("user", "location")
             .prefetch_related("images")

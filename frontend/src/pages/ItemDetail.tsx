@@ -1,5 +1,6 @@
 import { BookingDialog } from '@/components/items/BookingDialog';
 import { CalendarSubscribeButton } from '@/components/calendar/CalendarSubscribeButton';
+import { ItemComments } from '@/components/items/ItemComments';
 import { ItemImageCarousel } from '@/components/items/ItemImageCarousel';
 import { RentalCalendar } from '@/components/items/RentalCalendar';
 import {
@@ -117,6 +118,14 @@ const ItemDetail = () => {
   const isRental = sales_type === 'rent' || sales_type === 'borrow';
   const isWanted = sales_type === 'want_buy' || sales_type === 'want_rent';
   const hasImages = images.length > 0;
+
+  // Rating aggregates are exposed by the item API; the generated type may not
+  // include them yet, so read them through a narrow cast.
+  const ratings = item as typeof item & {
+    average_rating?: number | null;
+    rating_count?: number;
+    comment_count?: number;
+  };
 
   const conditionMap: Record<number, string> = {
     0: t('condition.new'),
@@ -274,6 +283,14 @@ const ItemDetail = () => {
                 )}
               </p>
             )}
+
+            <ItemComments
+              itemId={item.id}
+              ownerId={item.user}
+              averageRating={ratings.average_rating}
+              ratingCount={ratings.rating_count}
+              commentCount={ratings.comment_count}
+            />
           </div>
 
           {description !== undefined && description !== '' && (

@@ -450,6 +450,22 @@ const translations = {
     'itemDetail.closeViewer': 'Close image viewer',
     'itemDetail.goToImage': 'Go to image',
 
+    // Comments & ratings
+    'comments.title': 'Comments & Ratings',
+    'comments.seeComments': 'See comments ({count})',
+    'comments.ratingCount': '{count} ratings',
+    'comments.noRatings': 'No ratings yet',
+    'comments.addTitle': 'Share your experience',
+    'comments.yourRating': 'Your rating',
+    'comments.placeholder': 'Ask a question or share your experience with this item...',
+    'comments.submit': 'Post comment',
+    'comments.empty': 'No comments yet. Be the first to comment!',
+    'comments.loginToComment': 'Please log in to leave a comment.',
+    'comments.added': 'Comment posted',
+    'comments.addError': 'Could not post your comment.',
+    'comments.deleted': 'Comment deleted',
+    'comments.deleteError': 'Could not delete the comment.',
+
     // My Items
     'myItems.title': 'My Items',
     'myItems.noItems': 'No items yet',
@@ -1097,6 +1113,22 @@ const translations = {
     'itemDetail.openImage': 'Bild im Vollbild öffnen',
     'itemDetail.closeViewer': 'Bildansicht schließen',
     'itemDetail.goToImage': 'Zu Bild springen',
+
+    // Comments & ratings
+    'comments.title': 'Kommentare & Bewertungen',
+    'comments.seeComments': 'Kommentare ansehen ({count})',
+    'comments.ratingCount': '{count} Bewertungen',
+    'comments.noRatings': 'Noch keine Bewertungen',
+    'comments.addTitle': 'Teile deine Erfahrung',
+    'comments.yourRating': 'Deine Bewertung',
+    'comments.placeholder': 'Stelle eine Frage oder teile deine Erfahrung mit diesem Artikel...',
+    'comments.submit': 'Kommentar posten',
+    'comments.empty': 'Noch keine Kommentare. Sei der Erste!',
+    'comments.loginToComment': 'Bitte melde dich an, um einen Kommentar zu hinterlassen.',
+    'comments.added': 'Kommentar veröffentlicht',
+    'comments.addError': 'Kommentar konnte nicht veröffentlicht werden.',
+    'comments.deleted': 'Kommentar gelöscht',
+    'comments.deleteError': 'Kommentar konnte nicht gelöscht werden.',
 
     // My Items
     'myItems.title': 'Meine Artikel',

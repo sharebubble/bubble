@@ -125,6 +125,7 @@ LOCAL_APPS = [
     "bubble.favorites.apps.FavoritesConfig",
     "bubble.books.apps.BooksConfig",
     "bubble.collections.apps.CollectionsConfig",
+    "bubble.comments.apps.CommentsConfig",
     "bubble.notifications.apps.NotificationsConfig",
     "bubble.federation.apps.FederationConfig",
     "bubble.caldav.apps.CaldavConfig",
