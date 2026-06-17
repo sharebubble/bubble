@@ -2,7 +2,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import type { Image } from '@/services/django';
 import { Carousel } from '@mantine/carousel';
-import { ActionIcon } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import type { EmblaCarouselType } from 'embla-carousel';
 import { ChevronLeft, ChevronRight, Expand, X } from 'lucide-react';
@@ -161,43 +160,34 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
         )}
 
         {/* Expand hint */}
-        <ActionIcon
-          variant="filled"
-          color="dark"
-          radius="xl"
-          size="lg"
+        <button
+          type="button"
           aria-label={t('itemDetail.openImage')}
           onClick={() => openFullscreen(activeIndex)}
-          className="absolute bottom-3 right-3 bg-black/60 shadow-md opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
+          className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white shadow-md opacity-100 transition-opacity hover:bg-black/70 md:opacity-0 md:group-hover:opacity-100"
         >
           <Expand size={18} />
-        </ActionIcon>
+        </button>
 
         {/* Edge navigation arrows (revealed on hover / always on touch) */}
         {hasMultiple && (
           <>
-            <ActionIcon
-              variant="filled"
-              color="dark"
-              radius="xl"
-              size="lg"
+            <button
+              type="button"
               aria-label={t('itemDetail.previousImage')}
               onClick={() => scrollPrev(inlineApi)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 shadow-md opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
+              className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white shadow-md opacity-100 transition-opacity hover:bg-black/70 md:opacity-0 md:group-hover:opacity-100"
             >
               <ChevronLeft size={20} />
-            </ActionIcon>
-            <ActionIcon
-              variant="filled"
-              color="dark"
-              radius="xl"
-              size="lg"
+            </button>
+            <button
+              type="button"
               aria-label={t('itemDetail.nextImage')}
               onClick={() => scrollNext(inlineApi)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 shadow-md opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100"
+              className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white shadow-md opacity-100 transition-opacity hover:bg-black/70 md:opacity-0 md:group-hover:opacity-100"
             >
               <ChevronRight size={20} />
-            </ActionIcon>
+            </button>
           </>
         )}
 
@@ -266,42 +256,33 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
 
             {hasMultiple && (
               <>
-                <ActionIcon
-                  variant="filled"
-                  color="dark"
-                  radius="xl"
-                  size="xl"
+                <button
+                  type="button"
                   aria-label={t('itemDetail.previousImage')}
                   onClick={() => scrollPrev(fullscreenApi)}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/15"
+                  className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
                 >
                   <ChevronLeft size={28} />
-                </ActionIcon>
-                <ActionIcon
-                  variant="filled"
-                  color="dark"
-                  radius="xl"
-                  size="xl"
+                </button>
+                <button
+                  type="button"
                   aria-label={t('itemDetail.nextImage')}
                   onClick={() => scrollNext(fullscreenApi)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/15"
+                  className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
                 >
                   <ChevronRight size={28} />
-                </ActionIcon>
+                </button>
               </>
             )}
 
-            <ActionIcon
-              variant="filled"
-              color="dark"
-              radius="xl"
-              size="lg"
+            <button
+              type="button"
               aria-label={t('itemDetail.closeViewer')}
               onClick={fullscreen.close}
-              className="absolute right-4 top-4 bg-white/15"
+              className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
             >
               <X size={22} />
-            </ActionIcon>
+            </button>
           </div>
         </div>
       )}
