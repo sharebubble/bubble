@@ -5,7 +5,7 @@ description = "Treibhaus donaufeld sharing platform"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "anthropic>=0.109.2",
+    "anthropic>=0.111.0",
     "argon2-cffi",
     "channels-redis",
     "channels[daphne]",
@@ -44,7 +44,7 @@ dependencies = [
     "whitenoise",
     "pyld>=3.0.0",
     "http-message-signatures>=2.0.1",
-    "cryptography>=48.0.1",
+    "cryptography>=49.0.0",
 ]
 
 [[tool.uv.index]]
