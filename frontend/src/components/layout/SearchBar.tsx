@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import {
   Button,
   Checkbox,
+  CloseButton,
   Loader,
   NavLink,
   NumberInput,
@@ -295,6 +296,11 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
   })();
   if (priceChipLabel) chips.push({ key: 'price', label: priceChipLabel });
 
+  // Whether the bar is "empty": no active filter chips and no free-text term.
+  // Used to offer an explicit close affordance in the dropdown (otherwise the
+  // only way out is clicking away / Escape).
+  const nothingSelected = chips.length === 0 && inputValue.trim() === '';
+
   // ---------------------------------------------------------------------------
   // Facet panel rendering
   // ---------------------------------------------------------------------------
@@ -516,10 +522,11 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
       opened={opened}
       onChange={setOpened}
       position="bottom-start"
-      width="target"
+      width="90vw"
       shadow="md"
       trapFocus={false}
       withinPortal
+      styles={{ dropdown: { maxWidth: 'min(90vw, 36rem)' } }}
     >
       <Popover.Target>
         <PillsInput
@@ -553,25 +560,34 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
       </Popover.Target>
 
       <Popover.Dropdown p="xs">
-        <div className="mb-2 flex flex-wrap gap-1">
-          {facets.map(facet => {
-            const Icon = FACET_ICONS[facet];
-            return (
-              <Button
-                key={facet}
-                size="compact-xs"
-                variant={activeFacet === facet ? 'light' : 'subtle'}
-                color={activeFacet === facet ? 'green' : 'gray'}
-                leftSection={<Icon size={14} aria-hidden="true" />}
-                onClick={() => {
-                  setActiveFacet(facet);
-                  setFacetQuery('');
-                }}
-              >
-                {t(`search.${facet}`)}
-              </Button>
-            );
-          })}
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <div className="flex flex-wrap gap-1">
+            {facets.map(facet => {
+              const Icon = FACET_ICONS[facet];
+              return (
+                <Button
+                  key={facet}
+                  size="compact-xs"
+                  variant={activeFacet === facet ? 'light' : 'subtle'}
+                  color={activeFacet === facet ? 'green' : 'gray'}
+                  leftSection={<Icon size={14} aria-hidden="true" />}
+                  onClick={() => {
+                    setActiveFacet(facet);
+                    setFacetQuery('');
+                  }}
+                >
+                  {t(`search.${facet}`)}
+                </Button>
+              );
+            })}
+          </div>
+          {nothingSelected && (
+            <CloseButton
+              size="sm"
+              onClick={() => setOpened(false)}
+              aria-label={t('search.close')}
+            />
+          )}
         </div>
         {renderPanel()}
       </Popover.Dropdown>
