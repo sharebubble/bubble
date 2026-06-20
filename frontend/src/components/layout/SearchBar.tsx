@@ -124,6 +124,9 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
     },
     [],
   );
+  // Adopt the URL values whenever they change externally (back/forward, chips),
+  // without an effect — React's "adjusting state when a prop changes" pattern.
+  // (The project lints against setState inside effects.)
   const [lastSyncedMinPrice, setLastSyncedMinPrice] = useState(minPriceValue);
   if (lastSyncedMinPrice !== minPriceValue) {
     setLastSyncedMinPrice(minPriceValue);
@@ -225,29 +228,35 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
     else setMaxPriceInput(value);
     if (priceDebounce.current) clearTimeout(priceDebounce.current);
     priceDebounce.current = setTimeout(() => {
-      applyParams(params => {
-        if (value !== '') {
-          params.set(key, value);
-          params.delete('free');
-        } else {
-          params.delete(key);
-        }
-      });
+      applyParams(
+        params => {
+          if (value !== '') {
+            params.set(key, value);
+            params.delete('free');
+          } else {
+            params.delete(key);
+          }
+        },
+        { replace: true },
+      );
     }, 400);
   };
 
   // The "free only" toggle pins price to 0 and clears any explicit bounds.
   const toggleFreeOnly = () => {
     if (priceDebounce.current) clearTimeout(priceDebounce.current);
-    applyParams(params => {
-      if (freeValue) {
-        params.delete('free');
-      } else {
-        params.set('free', '1');
-        params.delete('minPrice');
-        params.delete('maxPrice');
-      }
-    });
+    applyParams(
+      params => {
+        if (freeValue) {
+          params.delete('free');
+        } else {
+          params.set('free', '1');
+          params.delete('minPrice');
+          params.delete('maxPrice');
+        }
+      },
+      { replace: true },
+    );
   };
 
   // ---------------------------------------------------------------------------
