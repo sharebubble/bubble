@@ -29,6 +29,7 @@ class ItemCalendarLinkApiTests(TestCase):
         assert ".ics" in resp.data["feed_url"]
         assert resp.data["webcal_url"].startswith("webcal://")
         assert resp.data["kind"] == "item"
+        assert resp.data["can_manage"] is True
 
     def test_get_is_idempotent(self):
         self.client.force_authenticate(self.owner)
@@ -52,9 +53,23 @@ class ItemCalendarLinkApiTests(TestCase):
         assert resp.status_code == status.HTTP_204_NO_CONTENT
         assert not CalendarLink.objects.filter(kind="item", item=self.item).exists()
 
-    def test_non_owner_forbidden(self):
+    def test_logged_in_non_owner_can_view_public_item_feed(self):
+        # RentItemFactory is PUBLIC + published, so any logged-in user may
+        # subscribe — but cannot manage (rotate/revoke) it.
         self.client.force_authenticate(self.other)
         resp = self.client.get(self.url())
+        assert resp.status_code == status.HTTP_200_OK, resp.content
+        assert resp.data["can_manage"] is False
+
+    def test_non_owner_cannot_regenerate(self):
+        self.client.force_authenticate(self.other)
+        resp = self.client.post(self.url())
+        assert resp.status_code in (403, 404)
+
+    def test_non_viewable_private_item_forbidden(self):
+        private_item = RentItemFactory(user=self.owner, visibility=3)  # PRIVATE
+        self.client.force_authenticate(self.other)
+        resp = self.client.get(self.url(private_item))
         assert resp.status_code in (403, 404)
 
     def test_anonymous_unauthorized(self):
@@ -84,8 +99,20 @@ class CollectionCalendarLinkApiTests(TestCase):
         assert resp.status_code == status.HTTP_200_OK, resp.content
         assert resp.data["kind"] == "collection"
         assert "/caldav/collection/" in resp.data["feed_url"]
+        assert resp.data["can_manage"] is True
 
-    def test_non_owner_forbidden(self):
+    def test_viewer_can_subscribe_but_not_manage(self):
+        from guardian.shortcuts import assign_perm
+
+        assign_perm("collections.view_collection", self.other, self.collection)
+        self.client.force_authenticate(self.other)
+        resp = self.client.get(self.url())
+        assert resp.status_code == status.HTTP_200_OK, resp.content
+        assert resp.data["can_manage"] is False
+        # ...but cannot rotate the link.
+        assert self.client.post(self.url()).status_code in (403, 404)
+
+    def test_non_viewer_forbidden(self):
         self.client.force_authenticate(self.other)
         resp = self.client.get(self.url())
         assert resp.status_code in (403, 404)

@@ -616,6 +616,7 @@ const translations = {
     'calendar.copy': 'Copy link',
     'calendar.copied': 'Link copied to clipboard',
     'calendar.subscribe': 'Subscribe',
+    'calendar.subscribeTooltip': 'Subscribe to calendar',
     'calendar.regenerate': 'Regenerate link',
     'calendar.regenerateConfirm':
       'Generate a new link? The current link will stop working immediately.',
@@ -1243,6 +1244,7 @@ const translations = {
     'calendar.copy': 'Link kopieren',
     'calendar.copied': 'Link in die Zwischenablage kopiert',
     'calendar.subscribe': 'Abonnieren',
+    'calendar.subscribeTooltip': 'Kalender abonnieren',
     'calendar.regenerate': 'Link neu erstellen',
     'calendar.regenerateConfirm':
       'Neuen Link erstellen? Der aktuelle Link funktioniert dann sofort nicht mehr.',

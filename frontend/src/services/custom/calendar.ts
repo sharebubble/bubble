@@ -5,6 +5,8 @@ export interface FeedLink {
   kind: 'item' | 'collection';
   feed_url: string;
   webcal_url: string;
+  /** Whether the current user may rotate/revoke the link (owner/co-owner). */
+  can_manage: boolean;
   created_at: string;
   updated_at: string;
 }

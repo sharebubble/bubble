@@ -9,6 +9,7 @@ class FeedLinkSerializer(serializers.Serializer):
     kind = serializers.CharField()
     feed_url = serializers.URLField()
     webcal_url = serializers.CharField()
+    can_manage = serializers.BooleanField()
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
 

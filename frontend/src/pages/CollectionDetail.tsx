@@ -1,4 +1,4 @@
-import { CalendarSubscription } from '@/components/calendar/CalendarSubscription';
+import { CalendarSubscribeButton } from '@/components/calendar/CalendarSubscribeButton';
 import { CollectionHistoryDialog } from '@/components/collections/CollectionHistoryDialog';
 import { CollectionPermissionsPanel } from '@/components/collections/CollectionPermissionsPanel';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -152,16 +152,11 @@ const CollectionDetail = () => {
         >
           {t('collections.historyButton')}
         </Button>
+        {/* Calendar subscription — any logged-in user who can view the collection */}
+        {user && collectionId && <CalendarSubscribeButton kind="collection" id={collectionId} />}
       </div>
 
       <Divider />
-
-      {/* Calendar subscription — owner only */}
-      {isOwner && collectionId && (
-        <div className="my-6">
-          <CalendarSubscription kind="collection" id={collectionId} />
-        </div>
-      )}
 
       {/* Items grid */}
       {collection.collection_items.length === 0 ? (
