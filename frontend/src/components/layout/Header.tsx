@@ -34,10 +34,10 @@ export const Header = () => {
 
   if (!user) {
     return (
-      <header className="sticky top-0 z-50 border-b border-border bg-background/95 md:bg-background/80 md:backdrop-blur-md">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <NavLink to="/" className="flex items-center gap-3">
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 md:bg-background/80 md:backdrop-blur-md">
+        <div className="mx-auto w-full max-w-[1400px] px-4 py-3 sm:px-8">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <NavLink to="/" className="flex shrink-0 items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg overflow-hidden">
                 <img src="/logo.png" alt="bubble logo" className="h-10 w-10 object-cover" />
               </div>
@@ -46,7 +46,7 @@ export const Header = () => {
                 <p className="text-xs text-muted-foreground">Community Network</p>
               </div>
             </NavLink>
-            <div className="flex-1 max-w-lg">
+            <div className="min-w-0 flex-1 max-w-lg">
               <SearchBar loggedIn={false} />
             </div>
 
@@ -65,11 +65,11 @@ export const Header = () => {
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-background/95 md:bg-background/80 md:backdrop-blur-md">
-      <div className="container mx-auto px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 md:bg-background/80 md:backdrop-blur-md">
+      <div className="mx-auto w-full max-w-[1400px] px-4 py-3 sm:px-8">
+        <div className="flex items-center justify-between gap-2 sm:gap-4">
           {/* Logo */}
-          <NavLink to="/" className="flex items-center gap-3">
+          <NavLink to="/" className="flex shrink-0 items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg overflow-hidden">
               <img src="/logo.png" alt="bubble logo" className="h-10 w-10 object-cover" />
             </div>
@@ -80,12 +80,12 @@ export const Header = () => {
           </NavLink>
 
           {/* Search Bar */}
-          <div className="flex-1 max-w-lg">
+          <div className="min-w-0 flex-1 max-w-lg">
             <SearchBar loggedIn />
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {/* Bookings */}
             <Indicator
               label={unreadCount}
