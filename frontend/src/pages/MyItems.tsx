@@ -25,6 +25,13 @@ const MyItems = () => {
     return item.category === 'books' ? `/edit-book/${item.id}` : `/edit-item/${item.id}`;
   };
 
+  // Cap the description preview so it doesn't dominate the list view.
+  const MAX_DESCRIPTION_PREVIEW = 100;
+  const truncateDescription = (text: string) =>
+    text.length > MAX_DESCRIPTION_PREVIEW
+      ? `${text.slice(0, MAX_DESCRIPTION_PREVIEW).trimEnd()}…`
+      : text;
+
   // View mode state with localStorage persistence
   const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
 
@@ -271,8 +278,8 @@ const MyItems = () => {
                       <Table.Td>
                         <div className="font-medium max-w-48 truncate">{item.name}</div>
                         {item.description && (
-                          <Text size="sm" c="dimmed" className="truncate max-w-48">
-                            {item.description}
+                          <Text size="sm" c="dimmed" className="line-clamp-2 max-w-md">
+                            {truncateDescription(item.description)}
                           </Text>
                         )}
                       </Table.Td>

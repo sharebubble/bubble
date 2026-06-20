@@ -1,4 +1,5 @@
 import { BookingDialog } from '@/components/items/BookingDialog';
+import { CalendarSubscribeButton } from '@/components/calendar/CalendarSubscribeButton';
 import { ItemImageCarousel } from '@/components/items/ItemImageCarousel';
 import { RentalCalendar } from '@/components/items/RentalCalendar';
 import {
@@ -184,14 +185,13 @@ const ItemDetail = () => {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
-      <Button
-        variant="subtle"
-        onClick={() => navigate(-1)}
-        mb="lg"
-        leftSection={<ArrowLeft size={16} />}
-      >
-        {t('common.back')}
-      </Button>
+      <div className="mb-4 flex items-center justify-between gap-2">
+        <Button variant="subtle" onClick={() => navigate(-1)} leftSection={<ArrowLeft size={16} />}>
+          {t('common.back')}
+        </Button>
+        {/* Calendar subscription — any logged-in user, bookable items only */}
+        {user && isRental && itemUuid && <CalendarSubscribeButton kind="item" id={itemUuid} />}
+      </div>
 
       <div className={cn('grid gap-8', hasImages ? 'md:grid-cols-2' : 'grid-cols-1')}>
         {hasImages && <ItemImageCarousel images={images} itemName={name} />}

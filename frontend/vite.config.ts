@@ -52,7 +52,7 @@ export default defineConfig(({ mode }) => ({
         ws: true,
         secure: false,
       },
-      '^/(api|static|admin|accounts|media)/.*': {
+      '^/(api|static|admin|accounts|media|caldav)/.*': {
         target: process.env.VITE_PROXY_URL || 'http://localhost:8000',
         changeOrigin: false,
         secure: false,
