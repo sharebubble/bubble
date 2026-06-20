@@ -116,7 +116,8 @@ const Index = () => {
   const collectionParam = params.get('collection') || undefined;
   const availabilityParam = params.get('availability');
   const availability: Availability | undefined =
-    availabilityParam && availabilityParam in AVAILABILITY_STATUSES
+    availabilityParam &&
+    Object.prototype.hasOwnProperty.call(AVAILABILITY_STATUSES, availabilityParam)
       ? (availabilityParam as Availability)
       : undefined;
 

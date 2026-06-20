@@ -47,7 +47,7 @@ export const Header = () => {
               </div>
             </NavLink>
             <div className="flex-1 max-w-lg">
-              <SearchBar showOwner={false} />
+              <SearchBar loggedIn={false} />
             </div>
 
             <Button
@@ -81,7 +81,7 @@ export const Header = () => {
 
           {/* Search Bar */}
           <div className="flex-1 max-w-lg">
-            <SearchBar showOwner />
+            <SearchBar loggedIn />
           </div>
 
           {/* Actions */}

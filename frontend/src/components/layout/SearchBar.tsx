@@ -5,17 +5,17 @@ import { cn } from '@/lib/utils';
 import {
   Button,
   Loader,
+  NavLink,
   Pill,
   PillsInput,
   Popover,
   ScrollArea,
   Text,
   TextInput,
-  UnstyledButton,
 } from '@mantine/core';
-import { BookMarked, Check, CircleDot, Search, Tag, User } from 'lucide-react';
+import { BookMarked, CircleDot, Search, Tag, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 // ---------------------------------------------------------------------------
@@ -31,12 +31,16 @@ const FACET_ICONS: Record<Facet, LucideIcon> = {
   owner: User,
 };
 
+// Facets that require an authenticated user (collections are auth-only, owners
+// are intentionally hidden from anonymous visitors).
+const AUTHED_FACETS: readonly Facet[] = ['collection', 'owner'];
+
 // The browse/results page that the header search drives.
 const BROWSE_PATH = '/';
 
 interface SearchBarProps {
-  /** Whether the owner facet is offered (logged-in users only). */
-  showOwner: boolean;
+  /** Whether the viewer is logged in (gates the collection and owner facets). */
+  loggedIn: boolean;
   className?: string;
 }
 
@@ -44,7 +48,7 @@ interface SearchBarProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
+export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
@@ -66,10 +70,10 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
   const [opened, setOpened] = useState(false);
   const facets: Facet[] = useMemo(
     () =>
-      showOwner
-        ? ['category', 'collection', 'availability', 'owner']
-        : ['category', 'collection', 'availability'],
-    [showOwner],
+      (['category', 'collection', 'availability', 'owner'] as const).filter(
+        facet => loggedIn || !AUTHED_FACETS.includes(facet),
+      ),
+    [loggedIn],
   );
   const [activeFacet, setActiveFacet] = useState<Facet>(facets[0]);
   const [facetQuery, setFacetQuery] = useState('');
@@ -77,6 +81,13 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
   // Free-text item search (mirrors the URL `search` param, debounced).
   const [inputValue, setInputValue] = useState(searchValue);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Clear any pending debounce on unmount so it can't fire after navigation.
+  useEffect(
+    () => () => {
+      if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    },
+    [],
+  );
   // Adopt the URL value whenever it changes externally (back/forward, chips),
   // without an effect — React's "adjusting state when a prop changes" pattern.
   const [lastSyncedSearch, setLastSyncedSearch] = useState(searchValue);
@@ -191,7 +202,7 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
       active,
       onSelect,
     }: {
-      icon?: React.ReactNode;
+      icon: React.ReactNode;
       label: string;
       secondary?: string;
       meta?: string;
@@ -199,26 +210,42 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
       onSelect: () => void;
     },
   ) => (
-    <UnstyledButton
+    <NavLink
       key={key}
+      component="button"
+      type="button"
+      active={active}
+      variant="light"
+      color="green"
       onClick={onSelect}
-      className={cn(
-        'flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-[var(--mantine-color-default-hover)]',
-        active && 'bg-[var(--mantine-color-default-hover)]',
-      )}
-    >
-      {icon}
-      <span className="min-w-0 flex-1 truncate text-sm">
-        {label}
-        {secondary && <span className="ml-1 text-muted-foreground">{secondary}</span>}
-      </span>
-      {meta && (
-        <Text span size="xs" c="dimmed" className="shrink-0">
-          {meta}
-        </Text>
-      )}
-      {active && <Check size={14} className="shrink-0 text-[var(--mantine-color-green-6)]" />}
-    </UnstyledButton>
+      leftSection={icon}
+      rightSection={
+        meta ? (
+          <Text span size="xs" c="dimmed">
+            {meta}
+          </Text>
+        ) : undefined
+      }
+      label={
+        <span className="truncate">
+          {label}
+          {secondary && (
+            <Text span inherit c="dimmed">
+              {' '}
+              {secondary}
+            </Text>
+          )}
+        </span>
+      }
+      styles={{
+        root: { borderRadius: 'var(--mantine-radius-sm)' },
+        label: { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+      }}
+    />
+  );
+
+  const mutedIcon = (Icon: LucideIcon) => (
+    <Icon size={16} style={{ color: 'var(--mantine-color-dimmed)' }} aria-hidden="true" />
   );
 
   const renderPanel = () => {
@@ -227,7 +254,7 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
     if (activeFacet === 'availability') {
       const rows = (facetsData?.availability ?? []).map(({ value, count }) =>
         renderRow(value, {
-          icon: <CircleDot size={16} className="text-muted-foreground" />,
+          icon: mutedIcon(CircleDot),
           label: t(`search.availability.${value}`),
           meta: `(${count})`,
           active: availabilityValue === value,
@@ -248,7 +275,7 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
         )
         .map(o =>
           renderRow(o.id, {
-            icon: <User size={16} className="text-muted-foreground" />,
+            icon: mutedIcon(User),
             label: o.name || o.username,
             meta: `(${o.count})`,
             active: ownerId === o.id,
@@ -260,7 +287,7 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
         .filter(c => !query || c.name.toLowerCase().includes(query))
         .map(c =>
           renderRow(c.id, {
-            icon: <BookMarked size={16} className="text-muted-foreground" />,
+            icon: mutedIcon(BookMarked),
             label: c.name,
             secondary: `(${c.owner})`,
             meta: `(${c.count})`,
@@ -275,16 +302,15 @@ export const SearchBar = ({ showOwner, className }: SearchBarProps) => {
           return { facet, label };
         })
         .filter(({ label }) => !query || label.toLowerCase().includes(query))
-        .map(({ facet, label }) => {
-          const Icon = getCategoryIcon(facet.category);
-          return renderRow(facet.category, {
-            icon: <Icon size={16} className="text-muted-foreground" />,
+        .map(({ facet, label }) =>
+          renderRow(facet.category, {
+            icon: mutedIcon(getCategoryIcon(facet.category)),
             label,
             meta: `(${facet.count})`,
             active: categoryValue === facet.category,
             onSelect: () => toggleFacet('category', facet.category),
-          });
-        });
+          }),
+        );
     }
 
     return (
