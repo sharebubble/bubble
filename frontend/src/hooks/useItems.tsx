@@ -15,6 +15,7 @@ export const useItems = ({
   status,
   minPrice,
   maxPrice,
+  free,
   salesTypes,
   conditions,
   ordering,
@@ -27,6 +28,8 @@ export const useItems = ({
   status?: StatusB0aEnum | StatusB0aEnum[];
   minPrice?: number;
   maxPrice?: number;
+  /** Restrict to free items (null or zero price). */
+  free?: boolean;
   salesTypes?: SalesTypeEnum[];
   conditions?: ConditionEnum[];
   ordering?: string;
@@ -52,6 +55,7 @@ export const useItems = ({
         status: statusKey,
         minPrice,
         maxPrice,
+        free,
         salesTypes: salesTypesSorted,
         conditions: conditionsSorted,
         ordering,
@@ -70,12 +74,16 @@ export const useItems = ({
           status: normalizedStatus,
           min_price: minPrice,
           max_price: maxPrice,
+          free,
           sales_type: salesTypesSorted,
           conditions: conditionsSorted,
           ordering,
           user: owner,
           collection,
-        } as NonNullable<PublicItemsListData['query']> & { collection?: string },
+        } as NonNullable<PublicItemsListData['query']> & {
+          collection?: string;
+          free?: boolean;
+        },
       });
       return {
         items: response.data.results || [],

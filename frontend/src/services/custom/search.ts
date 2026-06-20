@@ -44,8 +44,15 @@ export interface AvailabilityFacet {
   count: number;
 }
 
+/** A type value (`rent` | `buy` | `wanted`) and its item count. */
+export interface TypeFacet {
+  value: string;
+  count: number;
+}
+
 /** The complete set of search facets, each excluding its own active filter. */
 export interface SearchFacets {
+  types: TypeFacet[];
   categories: CategoryFacet[];
   collections: CollectionFacet[];
   availability: AvailabilityFacet[];
@@ -54,6 +61,7 @@ export interface SearchFacets {
 
 /** The currently active filter selection, used to cross-filter the facets. */
 export interface SearchFacetParams {
+  type?: string;
   category?: string;
   collection?: string;
   owner?: string;
@@ -62,6 +70,7 @@ export interface SearchFacetParams {
 }
 
 const EMPTY_FACETS: SearchFacets = {
+  types: [],
   categories: [],
   collections: [],
   availability: [],
@@ -73,6 +82,7 @@ export const fetchSearchFacets = async (params: SearchFacetParams): Promise<Sear
   const { data } = await client.get<{ 200: SearchFacets }>({
     url: '/api/public-items/facets/',
     query: {
+      type: params.type,
       category: params.category,
       collection: params.collection,
       owner: params.owner,

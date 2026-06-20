@@ -30,8 +30,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 type BrowseItemsPageFilters = {
   status?: StatusB0aEnum | StatusB0aEnum[];
-  minPrice?: number;
-  maxPrice?: number;
   salesTypes?: SalesTypeEnum[];
 };
 
@@ -47,8 +45,6 @@ const PAGE_SIZE = 20;
 const FEDERATED_PAGE_SIZE = 50;
 // by default, show 'new' and 'used' items, don't show 'broken' items
 const DEFAULT_CONDITIONS: ConditionEnum[] = [0, 1];
-// statuses that count as "available": Available (2) and Reserved (3)
-const AVAILABLE_STATUSES: StatusB0aEnum[] = [2, 3];
 // Availability facet (header search) → item statuses it maps to.
 const AVAILABILITY_STATUSES = {
   available: [2, 3],
@@ -121,7 +117,16 @@ const Index = () => {
       ? (availabilityParam as Availability)
       : undefined;
 
-  const onlyAvailable = (params.get('available') ?? '1') !== '0';
+  // Price filters (header search). "free" restricts to null/zero-price items and
+  // wins over any explicit min/max bounds.
+  const freeOnly = params.get('free') === '1';
+  const parsePrice = (raw: string | null): number | undefined => {
+    if (raw === null || raw === '') return undefined;
+    const value = Number(raw);
+    return Number.isFinite(value) && value >= 0 ? value : undefined;
+  };
+  const minPrice = freeOnly ? undefined : parsePrice(params.get('minPrice'));
+  const maxPrice = freeOnly ? undefined : parsePrice(params.get('maxPrice'));
 
   const conditionsParam = params.get('conditions');
   const selectedConditions: ConditionEnum[] =
@@ -176,11 +181,6 @@ const Index = () => {
   const handleSortChange = (field: SortField, dir: SortDir) =>
     navWith({ sortField: field, sortDir: dir });
 
-  const handleCategoryChange = (category: ItemCategoryFilter) =>
-    navWith({ category: category === 'all' ? null : category });
-
-  const handleOnlyAvailableChange = (value: boolean) => navWith({ available: value ? null : '0' });
-
   const handleConditionsChange = (conditions: ConditionEnum[]) => {
     const sorted = [...conditions].sort();
     const isDefault =
@@ -208,10 +208,11 @@ const Index = () => {
   const conditions: ConditionEnum[] | undefined =
     typeParam === 'buy' && selectedConditions.length > 0 ? selectedConditions : undefined;
 
-  // The availability facet (when set) wins over the "only available" toggle.
+  // The availability facet (when set) selects the matching statuses; otherwise
+  // every item is shown regardless of availability.
   const statusFilter: StatusB0aEnum | StatusB0aEnum[] | undefined = availability
     ? AVAILABILITY_STATUSES[availability]
-    : (itemFilters?.status ?? (onlyAvailable ? AVAILABLE_STATUSES : undefined));
+    : itemFilters?.status;
 
   const itemsQuery = useItems({
     category: selectedCategory === 'all' ? undefined : selectedCategory,
@@ -219,8 +220,9 @@ const Index = () => {
     search: searchQuery,
     page: currentPage,
     status: statusFilter,
-    minPrice: itemFilters?.minPrice,
-    maxPrice: itemFilters?.maxPrice,
+    minPrice,
+    maxPrice,
+    free: freeOnly ? true : undefined,
     salesTypes: itemFilters?.salesTypes,
     ordering,
     owner: ownerParam,
@@ -279,37 +281,34 @@ const Index = () => {
   return (
     <main className="container mx-auto px-4 py-4">
       <div className="space-y-4">
-        <BrowseNav
-          selectedConditions={selectedConditions}
-          selectedCategory={selectedCategory}
-          onSelectedConditionsChange={handleConditionsChange}
-          onSelectedCategoryChange={handleCategoryChange}
-          sortField={sortField}
-          sortDir={sortDir}
-          onSortChange={handleSortChange}
-          scope={scope}
-          onScopeChange={handleScopeChange}
-          onlyAvailable={onlyAvailable}
-          onOnlyAvailableChange={handleOnlyAvailableChange}
-        />
-
         <Group justify="space-between" align="center">
           <Text size="sm" c="dimmed">
             {t('index.itemsFound').replace('{count}', String(totalCount))}
           </Text>
-          <SegmentedControl
-            value={viewMode}
-            onChange={value => toggleViewMode(value as 'list' | 'cards')}
-            data={[
-              { label: <List size={16} />, value: 'list' },
-              { label: <Grid3X3 size={16} />, value: 'cards' },
-            ]}
-            color="green"
-            styles={{
-              label: { padding: 8 },
-              indicator: { boxShadow: 'none' },
-            }}
-          />
+          <Group gap="xs" wrap="nowrap">
+            <SegmentedControl
+              value={viewMode}
+              onChange={value => toggleViewMode(value as 'list' | 'cards')}
+              data={[
+                { label: <List size={16} />, value: 'list' },
+                { label: <Grid3X3 size={16} />, value: 'cards' },
+              ]}
+              color="green"
+              styles={{
+                label: { padding: 8 },
+                indicator: { boxShadow: 'none' },
+              }}
+            />
+            <BrowseNav
+              selectedConditions={selectedConditions}
+              onSelectedConditionsChange={handleConditionsChange}
+              sortField={sortField}
+              sortDir={sortDir}
+              onSortChange={handleSortChange}
+              scope={scope}
+              onScopeChange={handleScopeChange}
+            />
+          </Group>
         </Group>
 
         {isFederatedScope ? (

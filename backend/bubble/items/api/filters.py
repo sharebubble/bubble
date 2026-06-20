@@ -27,6 +27,7 @@ class ItemFilter(django_filters.FilterSet):
     - published: boolean; if true restrict to published statuses
     - sales_type: multiple choice filter for sales type values
     - min_price / max_price: numeric range for price
+    - free: boolean; if true restrict to free (null or zero price) items
     - user: user id for owner filtering
     - collection: collection id; restrict to items in the given collection
     - search: substring match on name or description (case-insensitive)
@@ -56,6 +57,10 @@ class ItemFilter(django_filters.FilterSet):
     # Unified price range filters
     min_price = django_filters.NumberFilter(field_name="price", lookup_expr="gte")
     max_price = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
+
+    # Restrict to free items. Donate/borrow items carry a NULL price (enforced by
+    # a DB constraint), so "free" means a null or zero price.
+    free = django_filters.BooleanFilter(method="filter_free")
 
     # Restrict to items contained in a given collection
     collection = django_filters.UUIDFilter(field_name="collections__id")
@@ -91,6 +96,21 @@ class ItemFilter(django_filters.FilterSet):
             return queryset.filter(status__in=ItemStatus.published())
         # if explicitly false, exclude published statuses
         return queryset.exclude(status__in=ItemStatus.published())
+
+    def filter_free(
+        self,
+        queryset: QuerySet[Item],
+        name: str,
+        value: bool,  # noqa: FBT001
+    ):
+        """Filter free items (null or zero price)."""
+        if value is None:
+            return queryset
+        free_q = Q(price__isnull=True) | Q(price=0)
+        if value:
+            return queryset.filter(free_q)
+        # if explicitly false, restrict to priced items
+        return queryset.exclude(free_q)
 
     def filter_search(self, queryset: QuerySet[Item], name: str, value: str):
         """Search in name and description fields."""
