@@ -140,9 +140,7 @@ class CollectionCalendarLinkView(APIView):
         collection = get_object_or_404(Collection, pk=collection_id)
         if not request.user.has_perm("collections.view_collection", collection):
             raise PermissionDenied(_("You cannot view this collection."))
-        can_manage = request.user.has_perm(
-            "collections.change_collection", collection
-        )
+        can_manage = request.user.has_perm("collections.change_collection", collection)
         link = CalendarLink.get_or_create_for_collection(collection)
         return Response(
             _feed_payload(
