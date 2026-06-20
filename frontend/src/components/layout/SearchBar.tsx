@@ -4,8 +4,10 @@ import { categoryTranslationKeys, getCategoryIcon } from '@/lib/categoryIcons';
 import { cn } from '@/lib/utils';
 import {
   Button,
+  Checkbox,
   Loader,
   NavLink,
+  NumberInput,
   Pill,
   PillsInput,
   Popover,
@@ -13,7 +15,7 @@ import {
   Text,
   TextInput,
 } from '@mantine/core';
-import { BookMarked, CircleDot, Search, Tag, User } from 'lucide-react';
+import { BookMarked, CircleDot, Search, Tag, Tags, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -22,13 +24,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 // Types & constants
 // ---------------------------------------------------------------------------
 
-type Facet = 'category' | 'collection' | 'availability' | 'owner';
+type Facet = 'category' | 'collection' | 'availability' | 'owner' | 'price';
 
 const FACET_ICONS: Record<Facet, LucideIcon> = {
   category: Tag,
   collection: BookMarked,
   availability: CircleDot,
   owner: User,
+  price: Tags,
 };
 
 // Facets that require an authenticated user (collections are auth-only, owners
@@ -67,10 +70,16 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
   const availabilityValue = currentParams.get('availability') || undefined;
   const searchValue = currentParams.get('search') ?? '';
 
+  // Price facet: explicit min/max bounds, plus a "free only" toggle that pins
+  // the price to exactly 0 (it overrides any min/max selection).
+  const freeValue = currentParams.get('free') === '1';
+  const minPriceValue = currentParams.get('minPrice') ?? '';
+  const maxPriceValue = currentParams.get('maxPrice') ?? '';
+
   const [opened, setOpened] = useState(false);
   const facets: Facet[] = useMemo(
     () =>
-      (['category', 'collection', 'availability', 'owner'] as const).filter(
+      (['category', 'collection', 'availability', 'owner', 'price'] as const).filter(
         facet => loggedIn || !AUTHED_FACETS.includes(facet),
       ),
     [loggedIn],
@@ -94,6 +103,27 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
   if (lastSyncedSearch !== searchValue) {
     setLastSyncedSearch(searchValue);
     setInputValue(searchValue);
+  }
+
+  // Local, debounced mirror of the price-range inputs (same pattern as search).
+  const [minPriceInput, setMinPriceInput] = useState(minPriceValue);
+  const [maxPriceInput, setMaxPriceInput] = useState(maxPriceValue);
+  const priceDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (priceDebounce.current) clearTimeout(priceDebounce.current);
+    },
+    [],
+  );
+  const [lastSyncedMinPrice, setLastSyncedMinPrice] = useState(minPriceValue);
+  if (lastSyncedMinPrice !== minPriceValue) {
+    setLastSyncedMinPrice(minPriceValue);
+    setMinPriceInput(minPriceValue);
+  }
+  const [lastSyncedMaxPrice, setLastSyncedMaxPrice] = useState(maxPriceValue);
+  if (lastSyncedMaxPrice !== maxPriceValue) {
+    setLastSyncedMaxPrice(maxPriceValue);
+    setMaxPriceInput(maxPriceValue);
   }
 
   // ---------------------------------------------------------------------------
@@ -164,7 +194,51 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
     setFacetQuery('');
   };
 
-  const clearFacet = (key: string) => applyParams(params => params.delete(key), { replace: true });
+  const clearFacet = (key: string) =>
+    applyParams(
+      params => {
+        if (key === 'price') {
+          params.delete('minPrice');
+          params.delete('maxPrice');
+          params.delete('free');
+        } else {
+          params.delete(key);
+        }
+      },
+      { replace: true },
+    );
+
+  // Debounced apply for the min/max price inputs. Setting a bound clears the
+  // mutually-exclusive "free only" toggle.
+  const handlePriceChange = (key: 'minPrice' | 'maxPrice', value: string) => {
+    if (key === 'minPrice') setMinPriceInput(value);
+    else setMaxPriceInput(value);
+    if (priceDebounce.current) clearTimeout(priceDebounce.current);
+    priceDebounce.current = setTimeout(() => {
+      applyParams(params => {
+        if (value !== '') {
+          params.set(key, value);
+          params.delete('free');
+        } else {
+          params.delete(key);
+        }
+      });
+    }, 400);
+  };
+
+  // The "free only" toggle pins price to 0 and clears any explicit bounds.
+  const toggleFreeOnly = () => {
+    if (priceDebounce.current) clearTimeout(priceDebounce.current);
+    applyParams(params => {
+      if (freeValue) {
+        params.delete('free');
+      } else {
+        params.set('free', '1');
+        params.delete('minPrice');
+        params.delete('maxPrice');
+      }
+    });
+  };
 
   // ---------------------------------------------------------------------------
   // Active filter chips (ordered like the facet tabs)
@@ -180,6 +254,14 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
   if (availabilityValue)
     chips.push({ key: 'availability', label: t(`search.availability.${availabilityValue}`) });
   if (ownerId) chips.push({ key: 'owner', label: resolveOwnerLabel(ownerId) });
+  const priceChipLabel = (() => {
+    if (freeValue) return t('search.price.free');
+    if (minPriceValue && maxPriceValue) return `${minPriceValue}–${maxPriceValue}`;
+    if (minPriceValue) return `≥ ${minPriceValue}`;
+    if (maxPriceValue) return `≤ ${maxPriceValue}`;
+    return '';
+  })();
+  if (priceChipLabel) chips.push({ key: 'price', label: priceChipLabel });
 
   // ---------------------------------------------------------------------------
   // Facet panel rendering
@@ -190,6 +272,7 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
     collection: t('search.searchCollections'),
     availability: '',
     owner: t('search.searchOwners'),
+    price: '',
   };
 
   const renderRow = (
@@ -264,7 +347,45 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
       return <div className="flex flex-col">{rows}</div>;
     }
 
-    let rows: React.ReactNode[] = [];
+    if (activeFacet === 'price') {
+      return (
+        <div className="flex flex-col gap-2 px-1 py-1">
+          <div className="flex items-end gap-2">
+            <NumberInput
+              size="xs"
+              className="flex-1"
+              label={t('search.price.min')}
+              placeholder="0"
+              min={0}
+              allowNegative={false}
+              disabled={freeValue}
+              value={minPriceInput}
+              onChange={value => handlePriceChange('minPrice', value === '' ? '' : String(value))}
+            />
+            <NumberInput
+              size="xs"
+              className="flex-1"
+              label={t('search.price.max')}
+              placeholder="∞"
+              min={0}
+              allowNegative={false}
+              disabled={freeValue}
+              value={maxPriceInput}
+              onChange={value => handlePriceChange('maxPrice', value === '' ? '' : String(value))}
+            />
+          </div>
+          <Checkbox
+            size="sm"
+            color="green"
+            label={t('search.price.freeOnly')}
+            checked={freeValue}
+            onChange={toggleFreeOnly}
+          />
+        </div>
+      );
+    }
+
+    let rows: React.ReactNode[];
     if (activeFacet === 'owner') {
       rows = (facetsData?.owners ?? [])
         .filter(

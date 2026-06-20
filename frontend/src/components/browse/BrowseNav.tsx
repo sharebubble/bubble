@@ -30,8 +30,6 @@ type BrowseNavProps = {
   onSortChange: (field: SortField, dir: SortDir) => void;
   scope: Scope;
   onScopeChange: (scope: Scope) => void;
-  onlyAvailable: boolean;
-  onOnlyAvailableChange: (value: boolean) => void;
   className?: string;
 };
 
@@ -55,8 +53,6 @@ export const BrowseNav = ({
   onSortChange,
   scope,
   onScopeChange,
-  onlyAvailable,
-  onOnlyAvailableChange,
   className,
 }: BrowseNavProps) => {
   const { t } = useLanguage();
@@ -192,22 +188,6 @@ export const BrowseNav = ({
             </Menu.Target>
 
             <Menu.Dropdown>
-              <Menu.Label>{t('index.availability')}</Menu.Label>
-              <Menu.Item
-                leftSection={
-                  <Checkbox
-                    checked={onlyAvailable}
-                    readOnly
-                    tabIndex={-1}
-                    variant="outline"
-                    aria-hidden="true"
-                  />
-                }
-                onClick={() => onOnlyAvailableChange(!onlyAvailable)}
-              >
-                {t('index.onlyAvailable')}
-              </Menu.Item>
-              <Menu.Divider />
               {activeType === 'buy' && (
                 <>
                   <Menu.Label>{t('index.condition')}</Menu.Label>

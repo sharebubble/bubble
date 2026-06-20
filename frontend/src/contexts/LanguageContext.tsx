@@ -43,6 +43,11 @@ const translations = {
     'search.availability.rented': 'Rented',
     'search.availability.sold': 'Sold',
     'search.removeFilter': 'Remove filter',
+    'search.price': 'Price',
+    'search.price.min': 'Min',
+    'search.price.max': 'Max',
+    'search.price.free': 'Free',
+    'search.price.freeOnly': 'Free only',
 
     // Auth
     'auth.signIn': 'Sign In',
@@ -78,15 +83,12 @@ const translations = {
     'index.sort': 'Sort',
     'index.sortName': 'Name',
     'index.sortPrice': 'Price',
-    'index.availability': 'Availability',
     'index.filterAndSort': 'Filter and sort',
     'index.scopeLocal': 'Local',
     'index.scopeAll': 'All',
     'index.scopeFederated': 'Federated',
     'index.scope': 'Scope',
     'index.sortDate': 'Date',
-    'index.onlyAvailable': 'Only available',
-    'index.onlyAvailableTooltip': 'Show only available and reserved items',
 
     // Browse Nav
     'browse.buy': 'Marketplace',
@@ -632,6 +634,11 @@ const translations = {
     'search.availability.rented': 'Vermietet',
     'search.availability.sold': 'Verkauft',
     'search.removeFilter': 'Filter entfernen',
+    'search.price': 'Preis',
+    'search.price.min': 'Min',
+    'search.price.max': 'Max',
+    'search.price.free': 'Gratis',
+    'search.price.freeOnly': 'Nur gratis',
 
     // Auth
     'auth.signIn': 'Anmelden',
@@ -667,11 +674,8 @@ const translations = {
     'index.sort': 'Sortierung',
     'index.sortName': 'Name',
     'index.sortPrice': 'Preis',
-    'index.availability': 'Verfügbarkeit',
     'index.filterAndSort': 'Filtern und sortieren',
     'index.sortDate': 'Datum',
-    'index.onlyAvailable': 'Nur verfügbar',
-    'index.onlyAvailableTooltip': 'Nur verfügbare und reservierte Artikel anzeigen',
     'index.scope': 'Bereich',
     'index.scopeLocal': 'Lokal',
     'index.scopeAll': 'Alle',
