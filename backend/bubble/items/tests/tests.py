@@ -809,6 +809,32 @@ class PublishedEndpointFilterTestCase(TestCase):
         assert self.published_laptop.name not in names
         assert self.published_chair.name not in names
 
+    def test_published_endpoint_free_filter(self):
+        """Test that the free filter returns only null/zero-price items."""
+        free_item = Item.objects.create(
+            name="Free Books",
+            description="A box of free books to give away",
+            user=self.user,
+            status=ItemStatus.AVAILABLE,
+            visibility=VisibilityType.PUBLIC,
+            sales_type=SalesType.DONATE,
+            price=None,
+            category="other",
+        )
+
+        url = reverse("api:public-item-list") + "?free=true"
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        results = response.json()["results"]
+        names = {item["name"] for item in results}
+
+        # Should find only the free (null-price) item
+        assert free_item.name in names
+        assert self.published_laptop.name not in names
+        assert self.published_desk.name not in names
+        assert self.published_chair.name not in names
+
     def test_published_endpoint_ordering(self):
         """Test that ordering works on published endpoint."""
         url = reverse("api:public-item-list") + "?ordering=price"

@@ -117,16 +117,16 @@ const Index = () => {
       ? (availabilityParam as Availability)
       : undefined;
 
-  // Price filters (header search). "free" forces an exact price of 0 and wins
-  // over any explicit min/max bounds.
+  // Price filters (header search). "free" restricts to null/zero-price items and
+  // wins over any explicit min/max bounds.
   const freeOnly = params.get('free') === '1';
   const parsePrice = (raw: string | null): number | undefined => {
     if (raw === null || raw === '') return undefined;
     const value = Number(raw);
     return Number.isFinite(value) && value >= 0 ? value : undefined;
   };
-  const minPrice = freeOnly ? 0 : parsePrice(params.get('minPrice'));
-  const maxPrice = freeOnly ? 0 : parsePrice(params.get('maxPrice'));
+  const minPrice = freeOnly ? undefined : parsePrice(params.get('minPrice'));
+  const maxPrice = freeOnly ? undefined : parsePrice(params.get('maxPrice'));
 
   const conditionsParam = params.get('conditions');
   const selectedConditions: ConditionEnum[] =
@@ -225,6 +225,7 @@ const Index = () => {
     status: statusFilter,
     minPrice,
     maxPrice,
+    free: freeOnly ? true : undefined,
     salesTypes: itemFilters?.salesTypes,
     ordering,
     owner: ownerParam,
