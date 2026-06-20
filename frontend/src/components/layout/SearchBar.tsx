@@ -5,12 +5,14 @@ import { cn } from '@/lib/utils';
 import {
   Button,
   Checkbox,
+  CloseButton,
   Loader,
   NavLink,
   NumberInput,
   Pill,
   PillsInput,
   Popover,
+  Portal,
   ScrollArea,
   Text,
   TextInput,
@@ -512,69 +514,95 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
   // ---------------------------------------------------------------------------
 
   return (
-    <Popover
-      opened={opened}
-      onChange={setOpened}
-      position="bottom-start"
-      width="target"
-      shadow="md"
-      trapFocus={false}
-      withinPortal
-    >
-      <Popover.Target>
-        <PillsInput
-          size="sm"
-          onClick={() => setOpened(true)}
-          leftSection={<Search size={16} aria-hidden="true" />}
-          className={cn('shadow-soft focus-within:shadow-medium transition-shadow', className)}
-        >
-          <Pill.Group>
-            {chips.map(chip => (
-              <Pill
-                key={chip.key}
-                withRemoveButton
-                onRemove={() => clearFacet(chip.key)}
-                aria-label={`${t('search.removeFilter')}: ${chip.label}`}
-              >
-                {chip.label}
-              </Pill>
-            ))}
-            <PillsInput.Field
-              value={inputValue}
-              placeholder={chips.length > 0 ? '' : t('header.search')}
-              onFocus={() => setOpened(true)}
-              onChange={e => handleSearchChange(e.currentTarget.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') setOpened(false);
-              }}
-            />
-          </Pill.Group>
-        </PillsInput>
-      </Popover.Target>
-
-      <Popover.Dropdown p="xs">
-        <div className="mb-2 flex flex-wrap gap-1">
-          {facets.map(facet => {
-            const Icon = FACET_ICONS[facet];
-            return (
-              <Button
-                key={facet}
-                size="compact-xs"
-                variant={activeFacet === facet ? 'light' : 'subtle'}
-                color={activeFacet === facet ? 'green' : 'gray'}
-                leftSection={<Icon size={14} aria-hidden="true" />}
-                onClick={() => {
-                  setActiveFacet(facet);
-                  setFacetQuery('');
+    <>
+      {/* Full-page catcher: a click outside the popup closes it without falling
+          through to the item underneath (so it can't trigger navigation). It
+          sits below the sticky header (z-50) so the search field stays usable,
+          and below the dropdown (z-300) so the filters stay interactive. */}
+      {opened && (
+        <Portal>
+          <div
+            className="fixed inset-0"
+            style={{ zIndex: 40 }}
+            aria-hidden="true"
+            onClick={() => setOpened(false)}
+          />
+        </Portal>
+      )}
+      <Popover
+        opened={opened}
+        onChange={setOpened}
+        position="bottom-start"
+        width="target"
+        shadow="md"
+        trapFocus={false}
+        closeOnClickOutside={false}
+        zIndex={300}
+        withinPortal
+      >
+        <Popover.Target>
+          <PillsInput
+            size="sm"
+            onClick={() => setOpened(true)}
+            leftSection={<Search size={16} aria-hidden="true" />}
+            className={cn('shadow-soft focus-within:shadow-medium transition-shadow', className)}
+          >
+            <Pill.Group>
+              {chips.map(chip => (
+                <Pill
+                  key={chip.key}
+                  withRemoveButton
+                  onRemove={() => clearFacet(chip.key)}
+                  aria-label={`${t('search.removeFilter')}: ${chip.label}`}
+                >
+                  {chip.label}
+                </Pill>
+              ))}
+              <PillsInput.Field
+                value={inputValue}
+                placeholder={chips.length > 0 ? '' : t('header.search')}
+                onFocus={() => setOpened(true)}
+                onChange={e => handleSearchChange(e.currentTarget.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') setOpened(false);
                 }}
-              >
-                {t(`search.${facet}`)}
-              </Button>
-            );
-          })}
-        </div>
-        {renderPanel()}
-      </Popover.Dropdown>
-    </Popover>
+              />
+            </Pill.Group>
+          </PillsInput>
+        </Popover.Target>
+
+        <Popover.Dropdown p="xs">
+          <div className="mb-2 flex items-start gap-1">
+            <div className="flex flex-1 flex-wrap gap-1">
+              {facets.map(facet => {
+                const Icon = FACET_ICONS[facet];
+                return (
+                  <Button
+                    key={facet}
+                    size="compact-xs"
+                    variant={activeFacet === facet ? 'light' : 'subtle'}
+                    color={activeFacet === facet ? 'green' : 'gray'}
+                    leftSection={<Icon size={14} aria-hidden="true" />}
+                    onClick={() => {
+                      setActiveFacet(facet);
+                      setFacetQuery('');
+                    }}
+                  >
+                    {t(`search.${facet}`)}
+                  </Button>
+                );
+              })}
+            </div>
+            <CloseButton
+              size="sm"
+              aria-label={t('common.close')}
+              title={t('common.close')}
+              onClick={() => setOpened(false)}
+            />
+          </div>
+          {renderPanel()}
+        </Popover.Dropdown>
+      </Popover>
+    </>
   );
 };
