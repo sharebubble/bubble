@@ -15,7 +15,18 @@ import {
   Text,
   TextInput,
 } from '@mantine/core';
-import { BookMarked, CircleDot, Repeat, Search, Tag, Tags, User } from 'lucide-react';
+import {
+  Binoculars,
+  BookMarked,
+  CalendarClock,
+  CircleDot,
+  HandCoins,
+  Search,
+  Shapes,
+  Tag,
+  Tags,
+  User,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -27,7 +38,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 type Facet = 'type' | 'category' | 'collection' | 'availability' | 'owner' | 'price';
 
 const FACET_ICONS: Record<Facet, LucideIcon> = {
-  type: Repeat,
+  type: Shapes,
   category: Tag,
   collection: BookMarked,
   availability: CircleDot,
@@ -37,9 +48,9 @@ const FACET_ICONS: Record<Facet, LucideIcon> = {
 
 // Item "type" presets, mapped to the `type` URL param the browse page reads.
 const TYPE_OPTIONS = [
-  { value: 'rent', label: 'browse.rent' },
-  { value: 'buy', label: 'browse.buy' },
-  { value: 'wanted', label: 'browse.wanted' },
+  { value: 'rent', label: 'browse.rent', icon: CalendarClock },
+  { value: 'buy', label: 'browse.buy', icon: HandCoins },
+  { value: 'wanted', label: 'browse.wanted', icon: Binoculars },
 ] as const;
 
 // Facets that require an authenticated user (collections are auth-only, owners
@@ -357,10 +368,10 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
     const query = facetQuery.trim().toLowerCase();
 
     if (activeFacet === 'type') {
-      const rows = TYPE_OPTIONS.map(({ value, label }) => {
+      const rows = TYPE_OPTIONS.map(({ value, label, icon }) => {
         const count = facetsData?.types.find(facetType => facetType.value === value)?.count ?? 0;
         return renderRow(value, {
-          icon: mutedIcon(Repeat),
+          icon: mutedIcon(icon),
           label: t(label),
           meta: `(${count})`,
           active: typeValue === value,
