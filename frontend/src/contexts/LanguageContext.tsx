@@ -28,6 +28,22 @@ const translations = {
     'header.light': 'Light',
     'header.dark': 'Dark',
 
+    // Search bar / facets
+    'search.filterBy': 'Filter by',
+    'search.owner': 'Owner',
+    'search.collection': 'Collection',
+    'search.category': 'Category',
+    'search.availability': 'Availability',
+    'search.searchOwners': 'Search people…',
+    'search.searchCollections': 'Search collections…',
+    'search.searchCategories': 'Search categories…',
+    'search.noResults': 'No matches',
+    'search.loading': 'Loading…',
+    'search.availability.available': 'Available',
+    'search.availability.rented': 'Rented',
+    'search.availability.sold': 'Sold',
+    'search.removeFilter': 'Remove filter',
+
     // Auth
     'auth.signIn': 'Sign In',
     'auth.signUp': 'Sign Up',
@@ -600,6 +616,22 @@ const translations = {
     'header.theme': 'Design',
     'header.light': 'Hell',
     'header.dark': 'Dunkel',
+
+    // Search bar / facets
+    'search.filterBy': 'Filtern nach',
+    'search.owner': 'Anbieter',
+    'search.collection': 'Sammlung',
+    'search.category': 'Kategorie',
+    'search.availability': 'Verfügbarkeit',
+    'search.searchOwners': 'Personen suchen…',
+    'search.searchCollections': 'Sammlungen suchen…',
+    'search.searchCategories': 'Kategorien suchen…',
+    'search.noResults': 'Keine Treffer',
+    'search.loading': 'Wird geladen…',
+    'search.availability.available': 'Verfügbar',
+    'search.availability.rented': 'Vermietet',
+    'search.availability.sold': 'Verkauft',
+    'search.removeFilter': 'Filter entfernen',
 
     // Auth
     'auth.signIn': 'Anmelden',

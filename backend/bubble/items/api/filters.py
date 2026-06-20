@@ -28,6 +28,7 @@ class ItemFilter(django_filters.FilterSet):
     - sales_type: multiple choice filter for sales type values
     - min_price / max_price: numeric range for price
     - user: user id for owner filtering
+    - collection: collection id; restrict to items in the given collection
     - search: substring match on name or description (case-insensitive)
     - created_after / created_before: ISO8601 datetime filtering
     """
@@ -55,6 +56,9 @@ class ItemFilter(django_filters.FilterSet):
     # Unified price range filters
     min_price = django_filters.NumberFilter(field_name="price", lookup_expr="gte")
     max_price = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
+
+    # Restrict to items contained in a given collection
+    collection = django_filters.UUIDFilter(field_name="collections__id")
 
     # Use built-in search filter
     search = django_filters.CharFilter(method="filter_search")

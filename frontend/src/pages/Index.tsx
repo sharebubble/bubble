@@ -21,7 +21,7 @@ import {
 } from '@/services/django';
 import { Badge, Group, Pagination, SegmentedControl, Table, Text } from '@mantine/core';
 import { Grid3X3, List } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 // ---------------------------------------------------------------------------
@@ -49,6 +49,13 @@ const FEDERATED_PAGE_SIZE = 50;
 const DEFAULT_CONDITIONS: ConditionEnum[] = [0, 1];
 // statuses that count as "available": Available (2) and Reserved (3)
 const AVAILABLE_STATUSES: StatusB0aEnum[] = [2, 3];
+// Availability facet (header search) → item statuses it maps to.
+const AVAILABILITY_STATUSES = {
+  available: [2, 3],
+  rented: [4],
+  sold: [5],
+} satisfies Record<string, StatusB0aEnum[]>;
+type Availability = keyof typeof AVAILABILITY_STATUSES;
 const LS_KEY = 'indexViewMode';
 
 const VALID_CATEGORIES: ItemCategoryFilter[] = [
@@ -79,12 +86,10 @@ const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>('cards');
-
-  useEffect(() => {
+  const [viewMode, setViewMode] = useState<'list' | 'cards'>(() => {
     const saved = localStorage.getItem(LS_KEY) as 'list' | 'cards' | null;
-    if (saved) setViewMode(saved);
-  }, []);
+    return saved ?? 'cards';
+  });
 
   // ---------------------------------------------------------------------------
   // URL param parsing
@@ -105,6 +110,16 @@ const Index = () => {
   const categoryParam = params.get('category') as ItemCategoryFilter | null;
   const selectedCategory: ItemCategoryFilter =
     categoryParam && VALID_CATEGORIES.includes(categoryParam) ? categoryParam : 'all';
+
+  // Header-search facets reflected in the URL.
+  const ownerParam = params.get('owner') || undefined;
+  const collectionParam = params.get('collection') || undefined;
+  const availabilityParam = params.get('availability');
+  const availability: Availability | undefined =
+    availabilityParam &&
+    Object.prototype.hasOwnProperty.call(AVAILABILITY_STATUSES, availabilityParam)
+      ? (availabilityParam as Availability)
+      : undefined;
 
   const onlyAvailable = (params.get('available') ?? '1') !== '0';
 
@@ -193,16 +208,23 @@ const Index = () => {
   const conditions: ConditionEnum[] | undefined =
     typeParam === 'buy' && selectedConditions.length > 0 ? selectedConditions : undefined;
 
+  // The availability facet (when set) wins over the "only available" toggle.
+  const statusFilter: StatusB0aEnum | StatusB0aEnum[] | undefined = availability
+    ? AVAILABILITY_STATUSES[availability]
+    : (itemFilters?.status ?? (onlyAvailable ? AVAILABLE_STATUSES : undefined));
+
   const itemsQuery = useItems({
     category: selectedCategory === 'all' ? undefined : selectedCategory,
     conditions,
     search: searchQuery,
     page: currentPage,
-    status: itemFilters?.status ?? (onlyAvailable ? AVAILABLE_STATUSES : undefined),
+    status: statusFilter,
     minPrice: itemFilters?.minPrice,
     maxPrice: itemFilters?.maxPrice,
     salesTypes: itemFilters?.salesTypes,
     ordering,
+    owner: ownerParam,
+    collection: collectionParam,
   });
 
   const federatedQuery = useFederatedItems(

@@ -13,6 +13,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema
 from guardian.shortcuts import (
     assign_perm,
     get_groups_with_perms,
@@ -31,6 +32,7 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 
+from bubble.collections.models import Collection
 from bubble.core.storage import absolute_media_url
 from bubble.federation.models import RemoteItem
 from bubble.items.ai.image_analyze import analyze_image
@@ -40,7 +42,7 @@ from bubble.items.api.serializers import (
     ItemListSerializer,
     ItemSerializer,
 )
-from bubble.items.models import Image, Item, VisibilityType
+from bubble.items.models import Image, Item, ItemStatus, VisibilityType
 
 from .filters import ItemFilter
 
@@ -102,6 +104,55 @@ class ItemBaseViewSet(viewsets.GenericViewSet):
         return ItemSerializer
 
 
+# Availability facet value → the item statuses it maps to.
+AVAILABILITY_STATUSES = {
+    "available": [ItemStatus.AVAILABLE, ItemStatus.RESERVED],
+    "rented": [ItemStatus.RENTED],
+    "sold": [ItemStatus.SOLD],
+}
+
+
+class CategoryFacetSerializer(serializers.Serializer):
+    """A category and the number of matching visible items."""
+
+    category = serializers.CharField()
+    count = serializers.IntegerField()
+
+
+class CollectionFacetSerializer(serializers.Serializer):
+    """A collection and the number of matching visible items it contains."""
+
+    id = serializers.CharField()
+    name = serializers.CharField()
+    owner = serializers.CharField()
+    count = serializers.IntegerField()
+
+
+class OwnerFacetSerializer(serializers.Serializer):
+    """An owner and the number of their matching visible items."""
+
+    id = serializers.CharField()
+    username = serializers.CharField()
+    name = serializers.CharField(allow_blank=True)
+    count = serializers.IntegerField()
+
+
+class AvailabilityFacetSerializer(serializers.Serializer):
+    """An availability value and the number of matching visible items."""
+
+    value = serializers.CharField()
+    count = serializers.IntegerField()
+
+
+class SearchFacetsSerializer(serializers.Serializer):
+    """The full set of search facets, each excluding its own active filter."""
+
+    categories = CategoryFacetSerializer(many=True)
+    collections = CollectionFacetSerializer(many=True)
+    availability = AvailabilityFacetSerializer(many=True)
+    owners = OwnerFacetSerializer(many=True)
+
+
 class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
     """
     ViewSet for retrieving published items.
@@ -147,6 +198,116 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
             # PRIVATE: owner + co-owners get view_item in Item.save()
             | models.Q(visibility=VisibilityType.PRIVATE, pk__in=explicitly_visible)
         )
+
+    @staticmethod
+    def _as_uuid(value):
+        """Return value if it is a valid UUID string, otherwise None."""
+        if not value:
+            return None
+        try:
+            _uuid.UUID(str(value))
+        except (ValueError, TypeError, AttributeError):
+            return None
+        return value
+
+    @extend_schema(responses=SearchFacetsSerializer)
+    @action(detail=False, methods=["get"])
+    def facets(self, request):
+        """Return the search facets, cross-filtered by the active selection.
+
+        Powers the header search popup. Each facet (category, collection,
+        availability, owner) is computed over the visible items narrowed by
+        every *other* active filter, but never by the facet's own dimension —
+        so picking a collection updates the categories/owners/availability on
+        offer (and their counts) while still letting you switch collection.
+        """
+        category = request.query_params.get("category") or None
+        collection = self._as_uuid(request.query_params.get("collection"))
+        owner = self._as_uuid(
+            request.query_params.get("owner") or request.query_params.get("user")
+        )
+        availability = request.query_params.get("availability") or None
+        search = (request.query_params.get("search") or "").strip()
+
+        base = self.get_queryset()
+
+        def narrowed(exclude: str):
+            """Visible items filtered by every active filter except ``exclude``."""
+            qs = base
+            if category and exclude != "category":
+                qs = qs.filter(category=category)
+            if collection and exclude != "collection":
+                qs = qs.filter(collections__id=collection)
+            if owner and exclude != "owner":
+                qs = qs.filter(user_id=owner)
+            if availability and exclude != "availability":
+                qs = qs.filter(status__in=AVAILABILITY_STATUSES.get(availability, []))
+            if search:
+                qs = qs.filter(
+                    models.Q(name__icontains=search)
+                    | models.Q(description__icontains=search)
+                )
+            return qs
+
+        count = models.Count("id", distinct=True)
+
+        categories = [
+            {"category": row["category"], "count": row["count"]}
+            for row in narrowed("category")
+            .exclude(category="")
+            .values("category")
+            .annotate(count=count)
+            .order_by("category")
+        ]
+
+        viewable_collections = Collection.objects.get_for_user(
+            request.user
+        ).values_list("id", flat=True)
+        collections = [
+            {
+                "id": str(row["collections__id"]),
+                "name": row["collections__name"],
+                "owner": row["collections__owner__username"],
+                "count": row["count"],
+            }
+            for row in narrowed("collection")
+            .filter(collections__id__in=viewable_collections)
+            .values(
+                "collections__id",
+                "collections__name",
+                "collections__owner__username",
+            )
+            .annotate(count=count)
+            .order_by("collections__name")
+        ]
+
+        owners = [
+            {
+                "id": str(row["user__id"]),
+                "username": row["user__username"],
+                "name": row["user__name"] or "",
+                "count": row["count"],
+            }
+            for row in narrowed("owner")
+            .values("user__id", "user__username", "user__name")
+            .annotate(count=count)
+            .order_by("user__username")
+        ]
+
+        availability_base = narrowed("availability")
+        availability_facets = []
+        for value, statuses in AVAILABILITY_STATUSES.items():
+            value_count = availability_base.filter(status__in=statuses).count()
+            if value_count:
+                availability_facets.append({"value": value, "count": value_count})
+
+        data = {
+            "categories": categories,
+            "collections": collections,
+            "availability": availability_facets,
+            "owners": owners,
+        }
+        return Response(SearchFacetsSerializer(data).data)
 
 
 class ItemViewSet(viewsets.ModelViewSet, ItemBaseViewSet):
