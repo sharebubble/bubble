@@ -286,15 +286,6 @@ const Index = () => {
             {t('index.itemsFound').replace('{count}', String(totalCount))}
           </Text>
           <Group gap="xs" wrap="nowrap">
-            <BrowseNav
-              selectedConditions={selectedConditions}
-              onSelectedConditionsChange={handleConditionsChange}
-              sortField={sortField}
-              sortDir={sortDir}
-              onSortChange={handleSortChange}
-              scope={scope}
-              onScopeChange={handleScopeChange}
-            />
             <SegmentedControl
               value={viewMode}
               onChange={value => toggleViewMode(value as 'list' | 'cards')}
@@ -307,6 +298,15 @@ const Index = () => {
                 label: { padding: 8 },
                 indicator: { boxShadow: 'none' },
               }}
+            />
+            <BrowseNav
+              selectedConditions={selectedConditions}
+              onSelectedConditionsChange={handleConditionsChange}
+              sortField={sortField}
+              sortDir={sortDir}
+              onSortChange={handleSortChange}
+              scope={scope}
+              onScopeChange={handleScopeChange}
             />
           </Group>
         </Group>

@@ -104,11 +104,11 @@ export const BrowseNav = ({
       <Menu.Target>
         <MantineButton
           type="button"
-          size="sm"
+          size="compact-xs"
           variant="default"
           className={cn('shrink-0', className)}
-          leftSection={<Filter className="h-3.5 w-3.5" aria-hidden="true" />}
-          rightSection={<ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />}
+          leftSection={<Filter className="h-3 w-3" aria-hidden="true" />}
+          rightSection={<ChevronDown className="h-3 w-3" aria-hidden="true" />}
           aria-label={t('index.filterAndSort')}
           title={t('index.filterAndSort')}
         ></MantineButton>
