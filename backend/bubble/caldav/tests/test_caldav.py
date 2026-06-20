@@ -67,6 +67,13 @@ class CalDAVProtocolTests(TestCase):
             "END:VEVENT\r\nEND:VCALENDAR\r\n"
         )
 
+    def _ics_no_end(self, uid, start, summary="Borrow request"):
+        return (
+            "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\n"
+            f"UID:{uid}\r\nDTSTART:{start}\r\nSUMMARY:{summary}\r\n"
+            "END:VEVENT\r\nEND:VCALENDAR\r\n"
+        )
+
     def test_put_creates_pending_booking(self):
         url = f"{self.calendar}my-event.ics"
         body = self._ics("client-uid-1", "20260616T080000Z", "20260616T100000Z")
@@ -97,6 +104,58 @@ class CalDAVProtocolTests(TestCase):
         assert resp.status_code == status.HTTP_204_NO_CONTENT
         booking.refresh_from_db()
         assert booking.status == BookingStatus.CANCELLED
+        # Cancelling leaves an audit-trail message (drives notifications).
+        assert booking.messages.filter(sender=self.user).exists()
+
+    def test_put_open_ended_rejected_when_item_disallows(self):
+        # BorrowItemFactory defaults rental_open_end=False.
+        url = f"{self.calendar}open.ics"
+        resp = self.client.generic(
+            "PUT",
+            url,
+            data=self._ics_no_end("noend", "20260616T080000Z"),
+            content_type="text/calendar",
+        )
+        assert resp.status_code == status.HTTP_403_FORBIDDEN
+        assert not Booking.objects.filter(item=self.item, user=self.user).exists()
+
+    def test_put_open_ended_allowed_when_item_allows(self):
+        open_item = BorrowItemFactory(
+            user=self.owner, name="Open Item", rental_open_end=True
+        )
+        url = f"{self.home}{open_item.id}/open.ics"
+        resp = self.client.generic(
+            "PUT",
+            url,
+            data=self._ics_no_end("noend2", "20260616T080000Z"),
+            content_type="text/calendar",
+        )
+        assert resp.status_code == status.HTTP_201_CREATED, resp.content
+        booking = Booking.objects.get(item=open_item, user=self.user)
+        assert booking.time_to is None
+
+    def test_duplicate_pending_request_rejected(self):
+        first = self.client.generic(
+            "PUT",
+            f"{self.calendar}a.ics",
+            data=self._ics("d1", "20260616T080000Z", "20260616T090000Z"),
+            content_type="text/calendar",
+        )
+        assert first.status_code == status.HTTP_201_CREATED, first.content
+        # A second pending request for the same item+user is refused.
+        second = self.client.generic(
+            "PUT",
+            f"{self.calendar}b.ics",
+            data=self._ics("d2", "20260617T080000Z", "20260617T090000Z"),
+            content_type="text/calendar",
+        )
+        assert second.status_code == status.HTTP_409_CONFLICT
+        assert Booking.objects.filter(item=self.item, user=self.user).count() == 1
+
+    def test_propfind_home_without_trailing_slash(self):
+        # Some clients probe the collection URL without a trailing slash.
+        resp = self.client.generic("PROPFIND", self.home.rstrip("/"), HTTP_DEPTH="0")
+        assert resp.status_code == status.HTTP_207_MULTI_STATUS
 
     def test_put_update_changes_times(self):
         url = f"{self.calendar}move.ics"

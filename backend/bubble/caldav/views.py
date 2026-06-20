@@ -248,24 +248,48 @@ class CalDAVView(View):
         if self.level != "event":
             return HttpResponseNotAllowed(["GET", "PROPFIND", "REPORT"])
 
-        try:
-            text = request.body.decode("utf-8")
-        except UnicodeDecodeError:
-            return HttpResponseBadRequest("Invalid encoding")
-
-        parsed = parse_calendar(text)
-        if not parsed:
-            return HttpResponseBadRequest("No VEVENT found")
-        event = parsed[0]
-        if event.dtstart is None:
-            return HttpResponseBadRequest("VEVENT requires DTSTART")
+        event, error = self._parse_put_event(request)
+        if error is not None:
+            return error
 
         existing = self._resolve_booking(self.resource)
         if existing is not None:
             return self._update_booking(existing, event)
         return self._create_booking(event)
 
+    def _parse_put_event(self, request):
+        """Parse and validate the PUT body. Returns (event, error_response)."""
+        try:
+            text = request.body.decode("utf-8")
+        except UnicodeDecodeError:
+            return None, HttpResponseBadRequest("Invalid encoding")
+
+        parsed = parse_calendar(text)
+        if not parsed:
+            return None, HttpResponseBadRequest("No VEVENT found")
+        event = parsed[0]
+        if event.dtstart is None:
+            return None, HttpResponseBadRequest("VEVENT requires DTSTART")
+
+        # Mirror BookingSerializer: an event without an end time is only allowed
+        # when the item permits open-ended rentals.
+        if event.dtend is None and not self.item.rental_open_end:
+            return None, HttpResponseForbidden(
+                "This item does not allow open-ended rentals; an end time is required."
+            )
+        return event, None
+
     def _create_booking(self, event):
+        # Mirror BookingSerializer: only one pending request per user + item.
+        already_pending = Booking.objects.filter(
+            item=self.item, user=self.user, status=BookingStatus.PENDING
+        ).exists()
+        if already_pending:
+            return HttpResponse(
+                "You already have a pending booking request for this item.",
+                status=409,
+            )
+
         booking = Booking(
             item=self.item,
             user=self.user,
@@ -324,6 +348,13 @@ class CalDAVView(View):
             return HttpResponseForbidden("Booking can no longer be cancelled")
         booking.status = BookingStatus.CANCELLED
         booking.save(update_fields=["status", "updated_at"])
+        # Mirror the regular booking flow: a status-change message drives
+        # notifications and keeps the audit trail (the cancellation isn't silent).
+        Message.objects.create(
+            booking=booking,
+            sender=self.user,
+            message="Booking cancelled via calendar.",
+        )
         return HttpResponse(status=204)
 
     # -- PROPFIND -----------------------------------------------------------

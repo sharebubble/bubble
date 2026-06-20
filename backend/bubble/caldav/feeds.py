@@ -2,7 +2,7 @@
 and how a booking maps to a calendar event.
 """
 
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from guardian.shortcuts import get_objects_for_user
 
 from bubble.bookings.models import Booking, BookingStatus
@@ -95,7 +95,7 @@ def bookings_to_events(bookings, *, summary_field: str, include_booker: bool):
     return events
 
 
-def bookable_items_for_user(user) -> "list[Item]":
+def bookable_items_for_user(user) -> QuerySet[Item]:
     """Bookable, published items the given (authenticated) user may view.
 
     Mirrors the visibility rules of the public item API: PUBLIC and

@@ -2,7 +2,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { calendarAPI, type FeedLink, type PersonalCalendar } from '@/services/custom/calendar';
 import {
   ActionIcon,
-  Anchor,
   Button,
   CopyButton,
   Group,
@@ -120,11 +119,15 @@ export function CalendarSubscription(props: CalendarSubscriptionProps) {
             </Text>
             <Group gap="xs">
               {webcalUrl && (
-                <Anchor href={webcalUrl} size="sm">
-                  <Button variant="light" size="xs" leftSection={<Calendar size={14} />}>
-                    {t('calendar.subscribe')}
-                  </Button>
-                </Anchor>
+                <Button
+                  component="a"
+                  href={webcalUrl}
+                  variant="light"
+                  size="xs"
+                  leftSection={<Calendar size={14} />}
+                >
+                  {t('calendar.subscribe')}
+                </Button>
               )}
               <Button
                 variant="subtle"

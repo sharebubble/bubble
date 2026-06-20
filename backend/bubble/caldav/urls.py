@@ -25,4 +25,13 @@ urlpatterns = [
         views.CalDAVView.as_view(),
         name="dav-event",
     ),
+    # No-trailing-slash aliases for collection resources. Some CalDAV clients
+    # probe collection URLs without a trailing slash, and Django's APPEND_SLASH
+    # redirect does not apply to non-GET methods such as PROPFIND/OPTIONS.
+    path("dav/<str:secret>", views.CalDAVView.as_view(), name="dav-home-noslash"),
+    path(
+        "dav/<str:secret>/<uuid:item_id>",
+        views.CalDAVView.as_view(),
+        name="dav-calendar-noslash",
+    ),
 ]
