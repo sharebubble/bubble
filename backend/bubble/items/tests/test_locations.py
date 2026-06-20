@@ -69,9 +69,7 @@ class LocationAPITestCase(TestCase):
     def test_filter_by_category_tools(self):
         self.client.login(username="locuser", password=TEST_PASSWORD)
         response = self.client.get(self.url, {"item_category": "tools"})
-        self.assertEqual(
-            self._names(response), {"Workshop bench", "Shared storage"}
-        )
+        self.assertEqual(self._names(response), {"Workshop bench", "Shared storage"})
 
     def test_serializer_exposes_category_display(self):
         self.client.login(username="locuser", password=TEST_PASSWORD)
