@@ -67,13 +67,33 @@ class CommentsAPI {
     return response.json();
   }
 
-  /** List comments for a single item, newest first. */
+  /**
+   * List every comment for a single item, newest first.
+   *
+   * The endpoint is paginated (DRF PageNumberPagination), so follow the
+   * `next` links until exhausted — otherwise the popup would only ever show
+   * the first page while the item summary advertises the full comment count.
+   */
   async listForItem(itemId: string): Promise<ItemComment[]> {
-    const data = await this.request<PaginatedComments | ItemComment[]>(
-      `/api/comments/?item=${encodeURIComponent(itemId)}`,
-    );
-    if (Array.isArray(data)) return data;
-    return data.results ?? [];
+    const all: ItemComment[] = [];
+    let endpoint: string | null = `/api/comments/?item=${encodeURIComponent(itemId)}`;
+
+    while (endpoint) {
+      const data: PaginatedComments | ItemComment[] = await this.request<
+        PaginatedComments | ItemComment[]
+      >(endpoint);
+
+      if (Array.isArray(data)) {
+        all.push(...data);
+        break;
+      }
+
+      all.push(...(data.results ?? []));
+      // `next` is an absolute URL; reduce it to a path the client can resolve.
+      endpoint = data.next ? new URL(data.next).pathname + new URL(data.next).search : null;
+    }
+
+    return all;
   }
 
   /** Create a new comment (optionally with a rating) for an item. */

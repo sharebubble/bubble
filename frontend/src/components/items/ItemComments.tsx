@@ -73,7 +73,7 @@ export const ItemComments = ({
       <Group gap="xs" align="center">
         {hasRating ? (
           <>
-            <Rating value={averageRating ?? 0} fractions={2} readOnly size="sm" />
+            <Rating value={averageRating ?? 0} fractions={10} readOnly size="sm" />
             <Text size="sm" fw={600}>
               {averageRating?.toFixed(1)}
             </Text>
@@ -83,7 +83,7 @@ export const ItemComments = ({
           </>
         ) : (
           <Group gap={4} align="center">
-            <Star size={16} className="text-[var(--mantine-color-dimmed)]" />
+            <Star size={16} color="var(--mantine-color-dimmed)" />
             <Text size="sm" c="dimmed">
               {t('comments.noRatings')}
             </Text>
@@ -106,7 +106,7 @@ export const ItemComments = ({
           {/* Aggregate summary inside the popup */}
           {hasRating && (
             <Group gap="xs" align="center">
-              <Rating value={averageRating ?? 0} fractions={2} readOnly />
+              <Rating value={averageRating ?? 0} fractions={10} readOnly />
               <Text fw={600}>{averageRating?.toFixed(1)}</Text>
               <Text c="dimmed" size="sm">
                 {t('comments.ratingCount').replace('{count}', String(ratingCount))}
@@ -203,7 +203,7 @@ export const ItemComments = ({
                         )}
                       </Group>
                       {comment.rating ? <Rating value={comment.rating} readOnly size="xs" /> : null}
-                      <Text size="sm" className="whitespace-pre-line">
+                      <Text size="sm" style={{ whiteSpace: 'pre-line' }}>
                         {comment.body}
                       </Text>
                     </div>

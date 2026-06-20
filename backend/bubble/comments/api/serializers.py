@@ -34,6 +34,17 @@ class CommentSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "user", "created_at", "updated_at"]
 
+    def get_fields(self):
+        """Make ``item`` immutable on update.
+
+        A comment is created against a specific item; allowing the item to be
+        reassigned afterwards would change moderation/ownership semantics.
+        """
+        fields = super().get_fields()
+        if self.instance is not None:
+            fields["item"].read_only = True
+        return fields
+
     def validate_body(self, value):
         """Reject empty comments."""
         if not value or not value.strip():

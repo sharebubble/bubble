@@ -129,6 +129,30 @@ class CommentAPITestCase(TestCase):
         comment.refresh_from_db()
         self.assertEqual(comment.rating, 5)
 
+    def test_item_cannot_be_changed_on_update(self):
+        comment = Comment.objects.create(
+            item=self.item, user=self.commenter, body="ok", rating=3
+        )
+        other_item = Item.objects.create(
+            name="Saw",
+            user=self.owner,
+            sales_type=SalesType.SELL,
+            price=Decimal("10.00"),
+            status=ItemStatus.AVAILABLE,
+            visibility=VisibilityType.PUBLIC,
+        )
+        self.client.force_authenticate(user=self.commenter)
+        response = self.client.patch(
+            self._detail_url(comment),
+            {"item": str(other_item.id), "body": "edited"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        comment.refresh_from_db()
+        # The item must stay pinned to the original; only the body changes.
+        self.assertEqual(comment.item_id, self.item.id)
+        self.assertEqual(comment.body, "edited")
+
     def test_non_author_cannot_update_comment(self):
         comment = Comment.objects.create(
             item=self.item, user=self.commenter, body="ok", rating=3
