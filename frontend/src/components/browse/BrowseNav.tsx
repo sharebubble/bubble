@@ -1,7 +1,7 @@
-import { Checkbox, Button as MantineButton, Menu, Radio } from '@mantine/core';
+import { Button as MantineButton, Checkbox, Menu, Radio } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, Filter } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { ConditionEnum } from '@/services/django';
 
@@ -104,14 +104,21 @@ export const BrowseNav = ({
       <Menu.Target>
         <MantineButton
           type="button"
-          size="compact-xs"
+          size="compact-sm"
           variant="default"
           className={cn('shrink-0', className)}
-          leftSection={<Filter className="h-3 w-3" aria-hidden="true" />}
-          rightSection={<ChevronDown className="h-3 w-3" aria-hidden="true" />}
+          leftSection={
+            sortDir === 'asc' ? (
+              <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
+            ) : (
+              <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
+            )
+          }
           aria-label={t('index.filterAndSort')}
           title={t('index.filterAndSort')}
-        ></MantineButton>
+        >
+          {sortField === 'price' ? t('index.sortPrice') : t('index.sortDate')}
+        </MantineButton>
       </Menu.Target>
 
       <Menu.Dropdown>
