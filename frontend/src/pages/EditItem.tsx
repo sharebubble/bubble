@@ -3,6 +3,7 @@ import { ImageManager } from '@/components/items/ImageManager';
 import {
   BasicFields,
   CategoryConditionFields,
+  LocationField,
   PricingFields,
   StatusField,
   VisibilityField,
@@ -67,6 +68,8 @@ export type EditItemFormData = {
   rental_period: RentalPeriodEnum | '';
   rental_self_service: boolean;
   rental_open_end: boolean;
+  /** Location FK id, or '' when the item is at the owner's own place. */
+  location: string;
   [key: string]: unknown;
 };
 
@@ -174,6 +177,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
     rental_period: '' as RentalPeriodEnum | '',
     rental_self_service: false,
     rental_open_end: false,
+    location: '',
   });
 
   const { fieldStates, saveField } = useFieldAutoSave(editItemUuid);
@@ -273,6 +277,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
         rental_self_service:
           item.rental_self_service !== undefined ? item.rental_self_service : false,
         rental_open_end: item.rental_open_end !== undefined ? item.rental_open_end : false,
+        location: item.location || '',
       };
 
       setFormData(prev => ({
@@ -292,6 +297,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
         rental_period: loadedData.rental_period,
         rental_self_service: loadedData.rental_self_service,
         rental_open_end: loadedData.rental_open_end,
+        location: loadedData.location === '' ? null : loadedData.location,
       };
 
       // Allow extensions to populate extra fields
@@ -902,6 +908,16 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
               fieldStates={fieldStates}
               onFieldChange={handleFieldChange}
             />
+
+            {formData.category && (
+              <LocationField
+                formData={formData}
+                setFormData={setFormData}
+                disabled={aiProcessing}
+                fieldStates={fieldStates}
+                onFieldChange={handleFieldChange}
+              />
+            )}
 
             {renderExtraFields &&
               renderExtraFields(

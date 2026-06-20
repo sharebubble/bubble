@@ -87,6 +87,75 @@ class CategoryType(models.TextChoices):
     VEHICLES = "vehicles", _("Vehicles")
 
 
+class Location(models.Model):
+    """A physical place where an item can be kept.
+
+    This is distinct from the per-user *geographic* location (address / map
+    coordinates used for pickup): a ``Location`` is a named, curator-managed
+    placement such as a library shelf or a shared workspace area.
+
+    ``item_category`` scopes a location to a single item category, so that —
+    for example — book shelves are only offered for books and workshop areas
+    only for tools.  A location with a blank ``item_category`` applies to
+    items of any category.
+
+    An item with no location (``Item.location`` is ``NULL``) is understood to
+    be at the owner's own place (their home).  This is the default.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(
+        max_length=255,
+        help_text=_("Name of the place, e.g. 'Sci-Fi shelf' or 'Shared workshop'."),
+    )
+    section = models.CharField(
+        max_length=100,
+        blank=True,
+        db_index=True,
+        help_text=_(
+            "Optional grouping used to organise locations in the picker, "
+            "e.g. a library section or a building area."
+        ),
+    )
+    item_category = models.CharField(
+        max_length=100,
+        blank=True,
+        db_index=True,
+        choices=CategoryType,
+        help_text=_(
+            "Restrict this location to a single item category. "
+            "Leave blank to make it available for items of any category."
+        ),
+    )
+    description = models.TextField(blank=True)
+    sort_order = models.PositiveIntegerField(
+        default=0,
+        help_text=_("Lower numbers are shown first within a section."),
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["item_category", "section", "sort_order", "name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["item_category", "name"],
+                name="unique_location_name_per_category",
+                violation_error_message=_(
+                    "A location with this name already exists for this category."
+                ),
+            )
+        ]
+
+    def __str__(self):
+        label = self.name
+        if self.section:
+            label = f"{self.section} · {label}"
+        if self.item_category:
+            label = f"{label} ({self.get_item_category_display()})"
+        return label
+
+
 class ItemManager(models.Manager):
     def published(self) -> models.QuerySet:
         """Return a queryset of published items."""
@@ -199,6 +268,18 @@ class Item(models.Model):
             "Authenticated (logged-in users), "
             "Specific (selected users/groups), "
             "or Private (owner and co-owners only)."
+        ),
+    )
+
+    location = models.ForeignKey(
+        Location,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="items",
+        help_text=_(
+            "Where the item is currently kept. "
+            "Leave blank when the item is at the owner's own place (the default)."
         ),
     )
 

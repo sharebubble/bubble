@@ -455,7 +455,8 @@ const EditBook = () => {
           />
         </div>
 
-        {/* Publisher and Shelf */}
+        {/* Publisher. The former free-text "Shelf" field is superseded by the
+            generic Location picker rendered by EditItem. */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <TextInput
             id="publisher"
@@ -468,19 +469,6 @@ const EditBook = () => {
             rightSection={fieldRightSection('publisher')}
             error={fieldError('publisher')}
             styles={fieldStyles('publisher')}
-          />
-
-          <TextInput
-            id="shelf"
-            label={t('editItem.shelf')}
-            placeholder={t('editItem.enterShelf')}
-            value={(formData.shelf as string) || ''}
-            onChange={e => setFormData(prev => ({ ...prev, shelf: e.target.value }))}
-            onBlur={() => handleBookFieldBlur('shelf', formData.shelf)}
-            disabled={disabled}
-            rightSection={fieldRightSection('shelf')}
-            error={fieldError('shelf')}
-            styles={fieldStyles('shelf')}
           />
         </div>
       </>
