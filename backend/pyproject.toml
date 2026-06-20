@@ -45,6 +45,7 @@ dependencies = [
     "pyld>=3.1.0",
     "http-message-signatures>=2.0.1",
     "cryptography>=49.0.0",
+    "apprise>=1.11.0",
 ]
 
 [[tool.uv.index]]

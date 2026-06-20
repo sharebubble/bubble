@@ -17,17 +17,17 @@ def enable_rocketchat_for_existing_users(apps, schema_editor):
     try:
         from constance import config  # noqa: PLC0415
 
-        webhook_url = config.ROCKETCHAT_WEBHOOK_URL
+        webhook_url = config.APPRISE_ROCKETCHAT_URL
     except Exception:
         logger.warning(
-            "Could not read ROCKETCHAT_WEBHOOK_URL from constance — "
+            "Could not read APPRISE_ROCKETCHAT_URL from constance — "
             "skipping backfill of notification preferences."
         )
         return
 
     if not webhook_url:
         logger.info(
-            "ROCKETCHAT_WEBHOOK_URL is empty — "
+            "APPRISE_ROCKETCHAT_URL is empty — "
             "skipping backfill of notification preferences."
         )
         return

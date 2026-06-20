@@ -401,6 +401,12 @@ if oidc_server_url := env("OIDC_SERVER_URL", default=""):
                 "settings": {
                     "server_url": oidc_server_url,
                     "admin_group_name": env("OIDC_ADMIN_GROUP_NAME", default="admin"),
+                    # Request the phone scope so the provider returns the
+                    # phone_number claim, used to pre-fill the profile phone.
+                    "scope": env.list(
+                        "OIDC_SCOPE",
+                        default=["openid", "profile", "email", "phone"],
+                    ),
                 },
             },
         ],
@@ -487,17 +493,23 @@ CONSTANCE_CONFIG = {
         "Select default item visibility for new items. Options: public, authenticated, internal, hidden",
         "item_visibility",
     ),
-    "ROCKETCHAT_WEBHOOK_URL": (
-        env("ROCKETCHAT_WEBHOOK_URL", default=""),
-        "RocketChat incoming webhook URL for external notifications",
+    "APPRISE_ROCKETCHAT_URL": (
+        env("APPRISE_ROCKETCHAT_URL", default=""),
+        "Apprise URL template for RocketChat notifications. Use {target} as a "
+        "placeholder for the recipient's RocketChat username, e.g. "
+        "rocket://user:password@rocketchat.example.com/@{target}",
     ),
-    "ROCKETCHAT_CHANNEL": (
-        env("ROCKETCHAT_CHANNEL", default=""),
-        "RocketChat channel to post notifications into",
+    "APPRISE_SIGNAL_URL": (
+        env("APPRISE_SIGNAL_URL", default=""),
+        "Apprise URL template for Signal notifications. Use {target} as a "
+        "placeholder for the recipient's phone number, e.g. "
+        "signal://signal-api.example.com/+15551230000/{target}",
     ),
-    "ROCKETCHAT_USER_UNDERSCORES": (
-        env.bool("ROCKETCHAT_USER_UNDERSCORES", default=False),
-        "Replace dot in usernames with underscores for sending notification to rocketchat",
+    "APPRISE_MAILTOS_URL": (
+        env("APPRISE_MAILTOS_URL", default=""),
+        "Apprise URL template for email (mailtos) notifications. Use {target} "
+        "as a placeholder for the recipient's email address, e.g. "
+        "mailtos://user:password@smtp.example.com?to={target}",
     ),
     "FEDERATION_ENABLED": (
         env.bool("FEDERATION_ENABLED", default=False),

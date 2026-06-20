@@ -476,10 +476,19 @@ const translations = {
     'profile.emailReminder': 'Email reminders',
     'profile.emailReminderDesc': 'Receive email reminders for bookings and messages',
     'profile.notifications': 'Notifications',
-    'profile.notificationsDesc': 'Configure external notification channels',
-    'profile.rocketchatNewMessage': 'New message via RocketChat',
-    'profile.rocketchatNewMessageDesc':
-      'Receive a RocketChat notification when you get a new message in Bubble',
+    'profile.notificationsDesc':
+      'Choose how you want to be notified. Channels appear once configured and the matching profile field (RocketChat username, Signal phone number, email) is filled in.',
+    'profile.notificationsUnavailable':
+      'No notification channels are available yet. Add a phone number or ask an administrator to configure the notification services.',
+    'profile.channelRocketchat': 'RocketChat',
+    'profile.channelSignal': 'Signal',
+    'profile.channelEmail': 'Email',
+    'profile.channelTarget': 'Sent to',
+    'profile.notifyMessages': 'New messages and bookings',
+    'profile.notifyMessagesDesc':
+      'Get notified when you receive a new message or a new booking for your items',
+    'profile.notifyNewItem': 'New items',
+    'profile.notifyNewItemDesc': 'Get notified whenever a new item is created',
     'profile.appearance': 'Appearance',
     'profile.themeAuto': 'Auto',
     'profile.language': 'Language',
@@ -1112,10 +1121,20 @@ const translations = {
     'profile.emailReminder': 'E-Mail-Erinnerungen',
     'profile.emailReminderDesc': 'E-Mail-Erinnerungen für Buchungen und Nachrichten erhalten',
     'profile.notifications': 'Benachrichtigungen',
-    'profile.notificationsDesc': 'Externe Benachrichtigungskanäle konfigurieren',
-    'profile.rocketchatNewMessage': 'Neue Nachricht via RocketChat',
-    'profile.rocketchatNewMessageDesc':
-      'RocketChat-Benachrichtigung bei neuer Nachricht in Bubble erhalten',
+    'profile.notificationsDesc':
+      'Wähle, wie du benachrichtigt werden möchtest. Kanäle erscheinen, sobald sie konfiguriert sind und das passende Profilfeld (RocketChat-Benutzername, Signal-Telefonnummer, E-Mail) ausgefüllt ist.',
+    'profile.notificationsUnavailable':
+      'Es sind noch keine Benachrichtigungskanäle verfügbar. Hinterlege eine Telefonnummer oder bitte einen Administrator, die Benachrichtigungsdienste zu konfigurieren.',
+    'profile.channelRocketchat': 'RocketChat',
+    'profile.channelSignal': 'Signal',
+    'profile.channelEmail': 'E-Mail',
+    'profile.channelTarget': 'Gesendet an',
+    'profile.notifyMessages': 'Neue Nachrichten und Buchungen',
+    'profile.notifyMessagesDesc':
+      'Benachrichtigung bei einer neuen Nachricht oder einer neuen Buchung für deine Objekte erhalten',
+    'profile.notifyNewItem': 'Neue Objekte',
+    'profile.notifyNewItemDesc':
+      'Benachrichtigung erhalten, sobald ein neues Objekt erstellt wird',
     'profile.appearance': 'Erscheinungsbild',
     'profile.themeAuto': 'Automatisch',
     'profile.language': 'Sprache',

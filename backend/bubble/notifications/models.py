@@ -11,16 +11,23 @@ class EventType(models.TextChoices):
     """All supported notification event types."""
 
     NEW_MESSAGE = "new_message", _("New Message")
+    NEW_BOOKING = "new_booking", _("New Booking")
     NEW_ITEM = "new_item", _("New Item")
 
 
-# Events that are broadcast to a channel rather than per-user preferences.
-CHANNEL_EVENTS: frozenset[str] = frozenset({EventType.NEW_ITEM})
+# User-facing preference groups. A single toggle in the profile can control
+# more than one underlying event type — "messages" covers both new chat
+# messages and new bookings, since both relate to a user's own items/bookings.
+EVENT_GROUPS: dict[str, tuple[str, ...]] = {
+    "messages": (EventType.NEW_MESSAGE, EventType.NEW_BOOKING),
+    "new_item": (EventType.NEW_ITEM,),
+}
 
 
 class NotificationPreference(models.Model):
     class ProviderType(models.TextChoices):
         ROCKETCHAT = "rocketchat", _("RocketChat")
+        SIGNAL = "signal", _("Signal")
         EMAIL = "email", _("Email")
 
     id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
@@ -47,8 +54,6 @@ class NotificationPreference(models.Model):
         unique_together = [("user", "provider_type", "event_type")]
         verbose_name = _("Notification Preference")
         verbose_name_plural = _("Notification Preferences")
-        # Only user-configurable events should appear as preferences.
-        # NEW_ITEM is a channel broadcast — not stored per user.
 
     def __str__(self):
         state = "on" if self.enabled else "off"

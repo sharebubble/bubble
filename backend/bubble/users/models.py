@@ -95,13 +95,13 @@ def create_user_profile(sender, instance, created, **kwargs):
 
 
 def _setup_default_notification_preferences(user) -> None:
-    """Enable RocketChat new-message notifications by default.
+    """Enable RocketChat message notifications by default.
 
-    Only creates the preference row when the webhook URL is configured,
-    always with enabled=True.
+    Only creates the preference row when the RocketChat Apprise URL is
+    configured, always with enabled=True.
     """
     try:
-        if not config.ROCKETCHAT_WEBHOOK_URL:
+        if not config.APPRISE_ROCKETCHAT_URL:
             return
         NotificationPreference.objects.get_or_create(
             user=user,

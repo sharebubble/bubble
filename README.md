@@ -13,6 +13,42 @@ Run
 - `docker compose exec backend python manage.py createsuperuser`
 - open http://localhost:8080 and log in
 
+# Notifications
+
+Bubble delivers user notifications through the [Apprise](https://github.com/caronc/apprise) library, giving a single, unified delivery path for multiple channels. Each user opts in, per channel, from the **Notifications** section of their profile.
+
+## Supported channels
+
+| Channel    | User field used to address them | Apprise URL config (Constance / env) |
+| ---------- | ------------------------------- | ------------------------------------ |
+| RocketChat | username                        | `APPRISE_ROCKETCHAT_URL`             |
+| Signal     | phone number                    | `APPRISE_SIGNAL_URL`                 |
+| Email      | email address                   | `APPRISE_MAILTOS_URL`                |
+
+Each value is an [Apprise URL](https://github.com/caronc/apprise/wiki) **template** containing a `{target}` placeholder that is substituted with the recipient's address. Examples:
+
+```env
+APPRISE_ROCKETCHAT_URL=rocket://user:password@rocketchat.example.com/@{target}
+APPRISE_SIGNAL_URL=signal://signal-api.example.com/+15551230000/{target}
+APPRISE_MAILTOS_URL=mailtos://user:password@smtp.example.com?to={target}
+```
+
+These can be set via environment variables or edited at runtime in the Django admin under **Constance → Config**.
+
+## How it works
+
+A channel only appears in a user's profile once it is **both**:
+
+1. configured on the backend (the Apprise URL above is set), and
+2. addressable for that user (the matching profile field is filled in — RocketChat username, Signal phone number or email).
+
+Users then choose, per channel, which events they want:
+
+- **New messages and bookings** — a new chat message or a new booking on one of their items.
+- **New items** — whenever a new item is published.
+
+The phone number can be filled in manually on the profile, or is pre-populated from the `phone_number` claim of your OIDC provider when available (the `phone` scope is requested automatically).
+
 # Federation (ActivityPub)
 
 Bubble supports ActivityPub federation, allowing items, bookings, and messages to flow between Bubble instances and interact with the broader fediverse (Mastodon, etc.).
