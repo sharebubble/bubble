@@ -162,8 +162,8 @@ When enabled the chart:
 | Parameter | Description | Default |
 | -------------------------------- | ---------------------------- | ------------------- |
 | `postgresql.enabled` | Use internal PostgreSQL | `true` |
-| `postgresql.image.repository` | PostgreSQL image | `pgvector/pgvector` |
-| `postgresql.image.tag` | PostgreSQL image tag | `pg17` |
+| `postgresql.image.repository` | PostgreSQL image | `postgres` |
+| `postgresql.image.tag` | PostgreSQL image tag | `17` |
 | `postgresql.auth.database` | Database name | `bubble` |
 | `postgresql.auth.username` | Database username | `bubble` |
 | `postgresql.auth.password` | Database password (required) | `""` |

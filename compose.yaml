@@ -43,7 +43,7 @@ services:
     command: sh -c "python3 manage.py migrate && uvicorn config.asgi:application --host 0.0.0.0 --reload"
 
   postgres:
-    image: docker.io/pgvector/pgvector:pg17
+    image: docker.io/library/postgres:17
     restart: always
     volumes:
       - bubble_local_postgres_data:/var/lib/postgresql/data
