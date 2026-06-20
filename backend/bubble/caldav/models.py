@@ -27,9 +27,10 @@ from bubble.items.models import Item
 
 AUTH_USER_MODEL = settings.AUTH_USER_MODEL
 
-# Number of random bytes behind a secret. token_urlsafe(48) yields a 64-char
-# URL-safe string (~384 bits of entropy) — not feasibly guessable.
-SECRET_BYTES = 48
+# Number of random bytes behind a secret. token_urlsafe(15) yields a 20-char
+# URL-safe string (~120 bits of entropy) — ample for read-only, link-only
+# calendar subscriptions while keeping the URL short.
+SECRET_BYTES = 15
 
 
 def generate_secret() -> str:

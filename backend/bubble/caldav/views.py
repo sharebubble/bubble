@@ -18,6 +18,7 @@ from django.http import (
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django.utils.decorators import method_decorator
+from django.utils.text import slugify
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 
@@ -38,15 +39,27 @@ ICS_CONTENT_TYPE = "text/calendar; charset=utf-8"
 # ---------------------------------------------------------------------------
 
 
+def _slug_filename(label: str) -> str:
+    """A safe .ics download filename derived from the calendar's display name."""
+    safe = slugify(label) or "calendar"
+    return f"{safe}.ics"
+
+
 def _ics_response(name: str, events: list[VEvent]) -> HttpResponse:
     body = build_calendar(name, events)
     resp = HttpResponse(body, content_type=ICS_CONTENT_TYPE)
-    resp["Content-Disposition"] = 'inline; filename="calendar.ics"'
+    resp["Content-Disposition"] = f'inline; filename="{_slug_filename(name)}"'
     return resp
 
 
-def item_feed(request, secret: str):
-    """Public read-only feed for a single bookable item."""
+def item_feed(request, secret: str, label: str = ""):
+    """Public read-only feed for a single bookable item.
+
+    The calendar is named after the item; each event's title is the name of the
+    person who booked it. ``label`` is a cosmetic slug in the URL (ignored for
+    lookup) so calendar clients that name a subscription from its URL show the
+    item name rather than the secret.
+    """
     link = get_object_or_404(
         CalendarLink.objects.select_related("item", "item__user"),
         secret=secret,
@@ -58,19 +71,17 @@ def item_feed(request, secret: str):
     link.touch()
 
     bookings = feeds.feed_bookings_for_item(item)
-    # Per-item feed: the calendar itself is named after the item, so events do
-    # not repeat the booker's identity (privacy).
     events = feeds.bookings_to_events(
-        bookings, summary_field="item", include_booker=False
+        bookings, summary="booker", booker_in_description=False
     )
     return _ics_response(item.name or "Item", events)
 
 
-def collection_feed(request, secret: str):
+def collection_feed(request, secret: str, label: str = ""):
     """Public read-only feed for a collection of bookable items.
 
     Each event's title is the booked item's name and the description carries the
-    name of the person who booked it.
+    name of the person who booked it. ``label`` is a cosmetic URL slug.
     """
     link = get_object_or_404(
         CalendarLink.objects.select_related("collection"),
@@ -91,7 +102,7 @@ def collection_feed(request, secret: str):
         .order_by("time_from")
     )
     events = feeds.bookings_to_events(
-        bookings, summary_field="item", include_booker=True
+        bookings, summary="item", booker_in_description=True
     )
     return _ics_response(collection.name, events)
 
@@ -211,7 +222,7 @@ class CalDAVView(View):
             if self.level == "calendar":
                 bookings = feeds.feed_bookings_for_item(self.item)
                 events = feeds.bookings_to_events(
-                    bookings, summary_field="item", include_booker=True
+                    bookings, summary="booker", booker_in_description=False
                 )
                 return _ics_response(self.item.name or "Item", events)
             return HttpResponseNotAllowed(["PROPFIND"])
@@ -220,7 +231,7 @@ class CalDAVView(View):
         if booking is None:
             raise Http404
         events = feeds.bookings_to_events(
-            [booking], summary_field="item", include_booker=True
+            [booking], summary="booker", booker_in_description=False
         )
         resp = _ics_response(self.item.name or "Item", events)
         resp["ETag"] = _etag(booking)
@@ -490,7 +501,7 @@ class CalDAVView(View):
         )
         if include_data:
             events = feeds.bookings_to_events(
-                [booking], summary_field="item", include_booker=True
+                [booking], summary="booker", booker_in_description=False
             )
             ics = build_calendar(booking.item.name or "Item", events)
             props += f"<C:calendar-data>{xml_escape(ics)}</C:calendar-data>"

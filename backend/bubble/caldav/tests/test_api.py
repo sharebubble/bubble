@@ -27,6 +27,9 @@ class ItemCalendarLinkApiTests(TestCase):
         resp = self.client.get(self.url())
         assert resp.status_code == status.HTTP_200_OK, resp.content
         assert ".ics" in resp.data["feed_url"]
+        # The item slug is embedded in the URL so calendar clients name the
+        # subscription after the item.
+        assert self.item.slug in resp.data["feed_url"]
         assert resp.data["webcal_url"].startswith("webcal://")
         assert resp.data["kind"] == "item"
         assert resp.data["can_manage"] is True
@@ -42,8 +45,8 @@ class ItemCalendarLinkApiTests(TestCase):
         first = self.client.get(self.url()).data["feed_url"]
         regenerated = self.client.post(self.url()).data["feed_url"]
         assert first != regenerated
-        # Old secret no longer resolves.
-        old_secret = first.rsplit("/", 1)[-1].removesuffix(".ics")
+        # Old secret (the path segment after /item/) no longer resolves.
+        old_secret = first.split("/caldav/item/")[1].split("/")[0]
         assert not CalendarLink.objects.filter(secret=old_secret).exists()
 
     def test_delete_revokes(self):

@@ -53,18 +53,20 @@ class ItemFeedTests(TestCase):
         body = self._feed().content.decode()
         assert "BEGIN:VEVENT" not in body
 
-    def test_item_feed_does_not_leak_booker_name(self):
+    def test_item_feed_event_summary_is_booker_name(self):
+        # The calendar is named after the item, so each event's title is the
+        # person who booked it.
         self._book(BookingStatus.CONFIRMED, 1, 2)
         body = self._feed().content.decode()
-        assert "Alice Example" not in body
+        assert "SUMMARY:Alice Example" in body
 
     def test_unknown_secret_404(self):
         resp = self.client.get("/caldav/item/does-not-exist.ics")
         assert resp.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_secret_is_long_and_unguessable(self):
+    def test_secret_is_short_but_unguessable(self):
         link = CalendarLink.get_or_create_for_item(self.item)
-        min_secret_length = 43  # token_urlsafe(48) ~ 64 chars
+        min_secret_length = 16  # token_urlsafe(15) → 20 chars
         assert len(link.secret) >= min_secret_length
 
     def test_non_bookable_item_has_no_feed(self):

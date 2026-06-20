@@ -9,6 +9,7 @@ link is only obtainable by someone already authorised to see the resource.
 
 from django.shortcuts import get_object_or_404
 from django.urls import reverse
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import status
@@ -36,10 +37,19 @@ def _webcal(url: str) -> str:
     return url
 
 
-def _feed_payload(request, link, url_name, *, kind, can_manage: bool) -> dict:
-    feed_url = request.build_absolute_uri(
-        reverse(url_name, kwargs={"secret": link.secret})
-    )
+def _feed_payload(request, link, *, kind, label, can_manage: bool) -> dict:
+    # Embed a cosmetic slug in the URL so calendar clients that name a
+    # subscription from its URL show the item/collection name. Fall back to the
+    # plain URL if the label is empty.
+    base = "caldav:item-feed" if kind == "item" else "caldav:collection-feed"
+    slug = slugify(label or "")
+    if slug:
+        feed_path = reverse(
+            f"{base}-labeled", kwargs={"secret": link.secret, "label": slug}
+        )
+    else:
+        feed_path = reverse(base, kwargs={"secret": link.secret})
+    feed_url = request.build_absolute_uri(feed_path)
     return {
         "kind": kind,
         "feed_url": feed_url,
@@ -88,7 +98,11 @@ class ItemCalendarLinkView(APIView):
         link = CalendarLink.get_or_create_for_item(item)
         return Response(
             _feed_payload(
-                request, link, "caldav:item-feed", kind="item", can_manage=can_manage
+                request,
+                link,
+                kind="item",
+                label=item.name,
+                can_manage=can_manage,
             )
         )
 
@@ -104,7 +118,11 @@ class ItemCalendarLinkView(APIView):
         link.rotate()
         return Response(
             _feed_payload(
-                request, link, "caldav:item-feed", kind="item", can_manage=True
+                request,
+                link,
+                kind="item",
+                label=item.name,
+                can_manage=True,
             )
         )
 
@@ -146,8 +164,8 @@ class CollectionCalendarLinkView(APIView):
             _feed_payload(
                 request,
                 link,
-                "caldav:collection-feed",
                 kind="collection",
+                label=collection.name,
                 can_manage=can_manage,
             )
         )
@@ -161,8 +179,8 @@ class CollectionCalendarLinkView(APIView):
             _feed_payload(
                 request,
                 link,
-                "caldav:collection-feed",
                 kind="collection",
+                label=collection.name,
                 can_manage=True,
             )
         )

@@ -66,26 +66,34 @@ def feed_bookings_for_item(item: Item):
     )
 
 
-def bookings_to_events(bookings, *, summary_field: str, include_booker: bool):
+def bookings_to_events(bookings, *, summary: str, booker_in_description: bool):
     """Convert bookings to VEvents.
 
-    ``summary_field`` selects what the SUMMARY shows: the item name. When
-    ``include_booker`` is set, the DESCRIPTION carries the booker's name.
+    ``summary`` selects what each event's SUMMARY (the title shown in the
+    calendar) contains:
+      * ``"booker"`` — the name of the person who booked (used by the per-item
+        feed/calendar, whose calendar name is already the item name).
+      * ``"item"`` — the booked item's name (used by the collection feed, where
+        the calendar spans many items).
+    When ``booker_in_description`` is set, the DESCRIPTION carries the booker's
+    name as well.
     """
     events = []
     for booking in bookings:
         if booking.time_from is None:
             continue
-        summary = booking.item.name or "Booking"
-        description = ""
-        if include_booker:
-            description = booker_display_name(booking)
+        booker = booker_display_name(booking)
+        if summary == "booker":
+            summary_text = booker or "Booked"
+        else:
+            summary_text = booking.item.name or "Booking"
+        description = booker if booker_in_description else ""
         events.append(
             VEvent(
                 uid=event_uid(booking),
                 dtstart=booking.time_from,
                 dtend=booking.time_to,
-                summary=summary,
+                summary=summary_text,
                 description=description,
                 status=vevent_status_for(booking),
                 dtstamp=booking.updated_at or booking.created_at,

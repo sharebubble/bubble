@@ -10,9 +10,21 @@ from . import views
 app_name = "caldav"
 
 urlpatterns = [
-    # Public read-only iCalendar subscription feeds.
+    # Public read-only iCalendar subscription feeds. The optional <label>
+    # segment is a cosmetic slug (ignored server-side) so calendar clients that
+    # derive a subscription's name from its URL show the item/collection name.
     path("item/<str:secret>.ics", views.item_feed, name="item-feed"),
+    path(
+        "item/<str:secret>/<str:label>.ics",
+        views.item_feed,
+        name="item-feed-labeled",
+    ),
     path("collection/<str:secret>.ics", views.collection_feed, name="collection-feed"),
+    path(
+        "collection/<str:secret>/<str:label>.ics",
+        views.collection_feed,
+        name="collection-feed-labeled",
+    ),
     # Private read-write CalDAV hierarchy.
     path("dav/<str:secret>/", views.CalDAVView.as_view(), name="dav-home"),
     path(
