@@ -1247,6 +1247,9 @@ class PublicItemFacetTestCase(TestCase):
         self.bob = ItemOwnerUserFactory(
             username="bob", email="bob@example.com", password=TEST_PASSWORD
         )
+        # Collections are only visible to authenticated users, so the facet
+        # tests run as alice (who owns the collection created below).
+        self.client.force_authenticate(user=self.alice)
 
         # alice: an available tool and an available book.
         self.alice_tool = Item.objects.create(
