@@ -2,7 +2,7 @@ import { Checkbox, Button as MantineButton, Menu, Radio } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, Filter } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { ConditionEnum } from '@/services/django';
 
 type SortField = 'name' | 'price' | 'date';
@@ -20,16 +20,7 @@ type BrowseNavProps = {
   className?: string;
 };
 
-// Item "type" presets. Each maps to a set of sales types on the browse page.
-const browseTypes = [
-  { label: 'browse.rent', type: 'rent' },
-  { label: 'browse.buy', type: 'buy' },
-  { label: 'browse.wanted', type: 'wanted' },
-] as const;
-
 const CONDITIONS: ConditionEnum[] = [0, 1, 2];
-
-type BrowseType = (typeof browseTypes)[number]['type'];
 
 export const BrowseNav = ({
   selectedConditions,
@@ -43,20 +34,11 @@ export const BrowseNav = ({
 }: BrowseNavProps) => {
   const { t } = useLanguage();
   const location = useLocation();
-  const navigate = useNavigate();
 
   const params = new URLSearchParams(location.search);
-  const activeType = params.get('type') as BrowseType | null;
-
-  // Toggle the active type: re-selecting it clears the filter (shows all types).
-  const handleTypeChange = (value: BrowseType): void => {
-    const nextParams = new URLSearchParams(location.search);
-    if (activeType === value) nextParams.delete('type');
-    else nextParams.set('type', value);
-    nextParams.delete('page');
-    const nextSearch = nextParams.toString();
-    navigate(`${location.pathname}${nextSearch ? `?${nextSearch}` : ''}`);
-  };
+  // The "type" preset (set from the header search bar) gates the condition
+  // filter, which only applies to buy/sell items.
+  const activeType = params.get('type');
 
   const getConditionName = (value: ConditionEnum): string => {
     switch (value) {
@@ -133,26 +115,6 @@ export const BrowseNav = ({
       </Menu.Target>
 
       <Menu.Dropdown>
-        <Menu.Label>{t('index.type')}</Menu.Label>
-        {browseTypes.map(({ label, type }) => (
-          <Menu.Item
-            key={type}
-            leftSection={
-              <Radio
-                checked={activeType === type}
-                readOnly
-                tabIndex={-1}
-                aria-hidden="true"
-                variant="outline"
-              />
-            }
-            onClick={() => handleTypeChange(type)}
-          >
-            {t(label)}
-          </Menu.Item>
-        ))}
-        <Menu.Divider />
-
         {activeType === 'buy' && (
           <>
             <Menu.Label>{t('index.condition')}</Menu.Label>

@@ -15,7 +15,7 @@ import {
   Text,
   TextInput,
 } from '@mantine/core';
-import { BookMarked, CircleDot, Search, Tag, Tags, User } from 'lucide-react';
+import { BookMarked, CircleDot, Repeat, Search, Tag, Tags, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -24,15 +24,23 @@ import { useLocation, useNavigate } from 'react-router-dom';
 // Types & constants
 // ---------------------------------------------------------------------------
 
-type Facet = 'category' | 'collection' | 'availability' | 'owner' | 'price';
+type Facet = 'type' | 'category' | 'collection' | 'availability' | 'owner' | 'price';
 
 const FACET_ICONS: Record<Facet, LucideIcon> = {
+  type: Repeat,
   category: Tag,
   collection: BookMarked,
   availability: CircleDot,
   owner: User,
   price: Tags,
 };
+
+// Item "type" presets, mapped to the `type` URL param the browse page reads.
+const TYPE_OPTIONS = [
+  { value: 'rent', label: 'browse.rent' },
+  { value: 'buy', label: 'browse.buy' },
+  { value: 'wanted', label: 'browse.wanted' },
+] as const;
 
 // Facets that require an authenticated user (collections are auth-only, owners
 // are intentionally hidden from anonymous visitors).
@@ -68,6 +76,7 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
   const collectionId = currentParams.get('collection') || undefined;
   const categoryValue = currentParams.get('category') || undefined;
   const availabilityValue = currentParams.get('availability') || undefined;
+  const typeValue = currentParams.get('type') || undefined;
   const searchValue = currentParams.get('search') ?? '';
 
   // Price facet: explicit min/max bounds, plus a "free only" toggle that pins
@@ -79,7 +88,7 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
   const [opened, setOpened] = useState(false);
   const facets: Facet[] = useMemo(
     () =>
-      (['category', 'collection', 'availability', 'owner', 'price'] as const).filter(
+      (['type', 'category', 'collection', 'availability', 'owner', 'price'] as const).filter(
         facet => loggedIn || !AUTHED_FACETS.includes(facet),
       ),
     [loggedIn],
@@ -245,6 +254,8 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
   // ---------------------------------------------------------------------------
 
   const chips: { key: string; label: string }[] = [];
+  if (typeValue && TYPE_OPTIONS.some(o => o.value === typeValue))
+    chips.push({ key: 'type', label: t(`browse.${typeValue}`) });
   if (categoryValue && categoryValue !== 'all')
     chips.push({
       key: 'category',
@@ -268,6 +279,7 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
   // ---------------------------------------------------------------------------
 
   const facetSearchPlaceholder: Record<Facet, string> = {
+    type: '',
     category: t('search.searchCategories'),
     collection: t('search.searchCollections'),
     availability: '',
@@ -333,6 +345,18 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
 
   const renderPanel = () => {
     const query = facetQuery.trim().toLowerCase();
+
+    if (activeFacet === 'type') {
+      const rows = TYPE_OPTIONS.map(({ value, label }) =>
+        renderRow(value, {
+          icon: mutedIcon(Repeat),
+          label: t(label),
+          active: typeValue === value,
+          onSelect: () => toggleFacet('type', value),
+        }),
+      );
+      return <div className="flex flex-col">{rows}</div>;
+    }
 
     if (activeFacet === 'availability') {
       const rows = (facetsData?.availability ?? []).map(({ value, count }) =>

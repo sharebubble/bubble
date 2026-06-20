@@ -30,6 +30,7 @@ const translations = {
 
     // Search bar / facets
     'search.filterBy': 'Filter by',
+    'search.type': 'Type',
     'search.owner': 'Owner',
     'search.collection': 'Collection',
     'search.category': 'Category',
@@ -89,7 +90,6 @@ const translations = {
     'index.scopeFederated': 'Federated',
     'index.scope': 'Scope',
     'index.sortDate': 'Date',
-    'index.type': 'Type',
 
     // Browse Nav
     'browse.buy': 'Donate/Sell',
@@ -622,6 +622,7 @@ const translations = {
 
     // Search bar / facets
     'search.filterBy': 'Filtern nach',
+    'search.type': 'Typ',
     'search.owner': 'Anbieter',
     'search.collection': 'Sammlung',
     'search.category': 'Kategorie',
@@ -681,7 +682,6 @@ const translations = {
     'index.scopeLocal': 'Lokal',
     'index.scopeAll': 'Alle',
     'index.scopeFederated': 'Föderiert',
-    'index.type': 'Typ',
 
     // Browse Nav
     'browse.buy': 'Verschenken/Verkaufen',
