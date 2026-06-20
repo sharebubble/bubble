@@ -42,7 +42,7 @@ from bubble.items.api.serializers import (
     ItemListSerializer,
     ItemSerializer,
 )
-from bubble.items.models import Image, Item, ItemStatus, VisibilityType
+from bubble.items.models import Image, Item, ItemStatus, SalesType, VisibilityType
 
 from .filters import ItemFilter
 
@@ -111,6 +111,13 @@ AVAILABILITY_STATUSES = {
     "sold": [ItemStatus.SOLD],
 }
 
+# Type facet value → the sales types it maps to.
+TYPE_SALES_TYPES = {
+    "rent": [SalesType.RENT, SalesType.BORROW],
+    "buy": [SalesType.SELL, SalesType.DONATE],
+    "wanted": [SalesType.WANT_BUY, SalesType.WANT_RENT],
+}
+
 
 class CategoryFacetSerializer(serializers.Serializer):
     """A category and the number of matching visible items."""
@@ -144,9 +151,17 @@ class AvailabilityFacetSerializer(serializers.Serializer):
     count = serializers.IntegerField()
 
 
+class TypeFacetSerializer(serializers.Serializer):
+    """A type value (rent | buy | wanted) and its matching visible item count."""
+
+    value = serializers.CharField()
+    count = serializers.IntegerField()
+
+
 class SearchFacetsSerializer(serializers.Serializer):
     """The full set of search facets, each excluding its own active filter."""
 
+    types = TypeFacetSerializer(many=True)
     categories = CategoryFacetSerializer(many=True)
     collections = CollectionFacetSerializer(many=True)
     availability = AvailabilityFacetSerializer(many=True)
@@ -215,11 +230,11 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
     def facets(self, request):
         """Return the search facets, cross-filtered by the active selection.
 
-        Powers the header search popup. Each facet (category, collection,
+        Powers the header search popup. Each facet (type, category, collection,
         availability, owner) is computed over the visible items narrowed by
         every *other* active filter, but never by the facet's own dimension —
-        so picking a collection updates the categories/owners/availability on
-        offer (and their counts) while still letting you switch collection.
+        so picking a collection updates the types/categories/owners/availability
+        on offer (and their counts) while still letting you switch collection.
         """
         category = request.query_params.get("category") or None
         collection = self._as_uuid(request.query_params.get("collection"))
@@ -227,6 +242,7 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
             request.query_params.get("owner") or request.query_params.get("user")
         )
         availability = request.query_params.get("availability") or None
+        type_ = request.query_params.get("type") or None
         search = (request.query_params.get("search") or "").strip()
 
         base = self.get_queryset()
@@ -234,6 +250,8 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
         def narrowed(exclude: str):
             """Visible items filtered by every active filter except ``exclude``."""
             qs = base
+            if type_ and exclude != "type":
+                qs = qs.filter(sales_type__in=TYPE_SALES_TYPES.get(type_, []))
             if category and exclude != "category":
                 qs = qs.filter(category=category)
             if collection and exclude != "collection":
@@ -250,6 +268,13 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
             return qs
 
         count = models.Count("id", distinct=True)
+
+        type_base = narrowed("type")
+        types = []
+        for value, sales_types in TYPE_SALES_TYPES.items():
+            value_count = type_base.filter(sales_type__in=sales_types).count()
+            if value_count:
+                types.append({"value": value, "count": value_count})
 
         categories = [
             {"category": row["category"], "count": row["count"]}
@@ -302,6 +327,7 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
                 availability_facets.append({"value": value, "count": value_count})
 
         data = {
+            "types": types,
             "categories": categories,
             "collections": collections,
             "availability": availability_facets,

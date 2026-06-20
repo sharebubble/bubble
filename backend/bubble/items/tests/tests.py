@@ -1349,6 +1349,32 @@ class PublicItemFacetTestCase(TestCase):
         assert self._by(data["availability"], "value") == {"available": 2, "sold": 1}
         assert self._by(data["collections"], "name") == {"Favorite Tools": 2}
         assert data["collections"][0]["owner"] == "alice"
+        # all three published items are SELL → the "buy" type preset.
+        assert self._by(data["types"], "value") == {"buy": 3}
+
+    def test_facets_type_counts_and_cross_filter(self):
+        """The type facet counts items per preset and cross-filters the rest."""
+        # alice gets a rentable tool (sales_type rent → the "rent" preset).
+        Item.objects.create(
+            name="Alice Drill",
+            user=self.alice,
+            sales_type=SalesType.RENT,
+            status=ItemStatus.AVAILABLE,
+            visibility=VisibilityType.PUBLIC,
+            category="tools",
+        )
+
+        # Unfiltered: three SELL items map to "buy", one RENT item to "rent".
+        data = self._facets()
+        assert self._by(data["types"], "value") == {"buy": 3, "rent": 1}
+
+        # Selecting type=rent narrows the other facets to the rental only, while
+        # the type facet itself still offers every type (excludes its own filter).
+        data = self._facets(type="rent")
+        assert self._by(data["types"], "value") == {"buy": 3, "rent": 1}
+        assert self._by(data["categories"], "category") == {"tools": 1}
+        assert self._by(data["owners"], "username") == {"alice": 1}
+        assert self._by(data["availability"], "value") == {"available": 1}
 
     def test_facets_cross_filter_by_collection(self):
         """Selecting a collection narrows the other facets to its items."""

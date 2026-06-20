@@ -141,6 +141,7 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
 
   const facetsQuery = useSearchFacets(
     {
+      type: typeValue,
       category: categoryValue,
       collection: collectionId,
       owner: ownerId,
@@ -347,14 +348,16 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
     const query = facetQuery.trim().toLowerCase();
 
     if (activeFacet === 'type') {
-      const rows = TYPE_OPTIONS.map(({ value, label }) =>
-        renderRow(value, {
+      const rows = TYPE_OPTIONS.map(({ value, label }) => {
+        const count = facetsData?.types.find(facetType => facetType.value === value)?.count ?? 0;
+        return renderRow(value, {
           icon: mutedIcon(Repeat),
           label: t(label),
+          meta: `(${count})`,
           active: typeValue === value,
           onSelect: () => toggleFacet('type', value),
-        }),
-      );
+        });
+      });
       return <div className="flex flex-col">{rows}</div>;
     }
 

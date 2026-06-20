@@ -94,7 +94,7 @@ const translations = {
     // Browse Nav
     'browse.buy': 'Donate/Sell',
     'browse.rent': 'Borrow/Rent',
-    'browse.wanted': 'Search',
+    'browse.wanted': 'Wanted',
 
     // Items
     'item.available': 'Available',
@@ -686,7 +686,7 @@ const translations = {
     // Browse Nav
     'browse.buy': 'Verschenken/Verkaufen',
     'browse.rent': 'Leihen/Mieten',
-    'browse.wanted': 'Suche',
+    'browse.wanted': 'Gesucht',
 
     // Items
     'item.available': 'Verfügbar',
