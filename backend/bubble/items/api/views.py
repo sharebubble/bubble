@@ -28,6 +28,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import (
     DjangoModelPermissions,
+    IsAuthenticated,
     IsAuthenticatedOrReadOnly,
 )
 from rest_framework.response import Response
@@ -588,7 +589,7 @@ class LocationViewSet(viewsets.ReadOnlyModelViewSet):
 
     serializer_class = LocationSerializer
     lookup_field = "id"
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
     queryset = Location.objects.all()
 
     def get_queryset(self):

@@ -35,7 +35,7 @@ export const useLocations = (itemCategory?: string) => {
         params.set('item_category', itemCategory);
       }
       const response = await fetch(
-        `${client.getConfig().baseUrl}/locations/?${params.toString()}`,
+        `${client.getConfig().baseUrl}/api/locations/?${params.toString()}`,
         { credentials: 'include' },
       );
       if (!response.ok) {
