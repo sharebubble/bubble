@@ -89,11 +89,12 @@ const translations = {
     'index.scopeFederated': 'Federated',
     'index.scope': 'Scope',
     'index.sortDate': 'Date',
+    'index.type': 'Type',
 
     // Browse Nav
-    'browse.buy': 'Marketplace',
-    'browse.rent': 'Rent',
-    'browse.wanted': 'Wanted',
+    'browse.buy': 'Donate/Sell',
+    'browse.rent': 'Borrow/Rent',
+    'browse.wanted': 'Search',
 
     // Items
     'item.available': 'Available',
@@ -680,11 +681,12 @@ const translations = {
     'index.scopeLocal': 'Lokal',
     'index.scopeAll': 'Alle',
     'index.scopeFederated': 'Föderiert',
+    'index.type': 'Typ',
 
     // Browse Nav
-    'browse.buy': 'Marktplatz',
-    'browse.rent': 'Mieten',
-    'browse.wanted': 'Gesucht',
+    'browse.buy': 'Verschenken/Verkaufen',
+    'browse.rent': 'Leihen/Mieten',
+    'browse.wanted': 'Suche',
 
     // Items
     'item.available': 'Verfügbar',

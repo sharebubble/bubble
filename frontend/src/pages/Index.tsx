@@ -181,9 +181,6 @@ const Index = () => {
   const handleSortChange = (field: SortField, dir: SortDir) =>
     navWith({ sortField: field, sortDir: dir });
 
-  const handleCategoryChange = (category: ItemCategoryFilter) =>
-    navWith({ category: category === 'all' ? null : category });
-
   const handleConditionsChange = (conditions: ConditionEnum[]) => {
     const sorted = [...conditions].sort();
     const isDefault =
@@ -284,35 +281,34 @@ const Index = () => {
   return (
     <main className="container mx-auto px-4 py-4">
       <div className="space-y-4">
-        <BrowseNav
-          selectedConditions={selectedConditions}
-          selectedCategory={selectedCategory}
-          onSelectedConditionsChange={handleConditionsChange}
-          onSelectedCategoryChange={handleCategoryChange}
-          sortField={sortField}
-          sortDir={sortDir}
-          onSortChange={handleSortChange}
-          scope={scope}
-          onScopeChange={handleScopeChange}
-        />
-
         <Group justify="space-between" align="center">
           <Text size="sm" c="dimmed">
             {t('index.itemsFound').replace('{count}', String(totalCount))}
           </Text>
-          <SegmentedControl
-            value={viewMode}
-            onChange={value => toggleViewMode(value as 'list' | 'cards')}
-            data={[
-              { label: <List size={16} />, value: 'list' },
-              { label: <Grid3X3 size={16} />, value: 'cards' },
-            ]}
-            color="green"
-            styles={{
-              label: { padding: 8 },
-              indicator: { boxShadow: 'none' },
-            }}
-          />
+          <Group gap="xs" wrap="nowrap">
+            <BrowseNav
+              selectedConditions={selectedConditions}
+              onSelectedConditionsChange={handleConditionsChange}
+              sortField={sortField}
+              sortDir={sortDir}
+              onSortChange={handleSortChange}
+              scope={scope}
+              onScopeChange={handleScopeChange}
+            />
+            <SegmentedControl
+              value={viewMode}
+              onChange={value => toggleViewMode(value as 'list' | 'cards')}
+              data={[
+                { label: <List size={16} />, value: 'list' },
+                { label: <Grid3X3 size={16} />, value: 'cards' },
+              ]}
+              color="green"
+              styles={{
+                label: { padding: 8 },
+                indicator: { boxShadow: 'none' },
+              }}
+            />
+          </Group>
         </Group>
 
         {isFederatedScope ? (
