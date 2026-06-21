@@ -5,12 +5,12 @@ import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
 } from '@/hooks/useNotificationPreferences';
-import type {
-  NotificationPreferenceMe,
-  PatchedNotificationPreferenceMe,
-} from '@/services/django';
+import type { NotificationPreferenceMe, PatchedNotificationPreferenceMe } from '@/services/django';
 
 type Provider = 'rocketchat' | 'signal' | 'email';
+
+// Only the writable boolean toggles — never the readonly availability/target fields.
+type ToggleField = `${Provider}_messages` | `${Provider}_new_item`;
 
 const PROVIDERS: { id: Provider; labelKey: string }[] = [
   { id: 'rocketchat', labelKey: 'profile.channelRocketchat' },
@@ -28,8 +28,9 @@ export const NotificationSettings = () => {
 
   const availableProviders = PROVIDERS.filter(p => isAvailable(p.id));
 
-  const toggle = (field: keyof PatchedNotificationPreferenceMe, checked: boolean) => {
-    updatePrefs.mutate({ [field]: checked });
+  const toggle = (field: ToggleField, checked: boolean) => {
+    const payload: PatchedNotificationPreferenceMe = { [field]: checked };
+    updatePrefs.mutate(payload);
   };
 
   return (
@@ -50,13 +51,11 @@ export const NotificationSettings = () => {
       ) : (
         <Stack gap="lg">
           {availableProviders.map(provider => {
-            const target = prefs?.[
-              `${provider.id}_target` as keyof NotificationPreferenceMe
-            ] as string | undefined;
-            const messagesField =
-              `${provider.id}_messages` as keyof PatchedNotificationPreferenceMe;
-            const newItemField =
-              `${provider.id}_new_item` as keyof PatchedNotificationPreferenceMe;
+            const target = prefs?.[`${provider.id}_target` as keyof NotificationPreferenceMe] as
+              | string
+              | undefined;
+            const messagesField = `${provider.id}_messages` as ToggleField;
+            const newItemField = `${provider.id}_new_item` as ToggleField;
 
             return (
               <div key={provider.id} className="rounded-md border p-4">
@@ -70,18 +69,14 @@ export const NotificationSettings = () => {
                   <Checkbox
                     checked={prefs?.[messagesField] === true}
                     disabled={updatePrefs.isPending}
-                    onChange={event =>
-                      toggle(messagesField, event.currentTarget.checked)
-                    }
+                    onChange={event => toggle(messagesField, event.currentTarget.checked)}
                     label={t('profile.notifyMessages')}
                     description={t('profile.notifyMessagesDesc')}
                   />
                   <Checkbox
                     checked={prefs?.[newItemField] === true}
                     disabled={updatePrefs.isPending}
-                    onChange={event =>
-                      toggle(newItemField, event.currentTarget.checked)
-                    }
+                    onChange={event => toggle(newItemField, event.currentTarget.checked)}
                     label={t('profile.notifyNewItem')}
                     description={t('profile.notifyNewItemDesc')}
                   />

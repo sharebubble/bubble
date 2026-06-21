@@ -11,6 +11,7 @@ A channel is *available* to a user when both:
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from urllib.parse import quote
 
 from constance import config
 
@@ -69,7 +70,11 @@ def build_apprise_url(template: str, target: str) -> str:
 
     When the template contains ``{target}`` it is replaced in place; otherwise
     the target is appended as a path segment so simple base URLs keep working.
+
+    The target is URL-encoded so reserved characters (e.g. ``@`` or ``+`` in
+    ``alice+foo@example.com``) cannot corrupt the resulting Apprise URL.
     """
+    encoded = quote(target, safe="")
     if TARGET_PLACEHOLDER in template:
-        return template.replace(TARGET_PLACEHOLDER, target)
-    return f"{template.rstrip('/')}/{target}"
+        return template.replace(TARGET_PLACEHOLDER, encoded)
+    return f"{template.rstrip('/')}/{encoded}"

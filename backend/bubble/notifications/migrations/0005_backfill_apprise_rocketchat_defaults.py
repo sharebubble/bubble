@@ -11,23 +11,28 @@ EVENT_NEW_MESSAGE = "new_message"
 
 
 def enable_rocketchat_for_existing_users(apps, schema_editor):
-    """Create an enabled RocketChat new_message preference for every user
-    that does not already have one, but only when ROCKETCHAT_WEBHOOK_URL is set."""
+    """Backfill an enabled RocketChat new_message preference for every user
+    that does not already have one, but only when APPRISE_ROCKETCHAT_URL is set.
+
+    This complements migration 0002 (which keyed off the now-removed
+    ROCKETCHAT_WEBHOOK_URL) so deployments switching to the Apprise-based
+    configuration get the same sensible default.
+    """
 
     try:
         from constance import config  # noqa: PLC0415
 
-        webhook_url = config.ROCKETCHAT_WEBHOOK_URL
+        rocketchat_url = config.APPRISE_ROCKETCHAT_URL
     except Exception:
         logger.warning(
-            "Could not read ROCKETCHAT_WEBHOOK_URL from constance — "
+            "Could not read APPRISE_ROCKETCHAT_URL from constance — "
             "skipping backfill of notification preferences."
         )
         return
 
-    if not webhook_url:
+    if not rocketchat_url:
         logger.info(
-            "ROCKETCHAT_WEBHOOK_URL is empty — "
+            "APPRISE_ROCKETCHAT_URL is empty — "
             "skipping backfill of notification preferences."
         )
         return
@@ -66,7 +71,7 @@ def noop(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("notifications", "0001_initial"),
+        ("notifications", "0004_alter_notificationpreference_event_type_and_more"),
         ("users", "0001_initial"),
     ]
 

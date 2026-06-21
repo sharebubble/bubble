@@ -1133,8 +1133,7 @@ const translations = {
     'profile.notifyMessagesDesc':
       'Benachrichtigung bei einer neuen Nachricht oder einer neuen Buchung für deine Objekte erhalten',
     'profile.notifyNewItem': 'Neue Objekte',
-    'profile.notifyNewItemDesc':
-      'Benachrichtigung erhalten, sobald ein neues Objekt erstellt wird',
+    'profile.notifyNewItemDesc': 'Benachrichtigung erhalten, sobald ein neues Objekt erstellt wird',
     'profile.appearance': 'Erscheinungsbild',
     'profile.themeAuto': 'Automatisch',
     'profile.language': 'Sprache',

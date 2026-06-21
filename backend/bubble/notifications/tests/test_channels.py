@@ -14,14 +14,16 @@ ProviderType = NotificationPreference.ProviderType
 
 def test_build_apprise_url_substitutes_placeholder() -> None:
     template = "signal://api.example.com/+15550000/{target}"
+    # The target is URL-encoded, so the leading "+" becomes "%2B".
     assert (
         build_apprise_url(template, "+15551234")
-        == "signal://api.example.com/+15550000/+15551234"
+        == "signal://api.example.com/+15550000/%2B15551234"
     )
 
 
 def test_build_apprise_url_appends_when_no_placeholder() -> None:
-    assert build_apprise_url("mailtos://host/", "a@b.com") == "mailtos://host/a@b.com"
+    # "@" is encoded to "%40" so it cannot corrupt the URL.
+    assert build_apprise_url("mailtos://host/", "a@b.com") == "mailtos://host/a%40b.com"
 
 
 @pytest.mark.django_db
