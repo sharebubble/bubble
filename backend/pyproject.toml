@@ -23,7 +23,7 @@ dependencies = [
     "django-money>=3.6.1",
     "django-ratelimit>=4.1.0",
     "django-redis",
-    "django-simple-history>=3.11.0",
+    "django-simple-history>=3.12.0",
     "huey>=3.0.3",
     "django-storages[boto3]>=1.14.6",
     "djangorestframework",
@@ -44,7 +44,7 @@ dependencies = [
     "whitenoise",
     "pyld>=3.1.0",
     "http-message-signatures>=2.0.1",
-    "cryptography>=48.0.1",
+    "cryptography>=49.0.0",
 ]
 
 [[tool.uv.index]]
@@ -61,7 +61,7 @@ torchvision = [
 ]
 
 [build-system]
-requires = ["setuptools>=82.0.1", "wheel", "setuptools-scm[toml]>=10.0.5"]
+requires = ["setuptools>=82.0.1", "wheel", "setuptools-scm[toml]>=10.1.1"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
