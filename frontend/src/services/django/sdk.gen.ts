@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthTokenCreateData, AuthTokenCreateResponses, BookingsCreateData, BookingsCreateResponses, BookingsDestroyData, BookingsDestroyResponses, BookingsListData, BookingsListResponses, BookingsPartialUpdateData, BookingsPartialUpdateResponses, BookingsRetrieveData, BookingsRetrieveResponses, BookingsUpdateData, BookingsUpdateResponses, BooksCreateData, BooksCreateResponses, BooksDestroyData, BooksDestroyResponses, BooksIsbnUpdateUpdateData, BooksIsbnUpdateUpdateResponses, BooksListData, BooksListResponses, BooksPartialUpdateData, BooksPartialUpdateResponses, BooksRetrieveData, BooksRetrieveResponses, BooksUpdateData, BooksUpdateResponses, CollectionItemsCreateData, CollectionItemsCreateResponses, CollectionItemsDestroyData, CollectionItemsDestroyResponses, CollectionItemsListData, CollectionItemsListResponses, CollectionItemsPartialUpdateData, CollectionItemsPartialUpdateResponses, CollectionItemsRetrieveData, CollectionItemsRetrieveResponses, CollectionItemsUpdateData, CollectionItemsUpdateResponses, CollectionsAddItemCreateData, CollectionsAddItemCreateResponses, CollectionsBulkAddItemsCreateData, CollectionsBulkAddItemsCreateResponses, CollectionsBulkRemoveItemsCreateData, CollectionsBulkRemoveItemsCreateResponses, CollectionsCreateData, CollectionsCreateResponses, CollectionsDestroyData, CollectionsDestroyResponses, CollectionsForItemListData, CollectionsForItemListResponses, CollectionsHistoryListData, CollectionsHistoryListResponses, CollectionsListData, CollectionsListResponses, CollectionsManagePermissionsCreateData, CollectionsManagePermissionsCreateResponses, CollectionsMyCollectionsListData, CollectionsMyCollectionsListResponses, CollectionsPartialUpdateData, CollectionsPartialUpdateResponses, CollectionsPermissionsListData, CollectionsPermissionsListResponses, CollectionsRemoveItemCreateData, CollectionsRemoveItemCreateResponses, CollectionsRetrieveData, CollectionsRetrieveResponses, CollectionsUpdateData, CollectionsUpdateResponses, ConfigRetrieveData, ConfigRetrieveResponses, FederatedItemsRetrieveData, FederatedItemsRetrieveResponses, GroupsListData, GroupsListResponses, GroupsRetrieveData, GroupsRetrieveResponses, ImagesCreateData, ImagesCreateResponses, ImagesDestroyData, ImagesDestroyResponses, ImagesListData, ImagesListResponses, ImagesPartialUpdateData, ImagesPartialUpdateResponses, ImagesRetrieveData, ImagesRetrieveResponses, ImagesUpdateData, ImagesUpdateResponses, ItemsAiDescribeUpdateData, ItemsAiDescribeUpdateResponses, ItemsAiImageUpdateData, ItemsAiImageUpdateResponses, ItemsCoOwnersCreateData, ItemsCoOwnersCreateResponses, ItemsCoOwnersDestroyData, ItemsCoOwnersDestroyResponses, ItemsCoOwnersRetrieveData, ItemsCoOwnersRetrieveResponses, ItemsCreateData, ItemsCreateResponses, ItemsDestroyData, ItemsDestroyResponses, ItemsListData, ItemsListResponses, ItemsPartialUpdateData, ItemsPartialUpdateResponses, ItemsReorderImagesUpdateData, ItemsReorderImagesUpdateResponses, ItemsRetrieveData, ItemsRetrieveResponses, ItemsUpdateData, ItemsUpdateResponses, ItemsViewersCreateData, ItemsViewersCreateResponses, ItemsViewersDestroyData, ItemsViewersDestroyResponses, ItemsViewersRetrieveData, ItemsViewersRetrieveResponses, MessagesCreateData, MessagesCreateResponses, MessagesDestroyData, MessagesDestroyResponses, MessagesListData, MessagesListResponses, MessagesPartialUpdateData, MessagesPartialUpdateResponses, MessagesRetrieveData, MessagesRetrieveResponses, MessagesUpdateData, MessagesUpdateResponses, NotificationPreferencesMePartialUpdateData, NotificationPreferencesMePartialUpdateResponses, NotificationPreferencesMeRetrieveData, NotificationPreferencesMeRetrieveResponses, ProfilesListData, ProfilesListResponses, ProfilesMePartialUpdateData, ProfilesMePartialUpdateResponses, ProfilesMeRetrieveData, ProfilesMeRetrieveResponses, ProfilesRetrieveData, ProfilesRetrieveResponses, PublicBookingsListData, PublicBookingsListResponses, PublicBookingsRetrieveData, PublicBookingsRetrieveResponses, PublicItemsListData, PublicItemsListResponses, PublicItemsRetrieveData, PublicItemsRetrieveResponses, SchemaRetrieveData, SchemaRetrieveResponses, UsersListData, UsersListResponses, UsersMeRetrieveData, UsersMeRetrieveResponses, UsersPartialUpdateData, UsersPartialUpdateResponses, UsersRetrieveData, UsersRetrieveResponses, UsersUpdateData, UsersUpdateResponses } from './types.gen';
+import type { AuthTokenCreateData, AuthTokenCreateResponses, BookingsConfirmReceivedCreateData, BookingsConfirmReceivedCreateResponses, BookingsConfirmReturnedCreateData, BookingsConfirmReturnedCreateResponses, BookingsCreateData, BookingsCreateResponses, BookingsDestroyData, BookingsDestroyResponses, BookingsListData, BookingsListResponses, BookingsPartialUpdateData, BookingsPartialUpdateResponses, BookingsRetrieveData, BookingsRetrieveResponses, BookingsUpdateData, BookingsUpdateResponses, BooksCreateData, BooksCreateResponses, BooksDestroyData, BooksDestroyResponses, BooksIsbnUpdateUpdateData, BooksIsbnUpdateUpdateResponses, BooksListData, BooksListResponses, BooksPartialUpdateData, BooksPartialUpdateResponses, BooksRetrieveData, BooksRetrieveResponses, BooksUpdateData, BooksUpdateResponses, CollectionItemsCreateData, CollectionItemsCreateResponses, CollectionItemsDestroyData, CollectionItemsDestroyResponses, CollectionItemsListData, CollectionItemsListResponses, CollectionItemsPartialUpdateData, CollectionItemsPartialUpdateResponses, CollectionItemsRetrieveData, CollectionItemsRetrieveResponses, CollectionItemsUpdateData, CollectionItemsUpdateResponses, CollectionsAddItemCreateData, CollectionsAddItemCreateResponses, CollectionsBulkAddItemsCreateData, CollectionsBulkAddItemsCreateResponses, CollectionsBulkRemoveItemsCreateData, CollectionsBulkRemoveItemsCreateResponses, CollectionsCreateData, CollectionsCreateResponses, CollectionsDestroyData, CollectionsDestroyResponses, CollectionsForItemListData, CollectionsForItemListResponses, CollectionsHistoryListData, CollectionsHistoryListResponses, CollectionsListData, CollectionsListResponses, CollectionsManagePermissionsCreateData, CollectionsManagePermissionsCreateResponses, CollectionsMyCollectionsListData, CollectionsMyCollectionsListResponses, CollectionsPartialUpdateData, CollectionsPartialUpdateResponses, CollectionsPermissionsListData, CollectionsPermissionsListResponses, CollectionsRemoveItemCreateData, CollectionsRemoveItemCreateResponses, CollectionsRetrieveData, CollectionsRetrieveResponses, CollectionsUpdateData, CollectionsUpdateResponses, ConfigRetrieveData, ConfigRetrieveResponses, FederatedItemsRetrieveData, FederatedItemsRetrieveResponses, GroupsListData, GroupsListResponses, GroupsRetrieveData, GroupsRetrieveResponses, ImagesCreateData, ImagesCreateResponses, ImagesDestroyData, ImagesDestroyResponses, ImagesListData, ImagesListResponses, ImagesPartialUpdateData, ImagesPartialUpdateResponses, ImagesRetrieveData, ImagesRetrieveResponses, ImagesUpdateData, ImagesUpdateResponses, ItemsAiDescribeUpdateData, ItemsAiDescribeUpdateResponses, ItemsAiImageUpdateData, ItemsAiImageUpdateResponses, ItemsCoOwnersCreateData, ItemsCoOwnersCreateResponses, ItemsCoOwnersDestroyData, ItemsCoOwnersDestroyResponses, ItemsCoOwnersRetrieveData, ItemsCoOwnersRetrieveResponses, ItemsCreateData, ItemsCreateResponses, ItemsDestroyData, ItemsDestroyResponses, ItemsListData, ItemsListResponses, ItemsPartialUpdateData, ItemsPartialUpdateResponses, ItemsReorderImagesUpdateData, ItemsReorderImagesUpdateResponses, ItemsRetrieveData, ItemsRetrieveResponses, ItemsUpdateData, ItemsUpdateResponses, ItemsViewersCreateData, ItemsViewersCreateResponses, ItemsViewersDestroyData, ItemsViewersDestroyResponses, ItemsViewersRetrieveData, ItemsViewersRetrieveResponses, MessagesCreateData, MessagesCreateResponses, MessagesDestroyData, MessagesDestroyResponses, MessagesListData, MessagesListResponses, MessagesPartialUpdateData, MessagesPartialUpdateResponses, MessagesRetrieveData, MessagesRetrieveResponses, MessagesUpdateData, MessagesUpdateResponses, NotificationPreferencesMePartialUpdateData, NotificationPreferencesMePartialUpdateResponses, NotificationPreferencesMeRetrieveData, NotificationPreferencesMeRetrieveResponses, ProfilesListData, ProfilesListResponses, ProfilesMePartialUpdateData, ProfilesMePartialUpdateResponses, ProfilesMeRetrieveData, ProfilesMeRetrieveResponses, ProfilesRetrieveData, ProfilesRetrieveResponses, PublicBookingsListData, PublicBookingsListResponses, PublicBookingsRetrieveData, PublicBookingsRetrieveResponses, PublicItemsListData, PublicItemsListResponses, PublicItemsRetrieveData, PublicItemsRetrieveResponses, SchemaRetrieveData, SchemaRetrieveResponses, UsersListData, UsersListResponses, UsersMeRetrieveData, UsersMeRetrieveResponses, UsersPartialUpdateData, UsersPartialUpdateResponses, UsersRetrieveData, UsersRetrieveResponses, UsersUpdateData, UsersUpdateResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -122,6 +122,55 @@ export const bookingsPartialUpdate = <ThrowOnError extends boolean = true>(optio
         { name: 'X-Session-Token', type: 'apiKey' }
     ],
     url: '/api/bookings/{id}/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Booker confirms they received the item.
+ *
+ * For a sale this transfers ownership of the item to the booker and
+ * completes the booking. For a rental it starts the rental: the item
+ * becomes RENTED and the booking moves to IN_PROGRESS.
+ */
+export const bookingsConfirmReceivedCreate = <ThrowOnError extends boolean = true>(options: Options<BookingsConfirmReceivedCreateData, ThrowOnError>) => (options.client ?? client).post<BookingsConfirmReceivedCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/bookings/{id}/confirm_received/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Owner confirms a rented item was returned, completing the rental.
+ *
+ * Any user with `change_item` permission (owner or co-owner) may confirm.
+ * The item becomes AVAILABLE again and the booking is COMPLETED.
+ */
+export const bookingsConfirmReturnedCreate = <ThrowOnError extends boolean = true>(options: Options<BookingsConfirmReturnedCreateData, ThrowOnError>) => (options.client ?? client).post<BookingsConfirmReturnedCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/bookings/{id}/confirm_returned/',
     ...options,
     headers: {
         'Content-Type': 'application/json',

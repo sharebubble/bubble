@@ -2,7 +2,7 @@ import uuid
 from pathlib import Path
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from djmoney.models.fields import MoneyField
@@ -46,7 +46,7 @@ class ItemStatus(models.IntegerChoices):
         if sales_type in sell_donate_types:
             return (cls.DRAFT, cls.AVAILABLE, cls.RESERVED, cls.SOLD)
         if sales_type in rent_borrow_types:
-            return (cls.DRAFT, cls.AVAILABLE, cls.RENTED)
+            return (cls.DRAFT, cls.AVAILABLE, cls.RESERVED, cls.RENTED)
         return tuple(cls.values)
 
 
@@ -424,6 +424,30 @@ class Item(models.Model):
             images = self.images.all()
             return images[0] if images else None
         return self.images.order_by("ordering").first()
+
+    def transfer_ownership(self, new_owner):
+        """Transfer the item to ``new_owner`` after a completed sale.
+
+        Clears every existing object-level permission (old owner, co-owners and
+        specific viewers), assigns the new owner full permissions, resets the
+        item to a fresh ``DRAFT`` listing and removes it from federation. The new
+        owner can then re-list it as their own.
+        """
+        with transaction.atomic():
+            ItemUserObjectPermission.objects.filter(content_object=self).delete()
+            ItemGroupObjectPermission.objects.filter(content_object=self).delete()
+
+            self.user = new_owner
+            self.status = ItemStatus.DRAFT
+            self.publish_notification_sent = False
+            self.federation_visibility = "local_only"
+            self.save()
+
+            app_label = self._meta.app_label
+            model_name = self._meta.model_name
+            assign_perm(f"{app_label}.view_{model_name}", new_owner, obj=self)
+            assign_perm(f"{app_label}.change_{model_name}", new_owner, obj=self)
+            assign_perm(f"{app_label}.delete_{model_name}", new_owner, obj=self)
 
 
 class ItemUserObjectPermission(UserObjectPermissionBase):

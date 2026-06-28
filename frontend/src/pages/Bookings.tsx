@@ -32,9 +32,15 @@ const DEFAULT_PAGE_SIZE = 20;
 const STATUS_PENDING = 1;
 const STATUS_CONFIRMED = 3;
 const STATUS_COMPLETED = 4;
+const STATUS_IN_PROGRESS = 6;
 
 // Approved bookings shown by default; pending (1) is added via the checkbox.
-const APPROVED_STATUSES = [String(STATUS_CONFIRMED), String(STATUS_COMPLETED)];
+// IN_PROGRESS (6) covers rentals whose handover has been confirmed.
+const APPROVED_STATUSES = [
+  String(STATUS_CONFIRMED),
+  String(STATUS_IN_PROGRESS),
+  String(STATUS_COMPLETED),
+];
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 

@@ -22,6 +22,7 @@ class BookingStatus(models.IntegerChoices):
     CONFIRMED = 3, _("Confirmed")
     COMPLETED = 4, _("Completed")
     REJECTED = 5, _("Rejected")
+    IN_PROGRESS = 6, _("In Progress")
 
 
 class BookingManager(models.Manager):
@@ -88,6 +89,24 @@ class Booking(models.Model):
         related_name="accepted_bookings",
     )
 
+    # Fulfillment tracking: timestamps for the physical exchange of the item.
+    handover_confirmed_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text=_(
+            "When the booker confirmed they received the item. For sales this "
+            "triggers the ownership transfer; for rentals it starts the rental."
+        ),
+    )
+    return_confirmed_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text=_(
+            "When the owner confirmed the rented item was returned, completing "
+            "the rental."
+        ),
+    )
+
     # Federation: remote booker (XOR with user — enforced by DB constraint below)
     remote_booker_actor = models.ForeignKey(
         "federation.RemoteActor",
@@ -128,13 +147,19 @@ class Booking(models.Model):
                     (Func(F("time_from"), F("time_to"), function="tstzrange"), "&&"),
                     (F("item"), "="),
                 ],
-                condition=Q(status=BookingStatus.CONFIRMED) & Q(time_to__isnull=False),
+                condition=Q(
+                    status__in=[BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS]
+                )
+                & Q(time_to__isnull=False),
                 index_type="gist",
             ),
             ExclusionConstraint(
                 name="exclude_overlapping_confirmed_bookings_without_time_to",
                 expressions=[(F("item"), "=")],
-                condition=Q(status=BookingStatus.CONFIRMED) & Q(time_to__isnull=True),
+                condition=Q(
+                    status__in=[BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS]
+                )
+                & Q(time_to__isnull=True),
                 index_type="gist",
             ),
             # Enforce XOR: a booking must have exactly one of

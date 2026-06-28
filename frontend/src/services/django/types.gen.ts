@@ -286,6 +286,8 @@ export type Booking = {
      */
     counter_offer?: string | null;
     accepted_by?: string | null;
+    readonly handover_confirmed_at: string | null;
+    readonly return_confirmed_at: string | null;
     readonly created_at: string;
     readonly updated_at: string;
     /**
@@ -1292,7 +1294,7 @@ export type StatusB0aEnum = 0 | 2 | 3 | 4 | 5;
  * * `4` - Completed
  * * `5` - Rejected
  */
-export type StatusE2dEnum = 1 | 2 | 3 | 4 | 5;
+export type StatusE2dEnum = 1 | 2 | 3 | 4 | 5 | 6;
 
 export type User = {
     readonly id: string;
@@ -2332,6 +2334,36 @@ export type BookingsPartialUpdateResponses = {
 };
 
 export type BookingsPartialUpdateResponse = BookingsPartialUpdateResponses[keyof BookingsPartialUpdateResponses];
+
+export type BookingsConfirmReceivedCreateData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/bookings/{id}/confirm_received/';
+};
+
+export type BookingsConfirmReceivedCreateResponses = {
+    200: Booking;
+};
+
+export type BookingsConfirmReceivedCreateResponse = BookingsConfirmReceivedCreateResponses[keyof BookingsConfirmReceivedCreateResponses];
+
+export type BookingsConfirmReturnedCreateData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/bookings/{id}/confirm_returned/';
+};
+
+export type BookingsConfirmReturnedCreateResponses = {
+    200: Booking;
+};
+
+export type BookingsConfirmReturnedCreateResponse = BookingsConfirmReturnedCreateResponses[keyof BookingsConfirmReturnedCreateResponses];
 
 export type BookingsUpdateData = {
     body: BookingWritable;

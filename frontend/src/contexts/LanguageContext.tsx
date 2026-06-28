@@ -324,6 +324,8 @@ const translations = {
     'booking.errorCreate': 'Failed to create booking request. Please try again.',
     'booking.successUpdated': 'Booking updated successfully!',
     'booking.errorUpdate': 'Failed to update booking. Please try again.',
+    'booking.successReceived': 'Receipt confirmed.',
+    'booking.successReturned': 'Return confirmed. The rental is complete.',
     'requests.acceptWarningTitle': 'Confirm acceptance',
     'requests.acceptWarningDescription':
       'You are accepting an offer of {amount}. This will be finalized when the request is confirmed.',
@@ -385,7 +387,10 @@ const translations = {
     'requests.status.accepted': 'Accepted',
     'requests.status.rejected': 'Rejected',
     'requests.status.completed': 'Completed',
+    'requests.status.inProgress': 'In Progress',
     'requests.status.unknown': 'Unknown',
+    'requests.confirmReceived': 'Confirm received',
+    'requests.confirmReturned': 'Confirm returned',
 
     // Bookings page
     'bookings.title': 'My Bookings',
@@ -1008,6 +1013,8 @@ const translations = {
     'booking.errorCreate':
       'Erstellen der Buchungsanfrage fehlgeschlagen. Bitte versuche es erneut.',
     'booking.successUpdated': 'Buchung erfolgreich aktualisiert!',
+    'booking.successReceived': 'Erhalt bestätigt.',
+    'booking.successReturned': 'Rückgabe bestätigt. Die Vermietung ist abgeschlossen.',
     'booking.errorUpdate': 'Aktualisierung der Buchung fehlgeschlagen. Bitte versuche es erneut.',
     'requests.acceptWarningTitle': 'Bestätigung erforderlich',
     'requests.acceptWarningDescription':
@@ -1072,7 +1079,10 @@ const translations = {
     'requests.status.accepted': 'Angenommen',
     'requests.status.rejected': 'Abgelehnt',
     'requests.status.completed': 'Abgeschlossen',
+    'requests.status.inProgress': 'In Bearbeitung',
     'requests.status.unknown': 'Unbekannt',
+    'requests.confirmReceived': 'Erhalt bestätigen',
+    'requests.confirmReturned': 'Rückgabe bestätigen',
 
     // Bookings page
     'bookings.title': 'Meine Buchungen',
