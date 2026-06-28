@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from guardian.admin import GuardedInlineAdminMixin, GuardedModelAdminMixin
 from simple_history.admin import SimpleHistoryAdmin
 
-from .models import Image, Item
+from .models import Image, Item, Location
 
 
 class ImageInline(GuardedInlineAdminMixin, admin.TabularInline):
@@ -56,6 +56,7 @@ class ItemAdmin(GuardedModelAdminMixin, SimpleHistoryAdmin):
                     "condition",
                     "sales_type",
                     "price",
+                    "location",
                     "display_contact",
                 ),
             },
@@ -99,6 +100,15 @@ class ItemAdmin(GuardedModelAdminMixin, SimpleHistoryAdmin):
                 attrs={"rows": 20, "cols": 80, "class": "vLargeTextField"}
             )
         return super().formfield_for_dbfield(db_field, request, **kwargs)
+
+
+@admin.register(Location)
+class LocationAdmin(admin.ModelAdmin):
+    list_display = ("name", "section", "item_category", "sort_order")
+    list_editable = ("section", "item_category", "sort_order")
+    list_filter = ("item_category", "section")
+    search_fields = ("name", "section", "description")
+    ordering = ("item_category", "section", "sort_order", "name")
 
 
 @admin.register(Image)

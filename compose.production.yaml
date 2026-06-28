@@ -61,7 +61,7 @@ services:
     command: /start
 
   postgres:
-    image: docker.io/pgvector/pgvector:pg17
+    image: docker.io/library/postgres:17
     volumes:
       - production_postgres_data:/var/lib/postgresql/data
     env_file:

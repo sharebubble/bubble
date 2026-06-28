@@ -1,5 +1,6 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { FieldStates } from '@/hooks/useFieldAutoSave';
+import { useLocations } from '@/hooks/useLocations';
 import {
   CategoryEnum,
   ConditionEnum,
@@ -494,6 +495,85 @@ export const VisibilityField = ({
         rightSection={getFieldRightSection('visibility', fieldStates)}
         error={getFieldError('visibility', fieldStates)}
         styles={getFieldStyles('visibility', fieldStates)}
+      />
+    </div>
+  );
+};
+
+interface LocationFieldProps {
+  formData: {
+    category: CategoryEnum | '';
+    location?: string | null;
+  };
+  setFormData: (data: any) => void;
+  disabled?: boolean;
+  fieldStates?: FieldStates;
+  onFieldChange?: (fieldName: string, value: unknown) => void;
+}
+
+/**
+ * Lets the owner choose where an item is currently kept: their own place (the
+ * default, represented by no location) or one of the curated locations that
+ * apply to the item's category (e.g. a library shelf for books or a shared
+ * workspace area for tools).
+ */
+export const LocationField = ({
+  formData,
+  setFormData,
+  disabled,
+  fieldStates,
+  onFieldChange,
+}: LocationFieldProps) => {
+  const { t } = useLanguage();
+  const category = formData.category || undefined;
+  const { data: locations = [], isLoading } = useLocations(category);
+
+  const ownerOption = { value: '', label: t('editItem.locationOwnerPlace') };
+
+  // Group locations by their optional section so the picker stays organised.
+  const grouped = new Map<string, { value: string; label: string }[]>();
+  for (const loc of locations) {
+    const key = loc.section || '';
+    const option = { value: loc.id, label: loc.name };
+    const bucket = grouped.get(key);
+    if (bucket) {
+      bucket.push(option);
+    } else {
+      grouped.set(key, [option]);
+    }
+  }
+
+  // Section-less locations sit at the top level; the rest become groups.
+  type LocationOption = { value: string; label: string };
+  const data: Array<LocationOption | { group: string; items: LocationOption[] }> = [ownerOption];
+  for (const [section, items] of grouped.entries()) {
+    if (section) {
+      data.push({ group: section, items });
+    } else {
+      data.push(...items);
+    }
+  }
+
+  return (
+    <div className="max-w-md">
+      <Select
+        id="location"
+        label={t('editItem.location')}
+        placeholder={isLoading ? t('editItem.locationLoading') : t('editItem.selectLocation')}
+        value={formData.location ? String(formData.location) : ''}
+        onChange={value => {
+          const normalised = value || '';
+          setFormData({ ...formData, location: normalised });
+          // Persist null when the item is at the owner's own place.
+          onFieldChange?.('location', normalised === '' ? null : normalised);
+        }}
+        data={data}
+        disabled={disabled || isLoading}
+        allowDeselect={false}
+        searchable
+        rightSection={getFieldRightSection('location', fieldStates)}
+        error={getFieldError('location', fieldStates)}
+        styles={getFieldStyles('location', fieldStates)}
       />
     </div>
   );

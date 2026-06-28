@@ -28,6 +28,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import (
     DjangoModelPermissions,
+    IsAuthenticated,
     IsAuthenticatedOrReadOnly,
 )
 from rest_framework.response import Response
@@ -41,8 +42,16 @@ from bubble.items.api.serializers import (
     ImageSerializer,
     ItemListSerializer,
     ItemSerializer,
+    LocationSerializer,
 )
-from bubble.items.models import Image, Item, ItemStatus, SalesType, VisibilityType
+from bubble.items.models import (
+    Image,
+    Item,
+    ItemStatus,
+    Location,
+    SalesType,
+    VisibilityType,
+)
 
 from .filters import ItemFilter
 
@@ -566,6 +575,31 @@ class ItemViewSet(viewsets.ModelViewSet, ItemBaseViewSet):
             return Response({"status": "viewer revoked"})
 
         return None
+
+
+class LocationViewSet(viewsets.ReadOnlyModelViewSet):
+    """Read-only list of item placements (library shelves, shared areas, ...).
+
+    Any authenticated user can browse locations in order to pick one when
+    editing an item.  Pass ``?item_category=<category>`` to get only the
+    locations that apply to that category plus the category-agnostic ones
+    (those with a blank ``item_category``).  Curators manage the list itself
+    through the Django admin.
+    """
+
+    serializer_class = LocationSerializer
+    lookup_field = "id"
+    permission_classes = [IsAuthenticated]
+    queryset = Location.objects.all()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        item_category = self.request.query_params.get("item_category")
+        if item_category:
+            queryset = queryset.filter(
+                Q(item_category=item_category) | Q(item_category="")
+            )
+        return queryset
 
 
 class ImageViewSet(viewsets.ModelViewSet):

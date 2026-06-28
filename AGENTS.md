@@ -1,6 +1,6 @@
 # Bubble Project
 
-Bubble is a localized item-sharing and rental platform with a focus on community building, semantic search, and AI-assisted item management. It allows users to list items for sale or rent, manage bookings, and maintains a specialized catalog for books.
+Bubble is a localized item-sharing and rental platform with a focus on community building and AI-assisted item management. It allows users to list items for sale or rent, manage bookings, and maintains a specialized catalog for books.
 
 ## Project Structure
 
@@ -8,7 +8,7 @@ Bubble is a localized item-sharing and rental platform with a focus on community
 
 Located in `backend/`. Uses Django REST Framework (DRF) for the API.
 
-- `bubble/items/`: Core item logic. Includes AI descriptors, image generation, and `pgvector` for semantic search.
+- `bubble/items/`: Core item logic. Includes AI descriptors and image generation.
 - `bubble/books/`: Specialized items extending the base Item model with ISBN and metadata.
 - `bubble/bookings/`: Handles the lifecycle of rentals, offers, and counter-offers. Includes PostgreSQL exclusion constraints for preventing overlapping bookings.
 - `bubble/users/`: Custom User model and Profiles.
@@ -29,7 +29,7 @@ To update types after backend changes, run `npm run types:openapi` to regenerate
 ## Technology Stack
 
 - **Backend:** Python 3.12+, Django 5.x, Django Rest Framework, Channels (WebSockets), Celery (Background Tasks).
-- **Database:** PostgreSQL with `pgvector` for semantic similarity search.
+- **Database:** PostgreSQL.
 - **Frontend:** React, TypeScript, Vite, Tailwind CSS, Mantine, Lucide React (Icons).
 - **AI/ML:** Integration with Gemini/Google AI for image analysis and prompt-based image generation.
 - **DevOps:** Docker Compose, Justfile for command automation.

@@ -246,8 +246,8 @@ postgresql:
   enabled: true
 
   image:
-    repository: pgvector/pgvector
-    tag: "pg17"
+    repository: postgres
+    tag: "17"
     pullPolicy: IfNotPresent
 
   # PostgreSQL credentials

@@ -6,7 +6,34 @@ from guardian.shortcuts import get_groups_with_perms, get_users_with_perms
 from rest_framework import serializers, status
 
 from bubble.core.storage import absolute_media_url
-from bubble.items.models import Image, Item, ItemStatus, SalesType, money_defaults
+from bubble.items.models import (
+    Image,
+    Item,
+    ItemStatus,
+    Location,
+    SalesType,
+    money_defaults,
+)
+
+
+class LocationSerializer(serializers.ModelSerializer):
+    """Serializer for the Location model (item placements)."""
+
+    item_category_display = serializers.CharField(
+        source="get_item_category_display", read_only=True
+    )
+
+    class Meta:
+        model = Location
+        fields = [
+            "id",
+            "name",
+            "section",
+            "item_category",
+            "item_category_display",
+            "description",
+            "sort_order",
+        ]
 
 
 class ItemOwnerException(serializers.ValidationError):
@@ -73,6 +100,9 @@ class ItemSerializer(serializers.ModelSerializer):
     first_image = serializers.SerializerMethodField()
     price = MoneyField(**money_defaults, required=False, allow_null=True)
     co_owners = serializers.SerializerMethodField()
+    # Writable via the auto-generated ``location`` PK field; this exposes the
+    # resolved name/section for display without an extra request.
+    location_detail = LocationSerializer(source="location", read_only=True)
 
     class Meta:
         model = Item
