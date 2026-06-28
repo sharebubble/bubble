@@ -29,4 +29,4 @@ def test_messages_group_covers_messages_and_bookings() -> None:
 
 def test_provider_types_include_apprise_channels() -> None:
     providers = set(NotificationPreference.ProviderType.values)
-    assert {"rocketchat", "signal", "email"} <= providers
+    assert {"rocketchat", "signal", "matrix", "email"} <= providers

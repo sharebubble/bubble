@@ -60,6 +60,12 @@ class Profile(models.Model):
     )
     address = models.TextField(blank=True)
     phone = models.CharField(max_length=15, blank=True)
+    matrix_id = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name=_("Matrix ID"),
+        help_text=_("Matrix user ID for notifications, e.g. @alice:matrix.org"),
+    )
     email_reminder = models.BooleanField(default=True)
     internal = models.BooleanField(default=False)
     bio = models.TextField(blank=True)

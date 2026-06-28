@@ -734,6 +734,10 @@ export type NotificationPreferenceMe = {
     readonly signal_target: string;
     signal_messages?: boolean;
     signal_new_item?: boolean;
+    readonly matrix_available: boolean;
+    readonly matrix_target: string;
+    matrix_messages?: boolean;
+    matrix_new_item?: boolean;
     readonly email_available: boolean;
     readonly email_target: string;
     email_messages?: boolean;
@@ -1178,6 +1182,10 @@ export type PatchedNotificationPreferenceMe = {
     readonly signal_target?: string;
     signal_messages?: boolean;
     signal_new_item?: boolean;
+    readonly matrix_available?: boolean;
+    readonly matrix_target?: string;
+    matrix_messages?: boolean;
+    matrix_new_item?: boolean;
     readonly email_available?: boolean;
     readonly email_target?: string;
     email_messages?: boolean;
@@ -1189,6 +1197,7 @@ export type PatchedProfile = {
     name?: string;
     readonly email?: string;
     phone?: string;
+    matrix_id?: string;
     bio?: string;
     address?: string;
     email_reminder?: boolean;
@@ -1225,6 +1234,7 @@ export type Profile = {
     name?: string;
     readonly email: string;
     phone?: string;
+    matrix_id?: string;
     bio?: string;
     address?: string;
     email_reminder?: boolean;

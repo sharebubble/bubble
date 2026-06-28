@@ -28,6 +28,7 @@ class NotificationPreference(models.Model):
     class ProviderType(models.TextChoices):
         ROCKETCHAT = "rocketchat", _("RocketChat")
         SIGNAL = "signal", _("Signal")
+        MATRIX = "matrix", _("Matrix")
         EMAIL = "email", _("Email")
 
     id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)

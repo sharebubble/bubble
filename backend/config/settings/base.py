@@ -505,6 +505,12 @@ CONSTANCE_CONFIG = {
         "placeholder for the recipient's phone number, e.g. "
         "signal://signal-api.example.com/+15551230000/{target}",
     ),
+    "APPRISE_MATRIX_URL": (
+        env("APPRISE_MATRIX_URL", default=""),
+        "Apprise URL template for Matrix notifications. Use {target} as a "
+        "placeholder for the recipient's Matrix ID, e.g. "
+        "matrixs://user:password@matrix.example.com/{target}",
+    ),
     "APPRISE_MAILTOS_URL": (
         env("APPRISE_MAILTOS_URL", default=""),
         "Apprise URL template for email (mailtos) notifications. Use {target} "

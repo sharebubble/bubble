@@ -26,6 +26,7 @@ ProviderType = NotificationPreference.ProviderType
 PROVIDER_CONFIG_KEYS: dict[str, str] = {
     ProviderType.ROCKETCHAT: "APPRISE_ROCKETCHAT_URL",
     ProviderType.SIGNAL: "APPRISE_SIGNAL_URL",
+    ProviderType.MATRIX: "APPRISE_MATRIX_URL",
     ProviderType.EMAIL: "APPRISE_MAILTOS_URL",
 }
 
@@ -48,6 +49,9 @@ def resolve_target(provider_type: str, user: User) -> str:
     if provider_type == ProviderType.SIGNAL:
         profile = getattr(user, "profile", None)
         return (getattr(profile, "phone", "") or "").strip()
+    if provider_type == ProviderType.MATRIX:
+        profile = getattr(user, "profile", None)
+        return (getattr(profile, "matrix_id", "") or "").strip()
     if provider_type == ProviderType.EMAIL:
         return (user.email or "").strip()
     return ""

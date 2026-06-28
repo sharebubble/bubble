@@ -23,6 +23,7 @@ Bubble delivers user notifications through the [Apprise](https://github.com/caro
 | ---------- | ------------------------------- | ------------------------------------ |
 | RocketChat | username                        | `APPRISE_ROCKETCHAT_URL`             |
 | Signal     | phone number                    | `APPRISE_SIGNAL_URL`                 |
+| Matrix     | Matrix ID (`@user:server`)      | `APPRISE_MATRIX_URL`                 |
 | Email      | email address                   | `APPRISE_MAILTOS_URL`                |
 
 Each value is an [Apprise URL](https://github.com/caronc/apprise/wiki) **template** containing a `{target}` placeholder that is substituted with the recipient's address. Examples:
@@ -30,6 +31,7 @@ Each value is an [Apprise URL](https://github.com/caronc/apprise/wiki) **templat
 ```env
 APPRISE_ROCKETCHAT_URL=rocket://user:password@rocketchat.example.com/@{target}
 APPRISE_SIGNAL_URL=signal://signal-api.example.com/+15551230000/{target}
+APPRISE_MATRIX_URL=matrixs://user:password@matrix.example.com/{target}
 APPRISE_MAILTOS_URL=mailtos://user:password@smtp.example.com?to={target}
 ```
 
@@ -40,7 +42,7 @@ These can be set via environment variables or edited at runtime in the Django ad
 A channel only appears in a user's profile once it is **both**:
 
 1. configured on the backend (the Apprise URL above is set), and
-2. addressable for that user (the matching profile field is filled in — RocketChat username, Signal phone number or email).
+2. addressable for that user (the matching profile field is filled in — RocketChat username, Signal phone number, Matrix ID or email).
 
 Users then choose, per channel, which events they want:
 

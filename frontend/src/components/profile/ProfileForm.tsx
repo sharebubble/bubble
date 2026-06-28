@@ -11,6 +11,7 @@ import { z } from 'zod';
 const profileSchema = z.object({
   name: z.string().optional(),
   phone: z.string().optional(),
+  matrix_id: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -26,6 +27,7 @@ export const ProfileForm = () => {
     initialValues: {
       name: '',
       phone: '',
+      matrix_id: '',
     },
   });
 
@@ -34,6 +36,7 @@ export const ProfileForm = () => {
       form.setValues({
         name: profile.name ?? '',
         phone: profile.phone ?? '',
+        matrix_id: profile.matrix_id ?? '',
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,6 +107,16 @@ export const ProfileForm = () => {
             rightSection={renderFieldStatusIcon('phone')}
             {...form.getInputProps('phone')}
             onBlur={() => saveField('phone', form.getValues().phone)}
+          />
+
+          <TextInput
+            label={t('profile.matrixId')}
+            placeholder="@alice:matrix.org"
+            description={t('profile.matrixIdDesc')}
+            classNames={{ input: getFieldBorderClass('matrix_id') }}
+            rightSection={renderFieldStatusIcon('matrix_id')}
+            {...form.getInputProps('matrix_id')}
+            onBlur={() => saveField('matrix_id', form.getValues().matrix_id)}
           />
         </form>
       </Card>

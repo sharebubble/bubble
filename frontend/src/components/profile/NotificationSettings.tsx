@@ -7,7 +7,7 @@ import {
 } from '@/hooks/useNotificationPreferences';
 import type { NotificationPreferenceMe, PatchedNotificationPreferenceMe } from '@/services/django';
 
-type Provider = 'rocketchat' | 'signal' | 'email';
+type Provider = 'rocketchat' | 'signal' | 'matrix' | 'email';
 
 // Only the writable boolean toggles — never the readonly availability/target fields.
 type ToggleField = `${Provider}_messages` | `${Provider}_new_item`;
@@ -15,6 +15,7 @@ type ToggleField = `${Provider}_messages` | `${Provider}_new_item`;
 const PROVIDERS: { id: Provider; labelKey: string }[] = [
   { id: 'rocketchat', labelKey: 'profile.channelRocketchat' },
   { id: 'signal', labelKey: 'profile.channelSignal' },
+  { id: 'matrix', labelKey: 'profile.channelMatrix' },
   { id: 'email', labelKey: 'profile.channelEmail' },
 ];
 

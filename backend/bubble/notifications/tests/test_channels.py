@@ -30,11 +30,24 @@ def test_build_apprise_url_appends_when_no_placeholder() -> None:
 def test_resolve_target_per_provider() -> None:
     user = UserFactory(username="alice", email="alice@example.com")
     user.profile.phone = "+15551234"
+    user.profile.matrix_id = "@alice:matrix.org"
     user.profile.save()
 
     assert resolve_target(ProviderType.ROCKETCHAT, user) == "alice"
     assert resolve_target(ProviderType.SIGNAL, user) == "+15551234"
+    assert resolve_target(ProviderType.MATRIX, user) == "@alice:matrix.org"
     assert resolve_target(ProviderType.EMAIL, user) == "alice@example.com"
+
+
+@pytest.mark.django_db
+@override_config(APPRISE_MATRIX_URL="matrixs://user:pass@matrix.example.com/{target}")
+def test_matrix_channel_available_requires_matrix_id() -> None:
+    user = UserFactory(username="alice")
+    assert is_channel_available(ProviderType.MATRIX, user) is False
+
+    user.profile.matrix_id = "@alice:matrix.org"
+    user.profile.save()
+    assert is_channel_available(ProviderType.MATRIX, user) is True
 
 
 @pytest.mark.django_db

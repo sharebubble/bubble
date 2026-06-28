@@ -11,6 +11,7 @@ ProviderType = NotificationPreference.ProviderType
 PROVIDERS: tuple[str, ...] = (
     ProviderType.ROCKETCHAT,
     ProviderType.SIGNAL,
+    ProviderType.MATRIX,
     ProviderType.EMAIL,
 )
 
