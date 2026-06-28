@@ -33,6 +33,8 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 
+from bubble.bookings.api.serializers import ItemBookingHistorySerializer
+from bubble.bookings.models import Booking, BookingStatus
 from bubble.collections.models import Collection
 from bubble.core.storage import absolute_media_url
 from bubble.federation.models import RemoteItem
@@ -379,6 +381,28 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
             "owners": owners,
         }
         return Response(SearchFacetsSerializer(data).data)
+
+    @action(detail=True, methods=["get"], url_path="booking-history")
+    def booking_history(self, request, id=None):  # noqa: A002
+        """Return the item's historical bookings (confirmed + completed).
+
+        Only booking information is exposed — never message/conversation data.
+        Access follows the item's own visibility (enforced by get_object), and
+        booker names are only included for authenticated viewers.
+        """
+        item = self.get_object()
+        bookings = (
+            Booking.objects.filter(
+                item=item,
+                status__in=[BookingStatus.CONFIRMED, BookingStatus.COMPLETED],
+            )
+            .select_related("item", "user", "remote_booker_actor")
+            .order_by("-time_from", "-created_at")
+        )
+        serializer = ItemBookingHistorySerializer(
+            bookings, many=True, context={"request": request}
+        )
+        return Response(serializer.data)
 
 
 class ItemViewSet(viewsets.ModelViewSet, ItemBaseViewSet):

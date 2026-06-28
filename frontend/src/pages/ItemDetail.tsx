@@ -22,7 +22,16 @@ import { getCategoryIcon } from '@/lib/categoryIcons';
 import { ActionIcon, Badge, Button, Text, Tooltip } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, BookMarked, Calendar, Edit3, MapPin, Trash2, Zap } from 'lucide-react';
+import {
+  ArrowLeft,
+  BookMarked,
+  Calendar,
+  Edit3,
+  History,
+  MapPin,
+  Trash2,
+  Zap,
+} from 'lucide-react';
 import { createElement, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -317,6 +326,18 @@ const ItemDetail = () => {
 
           {/* Owner details are shown to logged-in users only */}
           {user && <UserInfoBox userUuid={item.user} />}
+
+          {/* Booking history — available to anyone who can view the item */}
+          <div>
+            <Button
+              component={Link}
+              to={`/item/${item.id}/bookings`}
+              variant="light"
+              leftSection={<History size={16} />}
+            >
+              {t('itemBookings.viewHistory')}
+            </Button>
+          </div>
 
           {/* Action buttons */}
           {(isOwner || showBookingAction) && (

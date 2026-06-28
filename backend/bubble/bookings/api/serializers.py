@@ -204,3 +204,108 @@ class MessageSerializer(serializers.ModelSerializer):
             "is_read",
         ]
         read_only_fields = ["id", "sender", "remote_sender_actor", "created_at"]
+
+
+def _money_amount(money) -> str | None:
+    """Return the decimal amount of a Money value as a string, or None."""
+    if money is None:
+        return None
+    amount = getattr(money, "amount", None)
+    return None if amount is None else str(amount)
+
+
+def _money_currency(money) -> str:
+    """Return the ISO currency code of a Money value, or an empty string."""
+    if money is None:
+        return ""
+    return str(getattr(money, "currency", "") or "")
+
+
+class ItemBookingHistorySerializer(serializers.ModelSerializer):
+    """Read-only booking record shown in an item's booking history.
+
+    Exposes only booking information (status, duration, prices) — never any
+    conversation/message data. The booker's name is included only for
+    authenticated viewers; anonymous viewers see the booking without a name.
+    """
+
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    booker = serializers.SerializerMethodField()
+    official_price = serializers.SerializerMethodField()
+    official_price_currency = serializers.SerializerMethodField()
+    amount_paid = serializers.SerializerMethodField()
+    amount_paid_currency = serializers.SerializerMethodField()
+    rental_price = serializers.SerializerMethodField()
+    offer = serializers.SerializerMethodField()
+    counter_offer = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Booking
+        fields = [
+            "id",
+            "status",
+            "status_display",
+            "time_from",
+            "time_to",
+            "official_price",
+            "official_price_currency",
+            "amount_paid",
+            "amount_paid_currency",
+            "offer",
+            "counter_offer",
+            "rental_price",
+            "booker",
+            "created_at",
+        ]
+
+    def _viewer_is_authenticated(self) -> bool:
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        return bool(user and user.is_authenticated)
+
+    def get_booker(self, obj) -> str | None:
+        """Booker display name — only for authenticated viewers."""
+        if not self._viewer_is_authenticated():
+            return None
+        if obj.user_id:
+            return obj.user.name or obj.user.username
+        actor = obj.remote_booker_actor
+        if actor is not None:
+            return actor.display_name or actor.username
+        return None
+
+    def _paid_money(self, obj):
+        """The amount that applied to this booking.
+
+        Prefers an agreed counter-offer, then the booker's offer, then the
+        computed rental total, falling back to the item's listed price.
+        """
+        if obj.counter_offer is not None:
+            return obj.counter_offer
+        if obj.offer is not None:
+            return obj.offer
+        rental = obj.rental_price
+        if rental is not None:
+            return rental
+        return obj.item.price
+
+    def get_official_price(self, obj) -> str | None:
+        return _money_amount(obj.item.price)
+
+    def get_official_price_currency(self, obj) -> str:
+        return _money_currency(obj.item.price)
+
+    def get_amount_paid(self, obj) -> str | None:
+        return _money_amount(self._paid_money(obj))
+
+    def get_amount_paid_currency(self, obj) -> str:
+        return _money_currency(self._paid_money(obj))
+
+    def get_rental_price(self, obj) -> str | None:
+        return _money_amount(obj.rental_price)
+
+    def get_offer(self, obj) -> str | None:
+        return _money_amount(obj.offer)
+
+    def get_counter_offer(self, obj) -> str | None:
+        return _money_amount(obj.counter_offer)

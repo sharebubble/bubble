@@ -466,6 +466,19 @@ const translations = {
     'comments.deleted': 'Comment deleted',
     'comments.deleteError': 'Could not delete the comment.',
 
+    // Item booking history
+    'itemBookings.title': 'Booking history',
+    'itemBookings.viewHistory': 'Booking history',
+    'itemBookings.empty': 'This item has no past bookings yet.',
+    'itemBookings.loadError': 'Could not load the booking history.',
+    'itemBookings.period': 'Period',
+    'itemBookings.duration': 'Duration',
+    'itemBookings.status': 'Status',
+    'itemBookings.officialPrice': 'Official price',
+    'itemBookings.paid': 'Paid',
+    'itemBookings.booker': 'Booked by',
+    'itemBookings.openEnded': 'Open-ended',
+
     // My Items
     'myItems.title': 'My Items',
     'myItems.noItems': 'No items yet',
@@ -1129,6 +1142,19 @@ const translations = {
     'comments.addError': 'Kommentar konnte nicht veröffentlicht werden.',
     'comments.deleted': 'Kommentar gelöscht',
     'comments.deleteError': 'Kommentar konnte nicht gelöscht werden.',
+
+    // Item booking history
+    'itemBookings.title': 'Buchungsverlauf',
+    'itemBookings.viewHistory': 'Buchungsverlauf',
+    'itemBookings.empty': 'Dieser Artikel hat noch keine vergangenen Buchungen.',
+    'itemBookings.loadError': 'Buchungsverlauf konnte nicht geladen werden.',
+    'itemBookings.period': 'Zeitraum',
+    'itemBookings.duration': 'Dauer',
+    'itemBookings.status': 'Status',
+    'itemBookings.officialPrice': 'Offizieller Preis',
+    'itemBookings.paid': 'Bezahlt',
+    'itemBookings.booker': 'Gebucht von',
+    'itemBookings.openEnded': 'Unbefristet',
 
     // My Items
     'myItems.title': 'Meine Artikel',
