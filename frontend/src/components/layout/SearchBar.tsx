@@ -296,11 +296,6 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
   })();
   if (priceChipLabel) chips.push({ key: 'price', label: priceChipLabel });
 
-  // Whether the bar is "empty": no active filter chips and no free-text term.
-  // Used to offer an explicit close affordance in the dropdown (otherwise the
-  // only way out is clicking away / Escape).
-  const nothingSelected = chips.length === 0 && inputValue.trim() === '';
-
   // ---------------------------------------------------------------------------
   // Facet panel rendering
   // ---------------------------------------------------------------------------
@@ -581,13 +576,11 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
               );
             })}
           </div>
-          {nothingSelected && (
-            <CloseButton
-              size="sm"
-              onClick={() => setOpened(false)}
-              aria-label={t('search.close')}
-            />
-          )}
+          <CloseButton
+            size="sm"
+            onClick={() => setOpened(false)}
+            aria-label={t('search.close')}
+          />
         </div>
         {renderPanel()}
       </Popover.Dropdown>
