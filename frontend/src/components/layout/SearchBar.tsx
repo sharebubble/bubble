@@ -576,11 +576,7 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
               );
             })}
           </div>
-          <CloseButton
-            size="sm"
-            onClick={() => setOpened(false)}
-            aria-label={t('search.close')}
-          />
+          <CloseButton size="sm" onClick={() => setOpened(false)} aria-label={t('search.close')} />
         </div>
         {renderPanel()}
       </Popover.Dropdown>
