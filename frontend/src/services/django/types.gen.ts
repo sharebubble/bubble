@@ -286,8 +286,6 @@ export type Booking = {
      */
     counter_offer?: string | null;
     accepted_by?: string | null;
-    readonly handover_confirmed_at: string | null;
-    readonly return_confirmed_at: string | null;
     readonly created_at: string;
     readonly updated_at: string;
     /**

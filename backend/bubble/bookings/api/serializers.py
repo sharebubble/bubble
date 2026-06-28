@@ -38,8 +38,6 @@ class BookingSerializer(serializers.ModelSerializer):
             "offer",
             "counter_offer",
             "accepted_by",
-            "handover_confirmed_at",
-            "return_confirmed_at",
             "created_at",
             "updated_at",
             "unread_messages_count",
@@ -48,8 +46,6 @@ class BookingSerializer(serializers.ModelSerializer):
             "id",
             "user",
             "remote_booker_actor",
-            "handover_confirmed_at",
-            "return_confirmed_at",
             "created_at",
             "updated_at",
         ]

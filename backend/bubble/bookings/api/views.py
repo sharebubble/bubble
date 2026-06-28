@@ -1,6 +1,5 @@
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Max, Q
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets
@@ -179,7 +178,6 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
 
         item = booking.item
         sales_type = item.sales_type
-        now = timezone.now()
 
         with transaction.atomic():
             if sales_type in self.SALE_TYPES:
@@ -194,9 +192,10 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
                     _("Fulfillment is not supported for this listing type.")
                 )
 
-            booking.handover_confirmed_at = now
-            booking.save(update_fields=["status", "handover_confirmed_at"])
+            booking.save(update_fields=["status"])
 
+        # The hand-over is recorded as a booking message: its sender and
+        # created_at capture who confirmed and when.
         Message.objects.create(
             booking=booking,
             sender=request.user,
@@ -228,9 +227,10 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
             item.status = ItemStatus.AVAILABLE
             item.save(update_fields=["status"])
             booking.status = BookingStatus.COMPLETED
-            booking.return_confirmed_at = timezone.now()
-            booking.save(update_fields=["status", "return_confirmed_at"])
+            booking.save(update_fields=["status"])
 
+        # The return is recorded as a booking message: its sender and created_at
+        # capture who confirmed and when.
         Message.objects.create(
             booking=booking,
             sender=request.user,

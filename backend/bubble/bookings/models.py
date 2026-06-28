@@ -89,24 +89,6 @@ class Booking(models.Model):
         related_name="accepted_bookings",
     )
 
-    # Fulfillment tracking: timestamps for the physical exchange of the item.
-    handover_confirmed_at = models.DateTimeField(
-        blank=True,
-        null=True,
-        help_text=_(
-            "When the booker confirmed they received the item. For sales this "
-            "triggers the ownership transfer; for rentals it starts the rental."
-        ),
-    )
-    return_confirmed_at = models.DateTimeField(
-        blank=True,
-        null=True,
-        help_text=_(
-            "When the owner confirmed the rented item was returned, completing "
-            "the rental."
-        ),
-    )
-
     # Federation: remote booker (XOR with user — enforced by DB constraint below)
     remote_booker_actor = models.ForeignKey(
         "federation.RemoteActor",

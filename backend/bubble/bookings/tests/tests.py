@@ -11,7 +11,7 @@ from guardian.shortcuts import assign_perm, get_users_with_perms
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
-from bubble.bookings.models import Booking, BookingStatus
+from bubble.bookings.models import Booking, BookingStatus, Message
 from bubble.bookings.tests.factories import (
     BookingFactory,
     ItemFactory,
@@ -1557,7 +1557,10 @@ class BookingFulfillmentTestCase(APITestCase):
         booking.refresh_from_db()
         item.refresh_from_db()
         assert booking.status == BookingStatus.COMPLETED
-        assert booking.handover_confirmed_at is not None
+        # The hand-over is recorded as a message by the confirming user.
+        assert Message.objects.filter(
+            booking=booking, sender=self.booking_user
+        ).exists()
         assert item.user == self.booking_user
         assert item.status == ItemStatus.DRAFT
 
@@ -1624,7 +1627,10 @@ class BookingFulfillmentTestCase(APITestCase):
         booking.refresh_from_db()
         item.refresh_from_db()
         assert booking.status == BookingStatus.IN_PROGRESS
-        assert booking.handover_confirmed_at is not None
+        # The hand-over is recorded as a message by the booker.
+        assert Message.objects.filter(
+            booking=booking, sender=self.booking_user
+        ).exists()
         assert item.status == ItemStatus.RENTED
 
         # Owner confirms the item came back → rental completed.
@@ -1635,7 +1641,10 @@ class BookingFulfillmentTestCase(APITestCase):
         booking.refresh_from_db()
         item.refresh_from_db()
         assert booking.status == BookingStatus.COMPLETED
-        assert booking.return_confirmed_at is not None
+        # The return is recorded as a message by the owner.
+        assert Message.objects.filter(
+            booking=booking, sender=self.item_owner
+        ).exists()
         assert item.status == ItemStatus.AVAILABLE
 
     def test_co_owner_can_confirm_returned(self):
