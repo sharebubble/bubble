@@ -433,6 +433,7 @@ const translations = {
     'itemDetail.itemDetails': 'Item Details',
     'itemDetail.description': 'Description',
     'itemDetail.listed': 'Listed',
+    'itemDetail.location': 'Location',
     'itemDetail.ownerInfo': 'Owner Information',
     'itemDetail.deleteConfirmTitle': 'Are you sure?',
     'itemDetail.deleteConfirmDescription':
@@ -1065,6 +1066,7 @@ const translations = {
     'itemDetail.itemDetails': 'Artikel Details',
     'itemDetail.description': 'Beschreibung',
     'itemDetail.listed': 'Gelistet',
+    'itemDetail.location': 'Standort',
     'itemDetail.ownerInfo': 'Besitzer Informationen',
     'itemDetail.deleteConfirmTitle': 'Bist du sicher?',
     'itemDetail.deleteConfirmDescription':

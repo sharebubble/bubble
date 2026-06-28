@@ -21,7 +21,7 @@ import { getCategoryIcon } from '@/lib/categoryIcons';
 import { ActionIcon, Badge, Button, Text, Tooltip } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, BookMarked, Calendar, Edit3, Trash2, Zap } from 'lucide-react';
+import { ArrowLeft, BookMarked, Calendar, Edit3, MapPin, Trash2, Zap } from 'lucide-react';
 import { createElement, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -125,6 +125,14 @@ const ItemDetail = () => {
   };
   const conditionLabel =
     (condition !== undefined ? conditionMap[condition] : undefined) ?? t('condition.unknown');
+
+  // `location_detail` is added by the backend serializer; the generated SDK
+  // type doesn't include it yet (regenerate with `npm run types:openapi`).
+  const locationDetail = (item as { location_detail?: { name?: string; section?: string } | null })
+    .location_detail;
+  const currentLocation = locationDetail?.name
+    ? [locationDetail.section, locationDetail.name].filter(Boolean).join(' · ')
+    : null;
 
   const properties = Object.entries(
     (item.properties && typeof item.properties === 'object' && !Array.isArray(item.properties)
@@ -245,6 +253,15 @@ const ItemDetail = () => {
                 {formatDistanceToNow(new Date(created_at), { addSuffix: true })}
               </span>
             </Text>
+
+            {currentLocation && (
+              <Text component="div" size="sm" c="dimmed" className="flex items-center gap-2">
+                <MapPin size={16} />
+                <span>
+                  {t('itemDetail.location')}: {currentLocation}
+                </span>
+              </Text>
+            )}
 
             {price && (
               <p className="text-2xl font-bold">
