@@ -152,9 +152,8 @@ const useFulfillmentMutation = (
       console.error('Error confirming fulfillment:', error);
       const err = error as { non_field_errors?: string[]; detail?: string } | string | null;
       const description =
-        (typeof err === 'string'
-          ? err
-          : (err?.non_field_errors?.[0] ?? err?.detail)) || t('booking.errorUpdate');
+        (typeof err === 'string' ? err : (err?.non_field_errors?.[0] ?? err?.detail)) ||
+        t('booking.errorUpdate');
       toast({
         title: t('common.error'),
         description,

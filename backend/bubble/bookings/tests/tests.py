@@ -1642,9 +1642,7 @@ class BookingFulfillmentTestCase(APITestCase):
         item.refresh_from_db()
         assert booking.status == BookingStatus.COMPLETED
         # The return is recorded as a message by the owner.
-        assert Message.objects.filter(
-            booking=booking, sender=self.item_owner
-        ).exists()
+        assert Message.objects.filter(booking=booking, sender=self.item_owner).exists()
         assert item.status == ItemStatus.AVAILABLE
 
     def test_co_owner_can_confirm_returned(self):
