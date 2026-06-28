@@ -74,9 +74,7 @@ class ItemBookingHistoryTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
         statuses = {row["status"] for row in response.data}
-        self.assertEqual(
-            statuses, {BookingStatus.CONFIRMED, BookingStatus.COMPLETED}
-        )
+        self.assertEqual(statuses, {BookingStatus.CONFIRMED, BookingStatus.COMPLETED})
 
     def test_prices_and_booker_for_authenticated_viewer(self):
         self.client.force_authenticate(user=self.viewer)
