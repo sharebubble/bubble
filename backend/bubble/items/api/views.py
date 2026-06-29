@@ -194,7 +194,9 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
     def get_queryset(self):
         user = self.request.user
         base_qs = (
-            Item.objects.published().select_related("user").prefetch_related("images")
+            Item.objects.published()
+            .select_related("user", "location")
+            .prefetch_related("images")
         )
 
         if not user.is_authenticated:
@@ -354,7 +356,7 @@ class ItemViewSet(viewsets.ModelViewSet, ItemBaseViewSet):
         """Return items belonging to the authenticated user."""
         return (
             Item.objects.get_for_user(self.request.user)
-            .select_related("user")
+            .select_related("user", "location")
             .prefetch_related("images")
         )
 

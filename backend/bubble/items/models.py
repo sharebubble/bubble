@@ -370,7 +370,19 @@ class Item(models.Model):
         return bool(self.name and self.category)
 
     def get_first_image(self):
-        """Return the first image of the item based on ordering."""
+        """Return the first image of the item based on ordering.
+
+        When the item's images have been prefetched (e.g. in the list
+        endpoints), read from the prefetch cache instead of issuing a fresh
+        query. ``Image.Meta.ordering`` already orders by ``("item", "ordering")``
+        so the first cached image is the one with the lowest ordering — calling
+        ``.order_by("ordering")`` here would clone the queryset, discard the
+        prefetched result cache and trigger one extra query per item (a classic
+        N+1 across a page of results).
+        """
+        if "images" in getattr(self, "_prefetched_objects_cache", {}):
+            images = self.images.all()
+            return images[0] if images else None
         return self.images.order_by("ordering").first()
 
 
