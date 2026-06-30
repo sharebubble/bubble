@@ -327,6 +327,14 @@ class Item(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            # The item list endpoints filter by published ``status`` and order by
+            # ``-created_at``; this composite index serves both in one scan.
+            models.Index(
+                fields=["status", "-created_at"],
+                name="items_status_created_idx",
+            ),
+        ]
         constraints = [
             # donate and borrow require price to be null
             models.CheckConstraint(

@@ -1482,6 +1482,7 @@ class ItemListQueryCountTests(TestCase):
 
     def _count_queries_for(self, n_items):
         Item.objects.all().delete()
+        Location.objects.all().delete()
         owner = ItemOwnerUserFactory(
             username=f"owner{n_items}",
             email=f"owner{n_items}@example.com",
