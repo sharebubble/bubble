@@ -194,7 +194,9 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
     def get_queryset(self):
         user = self.request.user
         base_qs = (
-            Item.objects.published().select_related("user").prefetch_related("images")
+            Item.objects.published()
+            .select_related("user", "location")
+            .prefetch_related("images")
         )
 
         if not user.is_authenticated:
@@ -278,12 +280,22 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
 
         count = models.Count("id", distinct=True)
 
+        # Count every type preset in a single query via conditional aggregation
+        # instead of one COUNT(*) per preset.
         type_base = narrowed("type")
-        types = []
-        for value, sales_types in TYPE_SALES_TYPES.items():
-            value_count = type_base.filter(sales_type__in=sales_types).count()
-            if value_count:
-                types.append({"value": value, "count": value_count})
+        type_counts = type_base.aggregate(
+            **{
+                value: models.Count(
+                    "id", filter=models.Q(sales_type__in=sales_types), distinct=True
+                )
+                for value, sales_types in TYPE_SALES_TYPES.items()
+            }
+        )
+        types = [
+            {"value": value, "count": type_counts[value]}
+            for value in TYPE_SALES_TYPES
+            if type_counts[value]
+        ]
 
         categories = [
             {"category": row["category"], "count": row["count"]}
@@ -328,12 +340,21 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
             .order_by("user__username")
         ]
 
+        # Same single-query conditional aggregation for the availability presets.
         availability_base = narrowed("availability")
-        availability_facets = []
-        for value, statuses in AVAILABILITY_STATUSES.items():
-            value_count = availability_base.filter(status__in=statuses).count()
-            if value_count:
-                availability_facets.append({"value": value, "count": value_count})
+        availability_counts = availability_base.aggregate(
+            **{
+                value: models.Count(
+                    "id", filter=models.Q(status__in=statuses), distinct=True
+                )
+                for value, statuses in AVAILABILITY_STATUSES.items()
+            }
+        )
+        availability_facets = [
+            {"value": value, "count": availability_counts[value]}
+            for value in AVAILABILITY_STATUSES
+            if availability_counts[value]
+        ]
 
         data = {
             "types": types,
@@ -354,7 +375,7 @@ class ItemViewSet(viewsets.ModelViewSet, ItemBaseViewSet):
         """Return items belonging to the authenticated user."""
         return (
             Item.objects.get_for_user(self.request.user)
-            .select_related("user")
+            .select_related("user", "location")
             .prefetch_related("images")
         )
 

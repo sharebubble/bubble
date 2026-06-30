@@ -8,7 +8,9 @@ from unittest.mock import patch
 
 from constance import config
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import connection
 from django.test import TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from PIL import Image as PILImage
 from rest_framework import status
@@ -17,7 +19,14 @@ from rest_framework.test import APIClient
 from bubble.collections.models import Collection, CollectionItem
 from bubble.core.permissions_config import DefaultGroup
 from bubble.items.ai.image_analyze import ItemImageResult
-from bubble.items.models import Image, Item, ItemStatus, SalesType, VisibilityType
+from bubble.items.models import (
+    Image,
+    Item,
+    ItemStatus,
+    Location,
+    SalesType,
+    VisibilityType,
+)
 from bubble.items.tests.factories import ItemOwnerUserFactory
 from bubble.users.tests.factories import UserFactory
 
@@ -1424,3 +1433,78 @@ class PublicItemFacetTestCase(TestCase):
         assert response.status_code == status.HTTP_200_OK
         names = {item["name"] for item in response.json()["results"]}
         assert names == {self.alice_tool.name, self.alice_book.name}
+
+
+class ItemListQueryCountTests(TestCase):
+    """Guard the item list endpoints against per-item (N+1) query growth.
+
+    The public item list serializes ``first_image`` and ``location_detail`` for
+    every row. Both used to issue an extra query per item — ``get_first_image``
+    re-ordered the queryset (busting the prefetch cache) and ``location_detail``
+    had no ``select_related``. These tests assert the query count stays constant
+    as the number of items grows, so a regression shows up immediately.
+    """
+
+    def setUp(self):
+        # The list is fetched anonymously; allow anonymous access to PUBLIC items.
+        config.REQUIRE_LOGIN = False
+
+    @staticmethod
+    def _jpeg_bytes():
+        """Return the bytes of a tiny valid JPEG (so thumbnail URLs resolve)."""
+        buf = BytesIO()
+        PILImage.new("RGB", (10, 10), color="blue").save(buf, format="JPEG")
+        return buf.getvalue()
+
+    def _make_item(self, owner, idx):
+        location = Location.objects.create(name=f"Shelf {idx}")
+        item = Item.objects.create(
+            name=f"Item {idx}",
+            description="desc",
+            user=owner,
+            sales_type=SalesType.SELL,
+            status=ItemStatus.AVAILABLE,
+            visibility=VisibilityType.PUBLIC,
+            location=location,
+        )
+        # Two images so ordering actually has something to choose from.
+        for ordering in (1, 0):
+            Image.objects.create(
+                item=item,
+                original=SimpleUploadedFile(
+                    f"img-{idx}-{ordering}.jpg",
+                    self._jpeg_bytes(),
+                    content_type="image/jpeg",
+                ),
+                ordering=ordering,
+            )
+        return item
+
+    def _count_queries_for(self, n_items):
+        Item.objects.all().delete()
+        Location.objects.all().delete()
+        owner = ItemOwnerUserFactory(
+            username=f"owner{n_items}",
+            email=f"owner{n_items}@example.com",
+            password=TEST_PASSWORD,
+        )
+        for idx in range(n_items):
+            self._make_item(owner, idx)
+
+        client = APIClient()
+        url = reverse("api:public-item-list")
+        # Make sure the page is large enough to hold every item created.
+        with CaptureQueriesContext(connection) as ctx:
+            response = client.get(url, {"page_size": 100})
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.json()["results"]) == n_items
+        return len(ctx.captured_queries)
+
+    def test_public_list_query_count_is_constant(self):
+        """A page of 1 item and a page of 5 items issue the same #queries."""
+        baseline = self._count_queries_for(1)
+        larger = self._count_queries_for(5)
+        assert larger == baseline, (
+            f"Item list query count grows with rows (N+1): "
+            f"{baseline} queries for 1 item vs {larger} for 5"
+        )
