@@ -97,7 +97,7 @@ live environment we need an **API/management-command based** seeding+teardown pa
         ┌───────────────────────────────▼──────────────────────────────┐
         │  push to main                                                 │
         │   → lint + pytest + build images (main-<sha>)                 │
-        │   → ArgoCD deploys stage (main.sharebubble.org); CI syncs+waits│
+        │   → ArgoCD ApplicationSet auto-deploys main-<sha> to stage    │
         │   → version guard: poll /api/version until git_sha == <sha>   │
         │   → E2E against stage                                         │
         │   → [green] release-please proposes a version → tag → promote │
@@ -299,11 +299,10 @@ A single linear, gated pipeline. Each step is `needs:` the previous.
 1. **Lint + pytest** — existing `linter` + `pytest` jobs.
 2. **Build & push images** — existing `build-backend` / `build-frontend`, tagged
    `main-<sha>`. The SHA is **baked into the image** as a build arg (see §7.2).
-3. **Deploy to stage (via ArgoCD)** — stage is reconciled by **ArgoCD** (GitOps,
-   pull-based), so CI does **not** run `helm upgrade` against the cluster. Instead the
-   pipeline makes Argo converge on `main-<sha>` and waits. Two integration styles
-   (see §7.1a) — recommended: pin the exact SHA in the GitOps source and
-   `argocd app sync --wait`.
+3. **Deploy to stage (ArgoCD ApplicationSet, auto-sync)** — stage is deployed by an
+   **ArgoCD ApplicationSet** that reads the `main` head SHA and renders an Application
+   pinned to the immutable image `main-<sha>`, always auto-syncing (see §7.1a). CI
+   does **not** drive the deploy at all — it just proceeds to the version guard.
 4. **Version guard** — after Argo reports Synced + Healthy, **poll the stage version
    endpoint until it reports the exact `<sha>`** (see §7.2), with a timeout (e.g. 10
    min) and backoff. Argo "Healthy" means the rollout's readiness probes passed, **not**
@@ -335,34 +334,69 @@ the E2E workflow only** (`workflows: [main-pipeline], types: [completed]`, guard
 `conclusion == 'success'`). Either way the invariant is: release-please only ever
 runs after a green stage E2E for that commit.
 
-### 7.1a Driving the ArgoCD deploy from CI
+### 7.1a Stage deploy: ArgoCD ApplicationSet (auto-sync to the latest `main` SHA)
 
-Stage is updated by **ArgoCD** today. The Helm chart lives in `helm/` (image tags
-default to `latest` in `values.yaml`); the ArgoCD `Application` and the env-specific
-values it points at live in the GitOps source Argo watches (this repo's `helm/` path
-or a separate config repo). CI needs a **deterministic "deploy exactly `<sha>` now,
-then tell me when it's live"** handshake. Two options:
+Stage is deployed by an **ArgoCD ApplicationSet** that reads the head commit SHA of
+`main` and renders an Application pinned to the exact image `main-<sha>`, with
+**auto-sync always on** (`syncPolicy.automated`, `selfHeal` + `prune`). So **every
+push to `main` is deployed to stage automatically, pinned to that commit's immutable
+image** — no CI-driven `helm upgrade`, no GitOps values bump, no manual
+`argocd app sync`.
 
-- **Recommended — pin-and-sync (deterministic).** CI writes `main-<sha>` into the
-  image tag the ArgoCD app reads (commit to the GitOps source; if that's a separate
-  repo, use a deploy key / PAT in a GitHub environment secret), then runs
-  `argocd app sync <app>` and **`argocd app wait <app> --sync --health --timeout ...`**
-  (Argo CLI/API + token as a secret). This gives an explicit deploy target and a clean
-  completion signal per commit, so the pipeline never guesses. **Prefer pinning the
-  image digest (`@sha256:…`) or the immutable `main-<sha>` tag**, not a floating `main`
-  tag, so Argo has a real diff to sync and the version guard has an exact target.
-- **Alternative — auto-sync / ArgoCD Image Updater (less deterministic).** If Argo
-  auto-syncs on new images or a floating `main` tag, CI does no git bump — it just
-  proceeds to the **version guard**, which polls `/api/version` until it reports
-  `<sha>` (longer timeout to cover Argo's reconcile interval). Simpler, but CI has no
-  positive "sync started for *this* commit" signal, so a stuck/slow reconcile only
-  surfaces as a guard timeout. If we go this route, the version guard is doing all the
-  synchronization work.
+Generator: an **SCM Provider generator** filtered to the `main` branch of
+`sharebubble/bubble`, exposing `{{ .sha }}` (branch head). With `goTemplate: true`
+the template sets the Helm image tags from it:
 
-Either way, **the version guard (step 4) stays** — it's the only check that confirms
-the Service is actually serving `<sha>` before E2E starts, independent of how Argo was
-driven. If the GitOps source is a repo outside `sharebubble/bubble`, note the
-cross-repo write needs its own credential (this session is scoped to `sharebubble/bubble`).
+```yaml
+# sketch — ApplicationSet
+spec:
+  goTemplate: true
+  generators:
+    - scmProvider:
+        github: { organization: sharebubble }
+        filters: [{ branchMatch: '^main$', repositoryMatch: '^bubble$' }]
+        requeueAfterSeconds: 60          # or drive via webhook for promptness
+  template:
+    spec:
+      source:
+        helm:
+          parameters:
+            - { name: backend.image.tag,  value: 'main-{{ .sha | trunc 7 }}' }
+            - { name: frontend.image.tag, value: 'main-{{ .sha | trunc 7 }}' }
+      syncPolicy:
+        automated: { prune: true, selfHeal: true }
+```
+
+**Tag-format alignment (correctness gotcha).** CI builds `main-<sha>` via
+`docker/metadata-action` (`type=ref,event=branch,suffix=-{{sha}}`, which emits the
+**short 7-char** SHA). The ApplicationSet must render the **same** string, hence
+`main-{{ .sha | trunc 7 }}`. If the formats diverge (short vs full SHA), Argo pins a
+tag CI never pushed → pods `ImagePullBackOff` and the version guard times out. Pin the
+format in one place and assert it (a tiny CI check comparing the built tag to the
+templated tag).
+
+**Ordering.** The image must exist before Argo pulls it. Per push:
+(1) CI builds+pushes `main-<sha>`; (2) the ApplicationSet re-scans, sees the new head
+SHA, auto-syncs, pulls `main-<sha>`; (3) the version guard confirms serving. If the
+build fails the image is absent, Argo sits in `ImagePullBackOff`, the guard times out,
+and release-please never runs — exactly the behavior we want.
+
+**Consequence for CI — the version guard is the *sole* sync primitive.** With
+auto-sync always on, CI has no "sync started for this commit" signal, so step 4's
+timeout must comfortably cover *ApplicationSet requeue interval + sync + rollout*.
+Optionally CI can POST to the ApplicationSet/Argo **webhook** right after the image
+push to cut requeue latency (needs an Argo token/webhook secret) — a nice-to-have, not
+required.
+
+**Superseded-commit race (must handle).** Because the ApplicationSet always deploys
+the *latest* `main` SHA, if commit N+1 lands while commit N's pipeline is still
+waiting, stage jumps to N+1 and the guard polling for `main-<shaN>` never matches →
+false failure for N. Fix: give the main pipeline a **stable concurrency group with
+`cancel-in-progress: true`** (e.g. `group: main-e2e-gate`), so a newer commit cancels
+the older run. This mirrors ApplicationSet semantics — only the latest commit matters,
+and only the latest commit's E2E should gate a release. (Note: `ci.yml` today keys
+concurrency on `run_id` for pushes, which does *not* cancel across commits; the E2E
+pipeline needs its own stable-group concurrency.)
 
 ### 7.2 Version endpoint & SHA baking (new prerequisite)
 
@@ -402,8 +436,9 @@ Store in GitHub Actions secrets / environment `production-e2e`:
 - `E2E_BASE_URL` = `https://main.sharebubble.org`, `E2E_API_URL` (if split).
 - `E2E_USER_*` credentials for each pooled user (owner, renter-a, renter-b, admin).
 - `E2E_ALLOW=1` and any seed/purge auth for the management-command path.
-- `ARGOCD_SERVER` + `ARGOCD_AUTH_TOKEN` for `argocd app sync/wait`; if the GitOps
-  source is a separate repo, a deploy key / PAT to write the image-tag bump (§7.1a).
+- *(optional)* `ARGOCD_SERVER` + `ARGOCD_AUTH_TOKEN` **only** if CI pokes the
+  ApplicationSet/Argo webhook to cut requeue latency (§7.1a). The auto-syncing
+  ApplicationSet needs no CI-side deploy credential otherwise.
 - `ANTHROPIC_API_KEY` for the generator.
 - Optional: `SLACK_WEBHOOK`/Sentry DSN for alerting.
 
@@ -428,6 +463,8 @@ Config precedence: env vars → `e2e/.env` (local only, git-ignored) → default
 | Tests mutate/pollute stage data | Namespaced records + `purge_e2e` guarded by `E2E_ALLOW`; nightly janitor; `@destructive` only touches self-created data. |
 | Chicken-and-egg: can't test the release before it exists | Decouple deploy-to-stage from cut-a-release: stage redeploys on every `main` push, E2E runs there, only the prod release is gated (§7.0). |
 | E2E runs before the rollout finishes → tests the old image | **Version guard** polls `/api/version` (+ frontend SHA) until both equal the commit `<sha>` before E2E starts (§7.2). |
+| ApplicationSet auto-syncs to newest SHA → in-flight older pipeline's guard never matches | Stable-group concurrency with `cancel-in-progress` cancels superseded runs (§7.1a). |
+| ApplicationSet renders a tag CI never pushed (short/full SHA mismatch) | Align tag format (`main-{{ .sha \| trunc 7 }}`) + CI assertion that built tag == templated tag (§7.1a). |
 | AI generates flaky/incorrect tests | Self-verification loop (§5.2) — only committed if green; PR-only; human/auto-merge policy; smoke tier kept tiny and stable. |
 | Selector fragility with Mantine | Mandatory `data-testid`; generator adds them to components in the same PR. |
 | Live-env flakiness (network) | Retries, trace-on-failure, smoke/regression split, run isolation. |
@@ -448,12 +485,11 @@ Config precedence: env vars → `e2e/.env` (local only, git-ignored) → default
   create-item form, booking actions).
 - Backend `seed_e2e` / `purge_e2e` management commands + an E2E namespace field or
   reserved account convention (§6.2).
-- **ArgoCD integration** (stage deploy, §7.1a): confirm where the ArgoCD `Application`
-  and its image-tag values live (this repo's `helm/` vs. a separate GitOps repo), and
-  provision what CI needs — an Argo API token (for `argocd app sync/wait`) and, for the
-  pin-and-sync option, write access to the GitOps source (deploy key/PAT if it's a
-  separate repo). Also confirm stage exposes allauth headless + `/api/auth-token/` +
-  `/api/version` to the CI runner (network/CORS/allowed hosts).
+- **ArgoCD ApplicationSet** (stage deploy, §7.1a): author the SCM-generator
+  ApplicationSet that pins `main-{{ .sha | trunc 7 }}` and auto-syncs; ensure its
+  rendered tag **exactly matches** CI's `docker/metadata-action` output, and add a CI
+  check asserting the two agree. Also confirm stage exposes allauth headless +
+  `/api/auth-token/` + `/api/version` to the CI runner (network/CORS/allowed hosts).
 
 ---
 
@@ -473,10 +509,11 @@ Config precedence: env vars → `e2e/.env` (local only, git-ignored) → default
 
 **Phase D — CI wiring**
 - [ ] Version endpoint + `GIT_SHA` build-arg in both Dockerfiles (§7.2).
-- [ ] ArgoCD handshake (§7.1a): pin `main-<sha>` in the GitOps source + `argocd app
-      sync/wait`, with Argo token / GitOps write creds as secrets.
-- [ ] `main-pipeline.yml`: lint+pytest → build(`main-<sha>`) → ArgoCD sync+wait →
-      version-guard(==`<sha>`) → E2E(stage) → **release-please gated on E2E green**.
+- [ ] ArgoCD ApplicationSet (§7.1a): SCM generator on `main`, pin
+      `main-{{ .sha | trunc 7 }}`, auto-sync; CI check that its tag matches the built tag.
+- [ ] `main-pipeline.yml`: stable-group concurrency w/ `cancel-in-progress`;
+      lint+pytest → build(`main-<sha>`) → version-guard(==`<sha>`) → E2E(stage) →
+      **release-please gated on E2E green**. (No CI-driven deploy — Argo auto-syncs.)
 - [ ] Move/gate release-please so it runs **only** after a green stage E2E (drop the
       ungated push-to-`main` trigger, or chain via `workflow_run` on success).
 - [ ] `e2e-scheduled.yml`: nightly full run vs stage, writes `e2e-main`, artifacts.
