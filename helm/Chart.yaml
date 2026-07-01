@@ -2,7 +2,7 @@ apiVersion: v2
 name: sharebubble
 description: A Helm chart for Sharebubble
 type: application
-version: 0.2.1
+version: 0.3.0
 appVersion: '0.2.1'
 
 keywords:
@@ -22,6 +22,6 @@ sources:
 
 dependencies:
   - name: rustfs
-    version: "0.1.0"
+    version: "0.8.0"
     repository: "https://charts.rustfs.com"
     condition: rustfs.enabled
