@@ -97,7 +97,7 @@ live environment we need an **API/management-command based** seeding+teardown pa
         ┌───────────────────────────────▼──────────────────────────────┐
         │  push to main                                                 │
         │   → lint + pytest + build images (main-<sha>)                 │
-        │   → deploy stage (main.sharebubble.org)                       │
+        │   → ArgoCD deploys stage (main.sharebubble.org); CI syncs+waits│
         │   → version guard: poll /api/version until git_sha == <sha>   │
         │   → E2E against stage                                         │
         │   → [green] release-please proposes a version → tag → promote │
@@ -299,20 +299,20 @@ A single linear, gated pipeline. Each step is `needs:` the previous.
 1. **Lint + pytest** — existing `linter` + `pytest` jobs.
 2. **Build & push images** — existing `build-backend` / `build-frontend`, tagged
    `main-<sha>`. The SHA is **baked into the image** as a build arg (see §7.2).
-3. **Deploy to stage** — roll `main.sharebubble.org` to the `main-<sha>` images.
-   Mechanism depends on how stage CD works today (Helm chart is in `helm/`):
-   - If GitOps (ArgoCD/Flux): bump `backend.image.tag` / `frontend.image.tag` in the
-     env's values (commit/PR to the config repo) and let the controller sync, **or**
-     trigger a sync via its API.
-   - If push-based: a job runs `helm upgrade --set backend.image.tag=main-<sha>
-     --set frontend.image.tag=main-<sha>` against the stage cluster (kubeconfig in a
-     GitHub environment secret).
-4. **Version guard** — **poll the stage version endpoint until it reports the exact
-   `<sha>`** (see §7.2), with a timeout (e.g. 10 min) and backoff. This is what makes
-   the pipeline correct under k8s rolling updates: without it, E2E can hit pods still
-   serving the previous image and produce a false pass/fail. Guard **both** tiers
-   (backend `/api/version` and the frontend build SHA) so we don't test a new backend
-   behind an old frontend or vice-versa.
+3. **Deploy to stage (via ArgoCD)** — stage is reconciled by **ArgoCD** (GitOps,
+   pull-based), so CI does **not** run `helm upgrade` against the cluster. Instead the
+   pipeline makes Argo converge on `main-<sha>` and waits. Two integration styles
+   (see §7.1a) — recommended: pin the exact SHA in the GitOps source and
+   `argocd app sync --wait`.
+4. **Version guard** — after Argo reports Synced + Healthy, **poll the stage version
+   endpoint until it reports the exact `<sha>`** (see §7.2), with a timeout (e.g. 10
+   min) and backoff. Argo "Healthy" means the rollout's readiness probes passed, **not**
+   that every pod behind the Service already serves the new image — during a rolling
+   update old and new pods coexist. The version guard is the authoritative
+   "is the commit under test actually being served?" check, and it belongs in CI
+   regardless of the Argo integration style. Guard **both** tiers (backend
+   `/api/version` and the frontend build SHA) so we don't test a new backend behind an
+   old frontend or vice-versa.
 5. **E2E against stage** — `E2E_BASE_URL=https://main.sharebubble.org`, run
    `@smoke @regression`. Upload HTML report + traces as artifacts. Write the result
    to a commit **status/check** named `e2e-main` on the `<sha>`.
@@ -334,6 +334,35 @@ ungated) and make it the terminal, `needs`-gated job of this pipeline — or kee
 the E2E workflow only** (`workflows: [main-pipeline], types: [completed]`, guarded by
 `conclusion == 'success'`). Either way the invariant is: release-please only ever
 runs after a green stage E2E for that commit.
+
+### 7.1a Driving the ArgoCD deploy from CI
+
+Stage is updated by **ArgoCD** today. The Helm chart lives in `helm/` (image tags
+default to `latest` in `values.yaml`); the ArgoCD `Application` and the env-specific
+values it points at live in the GitOps source Argo watches (this repo's `helm/` path
+or a separate config repo). CI needs a **deterministic "deploy exactly `<sha>` now,
+then tell me when it's live"** handshake. Two options:
+
+- **Recommended — pin-and-sync (deterministic).** CI writes `main-<sha>` into the
+  image tag the ArgoCD app reads (commit to the GitOps source; if that's a separate
+  repo, use a deploy key / PAT in a GitHub environment secret), then runs
+  `argocd app sync <app>` and **`argocd app wait <app> --sync --health --timeout ...`**
+  (Argo CLI/API + token as a secret). This gives an explicit deploy target and a clean
+  completion signal per commit, so the pipeline never guesses. **Prefer pinning the
+  image digest (`@sha256:…`) or the immutable `main-<sha>` tag**, not a floating `main`
+  tag, so Argo has a real diff to sync and the version guard has an exact target.
+- **Alternative — auto-sync / ArgoCD Image Updater (less deterministic).** If Argo
+  auto-syncs on new images or a floating `main` tag, CI does no git bump — it just
+  proceeds to the **version guard**, which polls `/api/version` until it reports
+  `<sha>` (longer timeout to cover Argo's reconcile interval). Simpler, but CI has no
+  positive "sync started for *this* commit" signal, so a stuck/slow reconcile only
+  surfaces as a guard timeout. If we go this route, the version guard is doing all the
+  synchronization work.
+
+Either way, **the version guard (step 4) stays** — it's the only check that confirms
+the Service is actually serving `<sha>` before E2E starts, independent of how Argo was
+driven. If the GitOps source is a repo outside `sharebubble/bubble`, note the
+cross-repo write needs its own credential (this session is scoped to `sharebubble/bubble`).
 
 ### 7.2 Version endpoint & SHA baking (new prerequisite)
 
@@ -373,6 +402,8 @@ Store in GitHub Actions secrets / environment `production-e2e`:
 - `E2E_BASE_URL` = `https://main.sharebubble.org`, `E2E_API_URL` (if split).
 - `E2E_USER_*` credentials for each pooled user (owner, renter-a, renter-b, admin).
 - `E2E_ALLOW=1` and any seed/purge auth for the management-command path.
+- `ARGOCD_SERVER` + `ARGOCD_AUTH_TOKEN` for `argocd app sync/wait`; if the GitOps
+  source is a separate repo, a deploy key / PAT to write the image-tag bump (§7.1a).
 - `ANTHROPIC_API_KEY` for the generator.
 - Optional: `SLACK_WEBHOOK`/Sentry DSN for alerting.
 
@@ -417,10 +448,12 @@ Config precedence: env vars → `e2e/.env` (local only, git-ignored) → default
   create-item form, booking actions).
 - Backend `seed_e2e` / `purge_e2e` management commands + an E2E namespace field or
   reserved account convention (§6.2).
-- Confirm the **stage deploy mechanism** for `main.sharebubble.org` (GitOps sync vs.
-  push-based `helm upgrade`) so step 3 of the pipeline can drive it, and that stage
-  exposes allauth headless + `/api/auth-token/` + `/api/version` to the CI runner
-  (network/CORS/allowed hosts).
+- **ArgoCD integration** (stage deploy, §7.1a): confirm where the ArgoCD `Application`
+  and its image-tag values live (this repo's `helm/` vs. a separate GitOps repo), and
+  provision what CI needs — an Argo API token (for `argocd app sync/wait`) and, for the
+  pin-and-sync option, write access to the GitOps source (deploy key/PAT if it's a
+  separate repo). Also confirm stage exposes allauth headless + `/api/auth-token/` +
+  `/api/version` to the CI runner (network/CORS/allowed hosts).
 
 ---
 
@@ -440,7 +473,9 @@ Config precedence: env vars → `e2e/.env` (local only, git-ignored) → default
 
 **Phase D — CI wiring**
 - [ ] Version endpoint + `GIT_SHA` build-arg in both Dockerfiles (§7.2).
-- [ ] `main-pipeline.yml`: lint+pytest → build(`main-<sha>`) → deploy stage →
+- [ ] ArgoCD handshake (§7.1a): pin `main-<sha>` in the GitOps source + `argocd app
+      sync/wait`, with Argo token / GitOps write creds as secrets.
+- [ ] `main-pipeline.yml`: lint+pytest → build(`main-<sha>`) → ArgoCD sync+wait →
       version-guard(==`<sha>`) → E2E(stage) → **release-please gated on E2E green**.
 - [ ] Move/gate release-please so it runs **only** after a green stage E2E (drop the
       ungated push-to-`main` trigger, or chain via `workflow_run` on success).
