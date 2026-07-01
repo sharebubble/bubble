@@ -247,7 +247,7 @@ postgresql:
 
   image:
     repository: postgres
-    tag: "17"
+    tag: "18"
     pullPolicy: IfNotPresent
 
   # PostgreSQL credentials

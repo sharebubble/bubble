@@ -35,6 +35,9 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "bubble.fullname" . }}-postgresql
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           livenessProbe:
             exec:
               command:
