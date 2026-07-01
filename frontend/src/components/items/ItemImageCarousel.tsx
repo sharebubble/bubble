@@ -235,7 +235,7 @@ export const ItemImageCarousel = ({ images, itemName }: ItemImageCarouselProps) 
                   className="flex items-center justify-center"
                 >
                   <img
-                    src={image.original || imageSrc(image)}
+                    src={imageSrc(image)}
                     alt={`${itemName} — ${index + 1}`}
                     onPointerDown={handlePointerDown}
                     onClick={e => {
