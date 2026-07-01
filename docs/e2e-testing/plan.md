@@ -503,9 +503,11 @@ Config precedence: env vars → `e2e/.env` (local only, git-ignored) → default
       against local `just up`.
 
 **Phase C — Data lifecycle (unblocks realistic tests)**
-- [ ] `seed_e2e` / `purge_e2e` commands (or API-only fixture) with `E2E_ALLOW` guard.
-- [ ] `testData` fixture with automatic namespaced teardown.
-- [ ] Multi-user booking flow spec (owner ↔ renter offer/counter/confirm).
+- [x] `seed_e2e` / `purge_e2e` commands with `E2E_ALLOW` guard (namespaced purge,
+      `--run-id`/`--dry-run`/`--users`; pool users get verified emails + Default group).
+- [x] `testData` fixture + per-test API cleanup with run-scoped namespacing.
+- [x] Multi-user booking flow spec: negotiation (offer→counter→confirm→complete)
+      and the overlap exclusion constraint (owner + renterA + renterB).
 
 **Phase D — CI wiring**
 - [ ] Version endpoint + `GIT_SHA` build-arg in both Dockerfiles (§7.2).

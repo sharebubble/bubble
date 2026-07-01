@@ -40,6 +40,26 @@ Browser projects depend on the `setup` project, which authenticates the pooled
 users once and saves a `storageState` per role. Without credentials the setup is
 skipped and only credential-free specs (e.g. `smoke/`) run.
 
+## Test data: seed & purge (backend commands)
+
+The multi-user specs need a pool of real users on the target environment. Two
+Django management commands manage the pool and clean up test data. Both refuse to
+run unless `E2E_ALLOW=1` (so they can never hit production by accident):
+
+```bash
+# provision/refresh the pool (reads the same E2E_<ROLE>_* env vars)
+E2E_ALLOW=1 <role env...> python manage.py seed_e2e
+
+# delete E2E-namespaced data (items cascade to bookings/messages/images)
+E2E_ALLOW=1 python manage.py purge_e2e            # all runs
+E2E_ALLOW=1 python manage.py purge_e2e --run-id X # one run
+E2E_ALLOW=1 python manage.py purge_e2e --dry-run  # preview
+E2E_ALLOW=1 python manage.py purge_e2e --users    # also remove the pool users
+```
+
+Specs create only namespaced data (`E2E-<runId>::…`) and delete it at end of
+test; `purge_e2e` is the janitor backstop for anything a crashed run leaks.
+
 ## Version guard (CI)
 
 ```bash
