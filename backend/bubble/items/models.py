@@ -9,7 +9,7 @@ from djmoney.models.fields import MoneyField
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from guardian.shortcuts import assign_perm, get_objects_for_user
 from imagekit.models import ImageSpecField
-from imagekit.processors import ResizeToCover, ResizeToFill
+from imagekit.processors import ResizeToFill, ResizeToFit
 from PIL import ImageOps as PILImageOps
 from simple_history.models import HistoricalRecords
 
@@ -422,17 +422,23 @@ class Image(models.Model):
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="images")
     ordering = models.IntegerField(default=0)
 
+    # Small grid/card thumbnail. Cropped to a fixed box.
     thumbnail = ImageSpecField(
         source="original",
         processors=[ExifTranspose(), ResizeToFill(300, 200)],
         format="JPEG",
-        options={"quality": 88},
+        options={"quality": 80, "optimize": True, "progressive": True},
     )
+    # Scaled-down image served on the item detail page. ``ResizeToFit`` bounds
+    # the longest edge to 1200px (without upscaling smaller originals), which
+    # produces a much lighter file than the full-resolution original while
+    # staying sharp on typical viewports. ``optimize``/``progressive`` shave
+    # off additional bytes and let the image render top-to-bottom as it loads.
     preview = ImageSpecField(
         source="original",
-        processors=[ExifTranspose(), ResizeToCover(1200, 1200)],
+        processors=[ExifTranspose(), ResizeToFit(1200, 1200, upscale=False)],
         format="JPEG",
-        options={"quality": 88},
+        options={"quality": 80, "optimize": True, "progressive": True},
     )
 
     class Meta:
