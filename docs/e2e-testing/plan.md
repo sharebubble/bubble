@@ -8,7 +8,7 @@ Stand up an end-to-end (E2E) test suite for Bubble that is:
 2. **Generated and maintained by AI** — Claude detects app functionality (routes,
    API surface, UI flows), writes the specs, and **adapts them when features
    change** instead of us hand-editing every test.
-3. **Run regularly in CI/CD against `https://main.sharebubble.com`**.
+3. **Run regularly in CI/CD against `https://main.sharebubble.org`**.
 4. **A hard gate on releases** — a new release (git tag `v*.*.*` and the `promote`
    step that ships `:latest` images) can only be created when the latest E2E run
    is green.
@@ -49,14 +49,29 @@ CI (see §2) and is organized as phased, checkable work (see §12).
   maintains a **release PR**; merging it bumps the version and creates the
   `v*.*.*` tag, which triggers `promote`.
 
-**Consequence for the gate**: the release "happens" at the tag → `promote` step.
-So the gate is implemented by making a green E2E run a **required precondition of
-tagging / promoting** (see §7).
+**Deployment**: the app runs on **Kubernetes via the Helm chart** (`helm/`).
+Image tags are set by `backend.image.tag` / `frontend.image.tag` in
+`helm/values.yaml`; images are published to GHCR tagged `main-<sha>` on every push
+to `main`. **`main.sharebubble.org` is a fully-functional stage/testing
+environment** (not production) that tracks `main`. Because it is stage, seeding can
+be liberal — but we still namespace and clean up (see §6) so parallel runs and
+manual testing on stage don't collide.
+
+**Consequence for the gate**: the release "happens" at the tag → `promote` step,
+and `promote` is what ships `:latest` to production. The gate is therefore:
+deploy each `main` commit to **stage**, run E2E against stage, and only then let
+**release-please propose a version** (which, when merged, tags and promotes to
+prod). See §7 for the full pipeline and why this cleanly avoids a
+chicken-and-egg cycle.
+
+**No version endpoint exists yet.** To know that stage is actually serving the
+commit under test (k8s rolling updates lag), we must add a version endpoint that
+reports the built git SHA (see §7.1 and §11).
 
 **Existing test data tooling**: pytest `factory_boy` factories exist per app
 (`backend/bubble/*/tests/factories.py`) but are unit-test only. For E2E against a
 live environment we need an **API/management-command based** seeding+teardown path
-(see §6) — we do **not** reuse the pytest DB fixtures against prod.
+(see §6) — we do **not** reuse the pytest DB fixtures against the stage DB.
 
 ---
 
@@ -77,18 +92,22 @@ live environment we need an **API/management-command based** seeding+teardown pa
                     ┌────────────────────▼─────────────────────┐
                     │  e2e/  (Playwright project, versioned)     │
                     │  fixtures · page objects · specs · seeding │
-                    └───────┬───────────────────────┬───────────┘
-        scheduled / on-deploy│                       │ pre-release
-                    ┌────────▼─────────┐    ┌────────▼──────────┐
-                    │ e2e-scheduled.yml│    │ release-gate.yml  │
-                    │ cron + deploy →  │    │ tag-time E2E must │
-                    │ main.sharebubble │    │ be green → promote│
-                    └──────────────────┘    └───────────────────┘
+                    └───────────────────┬───────────────────────┘
+                                        │ consumed by the main pipeline (§7)
+        ┌───────────────────────────────▼──────────────────────────────┐
+        │  push to main                                                 │
+        │   → lint + pytest + build images (main-<sha>)                 │
+        │   → deploy stage (main.sharebubble.org)                       │
+        │   → version guard: poll /api/version until git_sha == <sha>   │
+        │   → E2E against stage                                         │
+        │   → [green] release-please proposes a version → tag → promote │
+        └───────────────────────────────────────────────────────────────┘
 ```
 
 Three moving parts: **(a)** a versioned Playwright project in `e2e/`, **(b)** an
-AI generator/adapter that keeps `e2e/` in sync with the app, and **(c)** CI
-workflows that run it on a schedule and as a release gate.
+AI generator/adapter that keeps `e2e/` in sync with the app, and **(c)** a CI
+pipeline that deploys each `main` commit to stage, verifies the running version,
+runs E2E, and gates release-please on the result (plus a scheduled run for drift).
 
 ---
 
@@ -122,7 +141,7 @@ e2e/
 Key config decisions:
 
 - **`baseURL` and `apiURL` come from env** (`E2E_BASE_URL` defaults to
-  `https://main.sharebubble.com`) so the same suite runs against local, staging,
+  `https://main.sharebubble.org`) so the same suite runs against local, staging,
   and the release-gate target with no code change.
 - **`storageState` per role**: log each pooled user in once in a setup project,
   persist the session/CSRF cookies, and reuse them — fast and parallel-safe.
@@ -136,7 +155,7 @@ Key config decisions:
   to absorb network flakiness against a live environment.
 
 **Deliverables:** runnable `npx playwright test` locally against a dev stack
-(`just up`) and against `main.sharebubble.com` with `E2E_BASE_URL` set.
+(`just up`) and against `main.sharebubble.org` with `E2E_BASE_URL` set.
 
 ---
 
@@ -207,24 +226,26 @@ data that is created and then removed.
 
 ### 6.1 User pool
 
-- A fixed pool of **dedicated E2E users** on `main.sharebubble.com`, e.g.
+- A fixed pool of **dedicated E2E users** on `main.sharebubble.org`, e.g.
   `e2e-owner`, `e2e-renter-a`, `e2e-renter-b`, `e2e-admin`. Credentials live in
   GitHub Secrets (see §8), never in the repo.
 - The `auth`/`users` fixtures log each in via the **allauth headless** endpoints
   (or DRF `/api/auth-token/` for pure API setup) and cache `storageState`.
 - Roles map to real app capabilities so permission-dependent UI is exercised.
 
-### 6.2 Data seeding & teardown (the safe part)
+### 6.2 Data seeding & teardown
 
-Two options; **prefer the management-command approach** for a production-adjacent
-target:
+Since `main.sharebubble.org` is a **stage** environment (not production), seeding can
+be liberal — we can even reset to a known baseline dataset. We still namespace and
+clean up so parallel pipeline runs, the scheduled run, and humans testing on stage
+don't collide. Two options; **prefer the management-command approach**:
 
 - **Preferred — backend seed/purge commands**: add `manage.py seed_e2e` and
   `manage.py purge_e2e` that create/delete records **tagged with an E2E namespace**
   (`E2E-<runId>` in a dedicated field or via a reserved test account). `purge_e2e`
   only ever deletes namespaced records, and both commands **refuse to run unless an
-  explicit `E2E_ALLOW=1` env is set** and the target is flagged non-critical. This
-  guarantees prod-safe, complete cleanup even if a test crashes mid-run.
+  explicit `E2E_ALLOW=1` env is set** (a guard against ever pointing them at prod).
+  This guarantees complete cleanup even if a test crashes mid-run.
 - **Alternative — API-only**: the `testData` fixture creates everything through the
   public API using the pooled users and records created UUIDs, then deletes them in
   an `afterAll`/finalizer. Simpler, but a crashed run can leak data (mitigated by a
@@ -237,7 +258,7 @@ target:
 - `@destructive` tests (delete item, cancel booking) operate **only** on data they
   created in the same test.
 - A **nightly janitor** job runs `purge_e2e` (or the namespaced API sweep) to catch
-  anything a crashed run leaked, keeping `main.sharebubble.com` clean.
+  anything a crashed run leaked, keeping `main.sharebubble.org` clean.
 
 ### 6.4 Coverage matrix (what "all kinds of cases" means here)
 
@@ -254,48 +275,94 @@ target:
 
 ---
 
-## 7. Phase D — CI/CD: scheduled runs + release gate
+## 7. Phase D — CI/CD: the main pipeline & release gate
 
-### 7.1 Scheduled / on-deploy run — `e2e-scheduled.yml`
+### 7.0 The chicken-and-egg problem and how we avoid it
 
-- **Triggers**: `schedule` (cron, e.g. every 2 h during the day), `workflow_dispatch`,
-  and a `repository_dispatch`/`workflow_run` fired **after a successful deploy of
-  `main` to `main.sharebubble.com`** (post-`promote`, or hooked into the deploy).
-- **Job**: install Playwright, run `@smoke @regression` (and full suite on the
-  nightly cron) against `E2E_BASE_URL=https://main.sharebubble.com`.
-- **Outputs**: HTML report + traces as artifacts; write the result to a **commit
-  status / check** named `e2e-main` on the latest `main` SHA, and record
-  latest-green in a small durable place (a `deployments`/status API entry or a
-  badge). This status is what the gate reads.
-- **On failure**: open/annotate an issue, notify (Slack/Sentry), and — because this
-  is the release signal — **block releases** (next section).
+A naive gate — "run E2E against the deployed env *inside* the tag → `promote` step,
+and only promote if green" — is circular: the environment only serves the new code
+**after** it's deployed, but we want E2E to pass **before** we allow the release. So
+E2E would test the *old* code and then wave through *new, untested* code.
 
-### 7.2 Release gate
+**The fix is to separate "deploy to stage" from "cut a release."** Stage
+(`main.sharebubble.org`) is redeployed on **every** push to `main`, unconditionally.
+E2E runs against **stage**. Only the **release** (release-please's version proposal →
+tag → prod `promote`) is gated on that E2E being green. The tested environment
+(stage) and the gated artifact (the prod release) are now different things, so there
+is no cycle: stage always tracks `main` HEAD; the release is strictly downstream of a
+green stage run.
 
-The release currently materializes at **tag `v*.*.*` → `promote`**. Insert the gate
-there. Two complementary layers:
+### 7.1 The main pipeline (on push to `main`) — `main-pipeline.yml`
 
-1. **Gate the tag/release** (recommended primary): make merging the **release-please
-   PR** require the `e2e-main` status to be green. Options:
-   - Add `e2e-main` as a **required status check** on `main` / on the release-please
-     PR via branch protection, so the release PR cannot merge (and thus cannot tag)
-     while E2E is red.
-   - Or add a `release-gate` job in `release-please.yml` that, when
-     `release_created`/PR is about to proceed, **queries the latest `e2e-main`
-     status and fails if not green**.
-2. **Gate the promote step** (defense in depth): add a `needs`/pre-job to the
-   `promote` job in `ci.yml` that runs a **fresh `@smoke` E2E pass against
-   `main.sharebubble.com` at tag time** and fails the promote if red. This ensures
-   we never retag `:latest` on top of a currently-broken environment even if the
-   scheduled status was stale.
+A single linear, gated pipeline. Each step is `needs:` the previous.
 
-Net effect: **no green E2E ⇒ no tag ⇒ no `:latest` promotion ⇒ no release.**
+1. **Lint + pytest** — existing `linter` + `pytest` jobs.
+2. **Build & push images** — existing `build-backend` / `build-frontend`, tagged
+   `main-<sha>`. The SHA is **baked into the image** as a build arg (see §7.2).
+3. **Deploy to stage** — roll `main.sharebubble.org` to the `main-<sha>` images.
+   Mechanism depends on how stage CD works today (Helm chart is in `helm/`):
+   - If GitOps (ArgoCD/Flux): bump `backend.image.tag` / `frontend.image.tag` in the
+     env's values (commit/PR to the config repo) and let the controller sync, **or**
+     trigger a sync via its API.
+   - If push-based: a job runs `helm upgrade --set backend.image.tag=main-<sha>
+     --set frontend.image.tag=main-<sha>` against the stage cluster (kubeconfig in a
+     GitHub environment secret).
+4. **Version guard** — **poll the stage version endpoint until it reports the exact
+   `<sha>`** (see §7.2), with a timeout (e.g. 10 min) and backoff. This is what makes
+   the pipeline correct under k8s rolling updates: without it, E2E can hit pods still
+   serving the previous image and produce a false pass/fail. Guard **both** tiers
+   (backend `/api/version` and the frontend build SHA) so we don't test a new backend
+   behind an old frontend or vice-versa.
+5. **E2E against stage** — `E2E_BASE_URL=https://main.sharebubble.org`, run
+   `@smoke @regression`. Upload HTML report + traces as artifacts. Write the result
+   to a commit **status/check** named `e2e-main` on the `<sha>`.
+6. **Release-please (gated)** — run `googleapis/release-please-action` **only if step
+   5 passed** (`needs: [e2e]`, `if: success()`). This is the "only when E2E passes,
+   release-please suggests a new version" requirement: no green E2E ⇒ release-please
+   does not run ⇒ no release PR is created/updated ⇒ no version, tag, or prod promote.
 
-### 7.3 PR pre-merge smoke (optional, cheap)
+```
+lint+pytest ─▶ build(main-<sha>) ─▶ deploy stage ─▶ version-guard(==<sha>)
+              ─▶ e2e(stage) ──[green]──▶ release-please ──(merge)──▶ tag ─▶ promote(:latest→prod)
+                        └──[red]──▶ stop; no release proposed
+```
+
+**Restructure of existing workflows**: move the release-please trigger out of the
+standalone `release-please.yml` (which currently runs on *every* push to `main`,
+ungated) and make it the terminal, `needs`-gated job of this pipeline — or keep
+`release-please.yml` but trigger it via `workflow_run` on **successful completion of
+the E2E workflow only** (`workflows: [main-pipeline], types: [completed]`, guarded by
+`conclusion == 'success'`). Either way the invariant is: release-please only ever
+runs after a green stage E2E for that commit.
+
+### 7.2 Version endpoint & SHA baking (new prerequisite)
+
+The version guard needs a reliable "what commit is stage actually running?" signal.
+There is no such endpoint today (only `/api/config/` and `/federation/health`).
+
+- **Bake the SHA at build time**: add `ARG GIT_SHA` to `backend/Dockerfile` and
+  `frontend/Dockerfile`, pass `--build-arg GIT_SHA=${{ github.sha }}` from the build
+  jobs, and surface it at runtime (backend env var; frontend via `VITE_GIT_SHA` at
+  build).
+- **Backend**: add `GET /api/version` → `{ "git_sha": "...", "version": "<release>" }`
+  (a tiny DRF view alongside `ConfigView`). Unauthenticated, cheap.
+- **Frontend**: emit the SHA into the built bundle (e.g. a `/version.json` asset or a
+  `<meta name="git-sha">`) so the guard confirms the frontend rolled over too.
+- The guard polls both until both equal `<sha>` (or times out → pipeline fails before
+  E2E, surfacing a deploy/rollout problem rather than a misleading E2E result).
+
+### 7.3 Scheduled drift run — `e2e-scheduled.yml`
+
+Independent of the deploy pipeline, run the **full** suite against stage on a
+`schedule` (e.g. nightly) plus `workflow_dispatch`. Catches environmental drift, data
+issues, and flakes that a per-commit run might miss, and keeps an always-current
+`e2e-main` signal even on days with no `main` pushes. Same artifacts + alerting.
+
+### 7.4 PR pre-merge smoke (optional, cheap)
 
 On PRs, spin up an ephemeral stack (`just up`) and run `@smoke` against it so
-regressions are caught before they reach `main` — reduces how often the release
-gate is what surfaces a break. Keep it to smoke to protect PR latency.
+regressions are caught before they reach `main` — reduces how often the stage
+pipeline is what first surfaces a break. Keep it to smoke to protect PR latency.
 
 ---
 
@@ -303,7 +370,7 @@ gate is what surfaces a break. Keep it to smoke to protect PR latency.
 
 Store in GitHub Actions secrets / environment `production-e2e`:
 
-- `E2E_BASE_URL` = `https://main.sharebubble.com`, `E2E_API_URL` (if split).
+- `E2E_BASE_URL` = `https://main.sharebubble.org`, `E2E_API_URL` (if split).
 - `E2E_USER_*` credentials for each pooled user (owner, renter-a, renter-b, admin).
 - `E2E_ALLOW=1` and any seed/purge auth for the management-command path.
 - `ANTHROPIC_API_KEY` for the generator.
@@ -327,8 +394,9 @@ Config precedence: env vars → `e2e/.env` (local only, git-ignored) → default
 
 | Risk | Mitigation |
 |---|---|
-| Tests mutate/pollute production data | Namespaced records + `purge_e2e` guarded by `E2E_ALLOW`; nightly janitor; `@destructive` only touches self-created data. |
-| Running E2E *against* the same env we gate creates chicken/egg | Gate reads the **latest scheduled** green status + a fresh smoke pass at tag time; don't require a full run synchronously inside promote. |
+| Tests mutate/pollute stage data | Namespaced records + `purge_e2e` guarded by `E2E_ALLOW`; nightly janitor; `@destructive` only touches self-created data. |
+| Chicken-and-egg: can't test the release before it exists | Decouple deploy-to-stage from cut-a-release: stage redeploys on every `main` push, E2E runs there, only the prod release is gated (§7.0). |
+| E2E runs before the rollout finishes → tests the old image | **Version guard** polls `/api/version` (+ frontend SHA) until both equal the commit `<sha>` before E2E starts (§7.2). |
 | AI generates flaky/incorrect tests | Self-verification loop (§5.2) — only committed if green; PR-only; human/auto-merge policy; smoke tier kept tiny and stable. |
 | Selector fragility with Mantine | Mandatory `data-testid`; generator adds them to components in the same PR. |
 | Live-env flakiness (network) | Retries, trace-on-failure, smoke/regression split, run isolation. |
@@ -340,14 +408,19 @@ Config precedence: env vars → `e2e/.env` (local only, git-ignored) → default
 
 ## 11. Small app-side prerequisites
 
+- **Version endpoint + SHA baking** (needed by the pipeline's version guard, §7.2):
+  `ARG GIT_SHA` in `backend/Dockerfile` and `frontend/Dockerfile`, passed as
+  `--build-arg GIT_SHA=${{ github.sha }}`; backend `GET /api/version` returning
+  `{ git_sha, version }`; frontend exposes its build SHA (`/version.json` or meta tag).
 - Add `data-testid` attributes to key interactive elements (generator will extend
   these over time; seed the critical-path ones first: auth form, item card,
   create-item form, booking actions).
 - Backend `seed_e2e` / `purge_e2e` management commands + an E2E namespace field or
   reserved account convention (§6.2).
-- Confirm `main.sharebubble.com` exposes the allauth headless + `/api/auth-token/`
-  endpoints to the CI runner (network/CORS/allowed hosts), and decide whether it is
-  the true prod or a main-tracking staging (affects how aggressive seeding can be).
+- Confirm the **stage deploy mechanism** for `main.sharebubble.org` (GitOps sync vs.
+  push-based `helm upgrade`) so step 3 of the pipeline can drive it, and that stage
+  exposes allauth headless + `/api/auth-token/` + `/api/version` to the CI runner
+  (network/CORS/allowed hosts).
 
 ---
 
@@ -366,10 +439,12 @@ Config precedence: env vars → `e2e/.env` (local only, git-ignored) → default
 - [ ] Multi-user booking flow spec (owner ↔ renter offer/counter/confirm).
 
 **Phase D — CI wiring**
-- [ ] `e2e-scheduled.yml`: cron + dispatch + post-deploy run vs `main.sharebubble.com`,
-      writes `e2e-main` status, uploads artifacts.
-- [ ] Release gate: `e2e-main` required check on release-please PR **and** a smoke
-      pre-job on `promote`.
+- [ ] Version endpoint + `GIT_SHA` build-arg in both Dockerfiles (§7.2).
+- [ ] `main-pipeline.yml`: lint+pytest → build(`main-<sha>`) → deploy stage →
+      version-guard(==`<sha>`) → E2E(stage) → **release-please gated on E2E green**.
+- [ ] Move/gate release-please so it runs **only** after a green stage E2E (drop the
+      ungated push-to-`main` trigger, or chain via `workflow_run` on success).
+- [ ] `e2e-scheduled.yml`: nightly full run vs stage, writes `e2e-main`, artifacts.
 - [ ] Nightly janitor job (`purge_e2e` / namespaced sweep).
 - [ ] Optional PR smoke against ephemeral stack.
 
