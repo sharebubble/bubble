@@ -50,6 +50,8 @@ export function credentialsFor(role: Role): { username: string; password: string
 /** True when every pooled role has credentials configured. */
 export function hasAllCredentials(): boolean {
   return ROLES.every(
-    (role) => process.env[`E2E_${role.toUpperCase()}_USERNAME`] && process.env[`E2E_${role.toUpperCase()}_PASSWORD`],
+    role =>
+      process.env[`E2E_${role.toUpperCase()}_USERNAME`] &&
+      process.env[`E2E_${role.toUpperCase()}_PASSWORD`],
   );
 }

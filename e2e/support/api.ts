@@ -34,7 +34,7 @@ export class ApiClient {
   async csrfToken(): Promise<string> {
     await this.request.get(`${this.apiURL}${ALLAUTH}/session`);
     const state = await this.request.storageState();
-    const cookie = state.cookies.find((c) => c.name === 'csrftoken');
+    const cookie = state.cookies.find(c => c.name === 'csrftoken');
     if (!cookie) {
       throw new Error('csrftoken cookie was not set by the session endpoint');
     }

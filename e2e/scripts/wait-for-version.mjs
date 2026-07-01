@@ -47,13 +47,15 @@ async function fetchSha(url) {
   }
 }
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function main() {
   const deadline = Date.now() + timeoutMs;
   const backendUrl = `${apiURL}/api/version/`;
   const frontendUrl = `${baseURL}/version.json`;
-  console.log(`Waiting for git_sha=${expected} on:\n  backend  ${backendUrl}\n  frontend ${frontendUrl}`);
+  console.log(
+    `Waiting for git_sha=${expected} on:\n  backend  ${backendUrl}\n  frontend ${frontendUrl}`,
+  );
 
   let attempt = 0;
   while (Date.now() < deadline) {
