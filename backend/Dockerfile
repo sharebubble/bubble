@@ -7,9 +7,17 @@ FROM python AS base
 ARG BUILD_ENVIRONMENT=production
 ARG APP_HOME=/app
 
+# Build info baked at image build time; surfaced via GET /api/version/
+# (see docs/e2e-testing/plan.md §7.2). Pass with:
+#   docker build --build-arg GIT_SHA=<sha> --build-arg APP_VERSION=<version>
+ARG GIT_SHA=""
+ARG APP_VERSION=""
+
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV BUILD_ENV=${BUILD_ENVIRONMENT}
+ENV GIT_SHA=${GIT_SHA}
+ENV APP_VERSION=${APP_VERSION}
 ENV UV_PROJECT_ENVIRONMENT=/home/django/.venv
 
 WORKDIR ${APP_HOME}

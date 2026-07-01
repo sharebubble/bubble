@@ -13,6 +13,34 @@ const zxingWasmVersion = JSON.parse(
   readFileSync(path.resolve(__dirname, 'node_modules/zxing-wasm/package.json'), 'utf-8'),
 ).version as string;
 
+// Emit a static /version.json carrying the build's git SHA + version so the E2E
+// release-gate pipeline can confirm the frontend rolled over to the commit under
+// test (see docs/e2e-testing/plan.md §7.2). Values are baked in at build time via
+// GIT_SHA / APP_VERSION env (see frontend/Dockerfile).
+function versionJsonPlugin(): Plugin {
+  const payload = JSON.stringify({
+    git_sha: process.env.GIT_SHA ?? '',
+    version: process.env.APP_VERSION ?? '',
+  });
+
+  return {
+    name: 'version-json',
+
+    // Dev server: serve the same payload at /version.json
+    configureServer(server) {
+      server.middlewares.use('/version.json', (_req, res) => {
+        res.setHeader('Content-Type', 'application/json');
+        res.end(payload);
+      });
+    },
+
+    // Build: emit dist/version.json
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: payload });
+    },
+  };
+}
+
 function zxingWasmPlugin(): Plugin {
   const wasmSrc = path.resolve(__dirname, 'node_modules/zxing-wasm/dist/reader/zxing_reader.wasm');
 
@@ -72,6 +100,7 @@ export default defineConfig(({ mode }) => ({
           },
   },
   plugins: [
+    versionJsonPlugin(),
     zxingWasmPlugin(),
     tailwindcss(),
     react(),
