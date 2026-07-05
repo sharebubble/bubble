@@ -42,9 +42,7 @@ const BookingLine = ({ booking }: { booking: BookingList }) => {
       className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-[var(--mantine-color-gray-0)]"
       style={{
         borderLeft: `3px solid ${
-          state === 'active'
-            ? 'var(--mantine-color-teal-6)'
-            : 'var(--mantine-color-blue-6)'
+          state === 'active' ? 'var(--mantine-color-teal-6)' : 'var(--mantine-color-blue-6)'
         }`,
       }}
     >
@@ -90,7 +88,7 @@ export const UpcomingBookingsWidget = ({ className }: { className?: string }) =>
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  const { data, isLoading } = useMyBookings({
+  const { data, isLoading, isError } = useMyBookings({
     status: APPROVED_STATUSES,
     temporal: 'upcoming',
     ordering: 'time_from',
@@ -122,6 +120,10 @@ export const UpcomingBookingsWidget = ({ className }: { className?: string }) =>
         <div className="flex justify-center py-6">
           <Loader size="sm" />
         </div>
+      ) : isError ? (
+        <Text size="sm" c="red" className="py-4 text-center">
+          {t('common.loadingError')}
+        </Text>
       ) : bookings.length === 0 ? (
         <Text size="sm" c="dimmed" className="py-4 text-center">
           {t('home.noBookings')}

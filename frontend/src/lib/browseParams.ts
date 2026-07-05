@@ -12,6 +12,9 @@ const BROWSE_PARAM_KEYS = [
   'minPrice',
   'maxPrice',
   'free',
+  'conditions',
+  'sortField',
+  'sortDir',
   'scope',
   'page',
 ];

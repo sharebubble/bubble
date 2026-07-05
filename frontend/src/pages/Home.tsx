@@ -13,7 +13,7 @@ const Home = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  const { data, isLoading } = useItems({ ordering: '-created_at', page: 1 });
+  const { data, isLoading, isError } = useItems({ ordering: '-created_at', page: 1 });
   const newestItems = (data?.items ?? []).slice(0, NEWEST_LIMIT);
 
   return (
@@ -42,6 +42,10 @@ const Home = () => {
             <Text c="dimmed" className="py-8 text-center">
               {t('index.loadingItems')}
             </Text>
+          ) : isError ? (
+            <Text c="red" className="py-8 text-center">
+              {t('common.loadingError')}
+            </Text>
           ) : newestItems.length === 0 ? (
             <Text c="dimmed" className="py-8 text-center">
               {t('index.noItemsFound')}
@@ -55,7 +59,9 @@ const Home = () => {
                   title={item.name}
                   description={item.description || ''}
                   category={item.category}
-                  condition={item.condition === 0 ? 'new' : item.condition === 1 ? 'used' : 'broken'}
+                  condition={
+                    item.condition === 0 ? 'new' : item.condition === 1 ? 'used' : 'broken'
+                  }
                   status={item.status}
                   salesType={item.sales_type}
                   price={item.price ? parseFloat(item.price) : undefined}

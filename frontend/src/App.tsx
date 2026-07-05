@@ -85,7 +85,7 @@ const ProtectedRoutes = () => {
   // REQUIRE_LOGIN=false or user is authenticated: render the app.
   // User-specific routes are individually guarded by <AuthRequired>.
   return (
-    <div className="min-h-screen bg-background pb-16 md:pb-0">
+    <div className={`min-h-screen bg-background ${session ? 'pb-16 md:pb-0' : ''}`}>
       <Header />
       <Routes>
         <Route path="/" element={<RootRoute />} />
