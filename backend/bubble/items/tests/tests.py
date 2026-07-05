@@ -1508,3 +1508,171 @@ class ItemListQueryCountTests(TestCase):
             f"Item list query count grows with rows (N+1): "
             f"{baseline} queries for 1 item vs {larger} for 5"
         )
+
+
+class PrivateItemListQueryCountTests(TestCase):
+    """Guard the authenticated "my items" list against N+1 query growth.
+
+    ``ItemViewSet.get_queryset`` ``select_related("user", "location")`` and
+    ``prefetch_related("images")`` so that serializing ``first_image`` and
+    ``location_detail`` for a page of the owner's items stays a fixed number of
+    queries. If a future change drops the ``select_related``/``prefetch`` (or
+    re-introduces a per-row query in ``get_first_image``), this test fails.
+    """
+
+    @staticmethod
+    def _jpeg_bytes():
+        buf = BytesIO()
+        PILImage.new("RGB", (10, 10), color="green").save(buf, format="JPEG")
+        return buf.getvalue()
+
+    def _make_item(self, owner, idx):
+        location = Location.objects.create(name=f"Shelf {idx}")
+        item = Item.objects.create(
+            name=f"Item {idx}",
+            description="desc",
+            user=owner,
+            sales_type=SalesType.SELL,
+            status=ItemStatus.AVAILABLE,
+            visibility=VisibilityType.PRIVATE,
+            location=location,
+        )
+        for ordering in (1, 0):
+            Image.objects.create(
+                item=item,
+                original=SimpleUploadedFile(
+                    f"img-{idx}-{ordering}.jpg",
+                    self._jpeg_bytes(),
+                    content_type="image/jpeg",
+                ),
+                ordering=ordering,
+            )
+        return item
+
+    def _count_queries_for(self, n_items):
+        Item.objects.all().delete()
+        Location.objects.all().delete()
+        owner = ItemOwnerUserFactory(
+            username=f"privowner{n_items}",
+            email=f"privowner{n_items}@example.com",
+            password=TEST_PASSWORD,
+        )
+        for idx in range(n_items):
+            self._make_item(owner, idx)
+
+        client = APIClient()
+        client.force_authenticate(user=owner)
+        url = reverse("api:item-list")
+        with CaptureQueriesContext(connection) as ctx:
+            response = client.get(url, {"page_size": 100})
+        assert response.status_code == status.HTTP_200_OK
+        assert len(response.json()["results"]) == n_items
+        return len(ctx.captured_queries)
+
+    def test_private_list_query_count_is_constant(self):
+        """A page of 1 item and a page of 5 items issue the same #queries."""
+        # Warm process-wide caches (ContentType / guardian permission lookups)
+        # so the first measured request isn't charged one-time cold-cache
+        # queries that make the comparison flaky.
+        self._count_queries_for(1)
+        baseline = self._count_queries_for(1)
+        larger = self._count_queries_for(5)
+        assert larger == baseline, (
+            f"Private item list query count grows with rows (N+1): "
+            f"{baseline} queries for 1 item vs {larger} for 5"
+        )
+
+
+class FacetsQueryCountTests(TestCase):
+    """Guard the search-facets endpoint against query-count regressions.
+
+    ``PublicItemViewSet.facets`` counts every ``type`` and ``availability``
+    preset with a single conditional-aggregation query per dimension (one
+    ``COUNT(...) FILTER (WHERE ...)`` per preset, all in one round-trip) rather
+    than one ``COUNT(*)`` query per preset. These tests assert the endpoint's
+    query count is invariant both as the number of items grows and as the number
+    of distinct presets present in the data grows — so a revert to the old
+    per-preset ``.count()`` loop shows up immediately.
+    """
+
+    def setUp(self):
+        # Facets are fetched anonymously from the header search popup.
+        config.REQUIRE_LOGIN = False
+
+    def _make_item(self, owner, idx, sales_type, item_status):
+        location = Location.objects.create(name=f"Shelf {idx}")
+        return Item.objects.create(
+            name=f"Item {idx}",
+            description="desc",
+            user=owner,
+            sales_type=sales_type,
+            status=item_status,
+            visibility=VisibilityType.PUBLIC,
+            location=location,
+        )
+
+    def _count_facets_queries(self, specs):
+        """Build items from ``(sales_type, status)`` specs and count facet queries."""
+        Item.objects.all().delete()
+        Location.objects.all().delete()
+        owner = ItemOwnerUserFactory(
+            username=f"facetowner{len(specs)}",
+            email=f"facetowner{len(specs)}@example.com",
+            password=TEST_PASSWORD,
+        )
+        for idx, (sales_type, item_status) in enumerate(specs):
+            self._make_item(owner, idx, sales_type, item_status)
+
+        client = APIClient()
+        url = reverse("api:public-item-facets")
+        with CaptureQueriesContext(connection) as ctx:
+            response = client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        return len(ctx.captured_queries)
+
+    def test_facets_query_count_constant_as_items_grow(self):
+        """One item and many items produce the same facet query count."""
+        # Warm process-wide caches so the first measured call isn't charged
+        # one-time cold-cache queries (ContentType / permission lookups).
+        self._count_facets_queries([(SalesType.SELL, ItemStatus.AVAILABLE)])
+        one = self._count_facets_queries([(SalesType.SELL, ItemStatus.AVAILABLE)])
+        many = self._count_facets_queries(
+            [(SalesType.SELL, ItemStatus.AVAILABLE) for _ in range(6)]
+        )
+        assert many == one, (
+            f"Facets query count grows with rows: {one} for 1 item vs {many} for 6"
+        )
+
+    def test_facets_query_count_independent_of_preset_variety(self):
+        """Data covering every type/availability preset must not add queries.
+
+        Conditional aggregation counts all presets in a fixed number of
+        queries. The per-preset ``.count()`` loop this replaced would issue one
+        extra query for every distinct preset, so a regression makes the
+        "all presets" count exceed the "single preset" count.
+        """
+        # Warm process-wide caches so neither measured call pays one-time
+        # cold-cache queries.
+        self._count_facets_queries([(SalesType.SELL, ItemStatus.AVAILABLE)])
+        single_preset = self._count_facets_queries(
+            [(SalesType.SELL, ItemStatus.AVAILABLE)]
+        )
+        all_presets = self._count_facets_queries(
+            [
+                # Every type preset (rent/buy/wanted) ...
+                (SalesType.RENT, ItemStatus.RENTED),
+                (SalesType.BORROW, ItemStatus.AVAILABLE),
+                (SalesType.SELL, ItemStatus.SOLD),
+                (SalesType.DONATE, ItemStatus.AVAILABLE),
+                (SalesType.WANT_BUY, ItemStatus.AVAILABLE),
+                (SalesType.WANT_RENT, ItemStatus.RESERVED),
+                # ... and every availability preset (available/rented/sold).
+                (SalesType.SELL, ItemStatus.RENTED),
+                (SalesType.SELL, ItemStatus.RESERVED),
+            ]
+        )
+        assert all_presets == single_preset, (
+            f"Facets query count scales with preset variety (per-preset "
+            f"aggregation regressed?): {single_preset} for one preset vs "
+            f"{all_presets} across all presets"
+        )
