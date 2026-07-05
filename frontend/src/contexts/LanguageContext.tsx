@@ -28,6 +28,20 @@ const translations = {
     'header.light': 'Light',
     'header.dark': 'Dark',
 
+    // Mobile bottom navigation
+    'nav.home': 'Home',
+    'nav.search': 'Search',
+    'nav.add': 'Add',
+    'nav.requests': 'Requests',
+    'nav.profile': 'Profile',
+
+    // Mobile start page
+    'home.bookingsTitle': 'Your bookings',
+    'home.bookingsSubtitle': 'Current & upcoming',
+    'home.noBookings': 'No current or upcoming bookings',
+    'home.newestItems': 'Newest items',
+    'home.viewAll': 'View all',
+
     // Search bar / facets
     'search.filterBy': 'Filter by',
     'search.type': 'Type',
@@ -712,6 +726,20 @@ const translations = {
     'header.theme': 'Design',
     'header.light': 'Hell',
     'header.dark': 'Dunkel',
+
+    // Mobile bottom navigation
+    'nav.home': 'Start',
+    'nav.search': 'Suche',
+    'nav.add': 'Einstellen',
+    'nav.requests': 'Anfragen',
+    'nav.profile': 'Profil',
+
+    // Mobile start page
+    'home.bookingsTitle': 'Deine Buchungen',
+    'home.bookingsSubtitle': 'Aktuell & bevorstehend',
+    'home.noBookings': 'Keine aktuellen oder bevorstehenden Buchungen',
+    'home.newestItems': 'Neueste Artikel',
+    'home.viewAll': 'Alle ansehen',
 
     // Search bar / facets
     'search.filterBy': 'Filtern nach',

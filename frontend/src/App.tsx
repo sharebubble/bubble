@@ -8,7 +8,7 @@ import { useLanguageSync } from '@/hooks/useLanguageSync';
 import { NotificationProvider } from '@/providers/NotificationProvider';
 import { ColorSchemeSync } from '@/providers/ColorSchemeSync';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { configureApiClient } from './config/apiClient';
 import Auth from './pages/Auth';
 import Bookings from './pages/Bookings';
@@ -18,6 +18,7 @@ import CollectionDetail from './pages/CollectionDetail';
 import CreateItem from './pages/CreateItem';
 import EditBook from './pages/EditBook';
 import EditItem from './pages/EditItem';
+import Home from './pages/Home';
 import Index from './pages/Index';
 import ItemDetail from './pages/ItemDetail';
 import ItemBookingHistory from './pages/ItemBookingHistory';
@@ -25,6 +26,9 @@ import MyItems from './pages/MyItems';
 import NotFound from './pages/NotFound';
 import Profile from './pages/Profile';
 import { Header } from './components/layout/Header';
+import { MobileBottomNav } from './components/layout/MobileBottomNav';
+import { hasBrowseParams } from './lib/browseParams';
+import { useIsMobile } from './hooks/use-mobile';
 import { localStorageColorSchemeManager, MantineProvider } from '@mantine/core';
 import { mantineTheme } from './theme/mantine';
 
@@ -34,6 +38,21 @@ const colorSchemeManager = localStorageColorSchemeManager({ key: 'bubble-theme' 
 
 // Configure the API client once at startup
 configureApiClient();
+
+// Root route dispatcher: on mobile, authenticated users land on the start page
+// (bookings widget + newest items). Adding any browse/search param (e.g. via the
+// bottom "Search" tab or the header search bar) switches to the browse listing.
+// Desktop and anonymous visitors always get the browse page.
+const RootRoute = () => {
+  const isMobile = useIsMobile();
+  const { session } = useAuth();
+  const location = useLocation();
+
+  if (isMobile && session && !hasBrowseParams(location.search)) {
+    return <Home />;
+  }
+  return <Index />;
+};
 
 // Wraps routes that always require authentication, even when REQUIRE_LOGIN=false.
 const AuthRequired = ({ children }: { children: React.ReactNode }) => {
@@ -66,10 +85,10 @@ const ProtectedRoutes = () => {
   // REQUIRE_LOGIN=false or user is authenticated: render the app.
   // User-specific routes are individually guarded by <AuthRequired>.
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-16 md:pb-0">
       <Header />
       <Routes>
-        <Route path="/" element={<Index />} />
+        <Route path="/" element={<RootRoute />} />
         <Route path="/item/:itemUuid" element={<ItemDetail />} />
         <Route path="/item/:itemUuid/bookings" element={<ItemBookingHistory />} />
         <Route
@@ -147,6 +166,7 @@ const ProtectedRoutes = () => {
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      <MobileBottomNav />
     </div>
   );
 };
