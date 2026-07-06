@@ -15,7 +15,7 @@ import { useItem } from '@/hooks/useItem';
 import { useDeleteItem } from '@/hooks/useMyItems';
 import { useItemCollections } from '@/hooks/useCollections';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
-import { formatPrice } from '@/lib/currency';
+import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import { ActionIcon, Badge, Button, Text, Tooltip } from '@mantine/core';
@@ -181,6 +181,7 @@ const ItemDetail = () => {
       price={price}
       priceCurrency={price_currency || undefined}
       salesType={sales_type}
+      rentalPeriod={item.rental_period}
       rentalOpenEnd={item.rental_open_end ?? false}
       preselectedStartDate={selectedStartDate}
       preselectedEndDate={selectedEndDate}
@@ -267,7 +268,9 @@ const ItemDetail = () => {
               <p className="text-2xl font-bold">
                 {formatPrice(price, price_currency)}
                 {isRental && (
-                  <span className="ml-1 text-base font-normal">{t('time.perHour')}</span>
+                  <span className="ml-1 text-base font-normal">
+                    {t(getRentalPeriodSuffixKey(item.rental_period))}
+                  </span>
                 )}
               </p>
             )}

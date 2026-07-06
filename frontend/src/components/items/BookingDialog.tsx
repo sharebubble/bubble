@@ -1,7 +1,12 @@
 import { Button, Group, Input, Modal, NumberInput, Text } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCreateBooking } from '@/hooks/useBookings';
-import { formatPrice } from '@/lib/currency';
+import {
+  formatPrice,
+  getHoursPerRentalPeriod,
+  getRentalPeriodSuffixKey,
+  type RentalPeriod,
+} from '@/lib/currency';
 import { SalesTypeEnum } from '@/services/django';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -13,6 +18,7 @@ interface BookingDialogProps {
   price?: string | null;
   priceCurrency?: string;
   salesType?: SalesTypeEnum;
+  rentalPeriod?: RentalPeriod;
   rentalOpenEnd?: boolean;
   buttonSize?: 'default' | 'sm' | 'lg' | 'icon';
   buttonClassName?: string;
@@ -51,6 +57,7 @@ export const BookingDialog = ({
   price,
   priceCurrency,
   salesType,
+  rentalPeriod,
   rentalOpenEnd = false,
   buttonSize = 'lg',
   buttonClassName = 'w-full md:w-auto',
@@ -94,7 +101,9 @@ export const BookingDialog = ({
       return price;
     }
 
-    const hourlyRate = parseFloat(price);
+    // The stored price is per rental_period (hour/day/week), so derive the
+    // hourly rate before multiplying by the booked hours.
+    const hourlyRate = parseFloat(price) / getHoursPerRentalPeriod(rentalPeriod);
     const total = hourlyRate * hours;
     return total.toFixed(2);
   };
@@ -105,7 +114,7 @@ export const BookingDialog = ({
       const defaultPrice = calculateTotalPrice();
       setOfferPrice(defaultPrice);
     }
-  }, [dialogOpen, isRental, price, timeFrom, timeTo]);
+  }, [dialogOpen, isRental, price, timeFrom, timeTo, rentalPeriod]);
 
   // Pre-populate timeFrom with current time (rounded down to the started hour)
   // when no preselectedStartDate is provided and the dialog opens.
@@ -186,7 +195,7 @@ export const BookingDialog = ({
               {isRental && price != null ? (
                 <Text>
                   <span className="font-medium">{t('booking.listedRentalPrice')}:</span>{' '}
-                  {formatPrice(price, priceCurrency)} {t('time.perHour')}
+                  {formatPrice(price, priceCurrency)} {t(getRentalPeriodSuffixKey(rentalPeriod))}
                 </Text>
               ) : price != null ? (
                 <Text>

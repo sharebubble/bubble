@@ -227,6 +227,8 @@ const translations = {
     'time.hour': 'hour',
     'time.hours': 'hours',
     'time.perHour': '/h',
+    'time.perDay': '/d',
+    'time.perWeek': '/w',
     // EditItem UI
     'editItem.uploadNewImages': 'Upload new Images',
     'editItem.clearNewImages': 'Clear New Images',
@@ -856,6 +858,8 @@ const translations = {
     'time.hour': 'Stunde',
     'time.hours': 'Stunden',
     'time.perHour': '/h',
+    'time.perDay': '/d',
+    'time.perWeek': '/w',
     // EditItem UI
     'editItem.uploadNewImages': 'Neue Bilder hochladen',
     'editItem.clearNewImages': 'Neue Bilder löschen',

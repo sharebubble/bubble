@@ -1,6 +1,49 @@
 // Currency utility functions
 
 /**
+ * Rental period values as used by the backend (`Item.rental_period`).
+ * `h` = hourly, `d` = daily, `w` = weekly.
+ */
+export type RentalPeriod = 'h' | 'd' | 'w' | string | null | undefined;
+
+/**
+ * Map a rental period value to the i18n key for the price suffix.
+ * Falls back to the hourly suffix for blank/unknown values.
+ * @param rentalPeriod - The `rental_period` value from an item (`'h' | 'd' | 'w' | '' | null | undefined`)
+ * @returns Translation key (e.g. 'time.perHour', 'time.perDay', 'time.perWeek')
+ */
+export function getRentalPeriodSuffixKey(rentalPeriod: RentalPeriod): string {
+  switch (rentalPeriod) {
+    case 'd':
+      return 'time.perDay';
+    case 'w':
+      return 'time.perWeek';
+    case 'h':
+    default:
+      return 'time.perHour';
+  }
+}
+
+/**
+ * Number of hours covered by one rental period.
+ * The stored item price is the price for one period, so the hourly rate
+ * is `price / getHoursPerRentalPeriod(rentalPeriod)`.
+ * @param rentalPeriod - The `rental_period` value (`'h' | 'd' | 'w' | '' | null | undefined`)
+ * @returns Hours per period (1, 24, or 168); defaults to 1 (hourly).
+ */
+export function getHoursPerRentalPeriod(rentalPeriod: RentalPeriod): number {
+  switch (rentalPeriod) {
+    case 'd':
+      return 24;
+    case 'w':
+      return 168;
+    case 'h':
+    default:
+      return 1;
+  }
+}
+
+/**
  * Convert ISO 4217 currency code to symbol
  * @param currencyCode - Three-letter currency code (e.g., 'EUR', 'USD')
  * @returns Currency symbol (e.g., '€', '$')

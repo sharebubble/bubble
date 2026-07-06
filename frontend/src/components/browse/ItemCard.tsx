@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
-import { formatPrice } from '@/lib/currency';
+import { formatPrice, getRentalPeriodSuffixKey, type RentalPeriod } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import { SalesTypeEnum, StatusB0aEnum } from '@/services/django';
 import { Badge, Button, Card, Text, Tooltip } from '@mantine/core';
@@ -22,6 +22,7 @@ interface ItemCardProps {
   salesType?: SalesTypeEnum;
   price?: number;
   priceCurrency?: string | null;
+  rentalPeriod?: RentalPeriod;
   location: string;
   imageUrl?: string;
   ownerAvatar?: string;
@@ -45,6 +46,7 @@ const ItemCardComponent = ({
   salesType,
   price,
   priceCurrency,
+  rentalPeriod,
   location,
   imageUrl,
   ownerAvatar,
@@ -187,7 +189,9 @@ const ItemCardComponent = ({
               <div className="flex items-center gap-1 text-sm font-semibold">
                 {formatPrice(price, priceCurrency)}
                 {(salesType === 'rent' || salesType === 'borrow') && (
-                  <span className="text-xs font-normal">{t('time.perHour')}</span>
+                  <span className="text-xs font-normal">
+                    {t(getRentalPeriodSuffixKey(rentalPeriod))}
+                  </span>
                 )}
               </div>
             </div>

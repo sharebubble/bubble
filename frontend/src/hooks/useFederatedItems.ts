@@ -18,6 +18,8 @@ export interface FederatedItem {
   /** ActivityPub ID of the item (null for local items without federation) */
   ap_id: string | null;
   first_image_url: string | null;
+  /** Rental period unit: 'h' (hourly), 'd' (daily), 'w' (weekly); null when unknown (defaults to hourly) */
+  rental_period: 'h' | 'd' | 'w' | null;
 }
 
 export interface FederatedItemsResult {

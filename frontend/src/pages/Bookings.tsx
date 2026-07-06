@@ -15,7 +15,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { type BookingsFilterParams, useMyBookings, useUpdateBooking } from '@/hooks/useBookings';
-import { formatPrice } from '@/lib/currency';
+import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import type { BookingList } from '@/services/django';
 import { format, formatDuration, intervalToDuration, isAfter, isBefore, parseISO } from 'date-fns';
@@ -175,7 +175,8 @@ const BookingRow = ({
             {price && (
               <Text component="span" size="xs" fw={500} c="var(--mantine-color-text)">
                 {formatPrice(price, currency)}
-                {booking.item_details?.sales_type === 'rent' && ' /h'}
+                {booking.item_details?.sales_type === 'rent' &&
+                  ` ${t(getRentalPeriodSuffixKey(booking.item_details?.rental_period))}`}
               </Text>
             )}
           </Text>

@@ -684,6 +684,14 @@ export type ItemMinimal = {
     sales_type: SalesTypeEnum;
     price?: string | null;
     readonly price_currency: string | null;
+    /**
+     * Only used for formatting, price must always be per hour for rental items
+     *
+     * * `h` - Hourly
+     * * `d` - Daily
+     * * `w` - Weekly
+     */
+    rental_period?: RentalPeriodEnum | BlankEnum;
 };
 
 /**

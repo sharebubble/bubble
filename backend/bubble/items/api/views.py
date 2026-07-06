@@ -738,6 +738,7 @@ class FederatedItemListSerializer(serializers.Serializer):
     )
     ap_id = serializers.CharField(allow_null=True)
     first_image_url = serializers.CharField(allow_null=True)
+    rental_period = serializers.CharField(allow_null=True, required=False)
 
 
 class FederatedItemViewSet(viewsets.ViewSet):
@@ -815,6 +816,7 @@ class FederatedItemViewSet(viewsets.ViewSet):
                         "instance": None,
                         "ap_id": item.ap_id or None,
                         "first_image_url": first_img_url,
+                        "rental_period": item.rental_period or None,
                     }
                 )
 
@@ -851,6 +853,7 @@ class FederatedItemViewSet(viewsets.ViewSet):
                         "instance": item.instance_id,
                         "ap_id": item.ap_id or None,
                         "first_image_url": first_img.url if first_img else None,
+                        "rental_period": None,
                     }
                 )
 

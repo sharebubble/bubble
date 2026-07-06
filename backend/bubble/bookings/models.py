@@ -12,7 +12,7 @@ from guardian.shortcuts import get_objects_for_user
 from moneyed.classes import Money
 from simple_history.models import HistoricalRecords
 
-from bubble.items.models import Item, money_defaults
+from bubble.items.models import Item, RentalPeriodType, money_defaults
 from config.settings.base import AUTH_USER_MODEL
 
 
@@ -161,16 +161,32 @@ class Booking(models.Model):
         """
         Calculate the price for this booking if the item is a rental.
         Returns None if not a rental or if required fields are missing.
+
+        The stored item price is the price for one rental period (hour, day,
+        or week, as set by ``item.rental_period``). The hourly rate is derived
+        from that period before multiplying by the booked duration in hours.
         """
         if self.item.sales_type != "rent" or not self.item.price:
             return None
         if not self.time_from or not self.time_to:
             return None
 
+        period_hours = {
+            RentalPeriodType.HOURLY: decimal.Decimal("1"),
+            RentalPeriodType.DAILY: decimal.Decimal("24"),
+            RentalPeriodType.WEEKLY: decimal.Decimal("168"),
+        }
+        hours_per_period = period_hours.get(
+            self.item.rental_period, decimal.Decimal("1")
+        )
+
         duration = self.time_to - self.time_from
         total_seconds = decimal.Decimal(str(duration.total_seconds()))
         hours = total_seconds / decimal.Decimal("3600")
-        return self.item.price * hours
+        price = self.item.price * hours / hours_per_period
+        # Quantize to 2 decimal places (matches the model's decimal_places=2
+        # and avoids float-precision artefacts from total_seconds()).
+        return Money(price.amount.quantize(decimal.Decimal("0.01")), price.currency)
 
 
 class Message(models.Model):

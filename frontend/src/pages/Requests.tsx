@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useBooking, useBookings, useUpdateBooking } from '@/hooks/useBookings';
 import { useItem } from '@/hooks/useItem';
 import { useCreateMessage, useMarkMessageAsRead, useMessages } from '@/hooks/useMessages';
-import { formatPrice } from '@/lib/currency';
+import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import {
   ActionIcon,
@@ -414,7 +414,7 @@ const Requests = () => {
                             ? `${formatPrice(
                                 selectedItemDetails.price,
                                 selectedItemDetails.price_currency,
-                              )} ${t('time.perHour')}`
+                              )} ${t(getRentalPeriodSuffixKey(selectedItemDetails.rental_period))}`
                             : formatPrice(
                                 selectedItemDetails.price,
                                 selectedItemDetails.price_currency,

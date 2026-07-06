@@ -1,6 +1,7 @@
 """Tests for booking API endpoints and auto-confirmation logic."""
 
 from datetime import timedelta
+from decimal import Decimal
 
 from django.contrib.auth.models import Group
 from django.utils import timezone
@@ -14,7 +15,7 @@ from bubble.bookings.tests.factories import (
     SelfServiceItemFactory,
 )
 from bubble.core.permissions_config import DefaultGroup
-from bubble.items.models import ItemStatus, SalesType
+from bubble.items.models import ItemStatus, RentalPeriodType, SalesType
 from bubble.users.tests.factories import UserFactory
 
 
@@ -1141,3 +1142,310 @@ class BookingAgendaFilterTestCase(APITestCase):
         )
         assert response.status_code == status.HTTP_200_OK
         assert self._ids(response) == {str(self.past_booking.id)}
+
+
+class BookingRentalPeriodPriceTestCase(APITestCase):
+    """Unit tests for the ``Booking.rental_price`` property.
+
+    The stored item price is the price for one rental period (hour, day, or
+    week). The property must derive the hourly rate from ``rental_period``
+    before multiplying by the booked duration in hours.
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+        self.default_group, _ = Group.objects.get_or_create(name=DefaultGroup.DEFAULT)
+        self.item_owner = UserFactory()
+        self.item_owner.groups.add(self.default_group)
+        # Truncate microseconds so total_seconds() is an exact integer.
+        self.base_time = timezone.now().replace(microsecond=0)
+
+    def test_hourly_period_price(self):
+        """Hourly item: rental_price = price * hours (baseline)."""
+        item = ItemFactory(user=self.item_owner, price="10.00")
+        item.rental_period = RentalPeriodType.HOURLY
+        item.save()
+
+        booking = BookingFactory(
+            item=item,
+            time_from=self.base_time,
+            time_to=self.base_time + timedelta(hours=3),
+        )
+
+        assert booking.rental_price is not None
+        assert booking.rental_price.amount == Decimal("30.00")
+
+    def test_daily_period_price(self):
+        """Daily item (€24/day): 12 h booking → hourly rate €1 → €12.00."""
+        item = ItemFactory(user=self.item_owner, price="24.00")
+        item.rental_period = RentalPeriodType.DAILY
+        item.save()
+
+        booking = BookingFactory(
+            item=item,
+            time_from=self.base_time,
+            time_to=self.base_time + timedelta(hours=12),
+        )
+
+        assert booking.rental_price is not None
+        assert booking.rental_price.amount == Decimal("12.00")
+
+    def test_daily_period_full_day(self):
+        """Daily item (€24/day): 24 h booking → exactly one day → €24.00."""
+        item = ItemFactory(user=self.item_owner, price="24.00")
+        item.rental_period = RentalPeriodType.DAILY
+        item.save()
+
+        booking = BookingFactory(
+            item=item,
+            time_from=self.base_time,
+            time_to=self.base_time + timedelta(days=1),
+        )
+
+        assert booking.rental_price is not None
+        assert booking.rental_price.amount == Decimal("24.00")
+
+    def test_weekly_period_price(self):
+        """Weekly item (€168/week): 12 h booking → hourly rate €1 → €12.00."""
+        item = ItemFactory(user=self.item_owner, price="168.00")
+        item.rental_period = RentalPeriodType.WEEKLY
+        item.save()
+
+        booking = BookingFactory(
+            item=item,
+            time_from=self.base_time,
+            time_to=self.base_time + timedelta(hours=12),
+        )
+
+        assert booking.rental_price is not None
+        assert booking.rental_price.amount == Decimal("12.00")
+
+    def test_weekly_period_short_booking(self):
+        """Weekly item (€168/week): 3 h booking → hourly rate €1 → €3.00."""
+        item = ItemFactory(user=self.item_owner, price="168.00")
+        item.rental_period = RentalPeriodType.WEEKLY
+        item.save()
+
+        booking = BookingFactory(
+            item=item,
+            time_from=self.base_time,
+            time_to=self.base_time + timedelta(hours=3),
+        )
+
+        assert booking.rental_price is not None
+        assert booking.rental_price.amount == Decimal("3.00")
+
+    def test_weekly_period_full_week(self):
+        """Weekly item (€168/week): 168 h booking → exactly one week → €168."""
+        item = ItemFactory(user=self.item_owner, price="168.00")
+        item.rental_period = RentalPeriodType.WEEKLY
+        item.save()
+
+        booking = BookingFactory(
+            item=item,
+            time_from=self.base_time,
+            time_to=self.base_time + timedelta(days=7),
+        )
+
+        assert booking.rental_price is not None
+        assert booking.rental_price.amount == Decimal("168.00")
+
+    def test_daily_period_123_euro(self):
+        """Daily item (€123/day): 6 h booking → 123/24*6 = €30.75."""
+        item = ItemFactory(user=self.item_owner, price="123.00")
+        item.rental_period = RentalPeriodType.DAILY
+        item.save()
+
+        booking = BookingFactory(
+            item=item,
+            time_from=self.base_time,
+            time_to=self.base_time + timedelta(hours=6),
+        )
+
+        assert booking.rental_price is not None
+        assert booking.rental_price.amount == Decimal("30.75")
+
+    def test_weekly_period_123_euro(self):
+        """Weekly item (€123/week): 3 h booking → 123/168*3 ≈ €2.20."""
+        item = ItemFactory(user=self.item_owner, price="123.00")
+        item.rental_period = RentalPeriodType.WEEKLY
+        item.save()
+
+        booking = BookingFactory(
+            item=item,
+            time_from=self.base_time,
+            time_to=self.base_time + timedelta(hours=3),
+        )
+
+        assert booking.rental_price is not None
+        # 123 / 168 * 3 = 2.1964… → quantized to 2 decimal places
+        assert booking.rental_price.amount == Decimal("2.20")
+
+    def test_rental_price_none_without_time_to(self):
+        """rental_price is None when time_to is missing."""
+        item = ItemFactory(user=self.item_owner, price="24.00")
+        item.rental_period = RentalPeriodType.DAILY
+        item.save()
+
+        booking = BookingFactory(item=item, time_from=self.base_time, time_to=None)
+
+        assert booking.rental_price is None
+
+
+class BookingAutoConfirmRentalPeriodTestCase(APITestCase):
+    """Auto-confirm integration tests for non-hourly rental periods.
+
+    The auto-confirm logic compares the offered price against
+    ``booking.rental_price``, which now derives the hourly rate from
+    ``item.rental_period``. These tests verify the full flow via the API.
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+        self.default_group, _ = Group.objects.get_or_create(name=DefaultGroup.DEFAULT)
+
+        self.item_owner = UserFactory()
+        self.item_owner.groups.add(self.default_group)
+
+        self.booking_user = UserFactory()
+        self.booking_user.groups.add(self.default_group)
+
+    def test_daily_period_auto_confirms_at_exact_price(self):
+        """Self-service daily item (€24/day), 12 h booking → €12.00 → confirmed.
+
+        hourly rate = 24 / 24 = 1.00 → rental_price = 1.00 * 12 = 12.00
+        """
+        item = SelfServiceItemFactory(user=self.item_owner, price="24.00")
+        item.rental_period = RentalPeriodType.DAILY
+        item.save()
+
+        base = timezone.now().replace(microsecond=0)
+        time_from = base
+        time_to = base + timedelta(hours=12)
+
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(item.id),
+                "offer": "12.00",
+                "time_from": time_from.isoformat(),
+                "time_to": time_to.isoformat(),
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["status"] == BookingStatus.CONFIRMED
+
+    def test_daily_period_stays_pending_on_wrong_offer(self):
+        """Self-service daily item (€24/day), 12 h → €12.00; offer €5 → pending."""
+        item = SelfServiceItemFactory(user=self.item_owner, price="24.00")
+        item.rental_period = RentalPeriodType.DAILY
+        item.save()
+
+        base = timezone.now().replace(microsecond=0)
+        time_from = base
+        time_to = base + timedelta(hours=12)
+
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(item.id),
+                "offer": "5.00",
+                "time_from": time_from.isoformat(),
+                "time_to": time_to.isoformat(),
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["status"] == BookingStatus.PENDING
+
+    def test_weekly_period_auto_confirms_at_exact_price(self):
+        """Self-service weekly item (€168/week), 12 h booking → €12.00 → confirmed.
+
+        hourly rate = 168 / 168 = 1.00 → rental_price = 1.00 * 12 = 12.00
+        """
+        item = SelfServiceItemFactory(user=self.item_owner, price="168.00")
+        item.rental_period = RentalPeriodType.WEEKLY
+        item.save()
+
+        base = timezone.now().replace(microsecond=0)
+        time_from = base
+        time_to = base + timedelta(hours=12)
+
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(item.id),
+                "offer": "12.00",
+                "time_from": time_from.isoformat(),
+                "time_to": time_to.isoformat(),
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["status"] == BookingStatus.CONFIRMED
+
+    def test_weekly_period_stays_pending_on_wrong_offer(self):
+        """Self-service weekly item (€168/week), 12 h → €12.00; offer €5 → pending."""
+        item = SelfServiceItemFactory(user=self.item_owner, price="168.00")
+        item.rental_period = RentalPeriodType.WEEKLY
+        item.save()
+
+        base = timezone.now().replace(microsecond=0)
+        time_from = base
+        time_to = base + timedelta(hours=12)
+
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(item.id),
+                "offer": "5.00",
+                "time_from": time_from.isoformat(),
+                "time_to": time_to.isoformat(),
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["status"] == BookingStatus.PENDING
+
+    def test_weekly_period_123_euro_auto_confirms(self):
+        """Self-service weekly item (€123/week), 3 h → €2.20 → confirmed.
+
+        hourly rate = 123 / 168 ≈ 0.7321 → rental_price = 0.7321 * 3 ≈ 2.20
+        """
+        item = SelfServiceItemFactory(user=self.item_owner, price="123.00")
+        item.rental_period = RentalPeriodType.WEEKLY
+        item.save()
+
+        base = timezone.now().replace(microsecond=0)
+        time_from = base
+        time_to = base + timedelta(hours=3)
+
+        self.client.force_authenticate(user=self.booking_user)
+
+        # Compute the expected rental_price the same way the backend does.
+        booking = Booking(item=item, time_from=time_from, time_to=time_to)
+        expected_price = booking.rental_price
+        assert expected_price is not None
+
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(item.id),
+                "offer": str(expected_price.amount),
+                "time_from": time_from.isoformat(),
+                "time_to": time_to.isoformat(),
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["status"] == BookingStatus.CONFIRMED

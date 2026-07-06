@@ -2,7 +2,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useDeleteItem, useMyItems, useUpdateItemStatus } from '@/hooks/useMyItems';
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
-import { formatPrice } from '@/lib/currency';
+import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import { getSalesTypeBadgeProps, getStatusMantineColor } from '@/components/items/status';
 import { SalesTypeEnum, StatusB0aEnum } from '@/services/django';
@@ -315,7 +315,7 @@ const MyItems = () => {
                               {formatPrice(item.price, item.price_currency)}
                               {item.sales_type === 'rent' && (
                                 <Text component="span" size="xs" c="dimmed">
-                                  {t('time.perHour')}
+                                  {t(getRentalPeriodSuffixKey(item.rental_period))}
                                 </Text>
                               )}
                             </div>
@@ -400,7 +400,7 @@ const MyItems = () => {
                         {formatPrice(item.price, item.price_currency)}
                         {item.sales_type === 'rent' && (
                           <Text component="span" size="xs" fw={400} c="dimmed">
-                            {t('time.perHour')}
+                            {t(getRentalPeriodSuffixKey(item.rental_period))}
                           </Text>
                         )}
                       </div>

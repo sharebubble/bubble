@@ -225,4 +225,12 @@ class ItemListSerializer(ItemSerializer):
 class ItemMinimalSerializer(ItemListSerializer):
     class Meta:
         model = Item
-        fields = ["id", "name", "first_image", "sales_type", "price", "price_currency"]
+        fields = [
+            "id",
+            "name",
+            "first_image",
+            "sales_type",
+            "price",
+            "price_currency",
+            "rental_period",
+        ]

@@ -212,7 +212,7 @@ class Item(models.Model):
         help_text=_(
             "Price for sell/rent items (must be > 0). "
             "Leave blank for donate/borrow items. "
-            "Rental price per hour (when sales type is rent)."
+            "Rental price per rental_period (when sales type is rent)."
         ),
     )
 
@@ -222,7 +222,8 @@ class Item(models.Model):
         choices=RentalPeriodType,
         default=RentalPeriodType.HOURLY,
         help_text=_(
-            "Only used for formatting, price must always be per hour for rental items"
+            "Defines the period the rental price applies to (hourly, daily, "
+            "weekly). Used for price calculation and display formatting."
         ),
     )
     rental_self_service = models.BooleanField(

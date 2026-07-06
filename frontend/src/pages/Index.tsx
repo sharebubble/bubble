@@ -11,7 +11,7 @@ import { type ItemCategoryFilter } from '@/hooks/types';
 import { useFederatedItems } from '@/hooks/useFederatedItems';
 import { useItems } from '@/hooks/useItems';
 import { getCategoryIcon } from '@/lib/categoryIcons';
-import { formatPrice } from '@/lib/currency';
+import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import {
   type CategoryEnum,
@@ -331,6 +331,7 @@ const Index = () => {
                   salesType={item.sales_type as SalesTypeEnum | undefined}
                   price={item.price ? parseFloat(item.price) : undefined}
                   priceCurrency={item.price_currency}
+                  rentalPeriod={item.rental_period}
                   location=""
                   imageUrl={item.first_image_url ?? undefined}
                   createdAt=""
@@ -423,7 +424,13 @@ const Index = () => {
                       </Table.Td>
                       <Table.Td>
                         <Text size="sm" fw={500} className="whitespace-nowrap">
-                          {item.price ? formatPrice(item.price, item.price_currency) : '—'}
+                          {item.price
+                            ? `${formatPrice(item.price, item.price_currency)}${
+                                item.sales_type === 'rent'
+                                  ? ` ${t(getRentalPeriodSuffixKey(item.rental_period))}`
+                                  : ''
+                              }`
+                            : '—'}
                         </Text>
                       </Table.Td>
                       <Table.Td>
@@ -454,6 +461,7 @@ const Index = () => {
                 salesType={item.sales_type}
                 price={item.price ? parseFloat(item.price) : undefined}
                 priceCurrency={item.price_currency}
+                rentalPeriod={item.rental_period}
                 location="Location not set"
                 imageUrl={item.first_image || undefined}
                 owner={item.user}
