@@ -17,6 +17,9 @@ on:
     tags: ['v*.*.*']
     paths-ignore: ['docs/**']
 
+  release:
+    types: [published]
+
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
