@@ -1,0 +1,22 @@
+{
+  "name": "bubble-e2e",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Playwright end-to-end tests for Bubble (release gate against main.sharebubble.org)",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:regression": "playwright test --grep @regression",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "list": "playwright test --list",
+    "wait-for-version": "node scripts/wait-for-version.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}

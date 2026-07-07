@@ -8,7 +8,7 @@ from django.views.i18n import JavaScriptCatalog
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.authtoken.views import obtain_auth_token
 
-from bubble.core.api.views import ConfigView
+from bubble.core.api.views import ConfigView, VersionView
 from bubble.federation.urls import federation_patterns, wellknown_patterns
 
 urlpatterns = [
@@ -42,6 +42,7 @@ urlpatterns += [
     # Calendar link management (item/collection feeds, personal CalDAV)
     path("api/", include("bubble.caldav.api.urls")),
     path("api/config/", ConfigView.as_view(), name="config"),
+    path("api/version/", VersionView.as_view(), name="version"),
     # Include the API endpoints:
     path("api/_allauth/", include("allauth.headless.urls")),
     # DRF auth token

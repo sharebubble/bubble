@@ -16,6 +16,14 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Build info baked into /version.json at build time (see vite.config.ts and
+# docs/e2e-testing/plan.md §7.2). Pass with:
+#   docker build --build-arg GIT_SHA=<sha> --build-arg APP_VERSION=<version>
+ARG GIT_SHA=""
+ARG APP_VERSION=""
+ENV GIT_SHA=${GIT_SHA}
+ENV APP_VERSION=${APP_VERSION}
+
 # Build the app
 RUN npm run build
 

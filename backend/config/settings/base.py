@@ -41,6 +41,11 @@ if not FRONTEND_URL:
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#debug
 DEBUG = env.bool("DJANGO_DEBUG", False)
+# Build info baked into the image at build time (see backend/Dockerfile).
+# Exposed via GET /api/version/ and consumed by the E2E release-gate pipeline
+# (docs/e2e-testing/plan.md §7.2).
+GIT_SHA = env.str("GIT_SHA", default="")
+APP_VERSION = env.str("APP_VERSION", default="")
 # Local time zone. Choices are
 # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
 # though not all of them may be available with every OS.
