@@ -16,9 +16,7 @@ import { Calendar, Check, Copy, RefreshCw } from 'lucide-react';
 import { notifications } from '@mantine/notifications';
 
 type CalendarSubscriptionProps =
-  | { kind: 'item'; id: string }
-  | { kind: 'collection'; id: string }
-  | { kind: 'user' };
+  { kind: 'item'; id: string } | { kind: 'collection'; id: string } | { kind: 'user' };
 
 /**
  * Owner-facing panel that surfaces, copies and rotates a calendar sharing link.
