@@ -36,6 +36,7 @@ class LocationSerializer(serializers.ModelSerializer):
             "sort_order",
         ]
 
+
 # Sentinel used to distinguish "no annotation present" from an annotated None
 # (e.g. an item with no ratings yields ``_avg_rating = None``).
 _UNSET = object()
