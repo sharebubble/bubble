@@ -1,22 +1,9 @@
-import {
-  Button,
-  Card,
-  Checkbox,
-  Text,
-  TextInput,
-  Title,
-  useMantineColorScheme,
-} from '@mantine/core';
+import { Button, Card, Text, TextInput, Title, useMantineColorScheme } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useProfileFieldAutoSave } from '@/hooks/useProfileFieldAutoSave';
-import { useAppConfig } from '@/hooks/useAppConfig';
-import {
-  useNotificationPreferences,
-  useUpdateNotificationPreferences,
-} from '@/hooks/useNotificationPreferences';
 import { Check, Loader2, Monitor, Moon, Sun } from 'lucide-react';
 import React from 'react';
 import { z } from 'zod';
@@ -24,6 +11,7 @@ import { z } from 'zod';
 const profileSchema = z.object({
   name: z.string().optional(),
   phone: z.string().optional(),
+  matrix_id: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -31,9 +19,6 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 export const ProfileForm = () => {
   const { data: profile, isLoading } = useProfile();
   const { fieldStates, saveField } = useProfileFieldAutoSave();
-  const { data: notifPrefs, isLoading: notifLoading } = useNotificationPreferences();
-  const updateNotifPrefs = useUpdateNotificationPreferences();
-  const { rocketchatEnabled } = useAppConfig();
   const { language, setLanguage, t } = useLanguage();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
 
@@ -42,6 +27,7 @@ export const ProfileForm = () => {
     initialValues: {
       name: '',
       phone: '',
+      matrix_id: '',
     },
   });
 
@@ -50,6 +36,7 @@ export const ProfileForm = () => {
       form.setValues({
         name: profile.name ?? '',
         phone: profile.phone ?? '',
+        matrix_id: profile.matrix_id ?? '',
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -121,39 +108,18 @@ export const ProfileForm = () => {
             {...form.getInputProps('phone')}
             onBlur={() => saveField('phone', form.getValues().phone)}
           />
+
+          <TextInput
+            label={t('profile.matrixId')}
+            placeholder="@alice:matrix.org"
+            description={t('profile.matrixIdDesc')}
+            classNames={{ input: getFieldBorderClass('matrix_id') }}
+            rightSection={renderFieldStatusIcon('matrix_id')}
+            {...form.getInputProps('matrix_id')}
+            onBlur={() => saveField('matrix_id', form.getValues().matrix_id)}
+          />
         </form>
       </Card>
-
-      {/* Notifications Card */}
-      {rocketchatEnabled && (
-        <Card withBorder padding="lg" className="mt-6">
-          <Title order={3}>{t('profile.notifications')}</Title>
-          <Text size="sm" c="dimmed" className="mb-4">
-            {t('profile.notificationsDesc')}
-          </Text>
-          {notifLoading ? (
-            <div className="flex justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin" />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="rounded-md border p-4">
-                <Checkbox
-                  checked={notifPrefs?.rocketchat_new_message ?? false}
-                  disabled={updateNotifPrefs.isPending}
-                  onChange={event => {
-                    updateNotifPrefs.mutate({
-                      rocketchat_new_message: event.currentTarget.checked,
-                    });
-                  }}
-                  label={t('profile.rocketchatNewMessage')}
-                  description={t('profile.rocketchatNewMessageDesc')}
-                />
-              </div>
-            </div>
-          )}
-        </Card>
-      )}
 
       {/* Appearance Card */}
       <Card withBorder padding="lg" className="mt-6">

@@ -2,45 +2,86 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from bubble.notifications.models import EventType, NotificationPreference
+from bubble.notifications.channels import is_channel_available, resolve_target
+from bubble.notifications.models import EVENT_GROUPS, NotificationPreference
+
+ProviderType = NotificationPreference.ProviderType
+
+# Channels the user can configure, in display order.
+PROVIDERS: tuple[str, ...] = (
+    ProviderType.ROCKETCHAT,
+    ProviderType.SIGNAL,
+    ProviderType.MATRIX,
+    ProviderType.EMAIL,
+)
+
+
+def _toggle_field(provider: str, group: str) -> str:
+    return f"{provider}_{group}"
+
+
+def _available_field(provider: str) -> str:
+    return f"{provider}_available"
+
+
+def _target_field(provider: str) -> str:
+    return f"{provider}_target"
 
 
 class NotificationPreferenceMeSerializer(serializers.Serializer):
     """Flat serializer for GET/PATCH /api/notification-preferences/me/.
 
-    Keys are <provider_type>_<event_type> booleans.
-    Currently: rocketchat_new_message.
+    For every provider (RocketChat, Signal, Email) it exposes:
+
+    * ``<provider>_available`` (read-only): the channel is configured on the
+      backend *and* the user has filled in the field it needs to reach them.
+    * ``<provider>_target`` (read-only): the resolved recipient address.
+    * ``<provider>_<group>`` (read/write): per event-group opt-in toggles.
+      ``messages`` covers new messages and bookings; ``new_item`` covers newly
+      created items.
     """
 
-    rocketchat_new_message = serializers.BooleanField(required=False)
-
-    # Map of serializer field name -> (provider_type, event_type)
-    FIELD_MAP = {
-        "rocketchat_new_message": (
-            NotificationPreference.ProviderType.ROCKETCHAT,
-            EventType.NEW_MESSAGE,
-        ),
-    }
+    def get_fields(self):
+        fields = super().get_fields()
+        for provider in PROVIDERS:
+            fields[_available_field(provider)] = serializers.BooleanField(
+                read_only=True
+            )
+            fields[_target_field(provider)] = serializers.CharField(read_only=True)
+            for group in EVENT_GROUPS:
+                fields[_toggle_field(provider, group)] = serializers.BooleanField(
+                    required=False
+                )
+        return fields
 
     def to_representation(self, user):
-        """Build a flat dict from the user's NotificationPreference rows."""
-        prefs = {
+        enabled = {
             (p.provider_type, p.event_type): p.enabled
             for p in NotificationPreference.objects.filter(user=user)
         }
-        return {
-            field: prefs.get((provider, event), False)
-            for field, (provider, event) in self.FIELD_MAP.items()
-        }
+
+        data: dict[str, object] = {}
+        for provider in PROVIDERS:
+            data[_available_field(provider)] = is_channel_available(provider, user)
+            data[_target_field(provider)] = resolve_target(provider, user)
+            for group, events in EVENT_GROUPS.items():
+                data[_toggle_field(provider, group)] = all(
+                    enabled.get((provider, event), False) for event in events
+                )
+        return data
 
     def update(self, user, validated_data):
-        """Upsert NotificationPreference rows for each provided field."""
-        for field, (provider, event) in self.FIELD_MAP.items():
-            if field in validated_data:
-                NotificationPreference.objects.update_or_create(
-                    user=user,
-                    provider_type=provider,
-                    event_type=event,
-                    defaults={"enabled": validated_data[field]},
-                )
+        for provider in PROVIDERS:
+            for group, events in EVENT_GROUPS.items():
+                field = _toggle_field(provider, group)
+                if field not in validated_data:
+                    continue
+                value = validated_data[field]
+                for event in events:
+                    NotificationPreference.objects.update_or_create(
+                        user=user,
+                        provider_type=provider,
+                        event_type=event,
+                        defaults={"enabled": value},
+                    )
         return user

@@ -1,7 +1,6 @@
 import logging
 import uuid
 
-from constance import config
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import CharField
@@ -60,6 +59,12 @@ class Profile(models.Model):
     )
     address = models.TextField(blank=True)
     phone = models.CharField(max_length=15, blank=True)
+    matrix_id = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name=_("Matrix ID"),
+        help_text=_("Matrix user ID for notifications, e.g. @alice:matrix.org"),
+    )
     email_reminder = models.BooleanField(default=True)
     internal = models.BooleanField(default=False)
     bio = models.TextField(blank=True)
@@ -95,13 +100,15 @@ def create_user_profile(sender, instance, created, **kwargs):
 
 
 def _setup_default_notification_preferences(user) -> None:
-    """Enable RocketChat new-message notifications by default.
+    """Enable RocketChat message notifications by default.
 
-    Only creates the preference row when the webhook URL is configured,
-    always with enabled=True.
+    Only creates the preference row when the RocketChat Apprise URL is
+    configured, always with enabled=True.
     """
     try:
-        if not config.ROCKETCHAT_WEBHOOK_URL:
+        from bubble.notifications.channels import is_backend_configured  # noqa: PLC0415
+
+        if not is_backend_configured(NotificationPreference.ProviderType.ROCKETCHAT):
             return
         NotificationPreference.objects.get_or_create(
             user=user,

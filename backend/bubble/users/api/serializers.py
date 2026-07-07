@@ -24,6 +24,7 @@ class ProfileSerializer(serializers.ModelSerializer[Profile]):
             "name",
             "email",
             "phone",
+            "matrix_id",
             "bio",
             "address",
             "email_reminder",

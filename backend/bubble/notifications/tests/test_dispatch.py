@@ -1,23 +1,27 @@
 from unittest.mock import patch
 
 import pytest
+from constance.test import override_config
 
 from bubble.notifications.dispatch import (
-    dispatch_channel_notification,
+    dispatch_item_created,
     dispatch_notification,
 )
 from bubble.notifications.models import EventType, NotificationPreference
 from bubble.users.tests.factories import UserFactory
 
+ROCKET_URL = "rocket://user:pass@chat.example.com/@{target}"
+
 
 @pytest.mark.django_db
+@override_config(APPRISE_ROCKETCHAT_URL=ROCKET_URL)
 def test_dispatch_notification_enqueues_enabled_preferences() -> None:
-    user = UserFactory()
-    NotificationPreference.objects.create(
+    user = UserFactory(username="alice")
+    NotificationPreference.objects.update_or_create(
         user=user,
         provider_type=NotificationPreference.ProviderType.ROCKETCHAT,
         event_type=EventType.NEW_MESSAGE,
-        enabled=True,
+        defaults={"enabled": True},
     )
 
     with patch("bubble.notifications.dispatch.deliver_notification") as mocked_deliver:
@@ -31,22 +35,70 @@ def test_dispatch_notification_enqueues_enabled_preferences() -> None:
         NotificationPreference.ProviderType.ROCKETCHAT,
         EventType.NEW_MESSAGE,
         {"message": "hello"},
-        user_id=user.username,
+        target="alice",
+        language=None,
     )
 
 
 @pytest.mark.django_db
-def test_dispatch_channel_notification_ignores_non_channel_event() -> None:
+@override_config(APPRISE_ROCKETCHAT_URL=ROCKET_URL)
+def test_dispatch_notification_skips_when_target_missing() -> None:
+    user = UserFactory(username="")
+    NotificationPreference.objects.update_or_create(
+        user=user,
+        provider_type=NotificationPreference.ProviderType.ROCKETCHAT,
+        event_type=EventType.NEW_MESSAGE,
+        defaults={"enabled": True},
+    )
+
     with patch("bubble.notifications.dispatch.deliver_notification") as mocked_deliver:
-        dispatch_channel_notification(EventType.NEW_MESSAGE, {"name": "ignored"})
+        dispatch_notification(user, EventType.NEW_MESSAGE, {"message": "x"})
 
     mocked_deliver.assert_not_called()
 
 
 @pytest.mark.django_db
-def test_dispatch_channel_notification_enqueues_for_all_providers() -> None:
-    with patch("bubble.notifications.dispatch.deliver_notification") as mocked_deliver:
-        dispatch_channel_notification(EventType.NEW_ITEM, {"name": "Item A"})
+@override_config(APPRISE_ROCKETCHAT_URL="")
+def test_dispatch_notification_skips_when_backend_unconfigured() -> None:
+    user = UserFactory(username="bob")
+    NotificationPreference.objects.create(
+        user=user,
+        provider_type=NotificationPreference.ProviderType.ROCKETCHAT,
+        event_type=EventType.NEW_MESSAGE,
+        enabled=True,
+    )
 
-    expected_call_count = len(NotificationPreference.ProviderType)
-    assert mocked_deliver.call_count == expected_call_count
+    with patch("bubble.notifications.dispatch.deliver_notification") as mocked_deliver:
+        dispatch_notification(user, EventType.NEW_MESSAGE, {"message": "x"})
+
+    mocked_deliver.assert_not_called()
+
+
+@pytest.mark.django_db
+@override_config(APPRISE_ROCKETCHAT_URL=ROCKET_URL)
+def test_dispatch_item_created_notifies_each_subscriber() -> None:
+    alice = UserFactory(username="alice")
+    bob = UserFactory(username="bob")
+    NotificationPreference.objects.create(
+        user=alice,
+        provider_type=NotificationPreference.ProviderType.ROCKETCHAT,
+        event_type=EventType.NEW_ITEM,
+        enabled=True,
+    )
+    NotificationPreference.objects.create(
+        user=bob,
+        provider_type=NotificationPreference.ProviderType.ROCKETCHAT,
+        event_type=EventType.NEW_ITEM,
+        enabled=False,
+    )
+
+    with patch("bubble.notifications.dispatch.deliver_notification") as mocked_deliver:
+        dispatch_item_created({"name": "Bike"})
+
+    mocked_deliver.assert_called_once_with(
+        NotificationPreference.ProviderType.ROCKETCHAT,
+        EventType.NEW_ITEM,
+        {"name": "Bike"},
+        target="alice",
+        language=None,
+    )

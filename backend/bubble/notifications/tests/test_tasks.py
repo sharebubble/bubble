@@ -1,64 +1,74 @@
 from unittest.mock import patch
 
 import pytest
+from constance.test import override_config
 
 from bubble.notifications.models import EventType
-from bubble.notifications.tasks import (
-    deliver_channel_notification,
-    deliver_notification,
-)
+from bubble.notifications.tasks import deliver_notification
+
+ROCKET_URL = "rocket://user:pass@chat.example.com/@{target}"
 
 
 @pytest.mark.django_db
-def test_deliver_notification_unknown_provider_logs_warning() -> None:
-    with patch("bubble.notifications.tasks.logger.warning") as warning_mock:
-        deliver_notification.call_local(
-            "unknown", EventType.NEW_MESSAGE, {"message": "x"}
-        )
-
-    warning_mock.assert_called_once()
-
-
-@pytest.mark.django_db
-def test_deliver_notification_calls_provider_send() -> None:
-    provider = type("Provider", (), {"send": lambda *args, **kwargs: True})()
-    with (
-        patch.dict(
-            "bubble.notifications.tasks._PROVIDERS",
-            {"rocketchat": lambda: provider},
-            clear=True,
-        ),
-        patch.object(provider, "send", return_value=True) as send_mock,
-    ):
+@override_config(APPRISE_ROCKETCHAT_URL="")
+def test_deliver_notification_skips_when_unconfigured() -> None:
+    with patch("bubble.notifications.tasks.send_apprise_notification") as mocked_send:
         deliver_notification.call_local(
             "rocketchat",
             EventType.NEW_MESSAGE,
-            {"message": "hello"},
-            user_id="alice",
+            {"message": "x"},
+            target="alice",
         )
 
-    send_mock.assert_called_once_with(
-        EventType.NEW_MESSAGE,
-        {"message": "hello"},
-        user_id="alice",
-    )
+    mocked_send.assert_not_called()
 
 
 @pytest.mark.django_db
-def test_deliver_channel_notification_calls_provider_send_channel() -> None:
-    provider = type("Provider", (), {"send_channel": lambda *args, **kwargs: True})()
-    with (
-        patch.dict(
-            "bubble.notifications.tasks._PROVIDERS",
-            {"rocketchat": lambda: provider},
-            clear=True,
-        ),
-        patch.object(provider, "send_channel", return_value=True) as send_mock,
-    ):
-        deliver_channel_notification.call_local(
+@override_config(APPRISE_ROCKETCHAT_URL=ROCKET_URL)
+def test_deliver_notification_skips_when_target_missing() -> None:
+    with patch("bubble.notifications.tasks.send_apprise_notification") as mocked_send:
+        deliver_notification.call_local(
             "rocketchat",
-            EventType.NEW_ITEM,
-            {"name": "Bike"},
+            EventType.NEW_MESSAGE,
+            {"message": "x"},
+            target="",
         )
 
-    send_mock.assert_called_once_with(EventType.NEW_ITEM, {"name": "Bike"})
+    mocked_send.assert_not_called()
+
+
+@pytest.mark.django_db
+@override_config(APPRISE_ROCKETCHAT_URL=ROCKET_URL)
+def test_deliver_notification_builds_url_and_sends() -> None:
+    with patch(
+        "bubble.notifications.tasks.send_apprise_notification",
+        return_value=True,
+    ) as mocked_send:
+        deliver_notification.call_local(
+            "rocketchat",
+            EventType.NEW_MESSAGE,
+            {"sender": "bob", "item_title": "Bike", "message": "Hi"},
+            target="alice",
+        )
+
+    mocked_send.assert_called_once()
+    url, title, body = mocked_send.call_args.args
+    assert url == "rocket://user:pass@chat.example.com/@alice"
+    assert title
+    assert "bob" in body
+
+
+@pytest.mark.django_db
+@override_config(APPRISE_ROCKETCHAT_URL=ROCKET_URL)
+def test_deliver_notification_swallows_provider_errors() -> None:
+    with patch(
+        "bubble.notifications.tasks.send_apprise_notification",
+        side_effect=RuntimeError("boom"),
+    ):
+        # Should not raise.
+        deliver_notification.call_local(
+            "rocketchat",
+            EventType.NEW_MESSAGE,
+            {"message": "x"},
+            target="alice",
+        )

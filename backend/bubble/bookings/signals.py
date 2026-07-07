@@ -106,6 +106,8 @@ def notify_new_booking(sender, instance: Booking, created, **kwargs):
         item, only_with_perms_in=["change_item"], with_group_users=False
     )
 
+    notification_context = {"item_title": item.name}
+
     # Send notification to each user with change permission (except the booking creator)
     local_booker_id = instance.user_id  # may be None for remote bookers
     for user in users_with_perms:
@@ -118,6 +120,9 @@ def notify_new_booking(sender, instance: Booking, created, **kwargs):
                 "Sent new booking notification to user %s for booking %s",
                 getattr(user, "username", str(user)),
                 instance.pk,
+            )
+            dispatch_notification(
+                cast("User", user), EventType.NEW_BOOKING, notification_context
             )
 
 

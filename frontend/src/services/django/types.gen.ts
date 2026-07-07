@@ -716,11 +716,32 @@ export type Message = {
 /**
  * Flat serializer for GET/PATCH /api/notification-preferences/me/.
  *
- * Keys are <provider_type>_<event_type> booleans.
- * Currently: rocketchat_new_message.
+ * For every provider (RocketChat, Signal, Email) it exposes:
+ *
+ * * `<provider>_available` (read-only): the channel is configured on the
+ *   backend *and* the user has filled in the field it needs to reach them.
+ * * `<provider>_target` (read-only): the resolved recipient address.
+ * * `<provider>_<group>` (read/write): per event-group opt-in toggles.
+ *   `messages` covers new messages and bookings; `new_item` covers newly
+ *   created items.
  */
 export type NotificationPreferenceMe = {
-    rocketchat_new_message?: boolean;
+    readonly rocketchat_available: boolean;
+    readonly rocketchat_target: string;
+    rocketchat_messages?: boolean;
+    rocketchat_new_item?: boolean;
+    readonly signal_available: boolean;
+    readonly signal_target: string;
+    signal_messages?: boolean;
+    signal_new_item?: boolean;
+    readonly matrix_available: boolean;
+    readonly matrix_target: string;
+    matrix_messages?: boolean;
+    matrix_new_item?: boolean;
+    readonly email_available: boolean;
+    readonly email_target: string;
+    email_messages?: boolean;
+    email_new_item?: boolean;
 };
 
 export type PaginatedBookListList = {
@@ -1143,11 +1164,32 @@ export type PatchedMessage = {
 /**
  * Flat serializer for GET/PATCH /api/notification-preferences/me/.
  *
- * Keys are <provider_type>_<event_type> booleans.
- * Currently: rocketchat_new_message.
+ * For every provider (RocketChat, Signal, Email) it exposes:
+ *
+ * * `<provider>_available` (read-only): the channel is configured on the
+ *   backend *and* the user has filled in the field it needs to reach them.
+ * * `<provider>_target` (read-only): the resolved recipient address.
+ * * `<provider>_<group>` (read/write): per event-group opt-in toggles.
+ *   `messages` covers new messages and bookings; `new_item` covers newly
+ *   created items.
  */
 export type PatchedNotificationPreferenceMe = {
-    rocketchat_new_message?: boolean;
+    readonly rocketchat_available?: boolean;
+    readonly rocketchat_target?: string;
+    rocketchat_messages?: boolean;
+    rocketchat_new_item?: boolean;
+    readonly signal_available?: boolean;
+    readonly signal_target?: string;
+    signal_messages?: boolean;
+    signal_new_item?: boolean;
+    readonly matrix_available?: boolean;
+    readonly matrix_target?: string;
+    matrix_messages?: boolean;
+    matrix_new_item?: boolean;
+    readonly email_available?: boolean;
+    readonly email_target?: string;
+    email_messages?: boolean;
+    email_new_item?: boolean;
 };
 
 export type PatchedProfile = {
@@ -1155,6 +1197,7 @@ export type PatchedProfile = {
     name?: string;
     readonly email?: string;
     phone?: string;
+    matrix_id?: string;
     bio?: string;
     address?: string;
     email_reminder?: boolean;
@@ -1191,6 +1234,7 @@ export type Profile = {
     name?: string;
     readonly email: string;
     phone?: string;
+    matrix_id?: string;
     bio?: string;
     address?: string;
     email_reminder?: boolean;

@@ -5,8 +5,7 @@ import logging
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from bubble.notifications.dispatch import dispatch_channel_notification
-from bubble.notifications.models import EventType
+from bubble.notifications.dispatch import dispatch_item_created
 
 from .models import Item, ItemStatus
 
@@ -52,8 +51,8 @@ def notify_new_item(sender, instance: Item, **kwargs) -> None:
     }
 
     logger.info(
-        "Dispatching new_item channel notification for item %s (status %s)",
+        "Dispatching new_item notification for item %s (status %s)",
         instance.pk,
         instance.status,
     )
-    dispatch_channel_notification(EventType.NEW_ITEM, context)
+    dispatch_item_created(context)

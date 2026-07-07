@@ -19,8 +19,16 @@ class ConfigView(APIView):
         constance_config = getattr(settings, "CONSTANCE_CONFIG_PUBLIC", []) or []
         config_values = {key: getattr(config, key) for key in constance_config}
 
-        # Derived flags — not stored in constance, computed from private settings
-        rocketchat_webhook_url = getattr(config, "ROCKETCHAT_WEBHOOK_URL", "") or ""
-        config_values["ROCKETCHAT_ENABLED"] = bool(rocketchat_webhook_url.strip())
+        # Derived flags — which notification channels are configured on the
+        # backend. Per-user availability additionally depends on the user having
+        # filled in the matching profile field (see notification-preferences/me).
+        from bubble.notifications.channels import (  # noqa: PLC0415
+            ProviderType,
+            is_backend_configured,
+        )
+
+        config_values["NOTIFICATIONS_ENABLED"] = {
+            str(provider): is_backend_configured(provider) for provider in ProviderType
+        }
 
         return Response(config_values, status=status.HTTP_200_OK)
