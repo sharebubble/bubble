@@ -478,6 +478,10 @@ const translations = {
     'itemBookings.paid': 'Paid',
     'itemBookings.booker': 'Booked by',
     'itemBookings.openEnded': 'Open-ended',
+    'itemBookings.previousRentals': 'Previous rentals',
+    'itemBookings.noPreviousRentals': 'This item has not been rented yet.',
+    'itemBookings.anonymousBooker': 'Someone',
+    'itemBookings.seeAll': 'See all bookings ({count})',
 
     // My Items
     'myItems.title': 'My Items',
@@ -1155,6 +1159,10 @@ const translations = {
     'itemBookings.paid': 'Bezahlt',
     'itemBookings.booker': 'Gebucht von',
     'itemBookings.openEnded': 'Unbefristet',
+    'itemBookings.previousRentals': 'Frühere Vermietungen',
+    'itemBookings.noPreviousRentals': 'Dieser Artikel wurde noch nicht vermietet.',
+    'itemBookings.anonymousBooker': 'Jemand',
+    'itemBookings.seeAll': 'Alle Buchungen ansehen ({count})',
 
     // My Items
     'myItems.title': 'Meine Artikel',

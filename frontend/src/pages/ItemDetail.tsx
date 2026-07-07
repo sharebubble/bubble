@@ -1,6 +1,7 @@
 import { BookingDialog } from '@/components/items/BookingDialog';
 import { CalendarSubscribeButton } from '@/components/calendar/CalendarSubscribeButton';
 import { ItemComments } from '@/components/items/ItemComments';
+import { PreviousRentals } from '@/components/items/PreviousRentals';
 import { ItemImageCarousel } from '@/components/items/ItemImageCarousel';
 import { RentalCalendar } from '@/components/items/RentalCalendar';
 import {
@@ -22,16 +23,7 @@ import { getCategoryIcon } from '@/lib/categoryIcons';
 import { ActionIcon, Badge, Button, Text, Tooltip } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { formatDistanceToNow } from 'date-fns';
-import {
-  ArrowLeft,
-  BookMarked,
-  Calendar,
-  Edit3,
-  History,
-  MapPin,
-  Trash2,
-  Zap,
-} from 'lucide-react';
+import { ArrowLeft, BookMarked, Calendar, Edit3, History, MapPin, Trash2, Zap } from 'lucide-react';
 import { createElement, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -327,17 +319,22 @@ const ItemDetail = () => {
           {/* Owner details are shown to logged-in users only */}
           {user && <UserInfoBox userUuid={item.user} />}
 
-          {/* Booking history — available to anyone who can view the item */}
-          <div>
-            <Button
-              component={Link}
-              to={`/item/${item.id}/bookings`}
-              variant="light"
-              leftSection={<History size={16} />}
-            >
-              {t('itemBookings.viewHistory')}
-            </Button>
-          </div>
+          {/* Previous rentals — logged-in users can see who rented a rental
+              item and for how long. Other items link to the full history. */}
+          {isRental && user ? (
+            <PreviousRentals itemId={item.id} />
+          ) : (
+            <div>
+              <Button
+                component={Link}
+                to={`/item/${item.id}/bookings`}
+                variant="light"
+                leftSection={<History size={16} />}
+              >
+                {t('itemBookings.viewHistory')}
+              </Button>
+            </div>
+          )}
 
           {/* Action buttons */}
           {(isOwner || showBookingAction) && (
