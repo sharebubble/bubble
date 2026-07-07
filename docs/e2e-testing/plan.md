@@ -510,12 +510,15 @@ Config precedence: env vars → `e2e/.env` (local only, git-ignored) → default
       and the overlap exclusion constraint (owner + renterA + renterB).
 
 **Phase D — CI wiring**
-- [ ] Version endpoint + `GIT_SHA` build-arg in both Dockerfiles (§7.2).
+- [x] Version endpoint + `GIT_SHA` build-arg in both Dockerfiles (§7.2), and
+      `ci.yml` build jobs pass `--build-arg GIT_SHA=${{ github.sha }}`.
+- [x] `e2e.yml`: on CI-success(main)/schedule/dispatch → resolve latest `main` SHA →
+      version-guard(stage serves `<sha>`) → run suite → upload report. Stable-group
+      concurrency w/ `cancel-in-progress`; needs a GitHub `e2e` environment.
 - [ ] ArgoCD ApplicationSet (§7.1a): SCM generator on `main`, pin
       `main-{{ .sha | trunc 7 }}`, auto-sync; CI check that its tag matches the built tag.
-- [ ] `main-pipeline.yml`: stable-group concurrency w/ `cancel-in-progress`;
-      lint+pytest → build(`main-<sha>`) → version-guard(==`<sha>`) → E2E(stage) →
-      **release-please gated on E2E green**. (No CI-driven deploy — Argo auto-syncs.)
+- [ ] Gate **release-please** on the E2E result (§7.1 step 6) — currently E2E runs
+      after CI but does not yet block the release PR.
 - [ ] Move/gate release-please so it runs **only** after a green stage E2E (drop the
       ungated push-to-`main` trigger, or chain via `workflow_run` on success).
 - [ ] `e2e-scheduled.yml`: nightly full run vs stage, writes `e2e-main`, artifacts.

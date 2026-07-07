@@ -70,6 +70,25 @@ Blocks until both the backend (`/api/version`) and frontend (`/version.json`)
 report the commit under test, then exits 0 — so E2E never runs against a
 half-finished rollout. Exits non-zero on timeout.
 
+## CI workflow (`.github/workflows/e2e.yml`)
+
+Runs against stage after CI succeeds on `main` (once ArgoCD has synced), on a
+3-hourly schedule, and on manual dispatch. It resolves the latest `main` commit,
+waits with the version guard until stage serves that exact SHA, then runs the
+suite and uploads the HTML report.
+
+For it to work, the deployed images must report their SHA (CI passes
+`--build-arg GIT_SHA=${{ github.sha }}`), and a GitHub **Environment named `e2e`**
+must provide:
+
+- **Variables**: `E2E_BASE_URL` (optional; defaults to `https://main.sharebubble.org`).
+- **Secrets**: `E2E_OWNER_USERNAME`/`E2E_OWNER_PASSWORD`, `E2E_RENTERA_*`,
+  `E2E_RENTERB_*`, `E2E_ADMIN_*` — the pool you provisioned with `seed_e2e`.
+
+Without the secrets the guard + `@smoke` still run; the `@regression` booking
+flow skips. `schedule`/`workflow_run`/`workflow_dispatch` only fire once this
+workflow is on the default branch.
+
 ## Conventions
 
 Test authoring rules live in [`AGENTS.md`](./AGENTS.md); the AI generator and
