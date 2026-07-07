@@ -6,6 +6,7 @@ import logging
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.db import close_old_connections
+from websockets.exceptions import ConnectionClosedError
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,12 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     - Session invalidation notifications
     - Message notifications
     """
+
+    async def _safe_send(self, text_data):
+        try:
+            await self.send(text_data=text_data)
+        except ConnectionClosedError:
+            logger.debug("WebSocket send failed (connection closed)")
 
     async def connect(self):
         """Accept WebSocket connection if user is authenticated."""
@@ -40,8 +47,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         await self.accept()
         logger.info("WebSocket connected for user %s", self.user.username)
 
-        # Send connection confirmation
-        await self.send(
+        await self._safe_send(
             text_data=json.dumps(
                 {
                     "type": "connection.established",
@@ -71,7 +77,7 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 message_type = data.get("type")
 
                 if message_type == "ping":
-                    await self.send(
+                    await self._safe_send(
                         text_data=json.dumps(
                             {
                                 "type": "pong",
@@ -85,11 +91,11 @@ class NotificationConsumer(AsyncWebsocketConsumer):
     # Handler methods for different notification types
     async def notification_message(self, event):
         """Send message notification to WebSocket."""
-        await self.send(text_data=json.dumps(event["data"]))
+        await self._safe_send(text_data=json.dumps(event["data"]))
 
     async def session_invalidated(self, event):
         """Notify client that session was invalidated."""
-        await self.send(
+        await self._safe_send(
             text_data=json.dumps(
                 {
                     "type": "session.invalidated",
@@ -97,9 +103,8 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 }
             )
         )
-        # Close connection after sending notification
         await self.close()
 
     async def user_notification(self, event):
         """Generic user notification handler."""
-        await self.send(text_data=json.dumps(event["data"]))
+        await self._safe_send(text_data=json.dumps(event["data"]))

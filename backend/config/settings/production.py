@@ -161,9 +161,24 @@ if SENTRY_DSN:
         DjangoIntegration(),
         RedisIntegration(),
     ]
+
+    def _before_send(event, hint):
+        exc_info = hint.get("exc_info")
+        if exc_info and exc_info[0]:
+            exc_name = getattr(exc_info[0], "__name__", "")
+            if "ConnectionClosedError" in exc_name:
+                return None
+        log_record = hint.get("log_record")
+        if log_record and hasattr(log_record, "exc_info") and log_record.exc_info:
+            exc_name = getattr(log_record.exc_info[0], "__name__", "")
+            if "ConnectionClosedError" in exc_name:
+                return None
+        return event
+
     sentry_sdk.init(
         dsn=SENTRY_DSN,
         integrations=integrations,
         environment=env("SENTRY_ENVIRONMENT", default="prod"),
         traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.0),
+        before_send=_before_send,
     )
