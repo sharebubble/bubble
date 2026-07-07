@@ -53,8 +53,7 @@ export const NotificationSettings = () => {
         <Stack gap="lg">
           {availableProviders.map(provider => {
             const target = prefs?.[`${provider.id}_target` as keyof NotificationPreferenceMe] as
-              | string
-              | undefined;
+              string | undefined;
             const messagesField = `${provider.id}_messages` as ToggleField;
             const newItemField = `${provider.id}_new_item` as ToggleField;
 
