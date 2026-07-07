@@ -177,16 +177,10 @@ backend:
 
   # Persistent volumes
   persistence:
-    media:
-      enabled: true
-      size: 1Gi
-      accessMode: ReadWriteOnce
-      storageClass: ""
-    staticfiles:
-      enabled: true
-      size: 100Mi
-      accessMode: ReadWriteOnce
-      storageClass: ""
+    enabled: true
+    size: 2Gi
+    accessMode: ReadWriteOnce
+    storageClass: ""
 
 # ============================================================================
 # Huey Worker Configuration

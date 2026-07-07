@@ -152,16 +152,16 @@ spec:
               mountPath: /app/staticfiles
       volumes:
         - name: media
-          {{- if .Values.backend.persistence.media.enabled }}
+          {{- if .Values.backend.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ include "bubble.fullname" . }}-media
+            claimName: {{ include "bubble.fullname" . }}-data
           {{- else }}
           emptyDir: {}
           {{- end }}
         - name: staticfiles
-          {{- if .Values.backend.persistence.staticfiles.enabled }}
+          {{- if .Values.backend.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ include "bubble.fullname" . }}-staticfiles
+            claimName: {{ include "bubble.fullname" . }}-data
           {{- else }}
           emptyDir: {}
           {{- end }}
