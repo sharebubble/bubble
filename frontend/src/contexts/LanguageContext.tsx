@@ -479,9 +479,9 @@ const translations = {
     'profile.emailReminderDesc': 'Receive email reminders for bookings and messages',
     'profile.notifications': 'Notifications',
     'profile.notificationsDesc':
-      'Choose how you want to be notified. Channels appear once configured and the matching profile field (RocketChat username, Signal phone number, email) is filled in.',
+      'Choose how you want to be notified. Channels appear once configured and the matching profile field (RocketChat username, Signal phone number, Matrix ID, email) is filled in.',
     'profile.notificationsUnavailable':
-      'No notification channels are available yet. Add a phone number or ask an administrator to configure the notification services.',
+      'No notification channels are available yet. Add a phone number or Matrix ID, or ask an administrator to configure the notification services.',
     'profile.channelRocketchat': 'RocketChat',
     'profile.channelSignal': 'Signal',
     'profile.channelMatrix': 'Matrix',
@@ -1127,9 +1127,9 @@ const translations = {
     'profile.emailReminderDesc': 'E-Mail-Erinnerungen für Buchungen und Nachrichten erhalten',
     'profile.notifications': 'Benachrichtigungen',
     'profile.notificationsDesc':
-      'Wähle, wie du benachrichtigt werden möchtest. Kanäle erscheinen, sobald sie konfiguriert sind und das passende Profilfeld (RocketChat-Benutzername, Signal-Telefonnummer, E-Mail) ausgefüllt ist.',
+      'Wähle, wie du benachrichtigt werden möchtest. Kanäle erscheinen, sobald sie konfiguriert sind und das passende Profilfeld (RocketChat-Benutzername, Signal-Telefonnummer, Matrix-ID, E-Mail) ausgefüllt ist.',
     'profile.notificationsUnavailable':
-      'Es sind noch keine Benachrichtigungskanäle verfügbar. Hinterlege eine Telefonnummer oder bitte einen Administrator, die Benachrichtigungsdienste zu konfigurieren.',
+      'Es sind noch keine Benachrichtigungskanäle verfügbar. Hinterlege eine Telefonnummer oder Matrix-ID oder bitte einen Administrator, die Benachrichtigungsdienste zu konfigurieren.',
     'profile.channelRocketchat': 'RocketChat',
     'profile.channelSignal': 'Signal',
     'profile.channelMatrix': 'Matrix',

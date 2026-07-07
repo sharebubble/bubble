@@ -1,7 +1,6 @@
 import logging
 import uuid
 
-from constance import config
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.db.models import CharField
@@ -107,7 +106,9 @@ def _setup_default_notification_preferences(user) -> None:
     configured, always with enabled=True.
     """
     try:
-        if not config.APPRISE_ROCKETCHAT_URL:
+        from bubble.notifications.channels import is_backend_configured  # noqa: PLC0415
+
+        if not is_backend_configured(NotificationPreference.ProviderType.ROCKETCHAT):
             return
         NotificationPreference.objects.get_or_create(
             user=user,

@@ -1,4 +1,4 @@
-import { Card, Checkbox, Stack, Text, Title } from '@mantine/core';
+import { Card, Checkbox, Paper, Stack, Text, Title } from '@mantine/core';
 import { Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -59,7 +59,7 @@ export const NotificationSettings = () => {
             const newItemField = `${provider.id}_new_item` as ToggleField;
 
             return (
-              <div key={provider.id} className="rounded-md border p-4">
+              <Paper key={provider.id} withBorder radius="md" p="md">
                 <Text fw={600}>{t(provider.labelKey)}</Text>
                 {target && (
                   <Text size="xs" c="dimmed" className="mb-3">
@@ -82,7 +82,7 @@ export const NotificationSettings = () => {
                     description={t('profile.notifyNewItemDesc')}
                   />
                 </Stack>
-              </div>
+              </Paper>
             );
           })}
         </Stack>

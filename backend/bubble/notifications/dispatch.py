@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from itertools import groupby
 from typing import TYPE_CHECKING
 
 from bubble.notifications.channels import (
@@ -81,11 +82,8 @@ def dispatch_item_created(context: dict) -> None:
         .order_by("user_id")
     )
 
-    by_user: dict[object, list[NotificationPreference]] = {}
-    users: dict[object, User] = {}
-    for pref in prefs:
-        by_user.setdefault(pref.user_id, []).append(pref)
-        users[pref.user_id] = pref.user
-
-    for user_id, user_prefs in by_user.items():
-        _deliver_for_user(users[user_id], EventType.NEW_ITEM, context, user_prefs)
+    # The queryset is ordered by user_id, so we can stream it and flush one
+    # user's preferences at a time — keeping memory bounded for large user bases.
+    for _user_id, user_prefs in groupby(prefs.iterator(), key=lambda p: p.user_id):
+        group = list(user_prefs)
+        _deliver_for_user(group[0].user, EventType.NEW_ITEM, context, group)
