@@ -1,9 +1,10 @@
-name: E2E (stage)
+name: E2E & release gate (stage)
 
 # Runs the Playwright suite against the stage environment (main.sharebubble.org).
 # It first confirms stage is actually serving the commit under test (the version
 # guard), so tests never run against a half-finished ArgoCD rollout, then runs
-# the suite. See docs/e2e-testing/plan.md §7.
+# the suite. On the main push→CI path, a green suite gates release-please: only
+# then is a new release version proposed. See docs/e2e-testing/plan.md §7.
 on:
   # After CI succeeds on main (images built → ArgoCD auto-syncs stage).
   workflow_run:
@@ -103,3 +104,25 @@ jobs:
           name: playwright-report-${{ github.run_id }}
           path: e2e/playwright-report
           retention-days: 14
+
+  # Release gate: propose a new version ONLY after a green stage E2E for a real
+  # main push (not schedule/dispatch). `needs: [e2e]` means a red suite (or a
+  # failed version guard) blocks the release. This replaces the old ungated
+  # release-please.yml that ran on every push to main. See plan §7.1 step 6.
+  release-please:
+    needs: [e2e]
+    if: >-
+      ${{ github.event_name == 'workflow_run'
+      && github.event.workflow_run.event == 'push' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+          target-branch: main

@@ -515,10 +515,12 @@ Config precedence: env vars → `e2e/.env` (local only, git-ignored) → default
 - [x] `e2e.yml`: on CI-success(main)/schedule/dispatch → resolve latest `main` SHA →
       version-guard(stage serves `<sha>`) → run suite → upload report. Stable-group
       concurrency w/ `cancel-in-progress`; needs a GitHub `e2e` environment.
+- [x] **release-please gated on E2E** (§7.1 step 6): a `needs: [e2e]` job in
+      `e2e.yml` runs release-please only after a green suite on the main push path;
+      the ungated standalone `release-please.yml` was removed. Red suite / failed
+      version guard ⇒ no version proposed ⇒ no tag ⇒ no prod promote.
 - [ ] ArgoCD ApplicationSet (§7.1a): SCM generator on `main`, pin
       `main-{{ .sha | trunc 7 }}`, auto-sync; CI check that its tag matches the built tag.
-- [ ] Gate **release-please** on the E2E result (§7.1 step 6) — currently E2E runs
-      after CI but does not yet block the release PR.
 - [ ] Move/gate release-please so it runs **only** after a green stage E2E (drop the
       ungated push-to-`main` trigger, or chain via `workflow_run` on success).
 - [ ] `e2e-scheduled.yml`: nightly full run vs stage, writes `e2e-main`, artifacts.
