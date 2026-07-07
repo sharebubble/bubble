@@ -166,12 +166,12 @@ if SENTRY_DSN:
         exc_info = hint.get("exc_info")
         if exc_info and exc_info[0]:
             exc_name = getattr(exc_info[0], "__name__", "")
-            if "ConnectionClosedError" in exc_name:
+            if "ConnectionClosedError" in exc_name or "CancelledError" in exc_name:
                 return None
         log_record = hint.get("log_record")
         if log_record and hasattr(log_record, "exc_info") and log_record.exc_info:
             exc_name = getattr(log_record.exc_info[0], "__name__", "")
-            if "ConnectionClosedError" in exc_name:
+            if "ConnectionClosedError" in exc_name or "CancelledError" in exc_name:
                 return None
         return event
 
