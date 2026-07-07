@@ -114,6 +114,10 @@ class Booking(models.Model):
     objects = BookingManager()
 
     class Meta:
+        indexes = [
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["item", "status"]),
+        ]
         # Prevent overlapping confirmed bookings for the same item.
         # Uses PostgreSQL exclusion constraint on the tstzrange(time_from, time_to)
         # and item equality. Only applies when status is CONFIRMED.
@@ -224,6 +228,9 @@ class Message(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["booking", "is_read"]),
+        ]
         constraints = [
             models.CheckConstraint(
                 condition=(

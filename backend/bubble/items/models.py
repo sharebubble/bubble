@@ -398,9 +398,19 @@ class Item(models.Model):
 class ItemUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(Item, on_delete=models.CASCADE)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "content_object"]),
+        ]
+
 
 class ItemGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Item, on_delete=models.CASCADE)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["group", "content_object"]),
+        ]
 
 
 class ExifTranspose:
