@@ -8,6 +8,10 @@ on:
       - 'charts/**'
   workflow_dispatch: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   release:
     name: Package & publish helm chart
