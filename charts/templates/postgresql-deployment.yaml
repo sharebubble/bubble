@@ -32,12 +32,25 @@ spec:
             - name: postgresql
               containerPort: 5432
               protocol: TCP
+          {{- if not .Values.postgresql.auth.existingSecret }}
           envFrom:
             - secretRef:
                 name: {{ include "bubble.fullname" . }}-postgresql
+          {{- end }}
           env:
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
+            {{- if .Values.postgresql.auth.existingSecret }}
+            - name: POSTGRES_USER
+              value: {{ .Values.postgresql.auth.username | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "bubble.postgresql.secretName" . }}
+                  key: {{ include "bubble.postgresql.secretKey" . }}
+            - name: POSTGRES_DB
+              value: {{ .Values.postgresql.auth.database | quote }}
+            {{- end }}
           livenessProbe:
             exec:
               command:
