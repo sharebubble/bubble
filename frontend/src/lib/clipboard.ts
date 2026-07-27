@@ -8,6 +8,8 @@
  * Returns whether the value ended up in the clipboard.
  */
 export async function copyToClipboard(value: string): Promise<boolean> {
+  if (typeof navigator === 'undefined' || typeof document === 'undefined') return false;
+
   try {
     if (navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(value);
@@ -17,8 +19,8 @@ export async function copyToClipboard(value: string): Promise<boolean> {
     // Permission denied or insecure context — try the legacy path below.
   }
 
+  const textarea = document.createElement('textarea');
   try {
-    const textarea = document.createElement('textarea');
     textarea.value = value;
     textarea.setAttribute('readonly', '');
     textarea.style.position = 'fixed';
@@ -26,10 +28,10 @@ export async function copyToClipboard(value: string): Promise<boolean> {
     textarea.style.opacity = '0';
     document.body.appendChild(textarea);
     textarea.select();
-    const copied = document.execCommand('copy');
-    document.body.removeChild(textarea);
-    return copied;
+    return document.execCommand('copy');
   } catch {
     return false;
+  } finally {
+    textarea.remove();
   }
 }

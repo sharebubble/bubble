@@ -1,6 +1,9 @@
-import { useIsMobile } from '@/hooks/use-mobile';
 import { copyToClipboard } from '@/lib/clipboard';
+import { useMediaQuery } from '@mantine/hooks';
 import { useCallback } from 'react';
+
+/** Mirrors the app's mobile breakpoint (see `useIsMobile`). */
+const MOBILE_MEDIA_QUERY = '(max-width: 767px)';
 
 export interface ShareLinkData {
   url: string;
@@ -22,7 +25,9 @@ export type ShareOutcome = 'shared' | 'dismissed' | 'copied' | 'error';
  * unavailable) the link is copied to the clipboard instead.
  */
 export function useShare() {
-  const isMobile = useIsMobile();
+  // Evaluated during the first render (not in an effect), so the very first
+  // click already takes the native-share path on mobile.
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY, false, { getInitialValueInEffect: false });
   const canShareNatively = isMobile && typeof navigator !== 'undefined' && !!navigator.share;
 
   const share = useCallback(
