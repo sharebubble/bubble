@@ -5,7 +5,7 @@ description = "Treibhaus donaufeld sharing platform"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "anthropic>=0.116.0",
+    "anthropic>=0.119.0",
     "argon2-cffi",
     "channels-redis",
     "channels[daphne]",
@@ -16,21 +16,21 @@ dependencies = [
     "django-constance[redis]>=4.3.5",
     "django-cors-headers",
     "django-environ",
-    "django-filter>=25.2",
-    "django-guardian>=3.3.2",
+    "django-filter>=26.1",
+    "django-guardian>=3.3.3",
     "django-imagekit>=6.1.0",
     "django-model-utils",
     "django-money>=3.6.1",
     "django-ratelimit>=4.1.0",
     "django-redis",
-    "django-simple-history>=3.12.0",
-    "huey>=3.1.1",
+    "django-simple-history>=3.13.0",
+    "huey>=3.3.0",
     "django-storages[boto3]>=1.14.6",
     "djangorestframework",
     "drf-orjson-renderer>=1.8.0",
     "drf-spectacular",
     "fido2",
-    "google-genai>=2.10.0",
+    "google-genai>=2.14.0",
     "gunicorn",
     "hiredis",
     "httpx>=0.28.1",
@@ -62,7 +62,7 @@ torchvision = [
 ]
 
 [build-system]
-requires = ["setuptools>=83.0.0", "wheel", "setuptools-scm[toml]>=10.2.0"]
+requires = ["setuptools>=83.0.0", "wheel", "setuptools-scm[toml]>=10.2.1"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
@@ -224,7 +224,7 @@ dev = [
     "django-model-utils",
     "django-redis",
     "django-stubs[compatible-mypy]",
-    "huey>=3.1.1",
+    "huey>=3.3.0",
     "django-webpack-loader",
     "djangorestframework",
     "djangorestframework-stubs",
