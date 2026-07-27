@@ -650,6 +650,12 @@ const translations = {
     'calendar.hide': 'Hide',
     'calendar.secretHint': 'Anyone with this link can view the calendar — keep it private.',
     'calendar.loadError': 'Could not load the calendar link.',
+
+    // Sharing
+    'share.share': 'Share',
+    'share.copyLink': 'Copy link',
+    'share.copied': 'Link copied to clipboard',
+    'share.failed': 'Could not copy the link',
   },
   de: {
     // Header
@@ -1301,6 +1307,12 @@ const translations = {
     'calendar.hide': 'Ausblenden',
     'calendar.secretHint': 'Jeder mit diesem Link kann den Kalender sehen — halte ihn privat.',
     'calendar.loadError': 'Kalender-Link konnte nicht geladen werden.',
+
+    // Teilen
+    'share.share': 'Teilen',
+    'share.copyLink': 'Link kopieren',
+    'share.copied': 'Link in die Zwischenablage kopiert',
+    'share.failed': 'Link konnte nicht kopiert werden',
   },
 };
 

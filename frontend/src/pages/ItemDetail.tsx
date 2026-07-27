@@ -2,6 +2,7 @@ import { BookingDialog } from '@/components/items/BookingDialog';
 import { CalendarSubscribeButton } from '@/components/calendar/CalendarSubscribeButton';
 import { ItemImageCarousel } from '@/components/items/ItemImageCarousel';
 import { RentalCalendar } from '@/components/items/RentalCalendar';
+import { ShareButton } from '@/components/items/ShareButton';
 import {
   getSalesTypeBadgeProps,
   getStatusLabel,
@@ -114,6 +115,9 @@ const ItemDetail = () => {
     images,
   } = item;
 
+  // Canonical link to this item — without any hash/query of the current URL.
+  const shareUrl = `${window.location.origin}/item/${item.id}`;
+
   const isRental = sales_type === 'rent' || sales_type === 'borrow';
   const isWanted = sales_type === 'want_buy' || sales_type === 'want_rent';
   const hasImages = images.length > 0;
@@ -198,8 +202,11 @@ const ItemDetail = () => {
         <Button variant="subtle" onClick={() => navigate(-1)} leftSection={<ArrowLeft size={16} />}>
           {t('common.back')}
         </Button>
-        {/* Calendar subscription — any logged-in user, bookable items only */}
-        {user && isRental && itemUuid && <CalendarSubscribeButton kind="item" id={itemUuid} />}
+        <div className="flex items-center gap-2">
+          <ShareButton url={shareUrl} title={name} text={description || undefined} />
+          {/* Calendar subscription — any logged-in user, bookable items only */}
+          {user && isRental && itemUuid && <CalendarSubscribeButton kind="item" id={itemUuid} />}
+        </div>
       </div>
 
       <div className={cn('grid gap-8', hasImages ? 'md:grid-cols-2' : 'grid-cols-1')}>
