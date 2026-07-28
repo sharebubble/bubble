@@ -2,6 +2,7 @@ import { UpcomingBookingsWidget } from '@/components/bookings/UpcomingBookingsWi
 import { ItemCard } from '@/components/browse/ItemCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useItems } from '@/hooks/useItems';
+import { BROWSE_PATH } from '@/lib/routes';
 import { Text } from '@mantine/core';
 import { ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -26,7 +27,7 @@ const Home = () => {
         <section className="space-y-3">
           <button
             type="button"
-            onClick={() => navigate('/?browse=1')}
+            onClick={() => navigate(BROWSE_PATH)}
             className="flex w-full items-center gap-2 text-left"
           >
             <Text component="span" fw={700} size="lg" className="flex-1">

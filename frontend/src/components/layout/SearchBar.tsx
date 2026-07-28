@@ -1,6 +1,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useSearchFacets } from '@/hooks/useSearchFacets';
 import { categoryTranslationKeys, getCategoryIcon } from '@/lib/categoryIcons';
+import { BROWSE_PATH } from '@/lib/routes';
 import { cn } from '@/lib/utils';
 import {
   Button,
@@ -57,9 +58,6 @@ const TYPE_OPTIONS = [
 // Facets that require an authenticated user (collections are auth-only, owners
 // are intentionally hidden from anonymous visitors).
 const AUTHED_FACETS: readonly Facet[] = ['collection', 'owner'];
-
-// The browse/results page that the header search drives.
-const BROWSE_PATH = '/';
 
 interface SearchBarProps {
   /** Whether the viewer is logged in (gates the collection and owner facets). */

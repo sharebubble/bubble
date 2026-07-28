@@ -55,6 +55,8 @@ export const Header = () => {
               size="sm"
               leftSection={<LogIn size={16} aria-hidden="true" />}
               onClick={() => navigate('/profile')}
+              // The label is hidden on narrow screens, so name the button explicitly.
+              aria-label={t('header.signIn')}
             >
               <span className="hidden sm:inline">{t('header.signIn')}</span>
             </Button>
@@ -84,9 +86,11 @@ export const Header = () => {
             <SearchBar loggedIn />
           </div>
 
-          {/* Actions */}
-          <div className="flex shrink-0 items-center gap-2">
-            {/* Bookings */}
+          {/* Actions — hidden below `md`, where MobileBottomNav covers the same
+              destinations (Requests, Add, Account). The breakpoint must stay in
+              sync with that bar's `md:hidden` and with useIsMobile(). */}
+          <div className="hidden shrink-0 items-center gap-2 md:flex">
+            {/* Requests */}
             <Indicator
               label={unreadCount}
               color="red"
@@ -94,60 +98,30 @@ export const Header = () => {
               disabled={unreadCount === 0}
               offset={4}
             >
-              <div>
-                <div className="sm:hidden">
-                  <ActionIcon
-                    variant="subtle"
-                    color="gray"
-                    size="lg"
-                    onClick={() => navigate('/requests')}
-                    aria-current={location.pathname.startsWith('/requests') ? 'page' : undefined}
-                    title={t('requests.title')}
-                    aria-label={t('requests.title')}
-                  >
-                    <Handshake size={20} aria-hidden="true" />
-                  </ActionIcon>
-                </div>
-                <div className="hidden sm:block">
-                  <Button
-                    variant="subtle"
-                    size="sm"
-                    color="gray"
-                    onClick={() => navigate('/requests')}
-                    aria-current={location.pathname.startsWith('/requests') ? 'page' : undefined}
-                    className={cn(location.pathname.startsWith('/requests') && '!font-semibold')}
-                    title={t('header.bookings')}
-                    leftSection={<Handshake size={20} aria-hidden="true" />}
-                  >
-                    {t('requests.title')}
-                  </Button>
-                </div>
-              </div>
+              <Button
+                variant="subtle"
+                size="sm"
+                color="gray"
+                onClick={() => navigate('/requests')}
+                aria-current={location.pathname.startsWith('/requests') ? 'page' : undefined}
+                className={cn(location.pathname.startsWith('/requests') && '!font-semibold')}
+                title={t('requests.title')}
+                leftSection={<Handshake size={20} aria-hidden="true" />}
+              >
+                {t('requests.title')}
+              </Button>
             </Indicator>
 
             {/* Add Item */}
-            <div className="sm:hidden">
-              <ActionIcon
-                variant="filled"
-                size="lg"
-                onClick={() => navigate('/create-item')}
-                aria-current={location.pathname.startsWith('/create-item') ? 'page' : undefined}
-                aria-label={t('header.shareItem')}
-              >
-                <Plus size={16} aria-hidden="true" />
-              </ActionIcon>
-            </div>
-            <div className="hidden sm:block">
-              <Button
-                variant="filled"
-                size="sm"
-                leftSection={<Plus size={16} aria-hidden="true" />}
-                onClick={() => navigate('/create-item')}
-                aria-current={location.pathname.startsWith('/create-item') ? 'page' : undefined}
-              >
-                {t('header.shareItem')}
-              </Button>
-            </div>
+            <Button
+              variant="filled"
+              size="sm"
+              leftSection={<Plus size={16} aria-hidden="true" />}
+              onClick={() => navigate('/create-item')}
+              aria-current={location.pathname.startsWith('/create-item') ? 'page' : undefined}
+            >
+              {t('header.shareItem')}
+            </Button>
 
             {/* Profile Dropdown */}
             <Menu position="bottom-end" shadow="md" width={224}>

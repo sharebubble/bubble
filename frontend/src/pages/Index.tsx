@@ -13,6 +13,7 @@ import { useItems } from '@/hooks/useItems';
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
+import { BROWSE_PATH } from '@/lib/routes';
 import {
   type CategoryEnum,
   type ConditionEnum,
@@ -172,7 +173,7 @@ const Index = () => {
       else p.set(k, v);
     }
     p.delete('page');
-    navigate(`/?${p.toString()}`);
+    navigate(`${BROWSE_PATH}?${p.toString()}`);
   };
 
   const handleScopeChange = (newScope: Scope) =>
@@ -192,7 +193,7 @@ const Index = () => {
   const handlePageChange = (newPage: number) => {
     const p = new URLSearchParams(location.search);
     p.set('page', String(newPage));
-    navigate(`/?${p.toString()}`);
+    navigate(`${BROWSE_PATH}?${p.toString()}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

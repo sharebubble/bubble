@@ -29,11 +29,15 @@ const translations = {
     'header.dark': 'Dark',
 
     // Mobile bottom navigation
+    'nav.primary': 'Main navigation',
     'nav.home': 'Home',
     'nav.search': 'Search',
     'nav.add': 'Add',
     'nav.requests': 'Requests',
     'nav.profile': 'Profile',
+
+    // Account hub (mobile)
+    'account.settings': 'Profile settings',
 
     // Mobile start page
     'home.bookingsTitle': 'Your bookings',
@@ -728,11 +732,15 @@ const translations = {
     'header.dark': 'Dunkel',
 
     // Mobile bottom navigation
+    'nav.primary': 'Hauptnavigation',
     'nav.home': 'Start',
     'nav.search': 'Suche',
     'nav.add': 'Einstellen',
     'nav.requests': 'Anfragen',
     'nav.profile': 'Profil',
+
+    // Account hub (mobile)
+    'account.settings': 'Profileinstellungen',
 
     // Mobile start page
     'home.bookingsTitle': 'Deine Buchungen',

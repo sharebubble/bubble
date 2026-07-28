@@ -8,8 +8,9 @@ import { useLanguageSync } from '@/hooks/useLanguageSync';
 import { NotificationProvider } from '@/providers/NotificationProvider';
 import { ColorSchemeSync } from '@/providers/ColorSchemeSync';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { configureApiClient } from './config/apiClient';
+import Account from './pages/Account';
 import Auth from './pages/Auth';
 import Bookings from './pages/Bookings';
 import Requests from './pages/Requests';
@@ -27,7 +28,7 @@ import NotFound from './pages/NotFound';
 import Profile from './pages/Profile';
 import { Header } from './components/layout/Header';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
-import { hasBrowseParams } from './lib/browseParams';
+import { ACCOUNT_PATH, BROWSE_PATH } from './lib/routes';
 import { useIsMobile } from './hooks/use-mobile';
 import { localStorageColorSchemeManager, MantineProvider } from '@mantine/core';
 import { mantineTheme } from './theme/mantine';
@@ -39,19 +40,18 @@ const colorSchemeManager = localStorageColorSchemeManager({ key: 'bubble-theme' 
 // Configure the API client once at startup
 configureApiClient();
 
-// Root route dispatcher: on mobile, authenticated users land on the start page
-// (bookings widget + newest items). Adding any browse/search param (e.g. via the
-// bottom "Search" tab or the header search bar) switches to the browse listing.
-// Desktop and anonymous visitors always get the browse page.
+// Root route dispatcher. "/" is the mobile start page for signed-in users; every
+// other case belongs on the canonical catalogue route, so it redirects there
+// (preserving any query string, which keeps existing "/?search=…" links working).
 const RootRoute = () => {
   const isMobile = useIsMobile();
   const { session } = useAuth();
   const location = useLocation();
 
-  if (isMobile && session && !hasBrowseParams(location.search)) {
+  if (isMobile && session && !location.search) {
     return <Home />;
   }
-  return <Index />;
+  return <Navigate to={{ pathname: BROWSE_PATH, search: location.search }} replace />;
 };
 
 // Wraps routes that always require authentication, even when REQUIRE_LOGIN=false.
@@ -89,8 +89,17 @@ const ProtectedRoutes = () => {
       <Header />
       <Routes>
         <Route path="/" element={<RootRoute />} />
+        <Route path={BROWSE_PATH} element={<Index />} />
         <Route path="/item/:itemUuid" element={<ItemDetail />} />
         <Route path="/item/:itemUuid/bookings" element={<ItemBookingHistory />} />
+        <Route
+          path={ACCOUNT_PATH}
+          element={
+            <AuthRequired>
+              <Account />
+            </AuthRequired>
+          }
+        />
         <Route
           path="/create-item"
           element={

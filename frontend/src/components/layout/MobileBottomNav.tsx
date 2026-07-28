@@ -1,7 +1,7 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnreadMessages } from '@/hooks/useMessages';
-import { hasBrowseParams } from '@/lib/browseParams';
+import { ACCOUNT_PATH, BROWSE_PATH } from '@/lib/routes';
 import { cn } from '@/lib/utils';
 import { Indicator } from '@mantine/core';
 import { Handshake, Home, Plus, Search, User } from 'lucide-react';
@@ -12,7 +12,7 @@ interface NavItem {
   key: string;
   icon: LucideIcon;
   to: string;
-  isActive: (pathname: string, browsing: boolean) => boolean;
+  isActive: (pathname: string) => boolean;
   badge?: number;
 }
 
@@ -26,7 +26,6 @@ export const MobileBottomNav = () => {
   // The bar's destinations are user-specific; hide it for anonymous visitors.
   if (!user) return null;
 
-  const browsing = hasBrowseParams(location.search);
   const unreadCount = unreadMessages?.count || 0;
 
   const items: NavItem[] = [
@@ -34,13 +33,13 @@ export const MobileBottomNav = () => {
       key: 'nav.home',
       icon: Home,
       to: '/',
-      isActive: (pathname, isBrowsing) => pathname === '/' && !isBrowsing,
+      isActive: pathname => pathname === '/',
     },
     {
       key: 'nav.search',
       icon: Search,
-      to: '/?browse=1',
-      isActive: (pathname, isBrowsing) => pathname === '/' && isBrowsing,
+      to: BROWSE_PATH,
+      isActive: pathname => pathname === BROWSE_PATH,
     },
     {
       key: 'nav.add',
@@ -58,8 +57,8 @@ export const MobileBottomNav = () => {
     {
       key: 'nav.profile',
       icon: User,
-      to: '/profile',
-      isActive: pathname => pathname.startsWith('/profile'),
+      to: ACCOUNT_PATH,
+      isActive: pathname => pathname.startsWith(ACCOUNT_PATH) || pathname.startsWith('/profile'),
     },
   ];
 
@@ -67,18 +66,22 @@ export const MobileBottomNav = () => {
     <nav
       className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur-md md:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-      aria-label={t('nav.home')}
+      aria-label={t('nav.primary')}
     >
       <div className="mx-auto flex h-16 max-w-lg items-stretch justify-around">
         {items.map(item => {
-          const active = item.isActive(location.pathname, browsing);
+          const active = item.isActive(location.pathname);
           const Icon = item.icon;
           const isAdd = item.key === 'nav.add';
           return (
             <button
               key={item.key}
               type="button"
-              onClick={() => navigate(item.to)}
+              // Re-tapping the active tab scrolls to top rather than pushing a
+              // duplicate history entry.
+              onClick={() =>
+                active ? window.scrollTo({ top: 0, behavior: 'smooth' }) : navigate(item.to)
+              }
               aria-current={active ? 'page' : undefined}
               className={cn(
                 'flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] transition-colors',
