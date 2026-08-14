@@ -91,14 +91,24 @@ interface PaginatedCoinValuations {
   results: CoinValuation[];
 }
 
-/** What the user picked for one settled transaction. */
-export interface CoinValuationInput {
-  booking: string;
-  /** Total value — used for one-off transactions (buying, donations). */
-  amount?: string;
-  /** Value per rental period — used for rentals. */
-  rate?: string;
-}
+/**
+ * What the user picked for one settled transaction. Exactly one of the two
+ * values applies, and which one depends on the item — the backend rejects
+ * the wrong one, so the union keeps that mistake from compiling.
+ */
+export type CoinValuationInput =
+  | {
+      booking: string;
+      /** Total value — used for one-off transactions (buying, donations). */
+      amount: string;
+      rate?: never;
+    }
+  | {
+      booking: string;
+      /** Value per rental period — used for rentals. */
+      rate: string;
+      amount?: never;
+    };
 
 const EMPTY_PAGE: PaginatedCoinValuations = {
   count: 0,

@@ -70,10 +70,17 @@ export const useAppConfig = (): UseAppConfigResult => {
  */
 export const useCoinConfig = (): CoinConfig => {
   const { data } = useQuery<AppConfig>(APP_CONFIG_QUERY);
+  const configuredMax = data?.COIN_SLIDER_MAX;
 
   return {
+    // Blank names fall back too — an empty label would leave amounts bare.
     name: data?.COIN_NAME || COIN_FALLBACK.name,
     shortName: data?.COIN_SHORT_NAME || COIN_FALLBACK.shortName,
-    sliderMax: data?.COIN_SLIDER_MAX || COIN_FALLBACK.sliderMax,
+    // A max of 0 (or below) would leave the slider no range to move in, so
+    // it is treated as unusable rather than honoured.
+    sliderMax:
+      typeof configuredMax === 'number' && configuredMax > 0
+        ? configuredMax
+        : COIN_FALLBACK.sliderMax,
   };
 };

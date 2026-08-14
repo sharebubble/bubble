@@ -91,10 +91,12 @@ class CoinValuationManager(models.Manager):
 
         Used to pre-fill the slider with the price someone picked the last
         time they got this item, so repeat transactions need no re-thinking.
+        Ordered by ``updated_at``: correcting an older entry is the most
+        recent act of picking a value, so it is the one to offer again.
         """
         if not user or not user.is_authenticated:
             return None
-        return self.filter(user=user, item=item).order_by("-created_at").first()
+        return self.filter(user=user, item=item).order_by("-updated_at").first()
 
 
 class CoinValuation(models.Model):

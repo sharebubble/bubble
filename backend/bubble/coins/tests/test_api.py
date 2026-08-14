@@ -358,6 +358,37 @@ def test_suggestion_returns_the_value_this_user_picked_last(
     assert response.data["rental_period"] == "d"
 
 
+def test_suggestion_follows_a_correction_of_an_older_valuation(
+    client_as, booker, free_sale_item
+):
+    """Correcting an earlier entry is the most recent act of picking a value."""
+    client = client_as(booker)
+    start = timezone.now() - timedelta(days=10)
+    bookings = [
+        SettledBookingFactory(
+            item=free_sale_item,
+            user=booker,
+            time_from=start + timedelta(days=offset * 2),
+            time_to=start + timedelta(days=offset * 2 + 1),
+        )
+        for offset in range(2)
+    ]
+
+    for booking, amount in zip(bookings, ("10", "20"), strict=True):
+        client.post(
+            LIST_URL, {"booking": str(booking.id), "amount": amount}, format="json"
+        )
+    # Go back and correct the *older* booking
+    client.post(
+        LIST_URL, {"booking": str(bookings[0].id), "amount": "30"}, format="json"
+    )
+
+    response = client.get(SUGGESTION_URL, {"item": str(free_sale_item.id)})
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data["amount"] == "30.00"
+
+
 def test_suggestion_is_per_user(client_as, booker, stranger, rental_booking):
     """One member's price is not proposed to the next."""
     client_as(booker).post(
