@@ -4,7 +4,6 @@ import io
 import uuid as _uuid
 from pathlib import Path
 
-from constance import config
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.core.files.base import ContentFile
@@ -17,7 +16,6 @@ from drf_spectacular.utils import extend_schema
 from guardian.shortcuts import (
     assign_perm,
     get_groups_with_perms,
-    get_objects_for_user,
     get_users_with_perms,
     remove_perm,
 )
@@ -216,37 +214,12 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_queryset(self):
-        user = self.request.user
-        base_qs = annotate_comment_stats(
-            Item.objects.published()
+        # The visibility rules themselves live on the manager so other apps
+        # (comments, the coin track record) scope their reads the same way.
+        return annotate_comment_stats(
+            Item.objects.visible_to(self.request.user)
             .select_related("user", "location")
             .prefetch_related("images")
-        )
-
-        if not user.is_authenticated:
-            if config.REQUIRE_LOGIN:
-                # If login is required, anonymous users see nothing
-                return base_qs.none()
-            # Anonymous users: only PUBLIC items
-            return base_qs.filter(visibility=VisibilityType.PUBLIC)
-
-        # Items the user has explicit view permission on
-        # (covers SPECIFIC + PRIVATE for co-owners/viewers)
-        explicitly_visible = get_objects_for_user(
-            user,
-            "items.view_item",
-            accept_global_perms=False,
-        ).values_list("pk", flat=True)
-
-        return base_qs.filter(
-            # PUBLIC or AUTHENTICATED always visible
-            models.Q(
-                visibility__in=[VisibilityType.PUBLIC, VisibilityType.AUTHENTICATED]
-            )
-            # SPECIFIC: user must have explicit view_item
-            | models.Q(visibility=VisibilityType.SPECIFIC, pk__in=explicitly_visible)
-            # PRIVATE: owner + co-owners get view_item in Item.save()
-            | models.Q(visibility=VisibilityType.PRIVATE, pk__in=explicitly_visible)
         )
 
     @staticmethod

@@ -1,8 +1,11 @@
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from bubble.bookings.models import Booking, BookingStatus, Message
+from bubble.coins.api.serializers import CoinValuationSerializer
+from bubble.coins.models import is_valuable_booking
 from bubble.items.api.serializers import ItemMinimalSerializer
 from bubble.items.models import Item, SalesType
 from bubble.users.api.serializers import UserSerializer
@@ -24,6 +27,8 @@ class BookingSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     remote_booker_actor = RemoteActorMinimalSerializer(read_only=True)
     unread_messages_count = serializers.SerializerMethodField()
+    coin_valuation = serializers.SerializerMethodField()
+    coin_valuation_eligible = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -42,6 +47,8 @@ class BookingSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "unread_messages_count",
+            "coin_valuation",
+            "coin_valuation_eligible",
         ]
         read_only_fields = [
             "id",
@@ -54,6 +61,24 @@ class BookingSerializer(serializers.ModelSerializer):
     def get_unread_messages_count(self, obj) -> int | None:
         """Return unread_messages_count if it exists as an annotated field."""
         return getattr(obj, "unread_messages_count", None)
+
+    @extend_schema_field(CoinValuationSerializer(allow_null=True))
+    def get_coin_valuation(self, obj):
+        """Return the community-coin value recorded for this booking, if any."""
+        # The reverse one-to-one raises (an AttributeError subclass) when no
+        # valuation exists, so ``getattr`` with a default covers both cases.
+        valuation = getattr(obj, "coin_valuation", None)
+        if valuation is None:
+            return None
+        return CoinValuationSerializer(valuation, context=self.context).data
+
+    def get_coin_valuation_eligible(self, obj) -> bool:
+        """Whether this transaction can be valued in community coins.
+
+        Drives the prompt shown once a free (zero-price) transaction is
+        settled, asking the booker what it was worth to them.
+        """
+        return is_valuable_booking(obj)
 
     def validate(self, attrs):
         """
@@ -209,6 +234,8 @@ class BookingListSerializer(BookingSerializer):
             "time_from",
             "time_to",
             "unread_messages_count",
+            "coin_valuation",
+            "coin_valuation_eligible",
         ]
 
 

@@ -1,6 +1,7 @@
 import BookingCounterOfferDialog from '@/components/bookings/BookingCounterOfferDialog';
 import BookingEditDialog from '@/components/bookings/BookingEditDialog';
 import { getBookingStatusBadge } from '@/components/bookings/status';
+import { CoinValuationPrompt } from '@/components/coins/CoinValuationPrompt';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -13,6 +14,7 @@ import { useItem } from '@/hooks/useItem';
 import { useCreateMessage, useMarkMessageAsRead, useMessages } from '@/hooks/useMessages';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
+import type { CoinValuationBooking } from '@/services/custom/coins';
 import {
   ActionIcon,
   Badge,
@@ -63,6 +65,14 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     );
   }, [messagesData]);
+
+  // The coin fields are served by the bookings endpoint but are not part of
+  // the generated Booking type yet — see services/custom/coins.ts.
+  const coinBooking = selectedBooking as unknown as CoinValuationBooking | undefined;
+  // Only the person who received the item is asked what it was worth.
+  const showCoinPrompt = Boolean(
+    coinBooking?.coin_valuation_eligible && user?.username === selectedBooking?.user?.username,
+  );
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
@@ -275,6 +285,14 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
             </div>
           )}
         </Box>
+
+        {/* Coin valuation — asked of the booker once a free transaction is
+            settled */}
+        {showCoinPrompt && coinBooking && (
+          <div className="mt-4">
+            <CoinValuationPrompt booking={coinBooking} />
+          </div>
+        )}
 
         {/* Action Buttons - For pending bookings */}
         {selectedBooking.status === 1 && (

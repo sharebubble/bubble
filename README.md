@@ -66,6 +66,30 @@ The `<homeserver>` part of that prefill defaults to `DJANGO_ALLOWED_HOSTS[0]` (M
 APPRISE_MATRIX_HOSTNAME=example.com
 ```
 
+# Community coins
+
+Items offered for sale or for rent at a price of `0` (as well as donations and free loans) change hands without any money moving. Once such a transaction is settled — the owner confirmed the booking, or it has run its course — the person who got the item is asked whether they want to put a value on it in **community coins**.
+
+One coin can be considered equal in value to one unit of `DEFAULT_CURRENCY`, and the UI says so: the value is picked with a slider, which sets the **total** for a purchase and the **hourly/daily/weekly price** for a rental (the resulting total is shown alongside). The value someone picked for an item is remembered per user, so the slider opens where they left it the next time they get the same item.
+
+Every recorded value is public to everyone who can see the item and is shown on the item page as its **track record**: who got it, when, and how many coins they valued it at, plus the running total and average.
+
+## Configuration
+
+| Setting           | Default           | Meaning                                |
+| ----------------- | ----------------- | -------------------------------------- |
+| `COIN_NAME`       | `Treibhaus Coins` | Name of the currency, shown in prompts |
+| `COIN_SHORT_NAME` | `THC`             | Short name shown next to amounts       |
+| `COIN_SLIDER_MAX` | `100`             | Upper end of the slider                |
+
+```env
+COIN_NAME=Treibhaus Coins
+COIN_SHORT_NAME=THC
+COIN_SLIDER_MAX=100
+```
+
+As with the notification settings, these are read from the environment at first start and can be edited at runtime in the Django admin under **Constance → Config**.
+
 # Federation (ActivityPub)
 
 Bubble supports ActivityPub federation, allowing items, bookings, and messages to flow between Bubble instances and interact with the broader fediverse (Mastodon, etc.).

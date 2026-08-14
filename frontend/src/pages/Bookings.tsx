@@ -1,5 +1,6 @@
 import BookingConversationPanel from '@/components/bookings/BookingConversationPanel';
 import { BOOKING_STATUS, TERMINAL_BOOKING_STATUSES } from '@/components/bookings/status';
+import { CoinValuationDialog } from '@/components/coins/CoinValuationDialog';
 import { BackButton } from '@/components/layout/BackButton';
 import {
   Badge,
@@ -17,17 +18,20 @@ import {
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useCoinConfig } from '@/hooks/useAppConfig';
 import { useAuth } from '@/hooks/useAuth';
 import {
   type BookingsFilterParams,
   useMyBookingsInfinite,
   useUpdateBooking,
 } from '@/hooks/useBookings';
+import { formatCoins } from '@/lib/coins';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
+import type { CoinValuationBooking } from '@/services/custom/coins';
 import type { BookingList } from '@/services/django';
 import { format, formatDuration, intervalToDuration, isAfter, isBefore, parseISO } from 'date-fns';
-import { Calendar, Clock, Package, Search, Square, User } from 'lucide-react';
+import { Calendar, Clock, Coins, Package, Search, Square, User } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
@@ -87,9 +91,11 @@ interface BookingRowProps {
   state: BookingState;
   t: (key: string) => string;
   currentUsername: string | undefined;
+  coinShortName: string;
   selected: boolean;
   onClick: (id: string) => void;
   onEnd: (id: string) => void;
+  onValue: (booking: CoinValuationBooking) => void;
   isEnding: boolean;
 }
 
@@ -98,12 +104,20 @@ const BookingRow = ({
   state,
   t,
   currentUsername,
+  coinShortName,
   selected,
   onClick,
   onEnd,
+  onValue,
   isEnding,
 }: BookingRowProps) => {
   const isOwner = booking.user?.username !== currentUsername;
+  // The coin fields are served by the bookings endpoint but are not part of
+  // the generated BookingList type yet — see services/custom/coins.ts.
+  const coinBooking = booking as unknown as CoinValuationBooking;
+  // Only the person who received the item is offered the valuation.
+  const canValue = !isOwner && Boolean(coinBooking.coin_valuation_eligible);
+  const recordedCoins = coinBooking.coin_valuation;
   const isPending = booking.status === BOOKING_STATUS.pending;
   const itemTitle = booking.item_details?.name ?? t('bookings.item');
   const itemImage = booking.item_details?.first_image;
@@ -207,6 +221,25 @@ const BookingRow = ({
           </Text>
         </div>
 
+        {/* Coin valuation — offered to the booker on free transactions */}
+        {canValue && (
+          <Button
+            size="xs"
+            variant={recordedCoins ? 'light' : 'outline'}
+            color="teal"
+            className="shrink-0"
+            leftSection={<Coins size={12} />}
+            onClick={e => {
+              e.stopPropagation();
+              onValue(coinBooking);
+            }}
+          >
+            {recordedCoins
+              ? `${formatCoins(recordedCoins.rate ?? recordedCoins.amount)} ${coinShortName}`
+              : t('coins.setValueShort')}
+          </Button>
+        )}
+
         {/* End booking button — only for active bookings owned by the current user */}
         {state === 'active' && isOwner && !isPending && (
           <Button
@@ -240,7 +273,9 @@ const MyBookingsPage = () => {
   const location = useLocation();
   const { bookingId: bookingIdParam } = useParams<{ bookingId?: string }>();
   const updateBookingMutation = useUpdateBooking();
+  const coin = useCoinConfig();
   const [endingId, setEndingId] = useState<string | null>(null);
+  const [valuationBooking, setValuationBooking] = useState<CoinValuationBooking | null>(null);
 
   // ── selection (right-hand conversation panel) ─────────────────────────────
   // The URL is the single source of truth for which booking is selected, so
@@ -520,8 +555,10 @@ const MyBookingsPage = () => {
                           selected={selectedBookingId === booking.id}
                           onClick={handleSelectBooking}
                           onEnd={handleEndBooking}
+                          onValue={setValuationBooking}
                           isEnding={endingId === booking.id}
                           currentUsername={user?.username}
+                          coinShortName={coin.shortName}
                         />
                       ))}
                       {isFetchingNextPage && (
@@ -550,6 +587,12 @@ const MyBookingsPage = () => {
           </Card>
         </div>
       </div>
+
+      <CoinValuationDialog
+        booking={valuationBooking}
+        opened={valuationBooking !== null}
+        onClose={() => setValuationBooking(null)}
+      />
     </div>
   );
 };

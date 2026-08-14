@@ -55,7 +55,7 @@ class PublicBookingViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         """Return only confirmed bookings."""
         return Booking.objects.filter(status=BookingStatus.CONFIRMED).select_related(
-            "item", "user", "accepted_by"
+            "item", "user", "accepted_by", "coin_valuation"
         )
 
 
@@ -72,7 +72,7 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
     def get_queryset(self):
         return (
             Booking.objects.get_for_user(self.request.user)
-            .select_related("item", "user", "accepted_by")
+            .select_related("item", "user", "accepted_by", "coin_valuation")
             .annotate(
                 unread_messages_count=Count(
                     "messages",

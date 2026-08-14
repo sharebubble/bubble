@@ -15,6 +15,15 @@ from simple_history.models import HistoricalRecords
 from bubble.items.models import Item, RentalPeriodType, money_defaults
 from config.settings.base import AUTH_USER_MODEL
 
+# Number of hours covered by one rental period. The stored item price is the
+# price for one period, so a booked duration is converted to periods by
+# dividing its length in hours by the matching entry.
+PERIOD_HOURS = {
+    RentalPeriodType.HOURLY: decimal.Decimal("1"),
+    RentalPeriodType.DAILY: decimal.Decimal("24"),
+    RentalPeriodType.WEEKLY: decimal.Decimal("168"),
+}
+
 
 class BookingStatus(models.IntegerChoices):
     PENDING = 1, _("Pending")
@@ -167,6 +176,27 @@ class Booking(models.Model):
             self.time_to or now
         )
 
+    def duration_in_periods(
+        self, rental_period: str | None = None
+    ) -> decimal.Decimal | None:
+        """Return the booked duration expressed in rental periods.
+
+        The period defaults to the item's ``rental_period`` (hour, day or
+        week); pass ``rental_period`` to measure the same duration against a
+        different period. Returns ``None`` for bookings without both ends
+        (e.g. open-ended rentals), where no duration can be derived.
+        """
+        if not self.time_from or not self.time_to:
+            return None
+
+        hours_per_period = PERIOD_HOURS.get(
+            rental_period or self.item.rental_period, decimal.Decimal("1")
+        )
+        duration = self.time_to - self.time_from
+        total_seconds = decimal.Decimal(str(duration.total_seconds()))
+        hours = total_seconds / decimal.Decimal("3600")
+        return hours / hours_per_period
+
     @property
     def rental_price(self) -> Money | None:
         """
@@ -174,27 +204,17 @@ class Booking(models.Model):
         Returns None if not a rental or if required fields are missing.
 
         The stored item price is the price for one rental period (hour, day,
-        or week, as set by ``item.rental_period``). The hourly rate is derived
-        from that period before multiplying by the booked duration in hours.
+        or week, as set by ``item.rental_period``), so it is multiplied by the
+        booked duration expressed in those same periods.
         """
         if self.item.sales_type != "rent" or not self.item.price:
             return None
-        if not self.time_from or not self.time_to:
+
+        periods = self.duration_in_periods()
+        if periods is None:
             return None
 
-        period_hours = {
-            RentalPeriodType.HOURLY: decimal.Decimal("1"),
-            RentalPeriodType.DAILY: decimal.Decimal("24"),
-            RentalPeriodType.WEEKLY: decimal.Decimal("168"),
-        }
-        hours_per_period = period_hours.get(
-            self.item.rental_period, decimal.Decimal("1")
-        )
-
-        duration = self.time_to - self.time_from
-        total_seconds = decimal.Decimal(str(duration.total_seconds()))
-        hours = total_seconds / decimal.Decimal("3600")
-        price = self.item.price * hours / hours_per_period
+        price = self.item.price * periods
         # Quantize to 2 decimal places (matches the model's decimal_places=2
         # and avoids float-precision artefacts from total_seconds()).
         return Money(price.amount.quantize(decimal.Decimal("0.01")), price.currency)

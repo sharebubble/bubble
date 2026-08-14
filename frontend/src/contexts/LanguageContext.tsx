@@ -457,6 +457,34 @@ const translations = {
     'bookings.searchingAll': 'Searching all bookings — past, current & upcoming',
     'header.bookings': 'Bookings',
 
+    // Community coins — valuing transactions on free items
+    'coins.dialogTitle': 'Value this in {coin}',
+    'coins.dialogDescription': '"{itemName}" changed hands for free. What was it worth to you?',
+    'coins.equalValueHint':
+      'One {coin} can be considered equal in value to one {currency} — pick roughly what you would have paid.',
+    'coins.totalLabel': 'Total price',
+    'coins.rateLabel': 'Price per {period}',
+    'coins.rentalTotal': 'Total for this booking: {total} {coin} ({periods} × {period})',
+    'coins.period.h': 'hour',
+    'coins.period.d': 'day',
+    'coins.period.w': 'week',
+    'coins.rememberedHint': 'Starting from the value you picked for this item last time.',
+    'coins.notNow': 'Not now',
+    'coins.save': 'Save value',
+    'coins.saved': 'Value saved',
+    'coins.saveFailed': 'Could not save your value',
+    'coins.promptTitle': 'Was this worth something to you?',
+    'coins.promptDescription':
+      'Nothing was charged for this. If you like, record what it was worth in {coin} — everyone can see it as part of this item’s track record.',
+    'coins.recordedTitle': 'Your value',
+    'coins.recordedDescription': 'You valued this at {amount} {coin}{period}.',
+    'coins.change': 'Change',
+    'coins.setValue': 'Set a value',
+    'coins.setValueShort': 'Value it',
+    'coins.trackRecordTitle': '{coin} track record',
+    'coins.trackRecordSummary': '{count} transactions · {total} {coin}',
+    'coins.trackRecordAverage': 'Ø {average} {coin} per transaction',
+
     // Item Detail
     'itemDetail.backToItems': 'Back to Items',
     'itemDetail.editItem': 'Edit Item',
@@ -1187,6 +1215,35 @@ const translations = {
     'bookings.noSearchResults': 'Keine Buchungen entsprechen deiner Suche',
     'bookings.searchingAll': 'Alle Buchungen durchsuchen – vergangen, aktuell & bevorstehend',
     'header.bookings': 'Buchungen',
+
+    // Community coins — valuing transactions on free items
+    'coins.dialogTitle': 'In {coin} bewerten',
+    'coins.dialogDescription':
+      '„{itemName}“ hat kostenlos den Besitzer gewechselt. Was war es dir wert?',
+    'coins.equalValueHint':
+      'Ein {coin} kann als gleichwertig zu einem {currency} betrachtet werden — wähle ungefähr den Betrag, den du bezahlt hättest.',
+    'coins.totalLabel': 'Gesamtpreis',
+    'coins.rateLabel': 'Preis pro {period}',
+    'coins.rentalTotal': 'Gesamt für diese Buchung: {total} {coin} ({periods} × {period})',
+    'coins.period.h': 'Stunde',
+    'coins.period.d': 'Tag',
+    'coins.period.w': 'Woche',
+    'coins.rememberedHint': 'Beginnt bei dem Wert, den du zuletzt für diesen Artikel gewählt hast.',
+    'coins.notNow': 'Jetzt nicht',
+    'coins.save': 'Wert speichern',
+    'coins.saved': 'Wert gespeichert',
+    'coins.saveFailed': 'Wert konnte nicht gespeichert werden',
+    'coins.promptTitle': 'War es dir etwas wert?',
+    'coins.promptDescription':
+      'Dafür wurde nichts verlangt. Wenn du magst, halte fest, was es dir in {coin} wert war — sichtbar für alle als Teil der Historie dieses Artikels.',
+    'coins.recordedTitle': 'Dein Wert',
+    'coins.recordedDescription': 'Du hast das mit {amount} {coin}{period} bewertet.',
+    'coins.change': 'Ändern',
+    'coins.setValue': 'Wert festlegen',
+    'coins.setValueShort': 'Bewerten',
+    'coins.trackRecordTitle': '{coin}-Historie',
+    'coins.trackRecordSummary': '{count} Transaktionen · {total} {coin}',
+    'coins.trackRecordAverage': 'Ø {average} {coin} pro Transaktion',
 
     // Item Detail
     'itemDetail.backToItems': 'Zurück zu Artikeln',

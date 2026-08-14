@@ -11,6 +11,7 @@ import {
   getStatusMantineColor,
 } from '@/components/items/status';
 import { AddToCollectionPopover } from '@/components/collections/AddToCollectionPopover';
+import { CoinTrackRecord } from '@/components/coins/CoinTrackRecord';
 import { BackButton } from '@/components/layout/BackButton';
 import OwnerLink from '@/components/users/OwnerLink';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -18,6 +19,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useItem } from '@/hooks/useItem';
 import { useDeleteItem } from '@/hooks/useMyItems';
 import { useItemCollections } from '@/hooks/useCollections';
+import { isFreeItem } from '@/lib/coins';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
@@ -426,6 +428,14 @@ const ItemDetail = () => {
           </div>
         )}
       </div>
+
+      {/* What the community has valued this free item at so far — sits with
+          the rental history, since both record what happened with the item. */}
+      {isFreeItem(item) && (
+        <div className="mt-10">
+          <CoinTrackRecord itemId={item.id} />
+        </div>
+      )}
     </div>
   );
 };
