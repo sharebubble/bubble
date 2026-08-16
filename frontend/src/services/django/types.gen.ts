@@ -1282,8 +1282,9 @@ export type SalesTypeEnum = 'sell' | 'donate' | 'rent' | 'borrow' | 'want_buy' |
  * * `3` - Reserved
  * * `4` - Rented
  * * `5` - Sold
+ * * `6` - Archived
  */
-export type StatusB0aEnum = 0 | 2 | 3 | 4 | 5;
+export type StatusB0aEnum = 0 | 2 | 3 | 4 | 5 | 6;
 
 /**
  * * `1` - Pending
@@ -1292,7 +1293,7 @@ export type StatusB0aEnum = 0 | 2 | 3 | 4 | 5;
  * * `4` - Completed
  * * `5` - Rejected
  */
-export type StatusE2dEnum = 1 | 2 | 3 | 4 | 5;
+export type StatusE2dEnum = 1 | 2 | 3 | 4 | 5 | 6;
 
 export type User = {
     readonly id: string;
@@ -2333,6 +2334,36 @@ export type BookingsPartialUpdateResponses = {
 
 export type BookingsPartialUpdateResponse = BookingsPartialUpdateResponses[keyof BookingsPartialUpdateResponses];
 
+export type BookingsConfirmReceivedCreateData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/bookings/{id}/confirm_received/';
+};
+
+export type BookingsConfirmReceivedCreateResponses = {
+    200: Booking;
+};
+
+export type BookingsConfirmReceivedCreateResponse = BookingsConfirmReceivedCreateResponses[keyof BookingsConfirmReceivedCreateResponses];
+
+export type BookingsConfirmReturnedCreateData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/bookings/{id}/confirm_returned/';
+};
+
+export type BookingsConfirmReturnedCreateResponses = {
+    200: Booking;
+};
+
+export type BookingsConfirmReturnedCreateResponse = BookingsConfirmReturnedCreateResponses[keyof BookingsConfirmReturnedCreateResponses];
+
 export type BookingsUpdateData = {
     body: BookingWritable;
     path: {
@@ -3115,8 +3146,10 @@ export type ItemsListData = {
          * * `3` - Reserved
          * * `4` - Rented
          * * `5` - Sold
+         * * `6` - Archived
+ * * `6` - Archived
          */
-        status?: Array<0 | 2 | 3 | 4 | 5>;
+        status?: Array<0 | 2 | 3 | 4 | 5 | 6>;
         user?: string;
     };
     url: '/api/items/';
@@ -3716,8 +3749,10 @@ export type PublicItemsListData = {
          * * `3` - Reserved
          * * `4` - Rented
          * * `5` - Sold
+         * * `6` - Archived
+ * * `6` - Archived
          */
-        status?: Array<0 | 2 | 3 | 4 | 5>;
+        status?: Array<0 | 2 | 3 | 4 | 5 | 6>;
         user?: string;
     };
     url: '/api/public-items/';

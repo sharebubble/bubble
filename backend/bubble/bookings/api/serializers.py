@@ -128,7 +128,18 @@ class BookingSerializer(serializers.ModelSerializer):
         return super().validate(attrs)
 
     def validate_status(self, value):
-        """Ensure that status is a valid BookingStatus."""
+        """Ensure that status is a valid BookingStatus.
+
+        The fulfillment transitions (IN_PROGRESS handover and COMPLETED via the
+        ownership transfer / return) must go through the dedicated
+        ``confirm_received`` / ``confirm_returned`` actions, so they cannot be set
+        through a plain status PATCH. The booker may only cancel or revert to
+        pending; completing a rental is reserved for the item owner.
+        """
+        if self.instance and value == BookingStatus.IN_PROGRESS:
+            msg = _("Use the confirm-received action to start a rental.")
+            raise serializers.ValidationError(msg)
+
         user = self.context["request"].user
 
         if (
@@ -138,7 +149,6 @@ class BookingSerializer(serializers.ModelSerializer):
             not in (
                 BookingStatus.CANCELLED,
                 BookingStatus.PENDING,
-                BookingStatus.COMPLETED,
             )
         ):
             msg = _("Invalid status change.")

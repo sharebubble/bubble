@@ -42,7 +42,6 @@ const translations = {
     'search.loading': 'Loading…',
     'search.availability.available': 'Available',
     'search.availability.rented': 'Rented',
-    'search.availability.sold': 'Sold',
     'search.removeFilter': 'Remove filter',
     'search.close': 'Close search',
     'search.price': 'Price',
@@ -324,6 +323,8 @@ const translations = {
     'booking.errorCreate': 'Failed to create booking request. Please try again.',
     'booking.successUpdated': 'Booking updated successfully!',
     'booking.errorUpdate': 'Failed to update booking. Please try again.',
+    'booking.successReceived': 'Receipt confirmed.',
+    'booking.successReturned': 'Return confirmed. The rental is complete.',
     'requests.acceptWarningTitle': 'Confirm acceptance',
     'requests.acceptWarningDescription':
       'You are accepting an offer of {amount}. This will be finalized when the request is confirmed.',
@@ -385,7 +386,10 @@ const translations = {
     'requests.status.accepted': 'Accepted',
     'requests.status.rejected': 'Rejected',
     'requests.status.completed': 'Completed',
+    'requests.status.inProgress': 'In Progress',
     'requests.status.unknown': 'Unknown',
+    'requests.confirmReceived': 'Confirm received',
+    'requests.confirmReturned': 'Confirm returned',
 
     // Bookings page
     'bookings.title': 'My Bookings',
@@ -487,6 +491,11 @@ const translations = {
     'myItems.title': 'My Items',
     'myItems.noItems': 'No items yet',
     'myItems.createFirst': 'Create your first item to get started!',
+    'myItems.noArchivedItems': 'Nothing archived yet',
+    'myItems.archivedHint':
+      'Items you mark as sold or archived move here and stop showing up in browse.',
+    'myItems.tabs.active': 'Active',
+    'myItems.tabs.archived': 'Archived',
     'myItems.shareItem': 'Share Item',
     'myItems.status': 'Status',
     'myItems.changeStatus': 'Change Status',
@@ -498,6 +507,7 @@ const translations = {
     'status.reserved': 'Reserved',
     'status.rented': 'Rented',
     'status.sold': 'Gone',
+    'status.archived': 'Archived',
     'status.unknown': 'Unknown',
     // Profile
     'profile.title': 'Profile Settings',
@@ -717,7 +727,6 @@ const translations = {
     'search.loading': 'Wird geladen…',
     'search.availability.available': 'Verfügbar',
     'search.availability.rented': 'Vermietet',
-    'search.availability.sold': 'Verkauft',
     'search.removeFilter': 'Filter entfernen',
     'search.close': 'Suche schließen',
     'search.price': 'Preis',
@@ -1008,6 +1017,8 @@ const translations = {
     'booking.errorCreate':
       'Erstellen der Buchungsanfrage fehlgeschlagen. Bitte versuche es erneut.',
     'booking.successUpdated': 'Buchung erfolgreich aktualisiert!',
+    'booking.successReceived': 'Erhalt bestätigt.',
+    'booking.successReturned': 'Rückgabe bestätigt. Die Vermietung ist abgeschlossen.',
     'booking.errorUpdate': 'Aktualisierung der Buchung fehlgeschlagen. Bitte versuche es erneut.',
     'requests.acceptWarningTitle': 'Bestätigung erforderlich',
     'requests.acceptWarningDescription':
@@ -1072,7 +1083,10 @@ const translations = {
     'requests.status.accepted': 'Angenommen',
     'requests.status.rejected': 'Abgelehnt',
     'requests.status.completed': 'Abgeschlossen',
+    'requests.status.inProgress': 'In Bearbeitung',
     'requests.status.unknown': 'Unbekannt',
+    'requests.confirmReceived': 'Erhalt bestätigen',
+    'requests.confirmReturned': 'Rückgabe bestätigen',
 
     // Bookings page
     'bookings.title': 'Meine Buchungen',
@@ -1174,6 +1188,11 @@ const translations = {
     'myItems.title': 'Meine Artikel',
     'myItems.noItems': 'Noch keine Artikel',
     'myItems.createFirst': 'Erstelle deinen ersten Artikel um loszulegen!',
+    'myItems.noArchivedItems': 'Noch nichts archiviert',
+    'myItems.archivedHint':
+      'Artikel, die du als vergeben oder archiviert markierst, landen hier und erscheinen nicht mehr in der Suche.',
+    'myItems.tabs.active': 'Aktiv',
+    'myItems.tabs.archived': 'Archiviert',
     'myItems.shareItem': 'Artikel teilen',
     'myItems.status': 'Status',
     'myItems.changeStatus': 'Status ändern',
@@ -1185,6 +1204,7 @@ const translations = {
     'status.reserved': 'Reserviert',
     'status.rented': 'Vermietet',
     'status.sold': 'Vergeben',
+    'status.archived': 'Archiviert',
     'status.unknown': 'Unbekannt',
     // Profile
     'profile.title': 'Profileinstellungen',
