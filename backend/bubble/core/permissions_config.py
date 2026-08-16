@@ -32,6 +32,9 @@ DEFAULT_GROUPS_CONFIG = {
                 "booking": ["add", "view", "change"],
                 "message": ["add", "view"],
             },
+            "comments": {
+                "comment": ["add", "view", "change", "delete"],
+            },
             "books": {
                 "book": ["add", "view", "change", "delete"],
                 "genre": ["add", "view", "change", "delete"],

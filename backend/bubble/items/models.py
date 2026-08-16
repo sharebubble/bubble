@@ -161,6 +161,37 @@ class ItemManager(models.Manager):
         """Return a queryset of published items."""
         return self.filter(status__in=ItemStatus.published())
 
+    def visible_to(self, user) -> models.QuerySet:
+        """Return published items the given user is allowed to view.
+
+        Mirrors the visibility rules of the public items endpoint:
+        - PUBLIC: visible to everyone (incl. anonymous).
+        - AUTHENTICATED: visible to any logged-in user.
+        - SPECIFIC / PRIVATE: only when the user holds explicit view_item.
+        """
+        from constance import config  # noqa: PLC0415
+
+        base_qs = self.published()
+
+        if not user or not user.is_authenticated:
+            if config.REQUIRE_LOGIN:
+                return base_qs.none()
+            return base_qs.filter(visibility=VisibilityType.PUBLIC)
+
+        explicitly_visible = get_objects_for_user(
+            user,
+            "items.view_item",
+            accept_global_perms=False,
+        ).values_list("pk", flat=True)
+
+        return base_qs.filter(
+            models.Q(
+                visibility__in=[VisibilityType.PUBLIC, VisibilityType.AUTHENTICATED]
+            )
+            | models.Q(visibility=VisibilityType.SPECIFIC, pk__in=explicitly_visible)
+            | models.Q(visibility=VisibilityType.PRIVATE, pk__in=explicitly_visible)
+        )
+
     def get_for_user(self, user) -> models.QuerySet:
         """Return a queryset filtered by user permissions."""
         items_with_change_permission = get_objects_for_user(

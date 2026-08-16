@@ -1,5 +1,7 @@
 import { BookingDialog } from '@/components/items/BookingDialog';
 import { CalendarSubscribeButton } from '@/components/calendar/CalendarSubscribeButton';
+import { ItemComments } from '@/components/items/ItemComments';
+import { PreviousRentals } from '@/components/items/PreviousRentals';
 import { ItemImageCarousel } from '@/components/items/ItemImageCarousel';
 import { RentalCalendar } from '@/components/items/RentalCalendar';
 import { ShareButton } from '@/components/items/ShareButton';
@@ -22,7 +24,7 @@ import { getCategoryIcon } from '@/lib/categoryIcons';
 import { ActionIcon, Badge, Button, Text, Tooltip } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, BookMarked, Calendar, Edit3, MapPin, Trash2, Zap } from 'lucide-react';
+import { ArrowLeft, BookMarked, Calendar, Edit3, History, MapPin, Trash2, Zap } from 'lucide-react';
 import { createElement, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -121,6 +123,14 @@ const ItemDetail = () => {
   const isRental = sales_type === 'rent' || sales_type === 'borrow';
   const isWanted = sales_type === 'want_buy' || sales_type === 'want_rent';
   const hasImages = images.length > 0;
+
+  // Rating aggregates are exposed by the item API; the generated type may not
+  // include them yet, so read them through a narrow cast.
+  const ratings = item as typeof item & {
+    average_rating?: number | null;
+    rating_count?: number;
+    comment_count?: number;
+  };
 
   const conditionMap: Record<number, string> = {
     0: t('condition.new'),
@@ -281,6 +291,14 @@ const ItemDetail = () => {
                 )}
               </p>
             )}
+
+            <ItemComments
+              itemId={item.id}
+              ownerId={item.user}
+              averageRating={ratings.average_rating}
+              ratingCount={ratings.rating_count}
+              commentCount={ratings.comment_count}
+            />
           </div>
 
           {description !== undefined && description !== '' && (
@@ -307,6 +325,23 @@ const ItemDetail = () => {
 
           {/* Owner details are shown to logged-in users only */}
           {user && <UserInfoBox userUuid={item.user} />}
+
+          {/* Previous rentals — logged-in users can see who rented a rental
+              item and for how long. Other items link to the full history. */}
+          {isRental && user ? (
+            <PreviousRentals itemId={item.id} />
+          ) : (
+            <div>
+              <Button
+                component={Link}
+                to={`/item/${item.id}/bookings`}
+                variant="light"
+                leftSection={<History size={16} />}
+              >
+                {t('itemBookings.viewHistory')}
+              </Button>
+            </div>
+          )}
 
           {/* Action buttons */}
           {(isOwner || showBookingAction) && (

@@ -20,6 +20,7 @@ import EditBook from './pages/EditBook';
 import EditItem from './pages/EditItem';
 import Index from './pages/Index';
 import ItemDetail from './pages/ItemDetail';
+import ItemBookingHistory from './pages/ItemBookingHistory';
 import MyItems from './pages/MyItems';
 import NotFound from './pages/NotFound';
 import Profile from './pages/Profile';
@@ -70,6 +71,7 @@ const ProtectedRoutes = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/item/:itemUuid" element={<ItemDetail />} />
+        <Route path="/item/:itemUuid/bookings" element={<ItemBookingHistory />} />
         <Route
           path="/create-item"
           element={
