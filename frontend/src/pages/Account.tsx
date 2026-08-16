@@ -1,8 +1,9 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
-import { Avatar, Card, Text, UnstyledButton } from '@mantine/core';
+import { Avatar, Button, Card, Divider, Group, NavLink, Stack, Text } from '@mantine/core';
 import { BookMarked, CalendarCheck, ChevronRight, Library, LogOut, Settings } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface HubEntry {
@@ -30,55 +31,55 @@ const Account = () => {
     navigate('/');
   };
 
-  const rowClass =
-    'flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[var(--mantine-color-gray-0)]';
-
   return (
     <main className="container mx-auto max-w-2xl px-4 py-4">
-      {/* Identity */}
-      <div className="mb-4 flex items-center gap-3">
-        <Avatar size={48} radius="xl" color="green">
-          {user?.email?.charAt(0).toUpperCase()}
-        </Avatar>
-        <div className="min-w-0">
-          <Text fw={600} truncate>
-            {user?.display || user?.username}
-          </Text>
-          <Text size="sm" c="dimmed" truncate>
-            {user?.email}
-          </Text>
-        </div>
-      </div>
-
-      {/* Destinations */}
-      <Card withBorder radius="lg" padding={0} className="overflow-hidden">
-        {ENTRIES.map(({ labelKey, icon: Icon, to }, index) => (
-          <UnstyledButton
-            key={to}
-            onClick={() => navigate(to)}
-            className={rowClass}
-            style={
-              index > 0 ? { borderTop: '1px solid var(--mantine-color-default-border)' } : undefined
-            }
-          >
-            <Icon size={20} className="shrink-0 text-[var(--mantine-color-dimmed)]" />
-            <Text size="sm" className="flex-1">
-              {t(labelKey)}
+      <Stack gap="md">
+        {/* Identity */}
+        <Group gap="sm" wrap="nowrap">
+          <Avatar size={48} radius="xl" color="green">
+            {user?.email?.charAt(0).toUpperCase()}
+          </Avatar>
+          <div className="min-w-0">
+            <Text fw={600} truncate>
+              {user?.display || user?.username}
             </Text>
-            <ChevronRight size={16} className="shrink-0 text-[var(--mantine-color-dimmed)]" />
-          </UnstyledButton>
-        ))}
-      </Card>
+            <Text size="sm" c="dimmed" truncate>
+              {user?.email}
+            </Text>
+          </div>
+        </Group>
 
-      {/* Sign out */}
-      <Card withBorder radius="lg" padding={0} className="mt-4 overflow-hidden">
-        <UnstyledButton onClick={handleSignOut} className={rowClass}>
-          <LogOut size={20} className="shrink-0" color="var(--mantine-color-red-6)" />
-          <Text size="sm" c="red.6" className="flex-1">
-            {t('header.signOut')}
-          </Text>
-        </UnstyledButton>
-      </Card>
+        {/* Destinations */}
+        <Card withBorder padding={0}>
+          {ENTRIES.map(({ labelKey, icon: Icon, to }, index) => (
+            <Fragment key={to}>
+              {index > 0 && <Divider />}
+              <NavLink
+                label={t(labelKey)}
+                onClick={() => navigate(to)}
+                leftSection={<Icon size={20} aria-hidden="true" />}
+                rightSection={<ChevronRight size={16} aria-hidden="true" />}
+              />
+            </Fragment>
+          ))}
+        </Card>
+
+        {/* Sign out */}
+        <Button
+          variant="subtle"
+          // `color` alone resolves to a near-white shade under the dark scheme,
+          // dropping the destructive cue. Pin the label to a red per scheme so
+          // it keeps enough contrast against both backgrounds.
+          color="red"
+          c="light-dark(var(--mantine-color-red-9), var(--mantine-color-red-4))"
+          fullWidth
+          justify="flex-start"
+          leftSection={<LogOut size={20} aria-hidden="true" />}
+          onClick={handleSignOut}
+        >
+          {t('header.signOut')}
+        </Button>
+      </Stack>
     </main>
   );
 };

@@ -2,11 +2,17 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useUnreadMessages } from '@/hooks/useMessages';
 import { ACCOUNT_PATH, BROWSE_PATH } from '@/lib/routes';
-import { cn } from '@/lib/utils';
-import { Indicator } from '@mantine/core';
+import { Indicator, Paper, Text, ThemeIcon, UnstyledButton } from '@mantine/core';
 import { Handshake, Home, Plus, Search, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+
+// Mantine's `dimmed` only reaches ~3.2:1 against the light surface, short of
+// WCAG AA for these 12px labels; gray-7 clears it while dark keeps the shade
+// `dimmed` already resolves to.
+const INACTIVE_COLOR = 'light-dark(var(--mantine-color-gray-7), var(--mantine-color-dark-2))';
+// green-6 is too dark to read on the dark surface, so lighten it there.
+const ACTIVE_COLOR = 'light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))';
 
 interface NavItem {
   key: string;
@@ -63,9 +69,21 @@ export const MobileBottomNav = () => {
   ];
 
   return (
-    <nav
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur-md md:hidden"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+    <Paper
+      component="nav"
+      radius={0}
+      // Mantine's own responsive prop rather than a Tailwind `md:hidden`: the
+      // Paper root class is unlayered and would otherwise win the cascade over
+      // Tailwind's layered utility, leaving the bar visible on desktop. The
+      // theme's `md` breakpoint is 768px, matching useIsMobile() and `md:`.
+      hiddenFrom="md"
+      // Tailwind here is positioning only; the surface, border and colours come
+      // from the Mantine theme.
+      className="fixed inset-x-0 bottom-0 z-50"
+      style={{
+        borderTop: '1px solid var(--mantine-color-default-border)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+      }}
       aria-label={t('nav.primary')}
     >
       <div className="mx-auto flex h-16 max-w-lg items-stretch justify-around">
@@ -73,39 +91,36 @@ export const MobileBottomNav = () => {
           const active = item.isActive(location.pathname);
           const Icon = item.icon;
           const isAdd = item.key === 'nav.add';
+          const iconColor = active ? ACTIVE_COLOR : INACTIVE_COLOR;
           return (
-            <button
+            <UnstyledButton
               key={item.key}
-              type="button"
               // Re-tapping the active tab scrolls to top rather than pushing a
               // duplicate history entry.
               onClick={() =>
                 active ? window.scrollTo({ top: 0, behavior: 'smooth' }) : navigate(item.to)
               }
               aria-current={active ? 'page' : undefined}
-              className={cn(
-                'flex flex-1 flex-col items-center justify-center gap-0.5 text-[11px] transition-colors',
-                active
-                  ? 'text-[var(--mantine-color-green-6)]'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
+              className="flex flex-1 flex-col items-center justify-center gap-0.5"
             >
               {isAdd ? (
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--mantine-color-green-6)] text-white">
+                <ThemeIcon radius="xl" size={32} color="green">
                   <Icon size={20} aria-hidden="true" />
-                </span>
+                </ThemeIcon>
               ) : item.badge ? (
                 <Indicator label={item.badge} color="red" size={14} offset={2}>
-                  <Icon size={22} aria-hidden="true" />
+                  <Icon size={22} color={iconColor} aria-hidden="true" />
                 </Indicator>
               ) : (
-                <Icon size={22} aria-hidden="true" />
+                <Icon size={22} color={iconColor} aria-hidden="true" />
               )}
-              <span className={cn(isAdd && 'mt-0.5')}>{t(item.key)}</span>
-            </button>
+              <Text size="xs" c={iconColor}>
+                {t(item.key)}
+              </Text>
+            </UnstyledButton>
           );
         })}
       </div>
-    </nav>
+    </Paper>
   );
 };
