@@ -25,7 +25,7 @@ repos:
     hooks:
       - id: prettier
         name: prettier
-        language: node
+        language: system
         entry: frontend/node_modules/.bin/prettier
         args: ['--write']
         types_or: [javascript, jsx, ts, tsx, css, json, markdown, yaml]
