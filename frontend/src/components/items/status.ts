@@ -6,6 +6,7 @@ export const statusLabels: Record<StatusB0aEnum, string> = {
   3: 'reserved',
   4: 'rented',
   5: 'sold',
+  6: 'archived',
 };
 
 // Mantine color names for Badge/indicator `color` props.
@@ -15,7 +16,16 @@ export const statusMantineColors: Record<StatusB0aEnum, string> = {
   3: 'yellow',
   4: 'red',
   5: 'red',
+  6: 'gray',
 };
+
+// Statuses that retire an item from circulation. These are hidden from browse
+// and collected under the archive tab of the owner's item list.
+export const ARCHIVED_STATUSES: StatusB0aEnum[] = [5, 6];
+export const ACTIVE_STATUSES: StatusB0aEnum[] = [0, 2, 3, 4];
+
+export const isArchivedStatus = (status?: StatusB0aEnum | null) =>
+  status !== undefined && status !== null && ARCHIVED_STATUSES.includes(status);
 
 export const getStatusLabel = (status?: StatusB0aEnum | null) =>
   status === undefined || status === null ? undefined : statusLabels[status];

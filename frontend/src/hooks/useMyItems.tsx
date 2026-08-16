@@ -10,17 +10,18 @@ import {
 } from '@/services/django';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-export const useMyItems = (page?: number) => {
+export const useMyItems = (page?: number, status?: StatusB0aEnum[]) => {
   const { user } = useAuth();
 
   return useQuery<PaginatedItemListList>({
-    queryKey: ['my-items', user?.id, page],
+    queryKey: ['my-items', user?.id, page, status],
     queryFn: async () => {
       if (!user) throw new Error('User not authenticated');
       const response = await itemsList({
         query: {
           user: user.id,
           page: page,
+          status: status,
         },
       });
       return response.data;

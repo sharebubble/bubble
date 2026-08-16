@@ -375,12 +375,14 @@ const SELL_DONATE_STATUSES: { value: StatusB0aEnum; label: string }[] = [
   { value: 2, label: 'available' },
   { value: 3, label: 'reserved' },
   { value: 5, label: 'sold' },
+  { value: 6, label: 'archived' },
 ];
 
 const RENT_BORROW_STATUSES: { value: StatusB0aEnum; label: string }[] = [
   { value: 0, label: 'draft' },
   { value: 2, label: 'available' },
   { value: 4, label: 'rented' },
+  { value: 6, label: 'archived' },
 ];
 
 const ALL_STATUSES: { value: StatusB0aEnum; label: string }[] = [
@@ -389,6 +391,7 @@ const ALL_STATUSES: { value: StatusB0aEnum; label: string }[] = [
   { value: 3, label: 'reserved' },
   { value: 4, label: 'rented' },
   { value: 5, label: 'sold' },
+  { value: 6, label: 'archived' },
 ];
 
 const getStatusesForSalesType = (salesType: SalesTypeEnum | '' | undefined) => {

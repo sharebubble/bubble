@@ -45,11 +45,11 @@ const PAGE_SIZE = 20;
 const FEDERATED_PAGE_SIZE = 50;
 // by default, show 'new' and 'used' items, don't show 'broken' items
 const DEFAULT_CONDITIONS: ConditionEnum[] = [0, 1];
-// Availability facet (header search) → item statuses it maps to.
+// Availability facet (header search) → item statuses it maps to. Sold and
+// archived items are out of circulation, so browse never offers them.
 const AVAILABILITY_STATUSES = {
   available: [2, 3],
   rented: [4],
-  sold: [5],
 } satisfies Record<string, StatusB0aEnum[]>;
 type Availability = keyof typeof AVAILABILITY_STATUSES;
 const LS_KEY = 'indexViewMode';

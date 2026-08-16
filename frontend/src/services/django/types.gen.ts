@@ -1282,8 +1282,9 @@ export type SalesTypeEnum = 'sell' | 'donate' | 'rent' | 'borrow' | 'want_buy' |
  * * `3` - Reserved
  * * `4` - Rented
  * * `5` - Sold
+ * * `6` - Archived
  */
-export type StatusB0aEnum = 0 | 2 | 3 | 4 | 5;
+export type StatusB0aEnum = 0 | 2 | 3 | 4 | 5 | 6;
 
 /**
  * * `1` - Pending
@@ -3145,8 +3146,10 @@ export type ItemsListData = {
          * * `3` - Reserved
          * * `4` - Rented
          * * `5` - Sold
+         * * `6` - Archived
+ * * `6` - Archived
          */
-        status?: Array<0 | 2 | 3 | 4 | 5>;
+        status?: Array<0 | 2 | 3 | 4 | 5 | 6>;
         user?: string;
     };
     url: '/api/items/';
@@ -3746,8 +3749,10 @@ export type PublicItemsListData = {
          * * `3` - Reserved
          * * `4` - Rented
          * * `5` - Sold
+         * * `6` - Archived
+ * * `6` - Archived
          */
-        status?: Array<0 | 2 | 3 | 4 | 5>;
+        status?: Array<0 | 2 | 3 | 4 | 5 | 6>;
         user?: string;
     };
     url: '/api/public-items/';

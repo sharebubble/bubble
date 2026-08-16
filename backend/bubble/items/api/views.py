@@ -130,11 +130,11 @@ class ItemBaseViewSet(viewsets.GenericViewSet):
         return ItemSerializer
 
 
-# Availability facet value → the item statuses it maps to.
+# Availability facet value → the item statuses it maps to. Sold items are no
+# longer browsable, so there is no "sold" facet to offer.
 AVAILABILITY_STATUSES = {
     "available": [ItemStatus.AVAILABLE, ItemStatus.RESERVED],
     "rented": [ItemStatus.RENTED],
-    "sold": [ItemStatus.SOLD],
 }
 
 # Type facet value → the sales types it maps to.
