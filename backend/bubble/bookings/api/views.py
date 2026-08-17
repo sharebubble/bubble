@@ -82,9 +82,7 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
                 # Bookings without any messages yet have no latest_message_at;
                 # fall back to created_at so they still sort by recency
                 # instead of all landing at the top/bottom via NULL ordering.
-                latest_message_at=Coalesce(
-                    Max("messages__created_at"), "created_at"
-                ),
+                latest_message_at=Coalesce(Max("messages__created_at"), "created_at"),
             )
         )
 

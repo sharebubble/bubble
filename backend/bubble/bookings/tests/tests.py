@@ -1210,6 +1210,96 @@ class BookingAgendaFilterTestCase(APITestCase):
         assert self._ids(response) == {str(self.past_booking.id)}
 
 
+class BookingAgendaSaleTemporalTestCase(APITestCase):
+    """Temporal filtering for sale-type bookings (sell/donate/want_buy).
+
+    These items have no rental period, so their bookings never set
+    ``time_to``. Whether one is "past" must be derived from its status
+    reaching a terminal state, not from ``time_from`` alone.
+    """
+
+    def setUp(self):
+        self.client = APIClient()
+        self.default_group, _ = Group.objects.get_or_create(name=DefaultGroup.DEFAULT)
+
+        self.user = UserFactory()
+        self.user.groups.add(self.default_group)
+
+        now = timezone.now()
+
+        # Completed sale: terminal status, time_from in the past, no time_to.
+        self.completed_sale_item = ItemFactory(
+            user=self.user, sales_type=SalesType.SELL, status=ItemStatus.DRAFT
+        )
+        self.completed_sale_booking = BookingFactory(
+            user=self.user,
+            item=self.completed_sale_item,
+            status=BookingStatus.COMPLETED,
+            time_from=now - timedelta(days=1),
+            time_to=None,
+        )
+
+        # Rejected sale: also terminal, should be "past" too.
+        self.rejected_sale_item = ItemFactory(
+            user=self.user, sales_type=SalesType.DONATE
+        )
+        self.rejected_sale_booking = BookingFactory(
+            user=self.user,
+            item=self.rejected_sale_item,
+            status=BookingStatus.REJECTED,
+            time_from=now - timedelta(days=1),
+            time_to=None,
+        )
+
+        # Confirmed sale awaiting hand-over: NOT terminal, even though
+        # time_from is already in the past — must stay upcoming/active, never
+        # past.
+        self.pending_handover_item = ItemFactory(
+            user=self.user, sales_type=SalesType.SELL
+        )
+        self.pending_handover_booking = BookingFactory(
+            user=self.user,
+            item=self.pending_handover_item,
+            status=BookingStatus.CONFIRMED,
+            time_from=now - timedelta(hours=1),
+            time_to=None,
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def _ids(self, response):
+        return {row["id"] for row in response.data["results"]}
+
+    def test_past_includes_terminal_sale_bookings(self):
+        response = self.client.get(
+            "/api/bookings/?status=3&status=4&status=5&temporal=past"
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert self._ids(response) == {
+            str(self.completed_sale_booking.id),
+            str(self.rejected_sale_booking.id),
+        }
+
+    def test_past_excludes_non_terminal_sale_booking(self):
+        response = self.client.get("/api/bookings/?status=3&temporal=past")
+        assert response.status_code == status.HTTP_200_OK
+        assert self._ids(response) == set()
+
+    def test_upcoming_excludes_terminal_sale_bookings(self):
+        response = self.client.get(
+            "/api/bookings/?status=3&status=4&status=5&temporal=upcoming"
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert self._ids(response) == {str(self.pending_handover_booking.id)}
+
+    def test_active_excludes_terminal_sale_bookings(self):
+        response = self.client.get(
+            "/api/bookings/?status=3&status=4&status=5&temporal=active"
+        )
+        assert response.status_code == status.HTTP_200_OK
+        assert self._ids(response) == {str(self.pending_handover_booking.id)}
+
+
 class BookingRentalPeriodPriceTestCase(APITestCase):
     """Unit tests for the ``Booking.rental_price`` property.
 

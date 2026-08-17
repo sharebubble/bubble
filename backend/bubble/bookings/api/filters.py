@@ -87,37 +87,44 @@ class BookingFilter(django_filters.FilterSet):
 
         return queryset
 
+    # Sale-type bookings (sell, donate, want_buy) have no rental period, so
+    # they never get a time_to. Whether one has "ended" is determined by its
+    # status reaching a terminal state, not by comparing time_from to now
+    # (which would wrongly mark a still-pending/confirmed sale as past).
+    SALE_TYPES = (SalesType.SELL, SalesType.DONATE, SalesType.WANT_BUY)
+    TERMINAL_STATUSES = (
+        BookingStatus.COMPLETED,
+        BookingStatus.CANCELLED,
+        BookingStatus.REJECTED,
+    )
+
     def filter_temporal(self, queryset, name, value):
         """Split bookings relative to the current time for the agenda view.
 
-        An open-ended booking (``time_to`` is null) is treated as not-yet-ended,
-        so it counts as upcoming/active but never as past.
+        An open-ended booking (``time_to`` is null) is treated as not-yet-ended
+        for rentals, so it counts as upcoming/active but never as past. Ended
+        sale-type bookings (no time_to, but a terminal status) are the
+        exception: they're always "past" and never upcoming/active.
         """
         now = timezone.now()
+        ended_sale = Q(
+            item__sales_type__in=self.SALE_TYPES,
+            status__in=self.TERMINAL_STATUSES,
+            time_to__isnull=True,
+        )
         if value == "past":
-            # Already ended.  Sale-type bookings (sell, donate, want_buy)
-            # never have a time_to, so treat them as ended once time_from
-            # is in the past.
-            return queryset.filter(
-                Q(time_to__lt=now)
-                | Q(
-                    time_to__isnull=True,
-                    time_from__lt=now,
-                    item__sales_type__in=[
-                        SalesType.SELL,
-                        SalesType.DONATE,
-                        SalesType.WANT_BUY,
-                    ],
-                )
-            )
+            # Already ended.
+            return queryset.filter(Q(time_to__lt=now) | ended_sale)
         if value == "upcoming":
             # Current + future: anything that has not ended yet.
-            return queryset.filter(Q(time_to__gte=now) | Q(time_to__isnull=True))
+            return queryset.filter(
+                Q(time_to__gte=now) | Q(time_to__isnull=True)
+            ).exclude(ended_sale)
         if value == "active":
             # Currently running: started and not yet ended.
             return queryset.filter(
                 Q(time_from__lte=now) & (Q(time_to__gte=now) | Q(time_to__isnull=True))
-            )
+            ).exclude(ended_sale)
         return queryset
 
 

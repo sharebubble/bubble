@@ -10,6 +10,15 @@ export const BOOKING_STATUS = {
   inProgress: 6,
 } as const;
 
+// Statuses that mean a booking will never change again. Used to treat
+// terminal sale-type bookings (which never set time_to) as "past" instead of
+// deriving their temporal state purely from time_from/time_to.
+export const TERMINAL_BOOKING_STATUSES: number[] = [
+  BOOKING_STATUS.completed,
+  BOOKING_STATUS.cancelled,
+  BOOKING_STATUS.rejected,
+];
+
 export type BookingStatusBadge = Pick<BadgeProps, 'color' | 'variant'> & {
   /** Translation key for the status label. */
   labelKey: string;

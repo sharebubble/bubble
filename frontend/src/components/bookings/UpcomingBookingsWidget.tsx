@@ -1,4 +1,4 @@
-import { getBookingStatusBadge } from '@/components/bookings/status';
+import { getBookingStatusBadge, TERMINAL_BOOKING_STATUSES } from '@/components/bookings/status';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMyBookings } from '@/hooks/useBookings';
 import { formatPrice } from '@/lib/currency';
@@ -23,9 +23,10 @@ const STATE_COLORS: Record<BookingState, string> = {
 };
 
 const getBookingState = (booking: BookingList): BookingState => {
-  // Completed / cancelled bookings are always "past", regardless of time fields.
-  // This matters for sale-type bookings which never set time_to.
-  if (booking.status === 4 || booking.status === 2) return 'past';
+  // Terminal bookings (completed/cancelled/rejected) are always "past",
+  // regardless of time fields. This matters for sale-type bookings which
+  // never set time_to.
+  if (booking.status != null && TERMINAL_BOOKING_STATUSES.includes(booking.status)) return 'past';
   const now = new Date();
   const from = booking.time_from ? parseISO(booking.time_from) : null;
   const to = booking.time_to ? parseISO(booking.time_to) : null;
