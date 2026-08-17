@@ -9,7 +9,9 @@ from bubble.notifications.channels import (
     resolve_target,
 )
 from bubble.notifications.models import EventType, NotificationPreference
-from bubble.notifications.tasks import deliver_notification
+from bubble.notifications.tasks import deliver_notification, deliver_web_push
+
+ProviderType = NotificationPreference.ProviderType
 
 if TYPE_CHECKING:
     from bubble.users.models import User
@@ -34,6 +36,14 @@ def _deliver_for_user(
         provider = pref.provider_type
         if not is_backend_configured(provider):
             continue
+
+        # Browser push addresses devices rather than an account-level address, so
+        # it has its own task that resolves the user's subscriptions at send time.
+        if provider == ProviderType.WEBPUSH:
+            logger.debug("Dispatching %s web push to %s", event_type, user)
+            deliver_web_push(user.pk, event_type, context, language=language)
+            continue
+
         target = resolve_target(provider, user)
         if not target:
             logger.debug(

@@ -33,7 +33,10 @@ FROM nginxinc/nginx-unprivileged:alpine-slim
 # Copy built app to nginx
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Copy nginx config
+# Copy nginx config. The security-header snippet is included from several
+# locations in the template rather than templated itself — it carries no
+# variables, and nginx only envsubsts what lands in /etc/nginx/templates.
 COPY nginx.default.conf.template /etc/nginx/templates/default.conf.template
+COPY nginx.security-headers.conf /etc/nginx/snippets/security-headers.conf
 
 EXPOSE 8888

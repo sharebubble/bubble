@@ -1,7 +1,8 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useInstallPrompt } from '@/hooks/useInstallPrompt';
 import { Avatar, Button, Card, Divider, Group, NavLink, Stack, Text } from '@mantine/core';
-import { BookMarked, ChevronRight, Library, LogOut, Settings } from 'lucide-react';
+import { BookMarked, ChevronRight, Download, Library, LogOut, Settings } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +24,7 @@ const ENTRIES: HubEntry[] = [
 const Account = () => {
   const { t } = useLanguage();
   const { user, signOut } = useAuth();
+  const { canInstall, promptInstall } = useInstallPrompt();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -61,6 +63,19 @@ const Account = () => {
               />
             </Fragment>
           ))}
+          {/* The header's avatar menu is hidden on mobile, so the install offer
+              lives here too — this hub is where phone users end up. */}
+          {canInstall && (
+            <>
+              <Divider />
+              <NavLink
+                label={t('pwa.install')}
+                onClick={() => void promptInstall()}
+                leftSection={<Download size={20} aria-hidden="true" />}
+                rightSection={<ChevronRight size={16} aria-hidden="true" />}
+              />
+            </>
+          )}
         </Card>
 
         {/* Sign out */}

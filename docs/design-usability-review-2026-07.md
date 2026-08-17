@@ -130,7 +130,7 @@ Solid feature (list/grid, search, "Only mine", item counts). Papercuts: lowercas
 21. **Console/PII hygiene:** `frontend/src/providers/NotificationProvider.tsx:17` logs full message payloads (chat content) to the console; service worker + barcode logs also ship to production. Remove or gate behind DEBUG.
 22. **Dead code:** `frontend/src/App.css` (Vite boilerplate, unused), `frontend/src/components/browse/ConditionFilter.tsx` (superseded by BrowseNav), commented-out auto-scroll effect. Delete.
 23. **Design-token consolidation:** two parallel systems — Mantine theme tokens and a Tailwind HSL variable set — are mixed within the same components (`frontend/src/pages/Index.tsx:382`, Requests extensively). Pick Mantine CSS variables as the source of truth and alias Tailwind utilities to them, so future theming (per-community branding?) is one edit.
-24. **PWA:** a service worker is registered but there's no manifest/offline UX. Either finish the PWA story (installable, offline browse cache, push notifications — a natural fit for booking requests) or drop the SW to avoid stale-cache surprises.
+24. **PWA:** a service worker is registered but there's no manifest/offline UX. Either finish the PWA story (installable, offline browse cache, push notifications — a natural fit for booking requests) or drop the SW to avoid stale-cache surprises. — _Resolved (installable, offline shell + image cache, update prompt); push notifications still open. See `docs/pwa.md`._
 25. **Seeding for demos/dev:** this review required writing a custom seed script. A `manage.py seed_demo` command (items with images, users, bookings, collections) would pay for itself in demos, screenshots, e2e and design work.
 
 ---

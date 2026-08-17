@@ -45,6 +45,9 @@ def notify_new_message(sender, instance: Message, created, **kwargs):
         "message": instance.message,
         "item_title": item.name,
         "sender": sender_display,
+        # Lets a browser-push notification open the conversation it is about
+        # (see notifications.messages.notification_path).
+        "booking_id": str(instance.booking.id),
     }
 
     # local_booker may be None if booking was made by a remote actor
@@ -106,7 +109,10 @@ def notify_new_booking(sender, instance: Booking, created, **kwargs):
         item, only_with_perms_in=["change_item"], with_group_users=False
     )
 
-    notification_context = {"item_title": item.name}
+    notification_context = {
+        "item_title": item.name,
+        "booking_id": str(instance.id),
+    }
 
     # Send notification to each user with change permission (except the booking creator)
     local_booker_id = instance.user_id  # may be None for remote bookers

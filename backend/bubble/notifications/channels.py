@@ -15,6 +15,7 @@ from urllib.parse import quote
 
 from constance import config
 
+from bubble.notifications import webpush
 from bubble.notifications.models import NotificationPreference
 
 if TYPE_CHECKING:
@@ -43,7 +44,12 @@ def get_url_template(provider_type: str) -> str:
 
 
 def resolve_target(provider_type: str, user: User) -> str:
-    """Return the per-user recipient address for *provider_type* (or "")."""
+    """Return the per-user recipient address for *provider_type* (or "").
+
+    Browser push has no such address — it is delivered to whichever devices have
+    subscribed — so it always resolves to the empty string. Use
+    :func:`is_channel_available` to decide whether a user can be pushed to.
+    """
     if provider_type == ProviderType.ROCKETCHAT:
         return (user.username or "").strip()
     if provider_type == ProviderType.SIGNAL:
@@ -58,15 +64,29 @@ def resolve_target(provider_type: str, user: User) -> str:
 
 
 def is_backend_configured(provider_type: str) -> bool:
-    """True when an Apprise URL template is configured for *provider_type*."""
+    """True when *provider_type* is usable by this deployment.
+
+    For the Apprise channels that means a URL template is configured; browser
+    push instead needs a VAPID keypair (it addresses devices, not accounts, so it
+    has no Apprise URL — see :mod:`bubble.notifications.webpush`).
+    """
+    if provider_type == ProviderType.WEBPUSH:
+        return webpush.is_configured()
     return bool(get_url_template(provider_type))
 
 
 def is_channel_available(provider_type: str, user: User) -> bool:
-    """True when the channel is configured *and* the user can be addressed."""
-    return is_backend_configured(provider_type) and bool(
-        resolve_target(provider_type, user)
-    )
+    """True when the channel is configured *and* the user can be reached on it.
+
+    Browser push is per device rather than per account: instead of an address on
+    the user's profile, it needs at least one browser that has subscribed, which
+    only happens after that browser granted notification permission.
+    """
+    if not is_backend_configured(provider_type):
+        return False
+    if provider_type == ProviderType.WEBPUSH:
+        return user.push_subscriptions.exists()
+    return bool(resolve_target(provider_type, user))
 
 
 def build_apprise_url(template: str, target: str) -> str:

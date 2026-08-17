@@ -537,6 +537,24 @@ CONSTANCE_CONFIG_PUBLIC = ["REQUIRE_LOGIN", "DEFAULT_ITEM_VISIBILITY"]
 
 ISBN_LOOKUP_BASE_URL = env("ISBN_LOOKUP_BASE_URL", default="http://isbn-search:8000")
 
+# WEB PUSH (VAPID)
+# ------------------------------------------------------------------------------
+# Browser push requires an application server keypair (VAPID, RFC 8292). The
+# public key is handed to the browser when it subscribes and is exposed through
+# GET /api/config/; the private key signs the JWT on every send and must stay
+# secret, hence env rather than Constance (which is editable in the admin).
+# Both are base64url: the private key is the raw 32-byte P-256 scalar, the public
+# key the 65-byte uncompressed point. Generate a pair with:
+#   python manage.py generate_vapid_keys
+# Push delivery stays disabled while either key is empty.
+VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", default="")
+VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", default="")
+# The "sub" claim: a mailto: or https: URL push services can use to contact the
+# operator about a misbehaving deployment. Falls back to DEFAULT_FROM_EMAIL.
+VAPID_SUBJECT = env("VAPID_SUBJECT", default="")
+# Push services drop a notification that could not be delivered within the TTL.
+VAPID_TTL_SECONDS = env.int("VAPID_TTL_SECONDS", default=12 * 60 * 60)
+
 # FEDERATION
 # ------------------------------------------------------------------------------
 # Enable ActivityPub federation by setting FEDERATION_ENABLED=true and

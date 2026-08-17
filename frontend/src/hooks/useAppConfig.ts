@@ -5,11 +5,15 @@ interface AppConfig {
   REQUIRE_LOGIN: boolean;
   DEFAULT_ITEM_VISIBILITY: string;
   NOTIFICATIONS_ENABLED?: Record<string, boolean>;
+  /** VAPID application server key; empty when web push is not configured. */
+  VAPID_PUBLIC_KEY?: string;
 }
 
 interface UseAppConfigResult {
   requireLogin: boolean;
   loading: boolean;
+  /** Needed to subscribe a browser to push; empty means the feature is off. */
+  vapidPublicKey: string;
 }
 
 export const useAppConfig = (): UseAppConfigResult => {
@@ -33,5 +37,6 @@ export const useAppConfig = (): UseAppConfigResult => {
     // Default to true (require login) while loading or on error — safe fallback
     requireLogin: data ? data.REQUIRE_LOGIN : true,
     loading: isLoading,
+    vapidPublicKey: data?.VAPID_PUBLIC_KEY ?? '',
   };
 };

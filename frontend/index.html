@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- `viewport-fit=cover` is what makes the `env(safe-area-inset-*)` values
+         non-zero, which MobileBottomNav relies on to clear the iOS home
+         indicator once the app is installed to the home screen. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Bubble - Community Network</title>
     <meta
       name="description"
@@ -13,14 +16,20 @@
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#166534" />
+    <!-- `mobile-web-app-capable` is the standardised name; the Apple-prefixed one
+         stays for iOS versions that only understand the original. -->
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Bubble" />
     <link rel="manifest" href="/manifest.json" />
 
     <!-- Icons -->
-    <link rel="icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/logo.png" type="image/png" sizes="192x192" />
+    <!-- iOS renders the home-screen icon at 180×180 and does not honour
+         `purpose: maskable`, so it gets the unpadded logo. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
 
     <!-- Open Graph Meta Tags -->
     <meta property="og:title" content="Bubble - Community Network" />
@@ -35,7 +44,9 @@
   <body>
     <div id="root"></div>
     <script src="/env-config.js"></script>
+    <!-- The service worker is registered from main.tsx (src/lib/serviceWorker.ts)
+         rather than a second module entry, so the app controls when and whether
+         it happens. -->
     <script type="module" src="/src/main.tsx"></script>
-    <script type="module" src="/src/registerServiceWorker.ts"></script>
   </body>
 </html>

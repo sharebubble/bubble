@@ -1,13 +1,18 @@
 {
+  "id": "/",
   "name": "Bubble - Sharing Network",
   "short_name": "Bubble",
   "description": "Share, rent, and buy items in your local community",
+  "lang": "en",
+  "dir": "ltr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
   "background_color": "#fef7ed",
   "theme_color": "#166534",
-  "orientation": "any",
-  "scope": "/",
+  "categories": ["shopping", "social", "lifestyle"],
   "icons": [
     {
       "src": "/logo.png",
@@ -34,19 +39,21 @@
       "purpose": "maskable"
     }
   ],
-  "categories": ["sharing", "social", "lifestyle"],
-  "screenshots": [
+  "shortcuts": [
     {
-      "src": "/screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
+      "name": "Browse items",
+      "short_name": "Browse",
+      "url": "/browse"
     },
     {
-      "src": "/screenshot-narrow.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow"
+      "name": "Share an item",
+      "short_name": "Share",
+      "url": "/create-item"
+    },
+    {
+      "name": "Bookings",
+      "short_name": "Bookings",
+      "url": "/bookings"
     }
   ]
 }
