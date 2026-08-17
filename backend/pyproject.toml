@@ -61,6 +61,9 @@ torchvision = [
   { index = "pytorch-cpu" },
 ]
 
+[project.scripts]
+dev = "bubble.dev:main"
+
 [build-system]
 requires = ["setuptools>=84.0.0", "wheel", "setuptools-scm[toml]>=10.2.1"]
 build-backend = "setuptools.build_meta"
