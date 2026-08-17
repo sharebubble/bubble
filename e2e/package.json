@@ -4,14 +4,17 @@
   "version": "0.0.0",
   "type": "module",
   "description": "Playwright end-to-end tests for Bubble (release gate against main.sharebubble.org)",
+  "engines": {
+    "node": ">=20.12"
+  },
   "scripts": {
-    "test": "playwright test",
-    "test:smoke": "playwright test --grep @smoke",
-    "test:regression": "playwright test --grep @regression",
-    "test:ui": "playwright test --ui",
+    "test": "node --env-file-if-exists=.env node_modules/.bin/playwright test",
+    "test:smoke": "node --env-file-if-exists=.env node_modules/.bin/playwright test --grep @smoke",
+    "test:regression": "node --env-file-if-exists=.env node_modules/.bin/playwright test --grep @regression",
+    "test:ui": "node --env-file-if-exists=.env node_modules/.bin/playwright test --ui",
     "report": "playwright show-report",
-    "list": "playwright test --list",
-    "wait-for-version": "node scripts/wait-for-version.mjs",
+    "list": "node --env-file-if-exists=.env node_modules/.bin/playwright test --list",
+    "wait-for-version": "node --env-file-if-exists=.env scripts/wait-for-version.mjs",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

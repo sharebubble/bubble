@@ -21,6 +21,10 @@ e2e/
 
 ## Running
 
+The `npm test*`/`list`/`wait-for-version` scripts auto-load `e2e/.env` (via
+Node's `--env-file-if-exists`, no `dotenv` package needed) — create it once
+and every subsequent run picks it up, no manual `export` required.
+
 ```bash
 cd e2e
 npm ci
@@ -28,37 +32,73 @@ npm ci
 # against stage (default), no creds needed for smoke:
 npm run test:smoke
 
-# against a local stack (just up):
-E2E_BASE_URL=http://localhost:8080 npm run test:smoke
-
-# full suite (needs the user pool configured — see .env.example):
-cp .env.example .env   # fill in E2E_<ROLE>_USERNAME/PASSWORD
-npm test
+# against a local stack — from the repo root, once:
+just e2e-up   # builds, starts, seeds demo content + the E2E pool, writes e2e/.env
+cd e2e
+npm run test:smoke   # picks up E2E_BASE_URL from e2e/.env automatically
+npm test              # full suite, incl. @regression — pool creds also came from e2e/.env
 ```
+
+To point at a local stack without `just e2e-up` (e.g. one already running),
+either add `E2E_BASE_URL=http://localhost:8080` to `e2e/.env` or prefix the
+command: `E2E_BASE_URL=http://localhost:8080 npm run test:smoke`.
 
 Browser projects depend on the `setup` project, which authenticates the pooled
 users once and saves a `storageState` per role. Without credentials the setup is
 skipped and only credential-free specs (e.g. `smoke/`) run.
 
-## Test data: seed & purge (backend commands)
+## Local test deployment (`just e2e-up`)
 
-The multi-user specs need a pool of real users on the target environment. Two
-Django management commands manage the pool and clean up test data. Both refuse to
-run unless `E2E_ALLOW=1` (so they can never hit production by accident):
+`scripts/e2e-local-up.sh` (repo root) is the one-command base for running this
+suite against a fresh local stack instead of stage:
 
 ```bash
-# provision/refresh the pool (reads the same E2E_<ROLE>_* env vars)
-E2E_ALLOW=1 <role env...> python manage.py seed_e2e
-
-# delete E2E-namespaced data (items cascade to bookings/messages/images)
-E2E_ALLOW=1 python manage.py purge_e2e            # all runs
-E2E_ALLOW=1 python manage.py purge_e2e --run-id X # one run
-E2E_ALLOW=1 python manage.py purge_e2e --dry-run  # preview
-E2E_ALLOW=1 python manage.py purge_e2e --users    # also remove the pool users
+just e2e-up                 # build + start docker compose, seed demo content + the E2E pool
+just e2e-up --reset         # wipe volumes first for a clean DB
+just e2e-up --no-build      # reuse existing images (faster iterative runs)
 ```
 
-Specs create only namespaced data (`E2E-<runId>::…`) and delete it at end of
-test; `purge_e2e` is the janitor backstop for anything a crashed run leaks.
+It builds and starts `docker compose`, waits for `/api/version/` to respond,
+runs migrations, seeds realistic demo content (`manage.py seed_demo`), and — if
+`e2e/.env` doesn't already have them — generates random credentials for the
+`E2E_*` user pool and provisions them via `seed_e2e`. Safe to re-run: compose,
+`seed_demo` and `seed_e2e` are all idempotent, and it never overwrites
+credentials you've already configured. See `scripts/e2e-local-up.sh --help`
+for all options.
+
+## Test data: seed & purge (backend commands)
+
+Two kinds of seed data, for two different purposes:
+
+- **`seed_demo`** — a realistic, fixed cast (3 users, 16 items across every
+  category/sales type, bookings with message threads, collections) so every
+  page has real content to render against. Meant for local dev, screenshots,
+  manual QA, and as a content baseline for specs that don't need the isolated
+  multi-user pool. Idempotent; refuses to run unless `DEBUG` is on or
+  `SEED_DEMO_ALLOW=1` is set, so it can't touch a real production DB by accident.
+  ```bash
+  python manage.py seed_demo             # create/update the demo dataset
+  python manage.py seed_demo --flush     # wipe previously seeded demo data first
+  python manage.py seed_demo --no-images # skip generating placeholder photos
+  ```
+- **`seed_e2e` / `purge_e2e`** — the namespaced multi-user pool (`owner`,
+  `renterA`, `renterB`, `admin`) that `@regression` specs authenticate as, plus
+  cleanup for anything a run creates. Both refuse to run unless `E2E_ALLOW=1`
+  (so they can never hit production by accident):
+
+  ```bash
+  # provision/refresh the pool (reads the same E2E_<ROLE>_* env vars)
+  E2E_ALLOW=1 <role env...> python manage.py seed_e2e
+
+  # delete E2E-namespaced data (items cascade to bookings/messages/images)
+  E2E_ALLOW=1 python manage.py purge_e2e            # all runs
+  E2E_ALLOW=1 python manage.py purge_e2e --run-id X # one run
+  E2E_ALLOW=1 python manage.py purge_e2e --dry-run  # preview
+  E2E_ALLOW=1 python manage.py purge_e2e --users    # also remove the pool users
+  ```
+
+  Specs create only namespaced data (`E2E-<runId>::…`) and delete it at end of
+  test; `purge_e2e` is the janitor backstop for anything a crashed run leaks.
 
 ## Version guard (CI)
 

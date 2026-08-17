@@ -48,3 +48,7 @@ tests:
 # openapi: Regenerate openapi schema in frontend container
 openapi:
     @docker compose run --rm frontend npm run types:openapi
+
+# e2e-up: Build, start and seed a local stack as a base for Playwright E2E runs.
+e2e-up *args:
+    @./scripts/e2e-local-up.sh {{args}}
