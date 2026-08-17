@@ -96,8 +96,11 @@ export const UpcomingBookingsWidget = ({ className }: { className?: string }) =>
 
   // Latest bookings across every status, so the start page also surfaces the
   // ones still awaiting a decision — not just the already-approved schedule.
+  // Ordered by most recent conversation activity (latest message, falling
+  // back to the booking's creation time) rather than the rental date, so the
+  // booking with the newest message appears first.
   const { data, isLoading, isError } = useMyBookings({
-    ordering: '-time_from',
+    ordering: '-latest_message_at',
     page_size: WIDGET_LIMIT,
   });
 
