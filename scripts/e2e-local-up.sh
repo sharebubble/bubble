@@ -68,6 +68,11 @@ if ! command -v docker >/dev/null 2>&1; then
   exit 1
 fi
 
+if ! command -v curl >/dev/null 2>&1; then
+  echo "curl is required (used for the readiness check) but was not found on PATH." >&2
+  exit 1
+fi
+
 if [ "$RESET" -eq 1 ]; then
   log "Resetting stack (down -v)"
   docker compose down -v --remove-orphans
@@ -118,6 +123,27 @@ random_secret() {
   fi
 }
 
+# Set KEY=VALUE in FILE: replaces an existing `KEY=...` line (any value,
+# including empty), or appends the line if the key isn't present at all —
+# unlike a bare `sed` replace, this also handles a hand-edited .env that's
+# missing a key outright.
+set_env_var() {
+  local file="$1" key="$2" value="$3"
+  if grep -q "^${key}=" "$file" 2>/dev/null; then
+    sed -i.bak "s#^${key}=.*#${key}=${value}#" "$file" && rm -f "${file}.bak"
+  else
+    printf '%s=%s\n' "$key" "$value" >>"$file"
+  fi
+}
+
+# Same, but only when KEY isn't already set to a non-empty value — for
+# credentials we generate once and never want to overwrite.
+set_env_var_if_unset() {
+  local file="$1" key="$2" value="$3"
+  grep -q "^${key}=.\+" "$file" 2>/dev/null && return 0
+  set_env_var "$file" "$key" "$value"
+}
+
 if [ "$SEED_E2E_POOL" -eq 1 ]; then
   log "Provisioning the E2E user pool"
 
@@ -125,22 +151,15 @@ if [ "$SEED_E2E_POOL" -eq 1 ]; then
     cp e2e/.env.example "$E2E_ENV_FILE"
   fi
 
-  # Point the suite at the stack we just started, unless already configured.
-  if ! grep -q '^E2E_BASE_URL=.\+' "$E2E_ENV_FILE" 2>/dev/null; then
-    sed -i.bak "s#^E2E_BASE_URL=.*#E2E_BASE_URL=${BASE_URL}#" "$E2E_ENV_FILE" && rm -f "${E2E_ENV_FILE}.bak"
-  fi
+  # Always point the suite at the stack this run just started — e2e/.env.example
+  # ships E2E_BASE_URL defaulted to stage, so an "only if unset" check would
+  # never fire and silently leave tests pointed at stage after a fresh copy.
+  set_env_var "$E2E_ENV_FILE" E2E_BASE_URL "$BASE_URL"
 
   for role in "${ROLES[@]}"; do
-    user_key="E2E_${role}_USERNAME"
-    pass_key="E2E_${role}_PASSWORD"
-    if ! grep -q "^${user_key}=.\+" "$E2E_ENV_FILE" 2>/dev/null; then
-      username="e2e-$(echo "$role" | tr '[:upper:]' '[:lower:]')"
-      sed -i.bak "s#^${user_key}=.*#${user_key}=${username}#" "$E2E_ENV_FILE" && rm -f "${E2E_ENV_FILE}.bak"
-    fi
-    if ! grep -q "^${pass_key}=.\+" "$E2E_ENV_FILE" 2>/dev/null; then
-      password="$(random_secret)"
-      sed -i.bak "s#^${pass_key}=.*#${pass_key}=${password}#" "$E2E_ENV_FILE" && rm -f "${E2E_ENV_FILE}.bak"
-    fi
+    username="e2e-$(echo "$role" | tr '[:upper:]' '[:lower:]')"
+    set_env_var_if_unset "$E2E_ENV_FILE" "E2E_${role}_USERNAME" "$username"
+    set_env_var_if_unset "$E2E_ENV_FILE" "E2E_${role}_PASSWORD" "$(random_secret)"
   done
 
   # Load the (now fully populated) pool credentials and hand them to seed_e2e

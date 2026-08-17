@@ -13,34 +13,34 @@ Priorities: **P0** = blocks or seriously hurts a core journey · **P1** = high-i
 ## P0 — Core journey blockers
 
 ### 1. Mobile navigation: primary sections are hidden behind the avatar menu
-`components/layout/Header.tsx` is the only navigation surface. My Items, Bookings, Collections and Profile are reachable **only** through the avatar dropdown (`Header.tsx:161-198`); on mobile the Requests and Share buttons collapse to unlabeled icons and there is no bottom navigation or burger menu. A new user on a phone has no visible path to "my stuff".
+`frontend/src/components/layout/Header.tsx` is the only navigation surface. My Items, Bookings, Collections and Profile are reachable **only** through the avatar dropdown (`frontend/src/components/layout/Header.tsx:161-198`); on mobile the Requests and Share buttons collapse to unlabeled icons and there is no bottom navigation or burger menu. A new user on a phone has no visible path to "my stuff".
 
 **Recommendation:** add a mobile bottom tab bar with the 4–5 core destinations (Browse, Requests, Share/+, Bookings, Profile), keeping the header for search. On desktop, consider surfacing "My Items" as a visible header link. This single change most improves day-to-day usability on phones.
 
 ### 2. Booking flow: two competing paths, mismatched granularity, no validation
 The rental journey currently offers two disconnected ways to book:
 
-- The **"Rent" button** opens `BookingDialog` immediately, pre-filled with today at the current hour (e.g. "08.07.2026 06:00"), an empty end date, and an editable "Total Price" spinner already showing a value before any period is chosen (`BookingDialog.tsx:112-145`).
+- The **"Rent" button** opens `BookingDialog` immediately, pre-filled with today at the current hour (e.g. "08.07.2026 06:00"), an empty end date, and an editable "Total Price" spinner already showing a value before any period is chosen (`frontend/src/components/items/BookingDialog.tsx:112-145`).
 - The **"Select Rental Period" calendar** below supports two-click range selection → "Book Now", opening the same dialog.
 
 Problems observed:
-- The week view is a **24×7 hourly grid** even for items priced per day — a wall of ~170 mostly-empty cells; on mobile it has `min-w-[700px]` (`RentalCalendar.tsx:353`) so only ~2.5 days are visible and the rest needs horizontal scrolling.
-- The dialog **submits with no end date and no validation** (`BookingDialog.tsx:150-157`); "required" asterisks are visual only.
+- The week view is a **24×7 hourly grid** even for items priced per day — a wall of ~170 mostly-empty cells; on mobile it has `min-w-[700px]` (`frontend/src/components/items/RentalCalendar.tsx:353`) so only ~2.5 days are visible and the rest needs horizontal scrolling.
+- The dialog **submits with no end date and no validation** (`frontend/src/components/items/BookingDialog.tsx:150-157`); "required" asterisks are visual only.
 - "Total Price" is editable with a number spinner — it isn't clear this is an *offer*; users will assume it's a computed price.
-- After submitting, the user is dropped on the `/bookings` **list**, not the new request's message thread (`BookingDialog.tsx:166-168`), losing the natural "now talk to the owner" next step.
+- After submitting, the user is dropped on the `/bookings` **list**, not the new request's message thread (`frontend/src/components/items/BookingDialog.tsx:166-168`), losing the natural "now talk to the owner" next step.
 
 **Recommendation:** one flow. Calendar granularity should follow `rental_period` (daily → month/day-picker by default, hourly grid only for hourly items). The Rent button should scroll to / open that calendar. The dialog should validate start<end and require an end date (or explicitly support open-end where `rental_open_end`), show a computed price with an "edit your offer" affordance, and success should land in the request thread (`/requests/:id`).
 
 ### 3. Privacy: owner email and booker identities exposed
 - The item page shows the owner's **email address** to every viewer ("Owner Information — Name / Email"). Combined with federation/public visibility this is a real leak vector.
-- Hovering a booked calendar slot reveals **who booked the item and when** (full name) to any logged-in viewer (`RentalCalendar.tsx:424-433`).
+- Hovering a booked calendar slot reveals **who booked the item and when** (full name) to any logged-in viewer (`frontend/src/components/items/RentalCalendar.tsx:424-433`).
 
 **Recommendation:** replace the email with an in-app "Message owner" CTA (the messaging system already exists); show booked slots simply as "Unavailable" for everyone except the owner.
 
 ### 4. My Items on mobile: management actions are unreachable
-My Items defaults to a table (`MyItems.tsx:36`) that gets cut off after the Status column on a phone; Price, Created and the **Actions menu (View/Edit/Delete) are off-screen** with no scroll affordance. Practically, users can't edit or delete their listings from a phone without discovering hidden horizontal scroll.
+My Items defaults to a table (`frontend/src/pages/MyItems.tsx:36`) that gets cut off after the Status column on a phone; Price, Created and the **Actions menu (View/Edit/Delete) are off-screen** with no scroll affordance. Practically, users can't edit or delete their listings from a phone without discovering hidden horizontal scroll.
 
-**Recommendation:** default to the existing card view below the `sm` breakpoint (the toggle already exists), or make rows collapse into cards. Same applies to the browse list view (`Index.tsx:349`, `minWidth 720`) and Collections table (`640`).
+**Recommendation:** default to the existing card view below the `sm` breakpoint (the toggle already exists), or make rows collapse into cards. Same applies to the browse list view (`frontend/src/pages/Index.tsx:349`, `minWidth 720`) and Collections table (`640`).
 
 ### 5. Own items on browse look buyable but aren't
 The user's own items appear in the browse grid with a **disabled "Buy"/"Rent" button** and no explanation (e.g. the demo user's own armchair). Disabled primary CTAs read as broken.
@@ -57,9 +57,9 @@ Negotiation lives in *Requests*, confirmed rentals in *My Bookings*, and pending
 **Recommendation:** label direction explicitly ("You requested from Anna" / "Anna wants your bike"), add In/Out filter tabs on Requests, and define the two pages crisply: Requests = inbox/negotiation, Bookings = agreed schedule. Consider renaming Bookings → "My rentals" and linking each booking to its request thread.
 
 ### 7. Loading, empty and error states are inconsistent
-- The browse **loading state renders in red** — visually identical to the error state right above it (`Index.tsx:259-267`). It reads as a failure on every page load.
-- Most pages show bare "Loading..." text (`ItemDetail.tsx:84`, `Bookings.tsx:363`, `Requests.tsx:276`, `App.tsx:52-57`); no skeletons anywhere.
-- Browse empty state is a bare `<p>No items found</p>` (`Index.tsx:315-318`) while MyItems/Bookings/Collections have nice icon+CTA empty states — the *most public* page has the worst one.
+- The browse **loading state renders in red** — visually identical to the error state right above it (`frontend/src/pages/Index.tsx:259-267`). It reads as a failure on every page load.
+- Most pages show bare "Loading..." text (`frontend/src/pages/ItemDetail.tsx:84`, `frontend/src/pages/Bookings.tsx:363`, `frontend/src/pages/Requests.tsx:276`, `frontend/src/App.tsx:52-57`); no skeletons anywhere.
+- Browse empty state is a bare `<p>No items found</p>` (`frontend/src/pages/Index.tsx:315-318`) while MyItems/Bookings/Collections have nice icon+CTA empty states — the *most public* page has the worst one.
 - "1 items found" grammar.
 
 **Recommendation:** card-shaped skeletons for browse/detail/requests; one shared EmptyState component (icon + message + CTA, e.g. "Clear filters"); reserve red strictly for errors; pluralize counts.
@@ -70,13 +70,13 @@ Every card shows an "Available" badge (redundant — nearly everything browsable
 **Recommendation:** drop the Available badge (show only exceptional states: Reserved/Rented/Sold), use a relative date ("2 d ago") or drop it from cards, and use a 2-column compact grid on mobile. Consider making the type ("For Rent", "Borrow") a colored price-line prefix instead of a photo-overlay badge.
 
 ### 9. i18n gaps undermine the German experience
-Only EN/DE exist, and German screens still contain hardcoded English: the entire MyItems table header and its delete-confirm dialog (`MyItems.tsx:56-63, 239-245`), CreateItem headings (`CreateItem.tsx:56-64`), all AI-upload progress/toasts (`ImageUploadStep.tsx`), notification titles (`NotificationProvider.tsx:29-54`), the 404 page, and date formatting via date-fns with English patterns (`Requests.tsx:161`, `Bookings.tsx:163` — English month/day names in a German UI). Currency uses a custom `toFixed(2)` formatter rather than `Intl.NumberFormat` (`currency.ts`), and offers are hardcoded to EUR in places (`Requests.tsx:431`).
+Only EN/DE exist, and German screens still contain hardcoded English: the entire MyItems table header and its delete-confirm dialog (`frontend/src/pages/MyItems.tsx:56-63, 239-245`), CreateItem headings (`frontend/src/pages/CreateItem.tsx:56-64`), all AI-upload progress/toasts (`frontend/src/components/items/ImageUploadStep.tsx`), notification titles (`frontend/src/providers/NotificationProvider.tsx:29-54`), the 404 page, and date formatting via date-fns with English patterns (`frontend/src/pages/Requests.tsx:161`, `frontend/src/pages/Bookings.tsx:163` — English month/day names in a German UI). Currency uses a custom `toFixed(2)` formatter rather than `Intl.NumberFormat` (`frontend/src/lib/currency.ts`), and offers are hardcoded to EUR in places (`frontend/src/pages/Requests.tsx:431`).
 
 **Recommendation:** sweep for hardcoded strings (an ESLint rule for literal JSX text helps), centralize date formatting on the existing `formatDate` util with locale-aware patterns, and switch money display to `Intl.NumberFormat`. Also: the US flag for English is a common papercut — prefer text labels ("EN / DE").
 
 ### 10. Keyboard & screen-reader access to core actions
-- Clickable rows/cards across browse list, MyItems, Collections, Bookings and Requests are plain `onClick` divs/rows with no `tabIndex`/`role`/key handling — the app is largely mouse/touch-only (`Index.tsx:365`, `MyItems.tsx:253`, `Requests.tsx:218`).
-- Calendar day/hour tiles have no `aria-label` (date/state), and booked-slot details are hover-popover-only, unreachable by keyboard or touch (`RentalCalendar.tsx:392-436`).
+- Clickable rows/cards across browse list, MyItems, Collections, Bookings and Requests are plain `onClick` divs/rows with no `tabIndex`/`role`/key handling — the app is largely mouse/touch-only (`frontend/src/pages/Index.tsx:365`, `frontend/src/pages/MyItems.tsx:253`, `frontend/src/pages/Requests.tsx:218`).
+- Calendar day/hour tiles have no `aria-label` (date/state), and booked-slot details are hover-popover-only, unreachable by keyboard or touch (`frontend/src/components/items/RentalCalendar.tsx:392-436`).
 - Touch targets: hourly slots are 32 px (`h-8`), carousel dots 8 px; the Requests drawer trigger is an unlabeled icon-button.
 - Calendar prev/next aria-labels are hardcoded English.
 
@@ -97,7 +97,7 @@ The right column stacks badges → title → price → description → owner box
 **Recommendation:** two-column layout where the booking module (calendar + price + CTA) is the sticky right rail (classic marketplace pattern), image gallery left; demote add-to-collection to an icon action; consider showing rental price per period more prominently with a computed example ("3 days ≈ €12").
 
 ### 13. Create-item flow: great idea, unclear states
-The AI-first flow (photos → AI drafts the listing) is a differentiator, but: buttons are jargon-y ("Continue with AI Processing", "Skip AI, Continue Manually", "Scan Book ISBN" all equally weighted); progress is a fake timer from 65→90% (`ImageUploadStep.tsx:126-129`); a new item is silently created as **Draft + "donate" + condition "Used"** (`ImageUploadStep.tsx:83-87`) and the user lands on the edit form with no clear "publish" moment or review-what-AI-wrote step; everything is untranslated.
+The AI-first flow (photos → AI drafts the listing) is a differentiator, but: buttons are jargon-y ("Continue with AI Processing", "Skip AI, Continue Manually", "Scan Book ISBN" all equally weighted); progress is a fake timer from 65→90% (`frontend/src/components/items/ImageUploadStep.tsx:126-129`); a new item is silently created as **Draft + "donate" + condition "Used"** (`frontend/src/components/items/ImageUploadStep.tsx:83-87`) and the user lands on the edit form with no clear "publish" moment or review-what-AI-wrote step; everything is untranslated.
 
 **Recommendation:** rename actions ("✨ Fill in details for me", "I'll write it myself"), show ISBN scan only for books-like flows or as a secondary link, add an explicit publish step with a status callout on the edit page ("This item is a draft — publish when ready"), and let users review/undo AI-filled fields.
 
@@ -107,8 +107,8 @@ The login card has no logo/graphic, no language switcher, no "forgot password" o
 **Recommendation:** add the logo + a one-line community value proposition ("Borrow and share with your neighbours"), a help/contact link, language toggle, and proper `autocomplete` attributes for password managers.
 
 ### 15. Requests detail polish
-- Accept/Reject/Counter sit above the message thread; Reject has no confirmation, while Accept warns only on differing offers (`Requests.tsx:531-560`).
-- The thread doesn't auto-scroll to the newest message (the auto-scroll effect is commented out, `Requests.tsx:93-97`).
+- Accept/Reject/Counter sit above the message thread; Reject has no confirmation, while Accept warns only on differing offers (`frontend/src/pages/Requests.tsx:531-560`).
+- The thread doesn't auto-scroll to the newest message (the auto-scroll effect is commented out, `frontend/src/pages/Requests.tsx:93-97`).
 - A React "setState during render" warning fires on this page (observed in console; also indicates a real bug risk).
 - Rental period datetimes wrap awkwardly on mobile ("Mon, Jul 13, 2026 06:52" over three lines) — for daily rentals, show dates only.
 
@@ -127,9 +127,9 @@ Solid feature (list/grid, search, "Only mine", item counts). Papercuts: lowercas
 
 19. **Dark mode:** works well overall (custom warm-brown scale is pleasant). Verify first-paint consistency — a transient state was observed where the first row of cards rendered light-mode styles on a dark page; likely the Tailwind `.dark` class syncing after Mantine (`ColorSchemeSync`). Also verify toasts and the "Welcome back!" notification don't cover the header actions (observed overlapping content on login).
 20. **404 page:** unstyled ("Oops! Page not found" + link), untranslated, no header context on some paths. Style it like the empty states and translate.
-21. **Console/PII hygiene:** `NotificationProvider.tsx:17` logs full message payloads (chat content) to the console; service worker + barcode logs also ship to production. Remove or gate behind DEBUG.
-22. **Dead code:** `App.css` (Vite boilerplate, unused), `ConditionFilter.tsx` (superseded by BrowseNav), commented-out auto-scroll effect. Delete.
-23. **Design-token consolidation:** two parallel systems — Mantine theme tokens and a Tailwind HSL variable set — are mixed within the same components (`Index.tsx:382`, Requests extensively). Pick Mantine CSS variables as the source of truth and alias Tailwind utilities to them, so future theming (per-community branding?) is one edit.
+21. **Console/PII hygiene:** `frontend/src/providers/NotificationProvider.tsx:17` logs full message payloads (chat content) to the console; service worker + barcode logs also ship to production. Remove or gate behind DEBUG.
+22. **Dead code:** `frontend/src/App.css` (Vite boilerplate, unused), `frontend/src/components/browse/ConditionFilter.tsx` (superseded by BrowseNav), commented-out auto-scroll effect. Delete.
+23. **Design-token consolidation:** two parallel systems — Mantine theme tokens and a Tailwind HSL variable set — are mixed within the same components (`frontend/src/pages/Index.tsx:382`, Requests extensively). Pick Mantine CSS variables as the source of truth and alias Tailwind utilities to them, so future theming (per-community branding?) is one edit.
 24. **PWA:** a service worker is registered but there's no manifest/offline UX. Either finish the PWA story (installable, offline browse cache, push notifications — a natural fit for booking requests) or drop the SW to avoid stale-cache surprises.
 25. **Seeding for demos/dev:** this review required writing a custom seed script. A `manage.py seed_demo` command (items with images, users, bookings, collections) would pay for itself in demos, screenshots, e2e and design work.
 

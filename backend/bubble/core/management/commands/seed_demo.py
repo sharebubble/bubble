@@ -444,10 +444,13 @@ class Command(BaseCommand):
         items: dict[str, Item] = {}
         for i, entry in enumerate(ITEMS):
             owner_key, name, category, sales_type, price, period, desc = entry
+            # Scoped by (user, name), not name alone: Item.name isn't unique,
+            # so a name-only lookup could match an unrelated item owned by
+            # someone else on a dev DB that already has data.
             item, created = Item.objects.get_or_create(
                 name=name,
+                user=users[owner_key],
                 defaults={
-                    "user": users[owner_key],
                     "category": category,
                     "sales_type": sales_type,
                     "status": ItemStatus.AVAILABLE,
@@ -506,9 +509,11 @@ class Command(BaseCommand):
 
     def _seed_collections(self, users: dict[str, User], items: dict[str, Item]) -> None:
         for owner_key, name, description, match in COLLECTIONS:
+            # Scoped by (owner, name): Collection.name isn't unique either.
             collection, created = Collection.objects.get_or_create(
                 name=name,
-                defaults={"owner": users[owner_key], "description": description},
+                owner=users[owner_key],
+                defaults={"description": description},
             )
             for item_name, item in items.items():
                 if item_name in match or item.category in match:
