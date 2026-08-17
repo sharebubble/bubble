@@ -1,8 +1,15 @@
 import BookingCounterOfferDialog from '@/components/bookings/BookingCounterOfferDialog';
 import BookingEditDialog from '@/components/bookings/BookingEditDialog';
+import { getBookingStatusBadge } from '@/components/bookings/status';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
-import { useBooking, useBookings, useUpdateBooking } from '@/hooks/useBookings';
+import {
+  useBooking,
+  useBookings,
+  useConfirmReceived,
+  useConfirmReturned,
+  useUpdateBooking,
+} from '@/hooks/useBookings';
 import { useItem } from '@/hooks/useItem';
 import { useCreateMessage, useMarkMessageAsRead, useMessages } from '@/hooks/useMessages';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
@@ -51,6 +58,8 @@ const Requests = () => {
   const { data: selectedItemDetails } = useItem(selectedBookingDetails?.item_details?.id);
   const [messageText, setMessageText] = useState('');
   const updateBookingMutation = useUpdateBooking();
+  const confirmReceivedMutation = useConfirmReceived();
+  const confirmReturnedMutation = useConfirmReturned();
   const {
     data: messagesData,
     refetch: refetchMessages,
@@ -123,36 +132,12 @@ const Requests = () => {
   }, [messages, user, markMessageAsReadMutation]);
 
   const getStatusBadge = (status?: number) => {
-    switch (status) {
-      case 1:
-        return (
-          <Badge variant="light" color="gray">
-            {t('requests.status.pending')}
-          </Badge>
-        );
-      case 2:
-        return (
-          <Badge variant="outline" color="gray">
-            {t('requests.status.cancelled')}
-          </Badge>
-        );
-      case 3:
-        return <Badge color="green">{t('requests.status.confirmed')}</Badge>;
-      case 4:
-        return (
-          <Badge variant="outline" color="gray">
-            {t('requests.status.completed')}
-          </Badge>
-        );
-      case 5:
-        return <Badge color="red">{t('requests.status.rejected')}</Badge>;
-      default:
-        return (
-          <Badge variant="light" color="gray">
-            {t('requests.status.unknown')}
-          </Badge>
-        );
-    }
+    const { color, variant, labelKey } = getBookingStatusBadge(status);
+    return (
+      <Badge color={color} variant={variant}>
+        {t(labelKey)}
+      </Badge>
+    );
   };
 
   const formatDateTime = (dateString?: string | null) => {
@@ -616,43 +601,97 @@ const Requests = () => {
                     </div>
                   )}
 
-                  {/* Action Buttons - For confirmed or rejected bookings */}
-                  {selectedBooking.status === 3 && (
-                    <div className="flex items-center gap-2 mt-4">
-                      <Button
-                        variant="outline"
-                        onClick={async () => {
-                          try {
-                            await updateBookingMutation.mutateAsync({
-                              id: selectedBooking.id,
-                              data: { status: 2 }, // Cancelled
-                            });
-                          } catch (error) {
-                            console.error('Error cancelling booking:', error);
-                          }
-                        }}
-                        disabled={updateBookingMutation.isPending}
-                      >
-                        {updateBookingMutation.isPending
-                          ? t('common.submitting')
-                          : t('requests.cancel')}
-                      </Button>
+                  {/* Action Buttons - For confirmed bookings */}
+                  {selectedBooking.status === 3 &&
+                    (() => {
+                      const isBuyer = user?.username === selectedBooking.user?.username;
+                      const salesType = selectedItemDetails?.sales_type;
+                      const isSale = salesType === 'sell' || salesType === 'donate';
+                      const isRental = salesType === 'rent' || salesType === 'borrow';
+                      // Self-service rentals progress automatically by time, so no
+                      // manual handover confirmation is shown for them.
+                      const showConfirmReceived =
+                        isBuyer &&
+                        (isSale || (isRental && !selectedItemDetails?.rental_self_service));
 
-                      <div className="ml-auto">
-                        <ActionIcon
-                          variant="subtle"
-                          size="lg"
-                          onClick={handleRefreshMessages}
-                          disabled={!selectedBookingId || isFetchingMessages}
-                          aria-label={t('requests.refresh')}
+                      return (
+                        <div className="flex items-center gap-2 mt-4">
+                          {showConfirmReceived && (
+                            <Button
+                              color="teal"
+                              onClick={() => confirmReceivedMutation.mutate(selectedBooking.id)}
+                              disabled={confirmReceivedMutation.isPending}
+                            >
+                              {confirmReceivedMutation.isPending
+                                ? t('common.submitting')
+                                : t('requests.confirmReceived')}
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            onClick={async () => {
+                              try {
+                                await updateBookingMutation.mutateAsync({
+                                  id: selectedBooking.id,
+                                  data: { status: 2 }, // Cancelled
+                                });
+                              } catch (error) {
+                                console.error('Error cancelling booking:', error);
+                              }
+                            }}
+                            disabled={updateBookingMutation.isPending}
+                          >
+                            {updateBookingMutation.isPending
+                              ? t('common.submitting')
+                              : t('requests.cancel')}
+                          </Button>
+
+                          <div className="ml-auto">
+                            <ActionIcon
+                              variant="subtle"
+                              size="lg"
+                              onClick={handleRefreshMessages}
+                              disabled={!selectedBookingId || isFetchingMessages}
+                              aria-label={t('requests.refresh')}
+                            >
+                              <RefreshCw
+                                className={isFetchingMessages ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
+                              />
+                            </ActionIcon>
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                  {/* Action Buttons - For in-progress rentals (owner confirms return) */}
+                  {selectedBooking.status === 6 &&
+                    user?.username !== selectedBooking.user?.username && (
+                      <div className="flex items-center gap-2 mt-4">
+                        <Button
+                          color="teal"
+                          onClick={() => confirmReturnedMutation.mutate(selectedBooking.id)}
+                          disabled={confirmReturnedMutation.isPending}
                         >
-                          <RefreshCw
-                            className={isFetchingMessages ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
-                          />
-                        </ActionIcon>
+                          {confirmReturnedMutation.isPending
+                            ? t('common.submitting')
+                            : t('requests.confirmReturned')}
+                        </Button>
+
+                        <div className="ml-auto">
+                          <ActionIcon
+                            variant="subtle"
+                            size="lg"
+                            onClick={handleRefreshMessages}
+                            disabled={!selectedBookingId || isFetchingMessages}
+                            aria-label={t('requests.refresh')}
+                          >
+                            <RefreshCw
+                              className={isFetchingMessages ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
+                            />
+                          </ActionIcon>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
 
                 {/* Messages Area */}

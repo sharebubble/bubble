@@ -128,29 +128,50 @@ def notify_new_booking(sender, instance: Booking, created, **kwargs):
 
 @receiver(post_save, sender=Booking)
 def update_item_status(sender, instance: Booking, created, **kwargs):
-    """Notify item owners when a new booking is created."""
+    """Keep the item status in sync with booking lifecycle transitions.
+
+    The fulfillment transitions (``IN_PROGRESS`` handover and the ownership
+    transfer on a completed sale) set the item status explicitly in their action
+    handlers and are intentionally not handled here, so this signal never fights
+    those writes.
+    """
     # Get the item
     item: Item = instance.item
 
-    # Booking confirmed, then send the item status to sold
-    if instance.status == BookingStatus.CONFIRMED:
-        if item.sales_type in (SalesType.SELL, SalesType.DONATE, SalesType.WANT_BUY):
-            item.status = ItemStatus.SOLD
-        elif (
-            item.sales_type in (SalesType.RENT, SalesType.BORROW, SalesType.WANT_RENT)
-            and instance.is_active
-        ):
-            item.status = ItemStatus.RENTED
-        item.save(update_fields=["status"])
+    sale_types = (SalesType.SELL, SalesType.DONATE, SalesType.WANT_BUY)
+    rental_types = (SalesType.RENT, SalesType.BORROW, SalesType.WANT_RENT)
+    # Self-service rentals (and "wanted" listings) stay time-driven; everyone
+    # else now goes through the manual handover/return confirmation flow.
+    time_driven = item.rental_self_service or item.sales_type == SalesType.WANT_RENT
 
-    # Booking cancelled or rejected, and item is sold or rented, set available
-    elif instance.status in [
-        BookingStatus.CANCELLED,
-        BookingStatus.REJECTED,
-    ] and item.status in [
-        ItemStatus.SOLD,
-        ItemStatus.RENTED,
-    ]:
-        # If booking is cancelled or rejected, and item is sold or rented, set available
+    if instance.status == BookingStatus.CONFIRMED:
+        if item.sales_type in sale_types:
+            item.status = ItemStatus.SOLD
+            item.save(update_fields=["status"])
+        elif item.sales_type in rental_types:
+            if time_driven:
+                # Legacy behaviour: become RENTED immediately when active,
+                # otherwise leave the status for the periodic task to manage.
+                if instance.is_active:
+                    item.status = ItemStatus.RENTED
+                    item.save(update_fields=["status"])
+            else:
+                # Non-self-service rental: reserved until the booker confirms
+                # they physically received the item.
+                item.status = ItemStatus.RESERVED
+                item.save(update_fields=["status"])
+
+    # Free a still-held item when its booking ends:
+    # - cancelled/rejected from a reserved/sold/rented state, or
+    # - completed while still rented/reserved (a sale completed via the
+    #   ownership transfer is already DRAFT, so it is unaffected; this also
+    #   frees self-service rentals ended via the "End booking" button).
+    elif (
+        instance.status in (BookingStatus.CANCELLED, BookingStatus.REJECTED)
+        and item.status in (ItemStatus.SOLD, ItemStatus.RENTED, ItemStatus.RESERVED)
+    ) or (
+        instance.status == BookingStatus.COMPLETED
+        and item.status in (ItemStatus.RENTED, ItemStatus.RESERVED)
+    ):
         item.status = ItemStatus.AVAILABLE
         item.save(update_fields=["status"])

@@ -4,18 +4,42 @@ import { getCategoryIcon } from '@/lib/categoryIcons';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
-import { getSalesTypeBadgeProps, getStatusMantineColor } from '@/components/items/status';
-import { SalesTypeEnum, StatusB0aEnum } from '@/services/django';
-import { ActionIcon, Badge, Button, Card, Menu, Select, Table, Text, Title } from '@mantine/core';
+import {
+  ACTIVE_STATUSES,
+  ARCHIVED_STATUSES,
+  getSalesTypeBadgeProps,
+  getStatusMantineColor,
+} from '@/components/items/status';
+import { SalesTypeEnum, Status7D3Enum } from '@/services/django';
+import {
+  ActionIcon,
+  Badge,
+  Button,
+  Card,
+  Menu,
+  Select,
+  Table,
+  Tabs,
+  Text,
+  Title,
+} from '@mantine/core';
 import { modals } from '@mantine/modals';
-import { Edit3, Eye, Grid3X3, List, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
+import { Archive, Edit3, Eye, Grid3X3, List, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+
+type ItemsTab = 'active' | 'archived';
 
 const MyItems = () => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const { data: myItemsData, isLoading } = useMyItems();
+  // Sold and archived items live in their own tab so the default view stays
+  // focused on the items still in circulation.
+  const [tab, setTab] = useState<ItemsTab>('active');
+  const { data: myItemsData, isLoading } = useMyItems(
+    undefined,
+    tab === 'archived' ? ARCHIVED_STATUSES : ACTIVE_STATUSES,
+  );
   const items = myItemsData?.results || [];
   const updateStatusMutation = useUpdateItemStatus();
   const deleteItemMutation = useDeleteItem();
@@ -68,10 +92,10 @@ const MyItems = () => {
 
   const handleStatusChange = async (
     itemId: string,
-    newStatus: 'draft' | 'available' | 'reserved' | 'rented' | 'sold',
+    newStatus: 'draft' | 'available' | 'reserved' | 'rented' | 'sold' | 'archived',
   ) => {
-    // Map string status to StatusB0aEnum number
-    let statusEnum: StatusB0aEnum;
+    // Map string status to Status7D3Enum number
+    let statusEnum: Status7D3Enum;
     switch (newStatus) {
       case 'draft':
         statusEnum = 0;
@@ -88,6 +112,9 @@ const MyItems = () => {
       case 'sold':
         statusEnum = 5;
         break;
+      case 'archived':
+        statusEnum = 6;
+        break;
       default:
         statusEnum = 0;
     }
@@ -97,12 +124,16 @@ const MyItems = () => {
 
   const handleStatusSelectChange = (itemId: string, value: string | null) => {
     if (!value) return;
-    const statusMap: Record<string, 'draft' | 'available' | 'reserved' | 'rented' | 'sold'> = {
+    const statusMap: Record<
+      string,
+      'draft' | 'available' | 'reserved' | 'rented' | 'sold' | 'archived'
+    > = {
       '0': 'draft',
       '2': 'available',
       '3': 'reserved',
       '4': 'rented',
       '5': 'sold',
+      '6': 'archived',
     };
     handleStatusChange(itemId, statusMap[value] || 'draft');
   };
@@ -117,6 +148,7 @@ const MyItems = () => {
         { value: '2', label: t('status.available') },
         { value: '3', label: t('status.reserved') },
         { value: '5', label: t('status.sold') },
+        { value: '6', label: t('status.archived') },
       ];
     }
     if (salesType && rentBorrow.includes(salesType)) {
@@ -124,6 +156,7 @@ const MyItems = () => {
         { value: '0', label: t('status.draft') },
         { value: '2', label: t('status.available') },
         { value: '4', label: t('status.rented') },
+        { value: '6', label: t('status.archived') },
       ];
     }
     // fallback: all options
@@ -133,10 +166,11 @@ const MyItems = () => {
       { value: '3', label: t('status.reserved') },
       { value: '4', label: t('status.rented') },
       { value: '5', label: t('status.sold') },
+      { value: '6', label: t('status.archived') },
     ];
   };
 
-  const getStatusText = (status: StatusB0aEnum | undefined) => {
+  const getStatusText = (status: Status7D3Enum | undefined) => {
     switch (status) {
       case 0:
         return t('status.draft');
@@ -148,6 +182,8 @@ const MyItems = () => {
         return t('status.rented');
       case 5:
         return t('status.sold');
+      case 6:
+        return t('status.archived');
       default:
         return t('status.unknown');
     }
@@ -179,14 +215,6 @@ const MyItems = () => {
     </Menu>
   );
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">{t('common.loading')}</div>
-      </div>
-    );
-  }
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-8">
@@ -216,18 +244,35 @@ const MyItems = () => {
         </div>
       </div>
 
-      {items.length === 0 ? (
+      <Tabs
+        value={tab}
+        onChange={value => setTab((value as ItemsTab) ?? 'active')}
+        className="mb-6"
+      >
+        <Tabs.List>
+          <Tabs.Tab value="active">{t('myItems.tabs.active')}</Tabs.Tab>
+          <Tabs.Tab value="archived" leftSection={<Archive size={16} />}>
+            {t('myItems.tabs.archived')}
+          </Tabs.Tab>
+        </Tabs.List>
+      </Tabs>
+
+      {isLoading ? (
+        <div className="text-center py-12">{t('common.loading')}</div>
+      ) : items.length === 0 ? (
         <div className="text-center py-12">
           <div className="max-w-md mx-auto">
             <Title order={3} className="mb-2">
-              {t('myItems.noItems')}
+              {tab === 'archived' ? t('myItems.noArchivedItems') : t('myItems.noItems')}
             </Title>
             <Text c="dimmed" className="mb-6">
-              {t('myItems.createFirst')}
+              {tab === 'archived' ? t('myItems.archivedHint') : t('myItems.createFirst')}
             </Text>
-            <Button leftSection={<Plus size={16} />} onClick={() => navigate('/create-item')}>
-              {t('myItems.shareItem')}
-            </Button>
+            {tab === 'active' && (
+              <Button leftSection={<Plus size={16} />} onClick={() => navigate('/create-item')}>
+                {t('myItems.shareItem')}
+              </Button>
+            )}
           </div>
         </div>
       ) : viewMode === 'list' ? (

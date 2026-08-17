@@ -82,6 +82,23 @@ Backend fullname
 {{- end }}
 
 {{/*
+Backend Django secret — when backend.secrets.existingSecret is set, render a
+secretKeyRef env entry for DJANGO_SECRET_KEY pointing at the external Secret.
+Renders nothing when existingSecret is empty (the chart generates its own
+Secret loaded via envFrom in that case). Usage:
+  {{- include "bubble.backend.djangoSecretEnv" . | nindent 12 }}
+*/}}
+{{- define "bubble.backend.djangoSecretEnv" -}}
+{{- if .Values.backend.secrets.existingSecret }}
+- name: DJANGO_SECRET_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.backend.secrets.existingSecret | quote }}
+      key: {{ (.Values.backend.secrets.existingSecretKey | default "DJANGO_SECRET_KEY") | quote }}
+{{- end }}
+{{- end }}
+
+{{/*
 Worker fullname
 */}}
 {{- define "bubble.worker.fullname" -}}
@@ -199,7 +216,9 @@ PostgreSQL username
 PostgreSQL password secret name
 */}}
 {{- define "bubble.postgresql.secretName" -}}
-{{- if .Values.postgresql.enabled }}
+{{- if .Values.postgresql.auth.existingSecret }}
+{{- .Values.postgresql.auth.existingSecret }}
+{{- else if .Values.postgresql.enabled }}
 {{- include "bubble.fullname" . }}-postgresql
 {{- else if .Values.externalPostgresql.existingSecret }}
 {{- .Values.externalPostgresql.existingSecret }}
@@ -212,7 +231,9 @@ PostgreSQL password secret name
 PostgreSQL password secret key
 */}}
 {{- define "bubble.postgresql.secretKey" -}}
-{{- if .Values.postgresql.enabled -}}
+{{- if .Values.postgresql.auth.existingSecret -}}
+{{- .Values.postgresql.auth.existingSecretPasswordKey -}}
+{{- else if .Values.postgresql.enabled -}}
 password
 {{- else if .Values.externalPostgresql.existingSecret -}}
 {{- .Values.externalPostgresql.existingSecretPasswordKey -}}

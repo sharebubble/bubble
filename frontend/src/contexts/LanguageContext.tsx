@@ -28,6 +28,25 @@ const translations = {
     'header.light': 'Light',
     'header.dark': 'Dark',
 
+    // Mobile bottom navigation
+    'nav.primary': 'Main navigation',
+    'nav.home': 'Home',
+    'nav.search': 'Search',
+    'nav.add': 'Add',
+    'nav.requests': 'Requests',
+    'nav.profile': 'Profile',
+
+    // Account hub (mobile)
+    'account.settings': 'Profile settings',
+
+    // Mobile start page
+    'home.bookingsTitle': 'Your bookings',
+    'home.bookingsSubtitle': 'Latest',
+    'home.noBookings': 'No bookings yet',
+    'header.browse': 'Browse',
+    'home.newestItems': 'Newest items',
+    'home.viewAll': 'View all',
+
     // Search bar / facets
     'search.filterBy': 'Filter by',
     'search.type': 'Type',
@@ -42,7 +61,6 @@ const translations = {
     'search.loading': 'Loading…',
     'search.availability.available': 'Available',
     'search.availability.rented': 'Rented',
-    'search.availability.sold': 'Sold',
     'search.removeFilter': 'Remove filter',
     'search.close': 'Close search',
     'search.price': 'Price',
@@ -324,6 +342,8 @@ const translations = {
     'booking.errorCreate': 'Failed to create booking request. Please try again.',
     'booking.successUpdated': 'Booking updated successfully!',
     'booking.errorUpdate': 'Failed to update booking. Please try again.',
+    'booking.successReceived': 'Receipt confirmed.',
+    'booking.successReturned': 'Return confirmed. The rental is complete.',
     'requests.acceptWarningTitle': 'Confirm acceptance',
     'requests.acceptWarningDescription':
       'You are accepting an offer of {amount}. This will be finalized when the request is confirmed.',
@@ -385,7 +405,10 @@ const translations = {
     'requests.status.accepted': 'Accepted',
     'requests.status.rejected': 'Rejected',
     'requests.status.completed': 'Completed',
+    'requests.status.inProgress': 'In Progress',
     'requests.status.unknown': 'Unknown',
+    'requests.confirmReceived': 'Confirm received',
+    'requests.confirmReturned': 'Confirm returned',
 
     // Bookings page
     'bookings.title': 'My Bookings',
@@ -450,10 +473,48 @@ const translations = {
     'itemDetail.closeViewer': 'Close image viewer',
     'itemDetail.goToImage': 'Go to image',
 
+    // Comments & ratings
+    'comments.title': 'Comments & Ratings',
+    'comments.seeComments': 'See comments ({count})',
+    'comments.ratingCount': '{count} ratings',
+    'comments.noRatings': 'No ratings yet',
+    'comments.addTitle': 'Share your experience',
+    'comments.yourRating': 'Your rating',
+    'comments.placeholder': 'Ask a question or share your experience with this item...',
+    'comments.submit': 'Post comment',
+    'comments.empty': 'No comments yet. Be the first to comment!',
+    'comments.loginToComment': 'Please log in to leave a comment.',
+    'comments.added': 'Comment posted',
+    'comments.addError': 'Could not post your comment.',
+    'comments.deleted': 'Comment deleted',
+    'comments.deleteError': 'Could not delete the comment.',
+
+    // Item booking history
+    'itemBookings.title': 'Booking history',
+    'itemBookings.viewHistory': 'Booking history',
+    'itemBookings.empty': 'This item has no past bookings yet.',
+    'itemBookings.loadError': 'Could not load the booking history.',
+    'itemBookings.period': 'Period',
+    'itemBookings.duration': 'Duration',
+    'itemBookings.status': 'Status',
+    'itemBookings.officialPrice': 'Official price',
+    'itemBookings.paid': 'Paid',
+    'itemBookings.booker': 'Booked by',
+    'itemBookings.openEnded': 'Open-ended',
+    'itemBookings.previousRentals': 'Previous rentals',
+    'itemBookings.noPreviousRentals': 'This item has not been rented yet.',
+    'itemBookings.anonymousBooker': 'Someone',
+    'itemBookings.seeAll': 'See all bookings ({count})',
+
     // My Items
     'myItems.title': 'My Items',
     'myItems.noItems': 'No items yet',
     'myItems.createFirst': 'Create your first item to get started!',
+    'myItems.noArchivedItems': 'Nothing archived yet',
+    'myItems.archivedHint':
+      'Items you mark as sold or archived move here and stop showing up in browse.',
+    'myItems.tabs.active': 'Active',
+    'myItems.tabs.archived': 'Archived',
     'myItems.shareItem': 'Share Item',
     'myItems.status': 'Status',
     'myItems.changeStatus': 'Change Status',
@@ -465,6 +526,7 @@ const translations = {
     'status.reserved': 'Reserved',
     'status.rented': 'Rented',
     'status.sold': 'Gone',
+    'status.archived': 'Archived',
     'status.unknown': 'Unknown',
     // Profile
     'profile.title': 'Profile Settings',
@@ -650,6 +712,12 @@ const translations = {
     'calendar.hide': 'Hide',
     'calendar.secretHint': 'Anyone with this link can view the calendar — keep it private.',
     'calendar.loadError': 'Could not load the calendar link.',
+
+    // Sharing
+    'share.share': 'Share',
+    'share.copyLink': 'Copy link',
+    'share.copied': 'Link copied to clipboard',
+    'share.failed': 'Could not copy the link',
   },
   de: {
     // Header
@@ -663,6 +731,25 @@ const translations = {
     'header.theme': 'Design',
     'header.light': 'Hell',
     'header.dark': 'Dunkel',
+
+    // Mobile bottom navigation
+    'nav.primary': 'Hauptnavigation',
+    'nav.home': 'Start',
+    'nav.search': 'Suche',
+    'nav.add': 'Einstellen',
+    'nav.requests': 'Anfragen',
+    'nav.profile': 'Profil',
+
+    // Account hub (mobile)
+    'account.settings': 'Profileinstellungen',
+
+    // Mobile start page
+    'home.bookingsTitle': 'Deine Buchungen',
+    'home.bookingsSubtitle': 'Neueste',
+    'home.noBookings': 'Noch keine Buchungen',
+    'header.browse': 'Entdecken',
+    'home.newestItems': 'Neueste Artikel',
+    'home.viewAll': 'Alle ansehen',
 
     // Search bar / facets
     'search.filterBy': 'Filtern nach',
@@ -678,7 +765,6 @@ const translations = {
     'search.loading': 'Wird geladen…',
     'search.availability.available': 'Verfügbar',
     'search.availability.rented': 'Vermietet',
-    'search.availability.sold': 'Verkauft',
     'search.removeFilter': 'Filter entfernen',
     'search.close': 'Suche schließen',
     'search.price': 'Preis',
@@ -969,6 +1055,8 @@ const translations = {
     'booking.errorCreate':
       'Erstellen der Buchungsanfrage fehlgeschlagen. Bitte versuche es erneut.',
     'booking.successUpdated': 'Buchung erfolgreich aktualisiert!',
+    'booking.successReceived': 'Erhalt bestätigt.',
+    'booking.successReturned': 'Rückgabe bestätigt. Die Vermietung ist abgeschlossen.',
     'booking.errorUpdate': 'Aktualisierung der Buchung fehlgeschlagen. Bitte versuche es erneut.',
     'requests.acceptWarningTitle': 'Bestätigung erforderlich',
     'requests.acceptWarningDescription':
@@ -1033,7 +1121,10 @@ const translations = {
     'requests.status.accepted': 'Angenommen',
     'requests.status.rejected': 'Abgelehnt',
     'requests.status.completed': 'Abgeschlossen',
+    'requests.status.inProgress': 'In Bearbeitung',
     'requests.status.unknown': 'Unbekannt',
+    'requests.confirmReceived': 'Erhalt bestätigen',
+    'requests.confirmReturned': 'Rückgabe bestätigen',
 
     // Bookings page
     'bookings.title': 'Meine Buchungen',
@@ -1098,10 +1189,48 @@ const translations = {
     'itemDetail.closeViewer': 'Bildansicht schließen',
     'itemDetail.goToImage': 'Zu Bild springen',
 
+    // Comments & ratings
+    'comments.title': 'Kommentare & Bewertungen',
+    'comments.seeComments': 'Kommentare ansehen ({count})',
+    'comments.ratingCount': '{count} Bewertungen',
+    'comments.noRatings': 'Noch keine Bewertungen',
+    'comments.addTitle': 'Teile deine Erfahrung',
+    'comments.yourRating': 'Deine Bewertung',
+    'comments.placeholder': 'Stelle eine Frage oder teile deine Erfahrung mit diesem Artikel...',
+    'comments.submit': 'Kommentar posten',
+    'comments.empty': 'Noch keine Kommentare. Sei der Erste!',
+    'comments.loginToComment': 'Bitte melde dich an, um einen Kommentar zu hinterlassen.',
+    'comments.added': 'Kommentar veröffentlicht',
+    'comments.addError': 'Kommentar konnte nicht veröffentlicht werden.',
+    'comments.deleted': 'Kommentar gelöscht',
+    'comments.deleteError': 'Kommentar konnte nicht gelöscht werden.',
+
+    // Item booking history
+    'itemBookings.title': 'Buchungsverlauf',
+    'itemBookings.viewHistory': 'Buchungsverlauf',
+    'itemBookings.empty': 'Dieser Artikel hat noch keine vergangenen Buchungen.',
+    'itemBookings.loadError': 'Buchungsverlauf konnte nicht geladen werden.',
+    'itemBookings.period': 'Zeitraum',
+    'itemBookings.duration': 'Dauer',
+    'itemBookings.status': 'Status',
+    'itemBookings.officialPrice': 'Offizieller Preis',
+    'itemBookings.paid': 'Bezahlt',
+    'itemBookings.booker': 'Gebucht von',
+    'itemBookings.openEnded': 'Unbefristet',
+    'itemBookings.previousRentals': 'Frühere Vermietungen',
+    'itemBookings.noPreviousRentals': 'Dieser Artikel wurde noch nicht vermietet.',
+    'itemBookings.anonymousBooker': 'Jemand',
+    'itemBookings.seeAll': 'Alle Buchungen ansehen ({count})',
+
     // My Items
     'myItems.title': 'Meine Artikel',
     'myItems.noItems': 'Noch keine Artikel',
     'myItems.createFirst': 'Erstelle deinen ersten Artikel um loszulegen!',
+    'myItems.noArchivedItems': 'Noch nichts archiviert',
+    'myItems.archivedHint':
+      'Artikel, die du als vergeben oder archiviert markierst, landen hier und erscheinen nicht mehr in der Suche.',
+    'myItems.tabs.active': 'Aktiv',
+    'myItems.tabs.archived': 'Archiviert',
     'myItems.shareItem': 'Artikel teilen',
     'myItems.status': 'Status',
     'myItems.changeStatus': 'Status ändern',
@@ -1113,6 +1242,7 @@ const translations = {
     'status.reserved': 'Reserviert',
     'status.rented': 'Vermietet',
     'status.sold': 'Vergeben',
+    'status.archived': 'Archiviert',
     'status.unknown': 'Unbekannt',
     // Profile
     'profile.title': 'Profileinstellungen',
@@ -1301,6 +1431,12 @@ const translations = {
     'calendar.hide': 'Ausblenden',
     'calendar.secretHint': 'Jeder mit diesem Link kann den Kalender sehen — halte ihn privat.',
     'calendar.loadError': 'Kalender-Link konnte nicht geladen werden.',
+
+    // Teilen
+    'share.share': 'Teilen',
+    'share.copyLink': 'Link kopieren',
+    'share.copied': 'Link in die Zwischenablage kopiert',
+    'share.failed': 'Link konnte nicht kopiert werden',
   },
 };
 

@@ -3,12 +3,15 @@
 from datetime import timedelta
 from decimal import Decimal
 
+import pytest
 from django.contrib.auth.models import Group
+from django.db import IntegrityError, transaction
 from django.utils import timezone
+from guardian.shortcuts import assign_perm, get_users_with_perms
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
-from bubble.bookings.models import Booking, BookingStatus
+from bubble.bookings.models import Booking, BookingStatus, Message
 from bubble.bookings.tests.factories import (
     BookingFactory,
     ItemFactory,
@@ -636,11 +639,53 @@ class BookingItemStatusSignalTestCase(APITestCase):
         item.refresh_from_db()
         assert item.status == ItemStatus.SOLD
 
-    # --- CONFIRMED + rental-like + is_active=True → RENTED ---
+    # --- CONFIRMED + non-self-service rental → RESERVED (awaiting handover) ---
 
-    def test_confirmed_rent_booking_active_sets_item_rented(self):
-        """Confirming an active RENT booking sets item status to RENTED."""
+    def test_confirmed_rent_booking_sets_item_reserved(self):
+        """Confirming a non-self-service RENT booking reserves the item.
+
+        RENTED is now gated on the booker confirming handover, so confirmation
+        alone only moves the item to RESERVED.
+        """
         item = ItemFactory(
+            user=self.item_owner, sales_type=SalesType.RENT, price="10.00"
+        )
+        booking = BookingFactory(
+            user=self.booking_user,
+            item=item,
+            status=BookingStatus.PENDING,
+            time_from=timezone.now() - timedelta(hours=1),
+            time_to=timezone.now() + timedelta(hours=1),
+        )
+
+        booking.status = BookingStatus.CONFIRMED
+        booking.save()
+
+        item.refresh_from_db()
+        assert item.status == ItemStatus.RESERVED
+
+    def test_confirmed_borrow_booking_sets_item_reserved(self):
+        """Confirming a non-self-service BORROW booking reserves the item."""
+        item = ItemFactory(
+            user=self.item_owner, sales_type=SalesType.BORROW, price=None
+        )
+        booking = BookingFactory(
+            user=self.booking_user,
+            item=item,
+            status=BookingStatus.PENDING,
+            time_from=timezone.now() - timedelta(hours=1),
+            time_to=timezone.now() + timedelta(hours=1),
+        )
+
+        booking.status = BookingStatus.CONFIRMED
+        booking.save()
+
+        item.refresh_from_db()
+        assert item.status == ItemStatus.RESERVED
+
+    def test_confirmed_self_service_rent_active_sets_item_rented(self):
+        """A self-service rental stays time-driven: active confirm → RENTED."""
+        item = SelfServiceItemFactory(
             user=self.item_owner, sales_type=SalesType.RENT, price="10.00"
         )
         booking = BookingFactory(
@@ -657,27 +702,8 @@ class BookingItemStatusSignalTestCase(APITestCase):
         item.refresh_from_db()
         assert item.status == ItemStatus.RENTED
 
-    def test_confirmed_borrow_booking_active_sets_item_rented(self):
-        """Confirming an active BORROW booking sets item status to RENTED."""
-        item = ItemFactory(
-            user=self.item_owner, sales_type=SalesType.BORROW, price=None
-        )
-        booking = BookingFactory(
-            user=self.booking_user,
-            item=item,
-            status=BookingStatus.PENDING,
-            time_from=timezone.now() - timedelta(hours=1),
-            time_to=timezone.now() + timedelta(hours=1),
-        )
-
-        booking.status = BookingStatus.CONFIRMED
-        booking.save()
-
-        item.refresh_from_db()
-        assert item.status == ItemStatus.RENTED
-
     def test_confirmed_want_rent_booking_active_sets_item_rented(self):
-        """Confirming an active WANT_RENT booking sets item status to RENTED."""
+        """WANT_RENT stays time-driven: confirming an active booking → RENTED."""
         item = ItemFactory(
             user=self.item_owner, sales_type=SalesType.WANT_RENT, price=None
         )
@@ -695,10 +721,10 @@ class BookingItemStatusSignalTestCase(APITestCase):
         item.refresh_from_db()
         assert item.status == ItemStatus.RENTED
 
-    # --- CONFIRMED + rental-like + is_active=False → status unchanged ---
+    # --- CONFIRMED + non-self-service rental + inactive → still RESERVED ---
 
-    def test_confirmed_rent_booking_inactive_does_not_change_item_status(self):
-        """Confirming an inactive RENT booking (future) does not set item to RENTED."""
+    def test_confirmed_rent_booking_inactive_sets_item_reserved(self):
+        """Confirming a future non-self-service RENT booking reserves the item."""
         item = ItemFactory(
             user=self.item_owner,
             sales_type=SalesType.RENT,
@@ -717,7 +743,7 @@ class BookingItemStatusSignalTestCase(APITestCase):
         booking.save()
 
         item.refresh_from_db()
-        assert item.status == ItemStatus.AVAILABLE
+        assert item.status == ItemStatus.RESERVED
 
     # --- CANCELLED/REJECTED from SOLD/RENTED → AVAILABLE ---
 
@@ -756,6 +782,46 @@ class BookingItemStatusSignalTestCase(APITestCase):
         )
 
         booking.status = BookingStatus.REJECTED
+        booking.save()
+
+        item.refresh_from_db()
+        assert item.status == ItemStatus.AVAILABLE
+
+    def test_cancelled_booking_resets_reserved_item_to_available(self):
+        """Cancelling a booking on a RESERVED item resets it to AVAILABLE."""
+        item = ItemFactory(
+            user=self.item_owner,
+            sales_type=SalesType.RENT,
+            price="10.00",
+            status=ItemStatus.RESERVED,
+        )
+        booking = BookingFactory(
+            user=self.booking_user,
+            item=item,
+            status=BookingStatus.CONFIRMED,
+        )
+
+        booking.status = BookingStatus.CANCELLED
+        booking.save()
+
+        item.refresh_from_db()
+        assert item.status == ItemStatus.AVAILABLE
+
+    def test_completed_booking_frees_rented_item(self):
+        """Completing a booking frees a still-RENTED item back to AVAILABLE."""
+        item = ItemFactory(
+            user=self.item_owner,
+            sales_type=SalesType.RENT,
+            price="10.00",
+            status=ItemStatus.RENTED,
+        )
+        booking = BookingFactory(
+            user=self.booking_user,
+            item=item,
+            status=BookingStatus.IN_PROGRESS,
+        )
+
+        booking.status = BookingStatus.COMPLETED
         booking.save()
 
         item.refresh_from_db()
@@ -1449,3 +1515,233 @@ class BookingAutoConfirmRentalPeriodTestCase(APITestCase):
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["status"] == BookingStatus.CONFIRMED
+
+
+class BookingFulfillmentTestCase(APITestCase):
+    """Test the confirm_received / confirm_returned fulfillment actions."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.default_group, _ = Group.objects.get_or_create(name=DefaultGroup.DEFAULT)
+
+        self.item_owner = UserFactory()
+        self.item_owner.groups.add(self.default_group)
+
+        self.booking_user = UserFactory()
+        self.booking_user.groups.add(self.default_group)
+
+    def _confirmed_booking(self, **item_kwargs):
+        item = ItemFactory(user=self.item_owner, **item_kwargs)
+        booking = BookingFactory(
+            user=self.booking_user, item=item, status=BookingStatus.CONFIRMED
+        )
+        return item, booking
+
+    # --- Sale handover: ownership transfer ---
+
+    def test_buyer_confirm_received_transfers_sale_item(self):
+        """Buyer confirming receipt of a SELL item transfers ownership."""
+        item, booking = self._confirmed_booking(
+            sales_type=SalesType.SELL, price="50.00", status=ItemStatus.SOLD
+        )
+        # Pre-existing co-owner that must be cleared on transfer.
+        co_owner = UserFactory()
+        assign_perm("items.change_item", co_owner, item)
+
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.post(f"/api/bookings/{booking.id}/confirm_received/")
+
+        assert response.status_code == status.HTTP_200_OK, response.content
+        assert response.data["status"] == BookingStatus.COMPLETED
+
+        booking.refresh_from_db()
+        item.refresh_from_db()
+        assert booking.status == BookingStatus.COMPLETED
+        # The hand-over is recorded as a message by the confirming user.
+        assert Message.objects.filter(
+            booking=booking, sender=self.booking_user
+        ).exists()
+        assert item.user == self.booking_user
+        assert item.status == ItemStatus.DRAFT
+
+        # New owner has full perms; previous owner/co-owner have none.
+        perms = get_users_with_perms(item, attach_perms=True, with_group_users=False)
+        assert self.booking_user in perms
+        assert {"view_item", "change_item", "delete_item"} <= set(
+            perms[self.booking_user]
+        )
+        assert self.item_owner not in perms
+        assert co_owner not in perms
+
+    def test_non_buyer_cannot_confirm_received(self):
+        """Only the booker may confirm a sale was received."""
+        _item, booking = self._confirmed_booking(
+            sales_type=SalesType.SELL, price="50.00", status=ItemStatus.SOLD
+        )
+        self.client.force_authenticate(user=self.item_owner)
+        response = self.client.post(f"/api/bookings/{booking.id}/confirm_received/")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        booking.refresh_from_db()
+        assert booking.status == BookingStatus.CONFIRMED
+
+    def test_confirm_received_requires_confirmed_status(self):
+        """confirm_received is rejected unless the booking is CONFIRMED."""
+        item = ItemFactory(
+            user=self.item_owner, sales_type=SalesType.SELL, price="5.00"
+        )
+        booking = BookingFactory(
+            user=self.booking_user, item=item, status=BookingStatus.PENDING
+        )
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.post(f"/api/bookings/{booking.id}/confirm_received/")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_want_buy_confirm_received_unsupported(self):
+        """Fulfillment is not offered for 'wanted' listings."""
+        _item, booking = self._confirmed_booking(
+            sales_type=SalesType.WANT_BUY, price=None, status=ItemStatus.SOLD
+        )
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.post(f"/api/bookings/{booking.id}/confirm_received/")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    # --- Rental handover + return ---
+
+    def test_rental_handover_then_return_flow(self):
+        """Buyer confirms receipt (→ RENTED/IN_PROGRESS), owner confirms return."""
+        item, booking = self._confirmed_booking(
+            sales_type=SalesType.RENT,
+            price="10.00",
+            status=ItemStatus.RESERVED,
+            rental_open_end=True,
+        )
+
+        # Booker confirms receipt → rental starts.
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.post(f"/api/bookings/{booking.id}/confirm_received/")
+        assert response.status_code == status.HTTP_200_OK, response.content
+
+        booking.refresh_from_db()
+        item.refresh_from_db()
+        assert booking.status == BookingStatus.IN_PROGRESS
+        # The hand-over is recorded as a message by the booker.
+        assert Message.objects.filter(
+            booking=booking, sender=self.booking_user
+        ).exists()
+        assert item.status == ItemStatus.RENTED
+
+        # Owner confirms the item came back → rental completed.
+        self.client.force_authenticate(user=self.item_owner)
+        response = self.client.post(f"/api/bookings/{booking.id}/confirm_returned/")
+        assert response.status_code == status.HTTP_200_OK, response.content
+
+        booking.refresh_from_db()
+        item.refresh_from_db()
+        assert booking.status == BookingStatus.COMPLETED
+        # The return is recorded as a message by the owner.
+        assert Message.objects.filter(booking=booking, sender=self.item_owner).exists()
+        assert item.status == ItemStatus.AVAILABLE
+
+    def test_co_owner_can_confirm_returned(self):
+        """A co-owner (change_item holder) may confirm a return."""
+        item = ItemFactory(
+            user=self.item_owner,
+            sales_type=SalesType.RENT,
+            price="10.00",
+            status=ItemStatus.RENTED,
+            rental_open_end=True,
+        )
+        booking = BookingFactory(
+            user=self.booking_user, item=item, status=BookingStatus.IN_PROGRESS
+        )
+        co_owner = UserFactory()
+        co_owner.groups.add(self.default_group)
+        assign_perm("items.change_item", co_owner, item)
+
+        self.client.force_authenticate(user=co_owner)
+        response = self.client.post(f"/api/bookings/{booking.id}/confirm_returned/")
+
+        assert response.status_code == status.HTTP_200_OK, response.content
+        booking.refresh_from_db()
+        item.refresh_from_db()
+        assert booking.status == BookingStatus.COMPLETED
+        assert item.status == ItemStatus.AVAILABLE
+
+    def test_booker_cannot_confirm_returned(self):
+        """The booker cannot confirm the return — that is the owner's step."""
+        item = ItemFactory(
+            user=self.item_owner,
+            sales_type=SalesType.RENT,
+            price="10.00",
+            status=ItemStatus.RENTED,
+            rental_open_end=True,
+        )
+        booking = BookingFactory(
+            user=self.booking_user, item=item, status=BookingStatus.IN_PROGRESS
+        )
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.post(f"/api/bookings/{booking.id}/confirm_returned/")
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        booking.refresh_from_db()
+        assert booking.status == BookingStatus.IN_PROGRESS
+
+    def test_confirm_returned_requires_in_progress(self):
+        """confirm_returned is rejected unless the booking is IN_PROGRESS."""
+        _item, booking = self._confirmed_booking(
+            sales_type=SalesType.RENT,
+            price="10.00",
+            status=ItemStatus.RESERVED,
+            rental_open_end=True,
+        )
+        self.client.force_authenticate(user=self.item_owner)
+        response = self.client.post(f"/api/bookings/{booking.id}/confirm_returned/")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_in_progress_rental_blocks_overlapping_confirmed_booking(self):
+        """An IN_PROGRESS rental still reserves its slot via the exclusion rule."""
+        now = timezone.now()
+        item = ItemFactory(
+            user=self.item_owner,
+            sales_type=SalesType.RENT,
+            price="10.00",
+            status=ItemStatus.RENTED,
+        )
+        BookingFactory(
+            user=self.booking_user,
+            item=item,
+            status=BookingStatus.IN_PROGRESS,
+            time_from=now,
+            time_to=now + timedelta(hours=2),
+        )
+
+        other_user = UserFactory()
+        other_user.groups.add(self.default_group)
+        with transaction.atomic(), pytest.raises(IntegrityError):
+            BookingFactory(
+                user=other_user,
+                item=item,
+                status=BookingStatus.CONFIRMED,
+                time_from=now + timedelta(hours=1),
+                time_to=now + timedelta(hours=3),
+            )
+
+    def test_buyer_cannot_patch_status_to_completed(self):
+        """The booker cannot bypass the handover flow by PATCHing COMPLETED."""
+        _item, booking = self._confirmed_booking(
+            sales_type=SalesType.SELL, price="50.00", status=ItemStatus.SOLD
+        )
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.patch(
+            f"/api/bookings/{booking.id}/",
+            {"status": BookingStatus.COMPLETED},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        booking.refresh_from_db()
+        assert booking.status == BookingStatus.CONFIRMED

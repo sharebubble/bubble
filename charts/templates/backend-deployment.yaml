@@ -35,10 +35,13 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "bubble.fullname" . }}-backend
+            {{- if not .Values.backend.secrets.existingSecret }}
             - secretRef:
                 name: {{ include "bubble.fullname" . }}-backend
+            {{- end }}
             {{- include "bubble.secretsFrom" . | nindent 12 }}
           env:
+            {{- include "bubble.backend.djangoSecretEnv" . | nindent 12 }}
             - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -56,10 +59,13 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "bubble.fullname" . }}-backend
+            {{- if not .Values.backend.secrets.existingSecret }}
             - secretRef:
                 name: {{ include "bubble.fullname" . }}-backend
+            {{- end }}
             {{- include "bubble.secretsFrom" . | nindent 12 }}
           env:
+            {{- include "bubble.backend.djangoSecretEnv" . | nindent 12 }}
             - name: DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -81,10 +87,13 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "bubble.fullname" . }}-backend
+            {{- if not .Values.backend.secrets.existingSecret }}
             - secretRef:
                 name: {{ include "bubble.fullname" . }}-backend
+            {{- end }}
             {{- include "bubble.secretsFrom" . | nindent 12 }}
           env:
+            {{- include "bubble.backend.djangoSecretEnv" . | nindent 12 }}
             - name: POD_IP
               valueFrom:
                 fieldRef:

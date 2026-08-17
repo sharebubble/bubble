@@ -2,7 +2,7 @@ import uuid
 from pathlib import Path
 
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from djmoney.models.fields import MoneyField
@@ -33,10 +33,27 @@ class ItemStatus(models.IntegerChoices):
     RESERVED = 3, _("Reserved")
     RENTED = 4, _("Rented")
     SOLD = 5, _("Sold")
+    ARCHIVED = 6, _("Archived")
 
     @classmethod
     def published(cls):
-        return (cls.AVAILABLE, cls.RESERVED, cls.RENTED, cls.SOLD)
+        """Statuses that make an item browsable in the public listings.
+
+        Sold and archived items are deliberately excluded: once an item is
+        gone it should no longer show up as something others can get. Their
+        owner still sees them under the archive section of their own list.
+        """
+        return (cls.AVAILABLE, cls.RESERVED, cls.RENTED)
+
+    @classmethod
+    def archived(cls):
+        """Statuses that retire an item from circulation.
+
+        A sold item is archived implicitly — the sale is what took it out of
+        circulation — while ``ARCHIVED`` lets an owner retire an item that was
+        never sold (lost, worn out, or simply no longer shared).
+        """
+        return (cls.SOLD, cls.ARCHIVED)
 
     @classmethod
     def for_sales_type(cls, sales_type: str) -> tuple:
@@ -44,9 +61,15 @@ class ItemStatus(models.IntegerChoices):
         sell_donate_types = ("sell", "donate", "want_buy")
         rent_borrow_types = ("rent", "borrow", "want_rent")
         if sales_type in sell_donate_types:
-            return (cls.DRAFT, cls.AVAILABLE, cls.RESERVED, cls.SOLD)
+            return (cls.DRAFT, cls.AVAILABLE, cls.RESERVED, cls.SOLD, cls.ARCHIVED)
         if sales_type in rent_borrow_types:
-            return (cls.DRAFT, cls.AVAILABLE, cls.RENTED)
+            return (
+                cls.DRAFT,
+                cls.AVAILABLE,
+                cls.RESERVED,
+                cls.RENTED,
+                cls.ARCHIVED,
+            )
         return tuple(cls.values)
 
 
@@ -160,6 +183,37 @@ class ItemManager(models.Manager):
     def published(self) -> models.QuerySet:
         """Return a queryset of published items."""
         return self.filter(status__in=ItemStatus.published())
+
+    def visible_to(self, user) -> models.QuerySet:
+        """Return published items the given user is allowed to view.
+
+        Mirrors the visibility rules of the public items endpoint:
+        - PUBLIC: visible to everyone (incl. anonymous).
+        - AUTHENTICATED: visible to any logged-in user.
+        - SPECIFIC / PRIVATE: only when the user holds explicit view_item.
+        """
+        from constance import config  # noqa: PLC0415
+
+        base_qs = self.published()
+
+        if not user or not user.is_authenticated:
+            if config.REQUIRE_LOGIN:
+                return base_qs.none()
+            return base_qs.filter(visibility=VisibilityType.PUBLIC)
+
+        explicitly_visible = get_objects_for_user(
+            user,
+            "items.view_item",
+            accept_global_perms=False,
+        ).values_list("pk", flat=True)
+
+        return base_qs.filter(
+            models.Q(
+                visibility__in=[VisibilityType.PUBLIC, VisibilityType.AUTHENTICATED]
+            )
+            | models.Q(visibility=VisibilityType.SPECIFIC, pk__in=explicitly_visible)
+            | models.Q(visibility=VisibilityType.PRIVATE, pk__in=explicitly_visible)
+        )
 
     def get_for_user(self, user) -> models.QuerySet:
         """Return a queryset filtered by user permissions."""
@@ -393,6 +447,30 @@ class Item(models.Model):
             images = self.images.all()
             return images[0] if images else None
         return self.images.order_by("ordering").first()
+
+    def transfer_ownership(self, new_owner):
+        """Transfer the item to ``new_owner`` after a completed sale.
+
+        Clears every existing object-level permission (old owner, co-owners and
+        specific viewers), assigns the new owner full permissions, resets the
+        item to a fresh ``DRAFT`` listing and removes it from federation. The new
+        owner can then re-list it as their own.
+        """
+        with transaction.atomic():
+            ItemUserObjectPermission.objects.filter(content_object=self).delete()
+            ItemGroupObjectPermission.objects.filter(content_object=self).delete()
+
+            self.user = new_owner
+            self.status = ItemStatus.DRAFT
+            self.publish_notification_sent = False
+            self.federation_visibility = "local_only"
+            self.save()
+
+            app_label = self._meta.app_label
+            model_name = self._meta.model_name
+            assign_perm(f"{app_label}.view_{model_name}", new_owner, obj=self)
+            assign_perm(f"{app_label}.change_{model_name}", new_owner, obj=self)
+            assign_perm(f"{app_label}.delete_{model_name}", new_owner, obj=self)
 
 
 class ItemUserObjectPermission(UserObjectPermissionBase):

@@ -15,15 +15,18 @@ logger = logging.getLogger(__name__)
 
 @periodic_task(crontab(minute="*/10"))
 def check_bookings_active() -> None:
-    """Periodic task: ensure items reflect active/ended bookings.
+    """Periodic task: keep self-service rentals in sync with their schedule.
 
-    Runs every 10 minutes. For confirmed bookings that are currently active
-    (time_from <= now <= time_to or time_to is null), set the linked item
-    to ItemStatus.RENTED if it is currently AVAILABLE.
+    Runs every 10 minutes. Only self-service items are time-driven; every other
+    item now relies on the explicit handover/return confirmation flow, so this
+    task must never touch non-self-service items.
 
-    For bookings that were confirmed but are no longer active (time_to < now),
-    if the linked item has no other active confirmed bookings, set it back to
-    ItemStatus.AVAILABLE (only if currently RENTED).
+    For confirmed bookings on self-service items that are currently active
+    (time_from <= now <= time_to or time_to is null), set the linked item to
+    ItemStatus.RENTED if it is currently AVAILABLE/RESERVED.
+
+    For self-service items that are RENTED but have no remaining active confirmed
+    booking (time_to < now), set them back to ItemStatus.AVAILABLE.
     """
     now = timezone.now()
     logger.debug("Running check_bookings_active task at %s", now)
@@ -38,9 +41,10 @@ def check_bookings_active() -> None:
     active_item_ids_qs = Booking.objects.filter(active_q).values_list(
         "item_id", flat=True
     )
-    # Set items that are AVAILABLE -> RENTED
+    # Set self-service items that are AVAILABLE/RESERVED -> RENTED
     updated = Item.objects.filter(
         id__in=active_item_ids_qs,
+        rental_self_service=True,
         status__in=[ItemStatus.AVAILABLE, ItemStatus.RESERVED],
     )
     for item in updated:
@@ -50,9 +54,9 @@ def check_bookings_active() -> None:
 
     # Annotate with active_booking_count per item (uses related_name 'bookings')
     active_bookings = Booking.objects.filter(active_q, item=OuterRef("pk"))
-    items_to_free_qs = Item.objects.filter(status=ItemStatus.RENTED).filter(
-        ~Exists(active_bookings)
-    )
+    items_to_free_qs = Item.objects.filter(
+        status=ItemStatus.RENTED, rental_self_service=True
+    ).filter(~Exists(active_bookings))
 
     for item in items_to_free_qs:
         item.status = ItemStatus.AVAILABLE

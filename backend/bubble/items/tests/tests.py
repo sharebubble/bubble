@@ -1303,12 +1303,12 @@ class PublicItemFacetTestCase(TestCase):
             visibility=VisibilityType.PUBLIC,
             category="books",
         )
-        # bob: a sold tool, plus a draft that must never count.
+        # bob: a rented-out tool, plus a draft that must never count.
         self.bob_tool = Item.objects.create(
             name="Bob Wrench",
             user=self.bob,
-            sales_type=SalesType.SELL,
-            status=ItemStatus.SOLD,
+            sales_type=SalesType.RENT,
+            status=ItemStatus.RENTED,
             visibility=VisibilityType.PUBLIC,
             category="tools",
         )
@@ -1354,12 +1354,12 @@ class PublicItemFacetTestCase(TestCase):
 
         assert self._by(data["categories"], "category") == {"tools": 2, "books": 1}
         assert self._by(data["owners"], "username") == {"alice": 2, "bob": 1}
-        # available: both alice items; sold: bob's tool; drafts excluded.
-        assert self._by(data["availability"], "value") == {"available": 2, "sold": 1}
+        # available: both alice items; rented: bob's tool; drafts excluded.
+        assert self._by(data["availability"], "value") == {"available": 2, "rented": 1}
         assert self._by(data["collections"], "name") == {"Favorite Tools": 2}
         assert data["collections"][0]["owner"] == "alice"
-        # all three published items are SELL → the "buy" type preset.
-        assert self._by(data["types"], "value") == {"buy": 3}
+        # alice's two SELL items map to "buy", bob's RENT tool to "rent".
+        assert self._by(data["types"], "value") == {"buy": 2, "rent": 1}
 
     def test_facets_type_counts_and_cross_filter(self):
         """The type facet counts items per preset and cross-filters the rest."""
@@ -1373,17 +1373,18 @@ class PublicItemFacetTestCase(TestCase):
             category="tools",
         )
 
-        # Unfiltered: three SELL items map to "buy", one RENT item to "rent".
+        # Unfiltered: alice's two SELL items map to "buy", the two RENT items
+        # (bob's rented tool and alice's new drill) to "rent".
         data = self._facets()
-        assert self._by(data["types"], "value") == {"buy": 3, "rent": 1}
+        assert self._by(data["types"], "value") == {"buy": 2, "rent": 2}
 
-        # Selecting type=rent narrows the other facets to the rental only, while
+        # Selecting type=rent narrows the other facets to the rentals only, while
         # the type facet itself still offers every type (excludes its own filter).
         data = self._facets(type="rent")
-        assert self._by(data["types"], "value") == {"buy": 3, "rent": 1}
-        assert self._by(data["categories"], "category") == {"tools": 1}
-        assert self._by(data["owners"], "username") == {"alice": 1}
-        assert self._by(data["availability"], "value") == {"available": 1}
+        assert self._by(data["types"], "value") == {"buy": 2, "rent": 2}
+        assert self._by(data["categories"], "category") == {"tools": 2}
+        assert self._by(data["owners"], "username") == {"alice": 1, "bob": 1}
+        assert self._by(data["availability"], "value") == {"available": 1, "rented": 1}
 
     def test_facets_cross_filter_by_collection(self):
         """Selecting a collection narrows the other facets to its items."""
@@ -1403,7 +1404,7 @@ class PublicItemFacetTestCase(TestCase):
         # Category facet keeps every category so the choice can be changed.
         assert self._by(data["categories"], "category") == {"tools": 2, "books": 1}
         assert self._by(data["owners"], "username") == {"alice": 1, "bob": 1}
-        assert self._by(data["availability"], "value") == {"available": 1, "sold": 1}
+        assert self._by(data["availability"], "value") == {"available": 1, "rented": 1}
         # Favorite Tools only contributes its single tool once books are excluded.
         assert self._by(data["collections"], "name") == {"Favorite Tools": 1}
 
@@ -1662,11 +1663,11 @@ class FacetsQueryCountTests(TestCase):
                 # Every type preset (rent/buy/wanted) ...
                 (SalesType.RENT, ItemStatus.RENTED),
                 (SalesType.BORROW, ItemStatus.AVAILABLE),
-                (SalesType.SELL, ItemStatus.SOLD),
+                (SalesType.SELL, ItemStatus.AVAILABLE),
                 (SalesType.DONATE, ItemStatus.AVAILABLE),
                 (SalesType.WANT_BUY, ItemStatus.AVAILABLE),
                 (SalesType.WANT_RENT, ItemStatus.RESERVED),
-                # ... and every availability preset (available/rented/sold).
+                # ... and every availability preset (available/rented).
                 (SalesType.SELL, ItemStatus.RENTED),
                 (SalesType.SELL, ItemStatus.RESERVED),
             ]
@@ -1676,3 +1677,104 @@ class FacetsQueryCountTests(TestCase):
             f"aggregation regressed?): {single_preset} for one preset vs "
             f"{all_presets} across all presets"
         )
+
+
+class ArchivedItemTestCase(TestCase):
+    """Sold and archived items leave the listings but stay with their owner."""
+
+    def setUp(self):
+        config.REQUIRE_LOGIN = False
+        self.client = APIClient()
+        self.owner = ItemOwnerUserFactory(
+            username="archiveowner",
+            email="archiveowner@example.com",
+            password=TEST_PASSWORD,
+        )
+
+        def make(name, item_status, sales_type=SalesType.SELL):
+            return Item.objects.create(
+                name=name,
+                user=self.owner,
+                sales_type=sales_type,
+                status=item_status,
+                visibility=VisibilityType.PUBLIC,
+                category="tools",
+            )
+
+        self.available = make("Available Hammer", ItemStatus.AVAILABLE)
+        self.sold = make("Sold Wrench", ItemStatus.SOLD)
+        self.archived = make("Archived Saw", ItemStatus.ARCHIVED)
+        self.draft = make("Draft Drill", ItemStatus.DRAFT)
+
+    def tearDown(self):
+        config.REQUIRE_LOGIN = True
+
+    def test_status_groupings(self):
+        """Sold/archived are excluded from published and grouped as archived."""
+        assert ItemStatus.SOLD not in ItemStatus.published()
+        assert ItemStatus.ARCHIVED not in ItemStatus.published()
+        assert set(ItemStatus.archived()) == {ItemStatus.SOLD, ItemStatus.ARCHIVED}
+
+    def test_archived_statuses_offered_for_every_sales_type(self):
+        """Owners can archive both sale and rental listings."""
+        for sales_type in ("sell", "donate", "want_buy", "rent", "borrow", "want_rent"):
+            assert ItemStatus.ARCHIVED in ItemStatus.for_sales_type(sales_type)
+
+    def test_sold_and_archived_hidden_from_public_listing(self):
+        """The browse listing only offers items that are still obtainable."""
+        response = self.client.get(reverse("api:public-item-list"))
+
+        assert response.status_code == status.HTTP_200_OK
+        names = {row["name"] for row in response.json()["results"]}
+        assert names == {"Available Hammer"}
+
+    def test_sold_item_not_retrievable_publicly(self):
+        """A sold item's public detail page 404s once it leaves circulation."""
+        url = reverse("api:public-item-detail", kwargs={"id": self.sold.id})
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_owner_still_sees_archived_items(self):
+        """The owner's own list keeps every item, archived ones included."""
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.get(reverse("api:item-list"))
+
+        assert response.status_code == status.HTTP_200_OK
+        names = {row["name"] for row in response.json()["results"]}
+        assert names == {
+            "Available Hammer",
+            "Sold Wrench",
+            "Archived Saw",
+            "Draft Drill",
+        }
+
+    def test_owner_can_filter_to_the_archive_section(self):
+        """Status filtering backs the archive tab of the owner's item list."""
+        self.client.force_authenticate(user=self.owner)
+        url = (
+            reverse("api:item-list")
+            + f"?status={ItemStatus.SOLD}&status={ItemStatus.ARCHIVED}"
+        )
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        names = {row["name"] for row in response.json()["results"]}
+        assert names == {"Sold Wrench", "Archived Saw"}
+
+    def test_owner_can_archive_an_item(self):
+        """Archiving is a plain status update and removes the item from browse."""
+        self.client.force_authenticate(user=self.owner)
+        response = self.client.patch(
+            reverse("api:item-detail", kwargs={"id": self.available.id}),
+            {"status": ItemStatus.ARCHIVED},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.content
+        self.available.refresh_from_db()
+        assert self.available.status == ItemStatus.ARCHIVED
+
+        self.client.force_authenticate(user=None)
+        listing = self.client.get(reverse("api:public-item-list"))
+        assert listing.json()["results"] == []

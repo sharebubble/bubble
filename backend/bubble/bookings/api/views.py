@@ -1,14 +1,17 @@
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Max, Q
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, viewsets
-from rest_framework.exceptions import ValidationError
+from drf_spectacular.utils import extend_schema
+from rest_framework import filters, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import (
     DjangoModelPermissions,
     IsAuthenticated,
     IsAuthenticatedOrReadOnly,
 )
+from rest_framework.response import Response
 
 from bubble.bookings.api.filters import BookingFilter, MessageFilter
 from bubble.bookings.api.serializers import (
@@ -18,6 +21,7 @@ from bubble.bookings.api.serializers import (
 )
 from bubble.bookings.models import Booking, BookingStatus, Message
 from bubble.core.api.pagination import SelectablePageSizePagination
+from bubble.items.models import ItemStatus, SalesType
 
 
 class PublicBookingViewSet(viewsets.ReadOnlyModelViewSet):
@@ -148,6 +152,97 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
         Message.objects.create(
             booking=booking, sender=self.request.user, message=message
         )
+
+    # --- Fulfillment: confirm the physical exchange of the item ---------------
+
+    SALE_TYPES = (SalesType.SELL, SalesType.DONATE)
+    RENTAL_TYPES = (SalesType.RENT, SalesType.BORROW)
+
+    # These actions act on the booking identified by the URL alone; declaring
+    # request=None keeps the generated client from demanding a request body.
+    @extend_schema(request=None, responses=BookingSerializer)
+    @action(detail=True, methods=["post"])
+    def confirm_received(self, request, id=None):  # noqa: A002
+        """Booker confirms they received the item.
+
+        For a sale this transfers ownership of the item to the booker and
+        completes the booking. For a rental it starts the rental: the item
+        becomes RENTED and the booking moves to IN_PROGRESS.
+        """
+        booking = self.get_object()
+
+        if request.user != booking.user:
+            raise PermissionDenied(
+                _("Only the booker can confirm they received the item.")
+            )
+        if booking.status != BookingStatus.CONFIRMED:
+            raise ValidationError(
+                _("The item can only be confirmed as received for a confirmed booking.")
+            )
+
+        item = booking.item
+        sales_type = item.sales_type
+
+        with transaction.atomic():
+            if sales_type in self.SALE_TYPES:
+                item.transfer_ownership(booking.user)
+                booking.status = BookingStatus.COMPLETED
+            elif sales_type in self.RENTAL_TYPES:
+                item.status = ItemStatus.RENTED
+                item.save(update_fields=["status"])
+                booking.status = BookingStatus.IN_PROGRESS
+            else:
+                raise ValidationError(
+                    _("Fulfillment is not supported for this listing type.")
+                )
+
+            booking.save(update_fields=["status"])
+
+        # The hand-over is recorded as a booking message: its sender and
+        # created_at capture who confirmed and when.
+        Message.objects.create(
+            booking=booking,
+            sender=request.user,
+            message=_("Item confirmed as received."),
+        )
+        serializer = self.get_serializer(booking)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(request=None, responses=BookingSerializer)
+    @action(detail=True, methods=["post"])
+    def confirm_returned(self, request, id=None):  # noqa: A002
+        """Owner confirms a rented item was returned, completing the rental.
+
+        Any user with ``change_item`` permission (owner or co-owner) may confirm.
+        The item becomes AVAILABLE again and the booking is COMPLETED.
+        """
+        booking = self.get_object()
+
+        if not request.user.has_perm("change_item", booking.item):
+            raise PermissionDenied(
+                _("Only the item owner can confirm the item was returned.")
+            )
+        if booking.status != BookingStatus.IN_PROGRESS:
+            raise ValidationError(
+                _("Only an in-progress rental can be confirmed as returned.")
+            )
+
+        item = booking.item
+        with transaction.atomic():
+            item.status = ItemStatus.AVAILABLE
+            item.save(update_fields=["status"])
+            booking.status = BookingStatus.COMPLETED
+            booking.save(update_fields=["status"])
+
+        # The return is recorded as a booking message: its sender and created_at
+        # capture who confirmed and when.
+        Message.objects.create(
+            booking=booking,
+            sender=request.user,
+            message=_("Item confirmed as returned."),
+        )
+        serializer = self.get_serializer(booking)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class MessageViewSet(viewsets.ModelViewSet):

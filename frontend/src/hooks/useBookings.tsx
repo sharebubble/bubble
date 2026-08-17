@@ -1,6 +1,8 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import {
+  bookingsConfirmReceivedCreate,
+  bookingsConfirmReturnedCreate,
   bookingsCreate,
   bookingsList,
   bookingsPartialUpdate,
@@ -123,3 +125,48 @@ export const useUpdateBooking = () => {
     },
   });
 };
+
+const useFulfillmentMutation = (
+  action: typeof bookingsConfirmReceivedCreate | typeof bookingsConfirmReturnedCreate,
+  successKey: string,
+) => {
+  const { toast } = useToast();
+  const { t } = useLanguage();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const response = await action({ path: { id } });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['items'] });
+      queryClient.invalidateQueries({ queryKey: ['item'] });
+      toast({
+        title: t('booking.successTitle'),
+        description: t(successKey),
+      });
+    },
+    onError: (error: unknown) => {
+      console.error('Error confirming fulfillment:', error);
+      const err = error as { non_field_errors?: string[]; detail?: string } | string | null;
+      const description =
+        (typeof err === 'string' ? err : (err?.non_field_errors?.[0] ?? err?.detail)) ||
+        t('booking.errorUpdate');
+      toast({
+        title: t('common.error'),
+        description,
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+/** Booker confirms they received the item (starts a rental or completes a sale). */
+export const useConfirmReceived = () =>
+  useFulfillmentMutation(bookingsConfirmReceivedCreate, 'booking.successReceived');
+
+/** Owner confirms a rented item was returned, completing the rental. */
+export const useConfirmReturned = () =>
+  useFulfillmentMutation(bookingsConfirmReturnedCreate, 'booking.successReturned');
