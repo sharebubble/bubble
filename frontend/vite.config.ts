@@ -7,10 +7,13 @@ import { defineConfig, type Plugin } from 'vite';
 
 // Read package versions at config time (Node.js context) and inject as build-time constants
 const barcodeDetectorVersion = JSON.parse(
-  readFileSync(path.resolve(__dirname, 'node_modules/barcode-detector/package.json'), 'utf-8'),
+  readFileSync(
+    path.resolve(import.meta.dirname, 'node_modules/barcode-detector/package.json'),
+    'utf-8',
+  ),
 ).version as string;
 const zxingWasmVersion = JSON.parse(
-  readFileSync(path.resolve(__dirname, 'node_modules/zxing-wasm/package.json'), 'utf-8'),
+  readFileSync(path.resolve(import.meta.dirname, 'node_modules/zxing-wasm/package.json'), 'utf-8'),
 ).version as string;
 
 // Emit a static /version.json carrying the build's git SHA + version so the E2E
@@ -42,7 +45,10 @@ function versionJsonPlugin(): Plugin {
 }
 
 function zxingWasmPlugin(): Plugin {
-  const wasmSrc = path.resolve(__dirname, 'node_modules/zxing-wasm/dist/reader/zxing_reader.wasm');
+  const wasmSrc = path.resolve(
+    import.meta.dirname,
+    'node_modules/zxing-wasm/dist/reader/zxing_reader.wasm',
+  );
 
   return {
     name: 'zxing-wasm',
@@ -121,7 +127,7 @@ export default defineConfig(({ mode }) => ({
   ].filter(Boolean),
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
   },
   build: {

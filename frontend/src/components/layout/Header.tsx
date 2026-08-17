@@ -10,7 +10,6 @@ import {
   BookMarked,
   CalendarCheck,
   Compass,
-  Handshake,
   Library,
   LogIn,
   LogOut,
@@ -89,7 +88,7 @@ export const Header = () => {
           </div>
 
           {/* Actions — hidden below `md`, where MobileBottomNav covers the same
-              destinations (Browse, Requests, Add, Account). The breakpoint must
+              destinations (Browse, Bookings, Add, Account). The breakpoint must
               stay in sync with that bar's `hiddenFrom="md"`. */}
           <div className="hidden shrink-0 items-center gap-2 md:flex">
             {/* Browse — "/" is the start page, so the catalogue needs its own
@@ -106,7 +105,21 @@ export const Header = () => {
               {t('header.browse')}
             </Button>
 
-            {/* Requests */}
+            {/* My Items */}
+            <Button
+              variant="subtle"
+              size="sm"
+              color="gray"
+              onClick={() => navigate('/my-items')}
+              aria-current={location.pathname.startsWith('/my-items') ? 'page' : undefined}
+              className={cn(location.pathname.startsWith('/my-items') && '!font-semibold')}
+              leftSection={<Library size={20} aria-hidden="true" />}
+            >
+              {t('header.items')}
+            </Button>
+
+            {/* Bookings — also the home of booking conversations and their
+                unread-message notifications, hence the badge. */}
             <Indicator
               label={unreadCount}
               color="red"
@@ -118,15 +131,28 @@ export const Header = () => {
                 variant="subtle"
                 size="sm"
                 color="gray"
-                onClick={() => navigate('/requests')}
-                aria-current={location.pathname.startsWith('/requests') ? 'page' : undefined}
-                className={cn(location.pathname.startsWith('/requests') && '!font-semibold')}
-                title={t('requests.title')}
-                leftSection={<Handshake size={20} aria-hidden="true" />}
+                onClick={() => navigate('/bookings')}
+                aria-current={location.pathname.startsWith('/bookings') ? 'page' : undefined}
+                className={cn(location.pathname.startsWith('/bookings') && '!font-semibold')}
+                title={t('header.bookings')}
+                leftSection={<CalendarCheck size={20} aria-hidden="true" />}
               >
-                {t('requests.title')}
+                {t('header.bookings')}
               </Button>
             </Indicator>
+
+            {/* Collections */}
+            <Button
+              variant="subtle"
+              size="sm"
+              color="gray"
+              onClick={() => navigate('/collections')}
+              aria-current={location.pathname.startsWith('/collections') ? 'page' : undefined}
+              className={cn(location.pathname.startsWith('/collections') && '!font-semibold')}
+              leftSection={<BookMarked size={20} aria-hidden="true" />}
+            >
+              {t('collections.title')}
+            </Button>
 
             {/* Add Item */}
             <Button
@@ -149,27 +175,6 @@ export const Header = () => {
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item
-                  component={NavLink}
-                  to="/my-items"
-                  leftSection={<Library size={16} aria-hidden="true" />}
-                >
-                  {t('header.items')}
-                </Menu.Item>
-                <Menu.Item
-                  component={NavLink}
-                  to="/bookings"
-                  leftSection={<CalendarCheck size={16} aria-hidden="true" />}
-                >
-                  {t('header.bookings')}
-                </Menu.Item>
-                <Menu.Item
-                  component={NavLink}
-                  to="/collections"
-                  leftSection={<BookMarked size={16} aria-hidden="true" />}
-                >
-                  {t('collections.title')}
-                </Menu.Item>
                 <Menu.Item
                   component={NavLink}
                   to="/profile"

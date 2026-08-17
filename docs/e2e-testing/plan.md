@@ -28,7 +28,7 @@ CI (see §2) and is organized as phased, checkable work (see §12).
 - **Frontend** (`frontend/`): React 19 + Vite + TypeScript + Mantine, React Router.
   Routes today: `/`, `/auth`, `/item/:itemUuid`, `/create-item`,
   `/edit-item/:itemUuid`, `/edit-book/:itemUuid`, `/my-items`, `/profile`,
-  `/bookings`, `/requests/:bookingId?`, `/collections`, `/collections/:collectionId`.
+  `/bookings/:bookingId?`, `/collections`, `/collections/:collectionId`.
 - **Backend** (`backend/`): Django 5 + DRF. Apps: `items`, `books`, `bookings`,
   `collections`, `favorites`, `notifications`, `users`, `federation`, `caldav`,
   `core`. UUID PKs, object-level permissions (`django-guardian`), Channels

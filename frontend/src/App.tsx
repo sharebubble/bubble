@@ -13,7 +13,6 @@ import { configureApiClient } from './config/apiClient';
 import Account from './pages/Account';
 import Auth from './pages/Auth';
 import Bookings from './pages/Bookings';
-import Requests from './pages/Requests';
 import Collections from './pages/Collections';
 import CollectionDetail from './pages/CollectionDetail';
 import CreateItem from './pages/CreateItem';
@@ -140,18 +139,10 @@ const ProtectedRoutes = () => {
           }
         />
         <Route
-          path="/bookings"
+          path="/bookings/:bookingId?"
           element={
             <AuthRequired>
               <Bookings />
-            </AuthRequired>
-          }
-        />
-        <Route
-          path="/requests/:bookingId?"
-          element={
-            <AuthRequired>
-              <Requests />
             </AuthRequired>
           }
         />

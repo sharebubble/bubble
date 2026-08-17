@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUnreadMessages } from '@/hooks/useMessages';
 import { ACCOUNT_PATH, BROWSE_PATH } from '@/lib/routes';
 import { Indicator, Paper, Text, ThemeIcon, UnstyledButton } from '@mantine/core';
-import { Handshake, Home, Plus, Search, User } from 'lucide-react';
+import { CalendarCheck, Home, Plus, Search, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -54,10 +54,10 @@ export const MobileBottomNav = () => {
       isActive: pathname => pathname.startsWith('/create-item'),
     },
     {
-      key: 'nav.requests',
-      icon: Handshake,
-      to: '/requests',
-      isActive: pathname => pathname.startsWith('/requests'),
+      key: 'nav.bookings',
+      icon: CalendarCheck,
+      to: '/bookings',
+      isActive: pathname => pathname.startsWith('/bookings'),
       badge: unreadCount,
     },
     {
