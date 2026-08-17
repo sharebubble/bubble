@@ -21,6 +21,10 @@ e2e/
 
 ## Running
 
+The `npm test*`/`list`/`wait-for-version` scripts auto-load `e2e/.env` (via
+Node's `--env-file-if-exists`, no `dotenv` package needed) — create it once
+and every subsequent run picks it up, no manual `export` required.
+
 ```bash
 cd e2e
 npm ci
@@ -28,14 +32,16 @@ npm ci
 # against stage (default), no creds needed for smoke:
 npm run test:smoke
 
-# against a local stack:
-just e2e-up                                        # build, start, seed (see below)
-E2E_BASE_URL=http://localhost:8080 npm run test:smoke
-
-# full suite (needs the user pool configured — see .env.example):
-cp .env.example .env   # fill in E2E_<ROLE>_USERNAME/PASSWORD, or let `just e2e-up` do it
-npm test
+# against a local stack — from the repo root, once:
+just e2e-up   # builds, starts, seeds demo content + the E2E pool, writes e2e/.env
+cd e2e
+npm run test:smoke   # picks up E2E_BASE_URL from e2e/.env automatically
+npm test              # full suite, incl. @regression — pool creds also came from e2e/.env
 ```
+
+To point at a local stack without `just e2e-up` (e.g. one already running),
+either add `E2E_BASE_URL=http://localhost:8080` to `e2e/.env` or prefix the
+command: `E2E_BASE_URL=http://localhost:8080 npm run test:smoke`.
 
 Browser projects depend on the `setup` project, which authenticates the pooled
 users once and saves a `storageState` per role. Without credentials the setup is
