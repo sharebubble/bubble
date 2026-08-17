@@ -25,17 +25,42 @@ import {
 } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { Archive, Edit3, Eye, Grid3X3, List, MoreHorizontal, Plus, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 type ItemsTab = 'active' | 'archived';
 
 const MyItems = () => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
+
+  // Tab and view mode live in the URL (rather than local/localStorage state)
+  // so the current view survives a refresh and a shared link reproduces what
+  // was shared.
+  const [searchParams, setSearchParams] = useSearchParams();
   // Sold and archived items live in their own tab so the default view stays
   // focused on the items still in circulation.
-  const [tab, setTab] = useState<ItemsTab>('active');
+  const tab: ItemsTab = searchParams.get('tab') === 'archived' ? 'archived' : 'active';
+  const setTab = (value: ItemsTab) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (value === 'active') next.delete('tab');
+      else next.set('tab', value);
+      return next;
+    });
+  };
+  const viewMode: 'list' | 'cards' = searchParams.get('view') === 'cards' ? 'cards' : 'list';
+  const toggleViewMode = (mode: 'list' | 'cards') => {
+    setSearchParams(
+      prev => {
+        const next = new URLSearchParams(prev);
+        if (mode === 'list') next.delete('view');
+        else next.set('view', mode);
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
   const { data: myItemsData, isLoading } = useMyItems(
     undefined,
     tab === 'archived' ? ARCHIVED_STATUSES : ACTIVE_STATUSES,
@@ -55,21 +80,6 @@ const MyItems = () => {
     text.length > MAX_DESCRIPTION_PREVIEW
       ? `${text.slice(0, MAX_DESCRIPTION_PREVIEW).trimEnd()}…`
       : text;
-
-  // View mode state with localStorage persistence
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
-
-  useEffect(() => {
-    const savedViewMode = localStorage.getItem('myItemsViewMode') as 'list' | 'cards' | null;
-    if (savedViewMode) {
-      setViewMode(savedViewMode);
-    }
-  }, []);
-
-  const toggleViewMode = (mode: 'list' | 'cards') => {
-    setViewMode(mode);
-    localStorage.setItem('myItemsViewMode', mode);
-  };
 
   const handleDeleteItem = (itemId: string) => {
     deleteItemMutation.mutate(itemId);

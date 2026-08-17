@@ -8,10 +8,12 @@ import {
   StatusField,
   VisibilityField,
 } from '@/components/items/ItemFormFields';
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useUpdateItem } from '@/hooks/useCreateItem';
 import { useMyItem } from '@/hooks/useMyItem';
+import { BROWSE_PATH } from '@/lib/routes';
 import { imagesAPI } from '@/services/custom/images';
 import {
   CategoryEnum,
@@ -44,7 +46,6 @@ import { modals } from '@mantine/modals';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
-  ArrowLeft,
   CheckCircle,
   ChevronDown,
   ChevronRight,
@@ -216,35 +217,41 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
     return missing;
   }, [formData.name, formData.category, formData.condition, formData.sales_type, t]);
 
-  const handleBackClick = useCallback(() => {
-    if (editItemUuid && missingFields.length > 0) {
-      modals.openConfirmModal({
-        title: (
-          <Group gap="xs" wrap="nowrap">
-            <AlertTriangle size={20} color="var(--mantine-color-yellow-6)" />
-            {t('editItem.incompleteWarningTitle')}
-          </Group>
-        ),
-        children: (
-          <>
-            <Text size="sm">{t('editItem.incompleteWarningDescription')}</Text>
-            <ul className="mt-2 list-disc list-inside text-sm">
-              {missingFields.map(field => (
-                <li key={field}>{field}</li>
-              ))}
-            </ul>
-          </>
-        ),
-        labels: {
-          confirm: t('editItem.leaveAnyway'),
-          cancel: t('editItem.stayAndComplete'),
-        },
-        onConfirm: () => navigate(-1),
-      });
-    } else {
-      navigate(-1);
-    }
-  }, [editItemUuid, missingFields, navigate, t]);
+  // Shared by the breadcrumb trail and the back button: leaving with
+  // incomplete required fields asks for confirmation first, regardless of
+  // which ancestor the user is navigating to.
+  const handleGuardedNavigate = useCallback(
+    (target: string) => {
+      if (editItemUuid && missingFields.length > 0) {
+        modals.openConfirmModal({
+          title: (
+            <Group gap="xs" wrap="nowrap">
+              <AlertTriangle size={20} color="var(--mantine-color-yellow-6)" />
+              {t('editItem.incompleteWarningTitle')}
+            </Group>
+          ),
+          children: (
+            <>
+              <Text size="sm">{t('editItem.incompleteWarningDescription')}</Text>
+              <ul className="mt-2 list-disc list-inside text-sm">
+                {missingFields.map(field => (
+                  <li key={field}>{field}</li>
+                ))}
+              </ul>
+            </>
+          ),
+          labels: {
+            confirm: t('editItem.leaveAnyway'),
+            cancel: t('editItem.stayAndComplete'),
+          },
+          onConfirm: () => navigate(target),
+        });
+      } else {
+        navigate(target);
+      }
+    },
+    [editItemUuid, missingFields, navigate, t],
+  );
 
   const categories: CategoryEnum[] = [
     'electronics',
@@ -736,15 +743,21 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
 
   return (
     <div className="container mx-auto py-8 space-y-0 p-3">
-      {/* Back Button */}
-      <Button
-        variant="subtle"
-        onClick={handleBackClick}
+      <Breadcrumbs
         className="mb-6"
-        leftSection={<ArrowLeft size={16} />}
-      >
-        {t('common.back')}
-      </Button>
+        items={[
+          { label: t('header.browse'), onClick: () => handleGuardedNavigate(BROWSE_PATH) },
+          ...(editItemUuid
+            ? [
+                {
+                  label: item?.name || t('itemDetail.editItem'),
+                  onClick: () => handleGuardedNavigate(`/item/${editItemUuid}`),
+                },
+              ]
+            : []),
+          { label: t('itemDetail.editItem') },
+        ]}
+      />
 
       <Card withBorder padding="lg">
         <div className="mb-6">

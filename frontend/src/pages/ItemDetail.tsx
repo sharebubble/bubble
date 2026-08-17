@@ -11,12 +11,14 @@ import {
   getStatusMantineColor,
 } from '@/components/items/status';
 import { AddToCollectionPopover } from '@/components/collections/AddToCollectionPopover';
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import UserInfoBox from '@/components/users/UserInfoBox';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useItem } from '@/hooks/useItem';
 import { useDeleteItem } from '@/hooks/useMyItems';
 import { useItemCollections } from '@/hooks/useCollections';
+import { BROWSE_PATH } from '@/lib/routes';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
@@ -24,7 +26,7 @@ import { getCategoryIcon } from '@/lib/categoryIcons';
 import { ActionIcon, Badge, Button, Text, Tooltip } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { formatDistanceToNow } from 'date-fns';
-import { ArrowLeft, BookMarked, Calendar, Edit3, History, MapPin, Trash2, Zap } from 'lucide-react';
+import { BookMarked, Calendar, Edit3, History, MapPin, Trash2, Zap } from 'lucide-react';
 import { createElement, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -209,9 +211,12 @@ const ItemDetail = () => {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <div className="mb-4 flex items-center justify-between gap-2">
-        <Button variant="subtle" onClick={() => navigate(-1)} leftSection={<ArrowLeft size={16} />}>
-          {t('common.back')}
-        </Button>
+        <Breadcrumbs
+          items={[
+            { label: t('header.browse'), to: BROWSE_PATH },
+            { label: name || t('requests.unknownItem') },
+          ]}
+        />
         <div className="flex items-center gap-2">
           <ShareButton url={shareUrl} title={name} text={description || undefined} />
           {/* Calendar subscription — any logged-in user, bookable items only */}
