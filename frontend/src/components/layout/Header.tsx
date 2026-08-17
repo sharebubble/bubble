@@ -1,6 +1,7 @@
 import { ActionIcon, Avatar, Button, Indicator, Menu } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
+import { useInstallPrompt } from '@/hooks/useInstallPrompt';
 import { useUnreadMessages } from '@/hooks/useMessages';
 import { SearchBar } from '@/components/layout/SearchBar';
 
@@ -10,6 +11,7 @@ import {
   BookMarked,
   CalendarCheck,
   Compass,
+  Download,
   Library,
   LogIn,
   LogOut,
@@ -23,6 +25,7 @@ export const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: unreadMessages } = useUnreadMessages();
+  const { canInstall, promptInstall } = useInstallPrompt();
 
   const { t } = useLanguage();
 
@@ -182,6 +185,16 @@ export const Header = () => {
                 >
                   {t('header.myProfile')}
                 </Menu.Item>
+                {/* Only rendered while the browser is actually offering an
+                    install; Safari never does and handles it in its share menu. */}
+                {canInstall && (
+                  <Menu.Item
+                    leftSection={<Download size={16} aria-hidden="true" />}
+                    onClick={() => void promptInstall()}
+                  >
+                    {t('pwa.install')}
+                  </Menu.Item>
+                )}
                 <Menu.Divider />
                 <Menu.Item
                   color="red"

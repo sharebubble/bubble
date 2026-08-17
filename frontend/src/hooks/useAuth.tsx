@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react';
+import { clearCachedMedia } from '@/lib/serviceWorker';
 import { authAPI, Session, SessionResponse, User } from '@/services/custom/auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, ReactNode, useCallback, useContext, useMemo } from 'react';
@@ -53,10 +54,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Clear all data from the cache.
       // This could be refined in the future to clear only user-specific data.
       queryClient.clear();
+      // The React Query cache is in memory; item images cached by the service
+      // worker outlive the session and have to be dropped explicitly.
+      clearCachedMedia();
     },
     onError: (err: unknown) => {
       // Clear data even on error (e.g., 401 means already logged out)
       queryClient.clear();
+      clearCachedMedia();
 
       const isUnauthorized =
         err instanceof Error &&

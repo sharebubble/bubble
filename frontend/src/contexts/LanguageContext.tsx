@@ -39,6 +39,13 @@ const translations = {
     // Account hub (mobile)
     'account.settings': 'Profile settings',
 
+    // Installable app / service worker
+    'pwa.install': 'Install app',
+    'pwa.updateTitle': 'Update available',
+    'pwa.updateMessage': 'A newer version of Bubble is ready.',
+    'pwa.updateAction': 'Reload now',
+    'pwa.offline': "You're offline",
+
     // Mobile start page
     'home.bookingsTitle': 'Your bookings',
     'home.bookingsSubtitle': 'Latest',
@@ -720,6 +727,13 @@ const translations = {
 
     // Account hub (mobile)
     'account.settings': 'Profileinstellungen',
+
+    // Installable app / service worker
+    'pwa.install': 'App installieren',
+    'pwa.updateTitle': 'Update verfügbar',
+    'pwa.updateMessage': 'Eine neuere Version von Bubble ist bereit.',
+    'pwa.updateAction': 'Jetzt neu laden',
+    'pwa.offline': 'Du bist offline',
 
     // Mobile start page
     'home.bookingsTitle': 'Deine Buchungen',

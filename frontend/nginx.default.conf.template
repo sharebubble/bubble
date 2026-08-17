@@ -19,13 +19,7 @@ server {
     server_tokens off;
 
     # add default headers
-    # Basic secure Content Security Policy: blocks all by default, allows self for scripts/styles/images/fonts, disallows inline JS, no external frames
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval'; script-src-elem 'self'; style-src 'self'; style-src-elem 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; object-src 'none'; base-uri 'self'" always;
-    add_header X-XSS-Protection "1; mode=block";
-    add_header Referrer-Policy 'strict-origin-when-cross-origin';
-    add_header Permissions-Policy "geolocation=(),midi=(),sync-xhr=(),microphone=(self),camera=(self),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()";
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-    add_header X-Content-Type-Options  "nosniff";
+    include /etc/nginx/snippets/security-headers.conf;
     add_header Cache-Control "no-cache, no-store, max-age=0, must-revalidate";
     add_header Expires "0";
     add_header Pragma "no-cache";
@@ -53,8 +47,37 @@ server {
         proxy_buffering off;
     }
 
-    # Cache static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
+    # The service worker must never be served from a long-lived cache: a stale
+    # /sw.js keeps controlling the app forever, so no new build can ever take
+    # over. The exact-match location is what keeps it out of the immutable
+    # asset rule below (a regex location would otherwise win for a .js file).
+    location = /sw.js {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "no-cache, no-store, max-age=0, must-revalidate";
+        add_header Expires "0";
+    }
+
+    # Manifest changes with the app, and browsers re-read it on install.
+    location = /manifest.json {
+        include /etc/nginx/snippets/security-headers.conf;
+        add_header Cache-Control "no-cache, max-age=0, must-revalidate";
+        types { }
+        default_type application/manifest+json;
+    }
+
+    # App icons carry no content hash, so the immutable rule below would pin a
+    # replaced logo or maskable icon on installed devices for a year. Must stay
+    # ahead of that rule: regex locations are matched in order.
+    location ~ ^/(favicon\.ico|logo\.png|logo-512\.png|icon-192\.png|icon-512\.png)$ {
+        include /etc/nginx/snippets/security-headers.conf;
+        expires 7d;
+        add_header Cache-Control "public";
+    }
+
+    # Cache static assets. Safe only because Vite content-hashes its output;
+    # unhashed files in public/ are matched too, hence the exceptions above.
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|webp|woff2)$ {
+        include /etc/nginx/snippets/security-headers.conf;
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
@@ -74,6 +97,7 @@ server {
 
     # Environment configuration endpoint
     location = /env-config.js {
+        include /etc/nginx/snippets/security-headers.conf;
         add_header Content-Type "application/javascript";
         add_header Cache-Control "no-cache, no-store, must-revalidate";
         add_header Pragma "no-cache";

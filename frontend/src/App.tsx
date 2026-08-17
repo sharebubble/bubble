@@ -25,8 +25,10 @@ import ItemBookingHistory from './pages/ItemBookingHistory';
 import MyItems from './pages/MyItems';
 import NotFound from './pages/NotFound';
 import Profile from './pages/Profile';
+import { AppUpdatePrompt } from './components/layout/AppUpdatePrompt';
 import { Header } from './components/layout/Header';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
+import { OfflineIndicator } from './components/layout/OfflineIndicator';
 import { ACCOUNT_PATH, BROWSE_PATH } from './lib/routes';
 import { localStorageColorSchemeManager, MantineProvider } from '@mantine/core';
 import { mantineTheme } from './theme/mantine';
@@ -183,6 +185,11 @@ const App = () => (
           <AuthProvider>
             <NotificationProvider>
               <Notifications />
+              {/* Outside the router so both are shown on every route, including
+                  the login screen and the auth/config loading states — being
+                  offline is the likeliest reason to be stuck on those. */}
+              <AppUpdatePrompt />
+              <OfflineIndicator />
               <BrowserRouter>
                 <ProtectedRoutes />
               </BrowserRouter>

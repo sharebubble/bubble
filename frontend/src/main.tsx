@@ -2,6 +2,7 @@ import * as Sentry from '@sentry/react';
 
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
+import { registerServiceWorker } from './lib/serviceWorker';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/dates/styles.css';
@@ -67,3 +68,7 @@ createRoot(container, {
   // Callback called when React automatically recovers from errors.
   onRecoverableError: Sentry.reactErrorHandler(),
 }).render(<App />);
+
+// Registered after the app is mounted so the worker's install never competes
+// with the first render for bandwidth. No-op outside production builds.
+registerServiceWorker();

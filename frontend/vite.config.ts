@@ -44,6 +44,100 @@ function versionJsonPlugin(): Plugin {
   };
 }
 
+// Static files the app shell needs offline, independent of the JS bundle.
+const SW_STATIC_PRECACHE = [
+  '/index.html',
+  '/offline.html',
+  '/manifest.json',
+  '/favicon.ico',
+  '/logo.png',
+  '/icon-192.png',
+  '/icon-512.png',
+];
+
+// Served at /sw.js by the dev server: an inert worker that tears down any
+// registration left behind by a production visit to the same origin (a developer
+// hitting localhost after using the deployed app would otherwise be served the
+// stale precached shell instead of Vite's).
+const DEV_SERVICE_WORKER = `// Development stub — see frontend/vite.config.ts
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    (async () => {
+      const names = await caches.keys();
+      await Promise.all(
+        names.filter(name => name.startsWith('bubble-')).map(name => caches.delete(name)),
+      );
+      await self.registration.unregister();
+    })(),
+  );
+});
+`;
+
+/**
+ * Emit dist/sw.js from src/sw/service-worker.js, injecting the build id and the
+ * hashed URLs of the entry chunk's static import graph.
+ *
+ * The worker used to live in public/ with a hand-written precache list, which
+ * named Create-React-App paths (/static/js/bundle.js) that this build has never
+ * produced. Because cache.addAll() is atomic, every install rejected and the app
+ * shipped a service worker that could not activate — hence generating the list
+ * from the bundle Vite actually wrote.
+ */
+function serviceWorkerPlugin(): Plugin {
+  const source = path.resolve(import.meta.dirname, 'src/sw/service-worker.js');
+
+  // GIT_SHA/APP_VERSION are set for container builds (see Dockerfile); local
+  // builds fall back to the build timestamp. The value only has to change
+  // whenever the shell does, so that the old shell cache is dropped on activate.
+  const buildId = process.env.GIT_SHA || process.env.APP_VERSION || String(Date.now());
+
+  return {
+    name: 'pwa-service-worker',
+    // After vite:build-html, so the entry chunk's metadata is final.
+    enforce: 'post',
+
+    configureServer(server) {
+      server.middlewares.use('/sw.js', (_req, res) => {
+        res.setHeader('Content-Type', 'text/javascript');
+        res.setHeader('Cache-Control', 'no-store');
+        res.end(DEV_SERVICE_WORKER);
+      });
+    },
+
+    generateBundle(_options, bundle) {
+      // Walk the entry chunks' static imports: that is exactly what a cold load
+      // of index.html needs. Route-level dynamic chunks are picked up by the
+      // worker's cache-first rule the first time they are actually requested,
+      // which keeps the install payload to the shell.
+      const shellAssets = new Set<string>();
+      const visit = (fileName: string) => {
+        const chunk = bundle[fileName];
+        if (!chunk || chunk.type !== 'chunk' || shellAssets.has(chunk.fileName)) return;
+        shellAssets.add(chunk.fileName);
+        for (const css of chunk.viteMetadata?.importedCss ?? []) shellAssets.add(css);
+        for (const imported of chunk.imports) visit(imported);
+      };
+      for (const chunk of Object.values(bundle)) {
+        if (chunk.type === 'chunk' && chunk.isEntry) visit(chunk.fileName);
+      }
+
+      const precacheUrls = [
+        ...SW_STATIC_PRECACHE,
+        ...[...shellAssets].sort().map(fileName => `/${fileName}`),
+      ];
+
+      this.emitFile({
+        type: 'asset',
+        fileName: 'sw.js',
+        source: readFileSync(source, 'utf-8')
+          .replace('__BUILD_ID__', buildId)
+          .replace('__PRECACHE_URLS__', JSON.stringify(precacheUrls)),
+      });
+    },
+  };
+}
+
 function zxingWasmPlugin(): Plugin {
   const wasmSrc = path.resolve(
     import.meta.dirname,
@@ -108,6 +202,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     versionJsonPlugin(),
     zxingWasmPlugin(),
+    serviceWorkerPlugin(),
     tailwindcss(),
     react(),
     sentryVitePlugin({

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Offline - Bubble</title>
+    <!--
+      Last-resort fallback: the service worker serves this only when a navigation
+      fails and the cached app shell is unavailable too. It must therefore stay
+      self-contained — no bundle, no fonts, and no inline script (the production
+      CSP allows inline styles but not inline JS), so the copy carries both
+      languages instead of picking one at runtime.
+    -->
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #fef7ed;
+        --fg: #1c1917;
+        --muted: #57534e;
+        --accent: #166534;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1a1b1e;
+          --fg: #f4f4f5;
+          --muted: #a1a1aa;
+          --accent: #4ade80;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1.5rem;
+        background: var(--bg);
+        color: var(--fg);
+        font-family:
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        line-height: 1.5;
+      }
+      main {
+        max-width: 26rem;
+        text-align: center;
+      }
+      img {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+      }
+      h1 {
+        margin: 1.5rem 0 0.25rem;
+        font-size: 1.5rem;
+      }
+      h2 {
+        margin: 0 0 1rem;
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--muted);
+      }
+      p {
+        margin: 0.5rem 0;
+        color: var(--muted);
+      }
+      a {
+        display: inline-block;
+        margin-top: 1.5rem;
+        padding: 0.625rem 1.25rem;
+        border-radius: 999px;
+        background: var(--accent);
+        color: var(--bg);
+        font-weight: 600;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/logo.png" alt="Bubble" />
+      <h1>You're offline</h1>
+      <h2>Du bist offline</h2>
+      <p>Bubble needs a connection to load this page. Pages you visited before stay available.</p>
+      <p lang="de">
+        Bubble braucht eine Verbindung für diese Seite. Bereits besuchte Seiten bleiben verfügbar.
+      </p>
+      <a href="/">Retry &middot; Erneut versuchen</a>
+    </main>
+  </body>
+</html>
