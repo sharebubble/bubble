@@ -88,6 +88,22 @@ def test_subject_keeps_an_https_url_as_is() -> None:
     assert webpush.get_subject() == "https://example.org/contact"
 
 
+@override_settings(VAPID_SUBJECT="http://example.org/contact")
+def test_subject_rejects_a_plain_http_url() -> None:
+    # RFC 8292 allows only mailto: and https:. Passing an http: URL through would
+    # turn a typo into a 403 from the push service on every single send.
+    assert webpush.get_subject() == ""
+
+
+@override_settings(
+    VAPID_PUBLIC_KEY=PUBLIC_KEY,
+    VAPID_PRIVATE_KEY=PRIVATE_KEY,
+    VAPID_SUBJECT="http://example.org/contact",
+)
+def test_an_unusable_subject_leaves_push_disabled() -> None:
+    assert webpush.is_configured() is False
+
+
 @override_settings(
     VAPID_PUBLIC_KEY=PUBLIC_KEY,
     VAPID_PRIVATE_KEY=PRIVATE_KEY,

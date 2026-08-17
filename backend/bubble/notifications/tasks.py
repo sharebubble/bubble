@@ -109,13 +109,13 @@ def deliver_web_push(
     }
 
     expired_ids = []
-    delivered = 0
+    delivered_ids = []
     for subscription in subscriptions:
         result = send_web_push(subscription.subscription_info, payload)
         if result.expired:
             expired_ids.append(subscription.pk)
         elif result.delivered:
-            delivered += 1
+            delivered_ids.append(subscription.pk)
 
     if expired_ids:
         PushSubscription.objects.filter(pk__in=expired_ids).delete()
@@ -125,15 +125,19 @@ def deliver_web_push(
             user_id,
         )
 
-    if delivered:
-        PushSubscription.objects.filter(
-            user_id=user_id, pk__in=[s.pk for s in subscriptions]
-        ).exclude(pk__in=expired_ids).update(last_used_at=timezone.now())
+    # Only the devices that actually accepted this notification. Marking the
+    # whole batch would make a permanently flaky endpoint look healthy for as
+    # long as any other device of the same user still works.
+    if delivered_ids:
+        PushSubscription.objects.filter(pk__in=delivered_ids).update(
+            last_used_at=timezone.now()
+        )
 
     logger.debug(
-        "Web push for user %s (%s): %s delivered, %s expired.",
+        "Web push for user %s (%s): %s delivered, %s expired, %s failed.",
         user_id,
         event_type,
-        delivered,
+        len(delivered_ids),
         len(expired_ids),
+        len(subscriptions) - len(delivered_ids) - len(expired_ids),
     )

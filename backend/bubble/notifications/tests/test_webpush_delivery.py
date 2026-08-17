@@ -142,6 +142,34 @@ def test_expired_subscriptions_are_deleted_and_others_kept() -> None:
 
 @configured
 @pytest.mark.django_db
+def test_only_delivered_devices_are_marked_as_used() -> None:
+    """A flaky endpoint must not look healthy just because a sibling worked."""
+    user = UserFactory()
+    good = _subscription(user, "good")
+    flaky = _subscription(user, "flaky")
+    gone = _subscription(user, "gone")
+
+    outcomes = {
+        good.endpoint: DELIVERED,
+        flaky.endpoint: FAILED,
+        gone.endpoint: GONE,
+    }
+
+    with patch(
+        "bubble.notifications.tasks.send_web_push",
+        side_effect=lambda info, _payload: outcomes[info["endpoint"]],
+    ):
+        deliver_web_push.call_local(user.pk, EventType.NEW_MESSAGE, {"message": "hi"})
+
+    good.refresh_from_db()
+    flaky.refresh_from_db()
+    assert good.last_used_at is not None
+    assert flaky.last_used_at is None
+    assert not PushSubscription.objects.filter(pk=gone.pk).exists()
+
+
+@configured
+@pytest.mark.django_db
 def test_transient_failures_keep_the_subscription() -> None:
     user = UserFactory()
     subscription = _subscription(user, "flaky")
