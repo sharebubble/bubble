@@ -9,7 +9,7 @@ interface LanguageContextType {
   /** Apply a language coming from an external source (e.g. profile API)
    *  without triggering a save-back. */
   syncLanguage: (lang: Language) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -21,7 +21,7 @@ const translations = {
     'header.shareItem': 'Share',
     'header.signIn': 'Sign In',
     'header.myProfile': 'Profile',
-    'header.items': 'Items',
+    'header.items': 'My Items',
     'header.signOut': 'Sign Out',
     'header.theme': 'Theme',
     'header.light': 'Light',
@@ -62,7 +62,7 @@ const translations = {
     'push.disableFailed': 'Could not disable notifications on this device',
 
     // Mobile start page
-    'home.bookingsTitle': 'Your bookings',
+    'home.bookingsTitle': 'My bookings',
     'home.bookingsSubtitle': 'Latest',
     'home.noBookings': 'No bookings yet',
     'header.browse': 'Browse',
@@ -115,6 +115,7 @@ const translations = {
     'auth.loggedInAs': 'Logged in successfully as',
     'auth.loginFailed': 'Login failed. Please check your credentials.',
     'auth.unexpectedError': 'An unexpected error occurred. Please try again.',
+    'auth.redirectingToProvider': 'Redirecting to {{provider}}...',
 
     // Index Page
     'index.itemsFound': '{count} items found',
@@ -621,7 +622,7 @@ const translations = {
     'scanner.detected': 'Detected',
 
     // Collections
-    'collections.title': 'Collections',
+    'collections.title': 'My Collections',
     'collections.myCollections': 'My Collections',
     'collections.newCollection': 'New Collection',
     'collections.newCollectionShort': 'New',
@@ -725,7 +726,7 @@ const translations = {
     'header.shareItem': 'Teilen',
     'header.signIn': 'Anmelden',
     'header.myProfile': 'Profil',
-    'header.items': 'Artikel',
+    'header.items': 'Meine Artikel',
     'header.signOut': 'Abmelden',
     'header.theme': 'Design',
     'header.light': 'Hell',
@@ -766,7 +767,7 @@ const translations = {
     'push.disableFailed': 'Benachrichtigungen konnten auf diesem Gerät nicht deaktiviert werden',
 
     // Mobile start page
-    'home.bookingsTitle': 'Deine Buchungen',
+    'home.bookingsTitle': 'Meine Buchungen',
     'home.bookingsSubtitle': 'Neueste',
     'home.noBookings': 'Noch keine Buchungen',
     'header.browse': 'Entdecken',
@@ -819,6 +820,7 @@ const translations = {
     'auth.loggedInAs': 'Erfolgreich eingeloggt als',
     'auth.loginFailed': 'Anmeldung fehlgeschlagen. Bitte überprüfe deine Zugangsdaten.',
     'auth.unexpectedError': 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.',
+    'auth.redirectingToProvider': 'Weiterleitung zu {{provider}}...',
 
     // Index Page
     'index.itemsFound': '{count} Artikel gefunden',
@@ -1337,7 +1339,7 @@ const translations = {
     'scanner.detected': 'Erkannt',
 
     // Collections
-    'collections.title': 'Sammlungen',
+    'collections.title': 'Meine Sammlungen',
     'collections.myCollections': 'Meine Sammlungen',
     'collections.newCollection': 'Neue Sammlung',
     'collections.newCollectionShort': 'Neu',
@@ -1471,8 +1473,14 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const t = useCallback(
-    (key: string): string => {
-      return translations[language][key as keyof (typeof translations)['en']] || key;
+    (key: string, params?: Record<string, string | number>): string => {
+      let value = translations[language][key as keyof (typeof translations)['en']] || key;
+      if (params) {
+        for (const [k, v] of Object.entries(params)) {
+          value = value.replace(new RegExp(`{{${k}}}`, 'g'), String(v));
+        }
+      }
+      return value;
     },
     [language],
   );
