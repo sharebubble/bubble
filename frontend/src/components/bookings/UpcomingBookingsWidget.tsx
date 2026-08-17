@@ -1,59 +1,67 @@
+import { getBookingStatusBadge } from '@/components/bookings/status';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMyBookings } from '@/hooks/useBookings';
 import { formatPrice } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import type { BookingList } from '@/services/django';
-import { Badge, Card, Loader, Text } from '@mantine/core';
+import { Badge, Card, Loader, Text, UnstyledButton } from '@mantine/core';
 import { format, isAfter, isBefore, parseISO } from 'date-fns';
 import { CalendarCheck, ChevronRight, Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// BookingStatus values (mirror of the backend IntegerChoices)
-const STATUS_CONFIRMED = 3;
-const STATUS_COMPLETED = 4;
-const APPROVED_STATUSES = [String(STATUS_CONFIRMED), String(STATUS_COMPLETED)];
-
 // How many bookings to surface in the compact widget.
-const WIDGET_LIMIT = 4;
+const WIDGET_LIMIT = 5;
 
-type BookingState = 'active' | 'upcoming';
+type BookingState = 'active' | 'upcoming' | 'past';
+
+// Accent colour for the row's leading edge — a temporal cue that complements
+// the status badge rather than repeating it.
+const STATE_COLORS: Record<BookingState, string> = {
+  active: 'var(--mantine-color-teal-6)',
+  upcoming: 'var(--mantine-color-blue-6)',
+  past: 'var(--mantine-color-gray-4)',
+};
 
 const getBookingState = (booking: BookingList): BookingState => {
   const now = new Date();
   const from = booking.time_from ? parseISO(booking.time_from) : null;
   const to = booking.time_to ? parseISO(booking.time_to) : null;
   if (from && isBefore(from, now) && (!to || isAfter(to, now))) return 'active';
-  return 'upcoming';
+  if (from && isAfter(from, now)) return 'upcoming';
+  return 'past';
 };
 
 const BookingLine = ({ booking }: { booking: BookingList }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const state = getBookingState(booking);
+  const status = getBookingStatusBadge(booking.status);
   const itemTitle = booking.item_details?.name ?? t('bookings.item');
   const itemImage = booking.item_details?.first_image;
   const price = booking.item_details?.price;
   const currency = booking.item_details?.price_currency;
 
   return (
-    <button
-      type="button"
+    <UnstyledButton
       onClick={() => navigate(`/requests/${booking.id}`)}
-      className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-[var(--mantine-color-gray-0)]"
+      className="flex w-full items-center gap-3 p-2 text-left"
       style={{
-        borderLeft: `3px solid ${
-          state === 'active' ? 'var(--mantine-color-teal-6)' : 'var(--mantine-color-blue-6)'
-        }`,
+        borderRadius: 'var(--mantine-radius-md)',
+        borderLeft: `3px solid ${STATE_COLORS[state]}`,
       }}
     >
       {/* Thumbnail */}
-      <div className="h-11 w-11 shrink-0 overflow-hidden rounded-md bg-[var(--mantine-color-gray-1)]">
+      <div
+        className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden"
+        style={{
+          borderRadius: 'var(--mantine-radius-sm)',
+          background: 'var(--mantine-color-default-hover)',
+        }}
+      >
         {itemImage ? (
           <img src={itemImage} alt={itemTitle} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <Package size={18} color="var(--mantine-color-dimmed)" />
-          </div>
+          <Package size={18} color="var(--mantine-color-dimmed)" aria-hidden="true" />
         )}
       </div>
 
@@ -63,13 +71,8 @@ const BookingLine = ({ booking }: { booking: BookingList }) => {
           <Text component="span" size="sm" fw={600} truncate className="flex-1">
             {itemTitle}
           </Text>
-          <Badge
-            color={state === 'active' ? 'teal' : 'blue'}
-            variant={state === 'active' ? 'filled' : 'light'}
-            size="xs"
-            className="shrink-0"
-          >
-            {state === 'active' ? t('bookings.active') : t('bookings.upcoming')}
+          <Badge color={status.color} variant={status.variant} size="xs" className="shrink-0">
+            {t(status.labelKey)}
           </Badge>
         </div>
         <Text component="div" size="xs" c="dimmed" truncate>
@@ -79,8 +82,8 @@ const BookingLine = ({ booking }: { booking: BookingList }) => {
         </Text>
       </div>
 
-      <ChevronRight size={16} className="shrink-0 text-[var(--mantine-color-dimmed)]" />
-    </button>
+      <ChevronRight size={16} color="var(--mantine-color-dimmed)" className="shrink-0" />
+    </UnstyledButton>
   );
 };
 
@@ -88,10 +91,10 @@ export const UpcomingBookingsWidget = ({ className }: { className?: string }) =>
   const { t } = useLanguage();
   const navigate = useNavigate();
 
+  // Latest bookings across every status, so the start page also surfaces the
+  // ones still awaiting a decision — not just the already-approved schedule.
   const { data, isLoading, isError } = useMyBookings({
-    status: APPROVED_STATUSES,
-    temporal: 'upcoming',
-    ordering: 'time_from',
+    ordering: '-time_from',
     page_size: WIDGET_LIMIT,
   });
 
@@ -99,22 +102,23 @@ export const UpcomingBookingsWidget = ({ className }: { className?: string }) =>
 
   return (
     <Card withBorder radius="lg" padding="md" className={cn(className)}>
-      <button
-        type="button"
+      <UnstyledButton
         onClick={() => navigate('/bookings')}
         className="mb-3 flex w-full items-center gap-2 text-left"
       >
-        <CalendarCheck size={18} className="text-[var(--mantine-color-green-6)]" />
+        <CalendarCheck size={18} color="var(--mantine-color-green-6)" aria-hidden="true" />
         <div className="flex-1">
           <Text component="span" fw={700} size="sm">
             {t('home.bookingsTitle')}
           </Text>
-          <Text component="span" size="xs" c="dimmed" className="ml-2">
+          {/* Mantine's Text root resets margin and is unlayered, so a Tailwind
+              `ml-*` utility gets overridden — use the style prop instead. */}
+          <Text component="span" size="xs" c="dimmed" ml="xs">
             {t('home.bookingsSubtitle')}
           </Text>
         </div>
-        <ChevronRight size={16} className="text-[var(--mantine-color-dimmed)]" />
-      </button>
+        <ChevronRight size={16} color="var(--mantine-color-dimmed)" aria-hidden="true" />
+      </UnstyledButton>
 
       {isLoading ? (
         <div className="flex justify-center py-6">

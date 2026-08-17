@@ -29,7 +29,6 @@ import Profile from './pages/Profile';
 import { Header } from './components/layout/Header';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { ACCOUNT_PATH, BROWSE_PATH } from './lib/routes';
-import { useIsMobile } from './hooks/use-mobile';
 import { localStorageColorSchemeManager, MantineProvider } from '@mantine/core';
 import { mantineTheme } from './theme/mantine';
 
@@ -40,15 +39,15 @@ const colorSchemeManager = localStorageColorSchemeManager({ key: 'bubble-theme' 
 // Configure the API client once at startup
 configureApiClient();
 
-// Root route dispatcher. "/" is the mobile start page for signed-in users; every
-// other case belongs on the canonical catalogue route, so it redirects there
-// (preserving any query string, which keeps existing "/?search=…" links working).
+// Root route dispatcher. "/" is the start page for signed-in visitors on every
+// viewport; anonymous visitors and any deep link carrying catalogue params
+// belong on the canonical browse route (preserving the query string, which
+// keeps existing "/?search=…" links working).
 const RootRoute = () => {
-  const isMobile = useIsMobile();
   const { session } = useAuth();
   const location = useLocation();
 
-  if (isMobile && session && !location.search) {
+  if (session && !location.search) {
     return <Home />;
   }
   return <Navigate to={{ pathname: BROWSE_PATH, search: location.search }} replace />;

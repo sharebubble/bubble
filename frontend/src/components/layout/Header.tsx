@@ -4,10 +4,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUnreadMessages } from '@/hooks/useMessages';
 import { SearchBar } from '@/components/layout/SearchBar';
 
+import { BROWSE_PATH } from '@/lib/routes';
 import { cn } from '@/lib/utils';
 import {
   BookMarked,
   CalendarCheck,
+  Compass,
   Handshake,
   Library,
   LogIn,
@@ -87,9 +89,23 @@ export const Header = () => {
           </div>
 
           {/* Actions — hidden below `md`, where MobileBottomNav covers the same
-              destinations (Requests, Add, Account). The breakpoint must stay in
-              sync with that bar's `md:hidden` and with useIsMobile(). */}
+              destinations (Browse, Requests, Add, Account). The breakpoint must
+              stay in sync with that bar's `hiddenFrom="md"`. */}
           <div className="hidden shrink-0 items-center gap-2 md:flex">
+            {/* Browse — "/" is the start page, so the catalogue needs its own
+                entry point here. */}
+            <Button
+              variant="subtle"
+              size="sm"
+              color="gray"
+              onClick={() => navigate(BROWSE_PATH)}
+              aria-current={location.pathname === BROWSE_PATH ? 'page' : undefined}
+              className={cn(location.pathname === BROWSE_PATH && '!font-semibold')}
+              leftSection={<Compass size={20} aria-hidden="true" />}
+            >
+              {t('header.browse')}
+            </Button>
+
             {/* Requests */}
             <Indicator
               label={unreadCount}

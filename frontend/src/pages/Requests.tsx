@@ -1,5 +1,6 @@
 import BookingCounterOfferDialog from '@/components/bookings/BookingCounterOfferDialog';
 import BookingEditDialog from '@/components/bookings/BookingEditDialog';
+import { getBookingStatusBadge } from '@/components/bookings/status';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -131,38 +132,12 @@ const Requests = () => {
   }, [messages, user, markMessageAsReadMutation]);
 
   const getStatusBadge = (status?: number) => {
-    switch (status) {
-      case 1:
-        return (
-          <Badge variant="light" color="gray">
-            {t('requests.status.pending')}
-          </Badge>
-        );
-      case 2:
-        return (
-          <Badge variant="outline" color="gray">
-            {t('requests.status.cancelled')}
-          </Badge>
-        );
-      case 3:
-        return <Badge color="green">{t('requests.status.confirmed')}</Badge>;
-      case 4:
-        return (
-          <Badge variant="outline" color="gray">
-            {t('requests.status.completed')}
-          </Badge>
-        );
-      case 5:
-        return <Badge color="red">{t('requests.status.rejected')}</Badge>;
-      case 6:
-        return <Badge color="teal">{t('requests.status.inProgress')}</Badge>;
-      default:
-        return (
-          <Badge variant="light" color="gray">
-            {t('requests.status.unknown')}
-          </Badge>
-        );
-    }
+    const { color, variant, labelKey } = getBookingStatusBadge(status);
+    return (
+      <Badge color={color} variant={variant}>
+        {t(labelKey)}
+      </Badge>
+    );
   };
 
   const formatDateTime = (dateString?: string | null) => {

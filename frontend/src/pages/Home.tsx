@@ -3,12 +3,13 @@ import { ItemCard } from '@/components/browse/ItemCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useItems } from '@/hooks/useItems';
 import { BROWSE_PATH } from '@/lib/routes';
-import { Text } from '@mantine/core';
+import { Text, UnstyledButton } from '@mantine/core';
 import { ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// How many of the newest items to surface as tiles on the start page.
-const NEWEST_LIMIT = 10;
+// How many of the newest items to surface as tiles on the start page. Enough to
+// fill the grid at every breakpoint without turning it into a second catalogue.
+const NEWEST_LIMIT = 12;
 
 const Home = () => {
   const { t } = useLanguage();
@@ -18,15 +19,14 @@ const Home = () => {
   const newestItems = (data?.items ?? []).slice(0, NEWEST_LIMIT);
 
   return (
-    <main className="container mx-auto max-w-3xl px-4 py-4">
-      <div className="space-y-5">
-        {/* Current & upcoming bookings */}
-        <UpcomingBookingsWidget />
+    <main className="container mx-auto max-w-6xl px-4 py-4 md:py-6">
+      {/* Single column on small screens (bookings first); on large screens the
+          bookings rail sits beside the item grid. */}
+      <div className="grid gap-5 lg:grid-cols-3 lg:items-start">
+        <UpcomingBookingsWidget className="lg:sticky lg:top-4" />
 
-        {/* Newest items */}
-        <section className="space-y-3">
-          <button
-            type="button"
+        <section className="space-y-3 lg:col-span-2">
+          <UnstyledButton
             onClick={() => navigate(BROWSE_PATH)}
             className="flex w-full items-center gap-2 text-left"
           >
@@ -35,9 +35,9 @@ const Home = () => {
             </Text>
             <Text component="span" size="sm" c="green.6" className="flex items-center gap-0.5">
               {t('home.viewAll')}
-              <ChevronRight size={16} />
+              <ChevronRight size={16} aria-hidden="true" />
             </Text>
-          </button>
+          </UnstyledButton>
 
           {isLoading ? (
             <Text c="dimmed" className="py-8 text-center">
@@ -52,7 +52,7 @@ const Home = () => {
               {t('index.noItemsFound')}
             </Text>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
               {newestItems.map(item => (
                 <ItemCard
                   key={item.id}

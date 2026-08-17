@@ -41,8 +41,9 @@ const translations = {
 
     // Mobile start page
     'home.bookingsTitle': 'Your bookings',
-    'home.bookingsSubtitle': 'Current & upcoming',
-    'home.noBookings': 'No current or upcoming bookings',
+    'home.bookingsSubtitle': 'Latest',
+    'home.noBookings': 'No bookings yet',
+    'header.browse': 'Browse',
     'home.newestItems': 'Newest items',
     'home.viewAll': 'View all',
 
@@ -744,8 +745,9 @@ const translations = {
 
     // Mobile start page
     'home.bookingsTitle': 'Deine Buchungen',
-    'home.bookingsSubtitle': 'Aktuell & bevorstehend',
-    'home.noBookings': 'Keine aktuellen oder bevorstehenden Buchungen',
+    'home.bookingsSubtitle': 'Neueste',
+    'home.noBookings': 'Noch keine Buchungen',
+    'header.browse': 'Entdecken',
     'home.newestItems': 'Neueste Artikel',
     'home.viewAll': 'Alle ansehen',
 
