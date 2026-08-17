@@ -163,6 +163,13 @@ const Index = () => {
   // Navigation helpers
   // ---------------------------------------------------------------------------
 
+  // Avoids a stray trailing '?' when there are no params left to serialize
+  // (e.g. clearing the last active filter).
+  const browsePath = (p: URLSearchParams) => {
+    const search = p.toString();
+    return `${BROWSE_PATH}${search ? `?${search}` : ''}`;
+  };
+
   /** Update URL search params and navigate, deleting 'page' by default. Pass null to delete a key. */
   const navWith = (updates: Record<string, string | null>) => {
     const p = new URLSearchParams(location.search);
@@ -171,7 +178,7 @@ const Index = () => {
       else p.set(k, v);
     }
     p.delete('page');
-    navigate(`${BROWSE_PATH}?${p.toString()}`);
+    navigate(browsePath(p));
   };
 
   const handleScopeChange = (newScope: Scope) =>
@@ -191,7 +198,7 @@ const Index = () => {
   const handlePageChange = (newPage: number) => {
     const p = new URLSearchParams(location.search);
     p.set('page', String(newPage));
-    navigate(`${BROWSE_PATH}?${p.toString()}`);
+    navigate(browsePath(p));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -202,7 +209,7 @@ const Index = () => {
     const p = new URLSearchParams(location.search);
     if (mode === 'cards') p.delete('view');
     else p.set('view', mode);
-    navigate(`${BROWSE_PATH}?${p.toString()}`, { replace: true });
+    navigate(browsePath(p), { replace: true });
   };
 
   // ---------------------------------------------------------------------------

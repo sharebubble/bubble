@@ -56,8 +56,19 @@ export const Breadcrumbs = ({ items, className }: BreadcrumbsProps) => {
           );
         }
 
+        // A non-last item is expected to carry `to` or `onClick`; if neither
+        // was passed, fall back to plain text rather than rendering a link
+        // to an undefined destination.
+        if (!item.to) {
+          return (
+            <Text key={index} size="sm" c="dimmed" truncate maw={280}>
+              {item.label}
+            </Text>
+          );
+        }
+
         return (
-          <Anchor key={index} component={Link} to={item.to!} size="sm" c="dimmed">
+          <Anchor key={index} component={Link} to={item.to} size="sm" c="dimmed">
             {item.label}
           </Anchor>
         );
