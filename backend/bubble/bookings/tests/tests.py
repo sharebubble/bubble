@@ -1241,7 +1241,7 @@ class BookingAgendaSaleTemporalTestCase(APITestCase):
 
         # Rejected sale: also terminal, should be "past" too.
         self.rejected_sale_item = ItemFactory(
-            user=self.user, sales_type=SalesType.DONATE
+            user=self.user, sales_type=SalesType.DONATE, price=None
         )
         self.rejected_sale_booking = BookingFactory(
             user=self.user,
