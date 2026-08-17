@@ -8,7 +8,7 @@ from bubble.users.models import User
 
 
 class UserFactory(DjangoModelFactory[User]):
-    username = factory.Faker("user_name")  # type: ignore[attr-defined]
+    username = factory.Sequence(lambda n: f"user{n}")  # type: ignore[attr-defined]
     email = factory.Faker("email")  # type: ignore[attr-defined]
     name = factory.Faker("name")  # type: ignore[attr-defined]
 
