@@ -1,4 +1,4 @@
-import { getBookingStatusBadge } from '@/components/bookings/status';
+import { getBookingStatusBadge, TERMINAL_BOOKING_STATUSES } from '@/components/bookings/status';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMyBookings } from '@/hooks/useBookings';
 import { formatPrice } from '@/lib/currency';
@@ -23,6 +23,10 @@ const STATE_COLORS: Record<BookingState, string> = {
 };
 
 const getBookingState = (booking: BookingList): BookingState => {
+  // Terminal bookings (completed/cancelled/rejected) are always "past",
+  // regardless of time fields. This matters for sale-type bookings which
+  // never set time_to.
+  if (booking.status != null && TERMINAL_BOOKING_STATUSES.includes(booking.status)) return 'past';
   const now = new Date();
   const from = booking.time_from ? parseISO(booking.time_from) : null;
   const to = booking.time_to ? parseISO(booking.time_to) : null;
@@ -93,8 +97,11 @@ export const UpcomingBookingsWidget = ({ className }: { className?: string }) =>
 
   // Latest bookings across every status, so the start page also surfaces the
   // ones still awaiting a decision — not just the already-approved schedule.
+  // Ordered by most recent conversation activity (latest message, falling
+  // back to the booking's creation time) rather than the rental date, so the
+  // booking with the newest message appears first.
   const { data, isLoading, isError } = useMyBookings({
-    ordering: '-time_from',
+    ordering: '-latest_message_at',
     page_size: WIDGET_LIMIT,
   });
 

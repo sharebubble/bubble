@@ -1,5 +1,6 @@
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Max, Q
+from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
@@ -62,6 +63,10 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
     """ViewSet for bookings with filtering and permissions."""
 
     permission_classes = [DjangoModelPermissions]
+    # latest_message_at is only annotated on this viewset's queryset (not the
+    # public one), so it's added to ordering_fields here rather than on the
+    # shared base class.
+    ordering_fields = [*PublicBookingViewSet.ordering_fields, "latest_message_at"]
     ordering = ["-latest_message_at"]
 
     def get_queryset(self):
@@ -74,7 +79,10 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
                     filter=Q(messages__is_read=False)
                     & ~Q(messages__sender=self.request.user),
                 ),
-                latest_message_at=Max("messages__created_at"),
+                # Bookings without any messages yet have no latest_message_at;
+                # fall back to created_at so they still sort by recency
+                # instead of all landing at the top/bottom via NULL ordering.
+                latest_message_at=Coalesce(Max("messages__created_at"), "created_at"),
             )
         )
 
