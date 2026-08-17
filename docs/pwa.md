@@ -130,9 +130,17 @@ That prints the two values to set:
 | `VAPID_PRIVATE_KEY` | **Yes** | `backend.secrets.vapidPrivateKey` / compose env    |
 | `VAPID_SUBJECT`     | No      | Optional; defaults to `mailto:$DEFAULT_FROM_EMAIL` |
 
-`VAPID_SUBJECT` must be a `mailto:` or `https:` URL — a push service uses it to
-contact the operator about a misbehaving deployment, and rejects a bare address.
-A plain address is normalised to `mailto:` automatically.
+`VAPID_SUBJECT` is how a push service reaches the _operator_ if this deployment
+starts misbehaving — it is signed into every push and never shown to users. RFC
+8292 allows only a `mailto:` URI or an `https:` URL, and push services enforce it
+with a 403.
+
+You can leave it unset: it falls back to `DEFAULT_FROM_EMAIL`. Anything
+address-shaped is normalised, including the display-name form `production.py`
+ships (`bubble <noreply@sharebubble.org>` → `mailto:noreply@sharebubble.org`),
+since a `mailto:` URI cannot contain a display name or spaces. An `http:` URL or
+something that is not an address at all is rejected with a warning, which leaves
+push disabled rather than failing on every send later.
 
 **Generating a new keypair invalidates every existing subscription.** Browsers
 subscribe _against_ the public key and push services reject anything signed with

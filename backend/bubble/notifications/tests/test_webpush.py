@@ -83,6 +83,31 @@ def test_subject_falls_back_to_the_default_from_email() -> None:
     assert webpush.get_subject() == "mailto:noreply@example.org"
 
 
+@override_settings(
+    VAPID_SUBJECT="", DEFAULT_FROM_EMAIL="bubble <noreply@sharebubble.org>"
+)
+def test_subject_strips_a_display_name_from_the_fallback() -> None:
+    # production.py ships exactly this DEFAULT_FROM_EMAIL, and leaving
+    # VAPID_SUBJECT unset is the documented default — so this is the common path.
+    # A mailto: URI cannot contain a display name, angle brackets or spaces.
+    assert webpush.get_subject() == "mailto:noreply@sharebubble.org"
+
+
+@override_settings(VAPID_SUBJECT="Bubble Admin <admin@example.org>")
+def test_subject_strips_a_display_name_when_set_explicitly() -> None:
+    assert webpush.get_subject() == "mailto:admin@example.org"
+
+
+@override_settings(VAPID_SUBJECT="mailto:Bubble <admin@example.org>")
+def test_subject_cleans_a_display_name_inside_a_mailto_url() -> None:
+    assert webpush.get_subject() == "mailto:admin@example.org"
+
+
+@override_settings(VAPID_SUBJECT="not an address at all")
+def test_subject_rejects_something_that_is_not_an_address() -> None:
+    assert webpush.get_subject() == ""
+
+
 @override_settings(VAPID_SUBJECT="https://example.org/contact")
 def test_subject_keeps_an_https_url_as_is() -> None:
     assert webpush.get_subject() == "https://example.org/contact"
