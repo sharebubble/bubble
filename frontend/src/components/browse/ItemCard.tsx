@@ -7,7 +7,7 @@ import { getCategoryIcon } from '@/lib/categoryIcons';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
 import { formatPrice, getRentalPeriodSuffixKey, type RentalPeriod } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
-import { SalesTypeEnum, StatusB0aEnum } from '@/services/django';
+import { SalesTypeEnum, Status7D3Enum } from '@/services/django';
 import { Badge, Button, Card, Text, Tooltip } from '@mantine/core';
 import { Clock, Globe, Zap } from 'lucide-react';
 import { memo } from 'react';
@@ -30,7 +30,7 @@ interface ItemCardProps {
   isFavorited?: boolean;
   ownerId?: string;
   owner?: string;
-  status?: StatusB0aEnum | null;
+  status?: Status7D3Enum | null;
   rentalOpenEnd?: boolean;
   rentalSelfService?: boolean;
   /** When set, shows an origin badge indicating this item is from a remote instance */

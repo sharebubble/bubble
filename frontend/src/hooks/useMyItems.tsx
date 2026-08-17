@@ -5,12 +5,12 @@ import {
   itemsDestroy,
   itemsList,
   itemsPartialUpdate,
-  StatusB0aEnum,
+  Status7D3Enum,
   type PaginatedItemListList,
 } from '@/services/django';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-export const useMyItems = (page?: number, status?: StatusB0aEnum[]) => {
+export const useMyItems = (page?: number, status?: Status7D3Enum[]) => {
   const { user } = useAuth();
 
   return useQuery<PaginatedItemListList>({
@@ -37,7 +37,7 @@ export const useUpdateItemStatus = () => {
   const { t } = useLanguage();
 
   return useMutation({
-    mutationFn: async ({ itemId, status }: { itemId: string; status: StatusB0aEnum }) => {
+    mutationFn: async ({ itemId, status }: { itemId: string; status: Status7D3Enum }) => {
       const response = await itemsPartialUpdate({
         path: { id: itemId },
         body: { status },

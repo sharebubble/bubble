@@ -18,7 +18,7 @@ import {
   type CategoryEnum,
   type ConditionEnum,
   type SalesTypeEnum,
-  type StatusB0aEnum,
+  type Status7D3Enum,
 } from '@/services/django';
 import { Badge, Group, Pagination, SegmentedControl, Table, Text } from '@mantine/core';
 import { Grid3X3, List } from 'lucide-react';
@@ -30,7 +30,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 // ---------------------------------------------------------------------------
 
 type BrowseItemsPageFilters = {
-  status?: StatusB0aEnum | StatusB0aEnum[];
+  status?: Status7D3Enum | Status7D3Enum[];
   salesTypes?: SalesTypeEnum[];
 };
 
@@ -51,7 +51,7 @@ const DEFAULT_CONDITIONS: ConditionEnum[] = [0, 1];
 const AVAILABILITY_STATUSES = {
   available: [2, 3],
   rented: [4],
-} satisfies Record<string, StatusB0aEnum[]>;
+} satisfies Record<string, Status7D3Enum[]>;
 type Availability = keyof typeof AVAILABILITY_STATUSES;
 const LS_KEY = 'indexViewMode';
 
@@ -211,7 +211,7 @@ const Index = () => {
 
   // The availability facet (when set) selects the matching statuses; otherwise
   // every item is shown regardless of availability.
-  const statusFilter: StatusB0aEnum | StatusB0aEnum[] | undefined = availability
+  const statusFilter: Status7D3Enum | Status7D3Enum[] | undefined = availability
     ? AVAILABILITY_STATUSES[availability]
     : itemFilters?.status;
 
@@ -414,11 +414,11 @@ const Index = () => {
                       <Table.Td>
                         {typeof item.status !== 'undefined' && item.status !== null && (
                           <Badge
-                            color={getStatusMantineColor(item.status as StatusB0aEnum)}
+                            color={getStatusMantineColor(item.status as Status7D3Enum)}
                             size="sm"
                           >
-                            {getStatusLabel(item.status as StatusB0aEnum)
-                              ? t(`status.${getStatusLabel(item.status as StatusB0aEnum)}`)
+                            {getStatusLabel(item.status as Status7D3Enum)
+                              ? t(`status.${getStatusLabel(item.status as Status7D3Enum)}`)
                               : ''}
                           </Badge>
                         )}
