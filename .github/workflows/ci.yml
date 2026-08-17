@@ -50,6 +50,9 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci --prefix frontend
 
+      - name: Type-check frontend
+        run: npm run typecheck --prefix frontend
+
       - name: Cache pre-commit environments
         uses: actions/cache@v6
         with:
