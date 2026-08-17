@@ -28,6 +28,25 @@ const translations = {
     'header.light': 'Light',
     'header.dark': 'Dark',
 
+    // Mobile bottom navigation
+    'nav.primary': 'Main navigation',
+    'nav.home': 'Home',
+    'nav.search': 'Search',
+    'nav.add': 'Add',
+    'nav.requests': 'Requests',
+    'nav.profile': 'Profile',
+
+    // Account hub (mobile)
+    'account.settings': 'Profile settings',
+
+    // Mobile start page
+    'home.bookingsTitle': 'Your bookings',
+    'home.bookingsSubtitle': 'Latest',
+    'home.noBookings': 'No bookings yet',
+    'header.browse': 'Browse',
+    'home.newestItems': 'Newest items',
+    'home.viewAll': 'View all',
+
     // Search bar / facets
     'search.filterBy': 'Filter by',
     'search.type': 'Type',
@@ -712,6 +731,25 @@ const translations = {
     'header.theme': 'Design',
     'header.light': 'Hell',
     'header.dark': 'Dunkel',
+
+    // Mobile bottom navigation
+    'nav.primary': 'Hauptnavigation',
+    'nav.home': 'Start',
+    'nav.search': 'Suche',
+    'nav.add': 'Einstellen',
+    'nav.requests': 'Anfragen',
+    'nav.profile': 'Profil',
+
+    // Account hub (mobile)
+    'account.settings': 'Profileinstellungen',
+
+    // Mobile start page
+    'home.bookingsTitle': 'Deine Buchungen',
+    'home.bookingsSubtitle': 'Neueste',
+    'home.noBookings': 'Noch keine Buchungen',
+    'header.browse': 'Entdecken',
+    'home.newestItems': 'Neueste Artikel',
+    'home.viewAll': 'Alle ansehen',
 
     // Search bar / facets
     'search.filterBy': 'Filtern nach',

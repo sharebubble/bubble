@@ -6,7 +6,7 @@ import {
   ConditionEnum,
   RentalPeriodEnum,
   SalesTypeEnum,
-  StatusB0aEnum,
+  Status7D3Enum,
   VisibilityEnum,
 } from '@/services/django';
 import { Checkbox, NumberInput, Select, Text, Textarea, TextInput } from '@mantine/core';
@@ -361,7 +361,7 @@ export const PricingFields = ({
 
 interface StatusFieldProps {
   formData: {
-    status: StatusB0aEnum | '';
+    status: Status7D3Enum | '';
     sales_type?: SalesTypeEnum | '';
   };
   setFormData: (data: any) => void;
@@ -370,7 +370,7 @@ interface StatusFieldProps {
   onFieldChange?: (fieldName: string, value: unknown) => void;
 }
 
-const SELL_DONATE_STATUSES: { value: StatusB0aEnum; label: string }[] = [
+const SELL_DONATE_STATUSES: { value: Status7D3Enum; label: string }[] = [
   { value: 0, label: 'draft' },
   { value: 2, label: 'available' },
   { value: 3, label: 'reserved' },
@@ -378,14 +378,14 @@ const SELL_DONATE_STATUSES: { value: StatusB0aEnum; label: string }[] = [
   { value: 6, label: 'archived' },
 ];
 
-const RENT_BORROW_STATUSES: { value: StatusB0aEnum; label: string }[] = [
+const RENT_BORROW_STATUSES: { value: Status7D3Enum; label: string }[] = [
   { value: 0, label: 'draft' },
   { value: 2, label: 'available' },
   { value: 4, label: 'rented' },
   { value: 6, label: 'archived' },
 ];
 
-const ALL_STATUSES: { value: StatusB0aEnum; label: string }[] = [
+const ALL_STATUSES: { value: Status7D3Enum; label: string }[] = [
   { value: 0, label: 'draft' },
   { value: 2, label: 'available' },
   { value: 3, label: 'reserved' },
@@ -424,7 +424,7 @@ export const StatusField = ({
         value={formData.status === '' ? null : String(formData.status)}
         onChange={value => {
           if (value !== null) {
-            const statusValue = Number(value) as StatusB0aEnum;
+            const statusValue = Number(value) as Status7D3Enum;
             setFormData({
               ...formData,
               status: statusValue,

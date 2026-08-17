@@ -10,7 +10,7 @@ import {
   getSalesTypeBadgeProps,
   getStatusMantineColor,
 } from '@/components/items/status';
-import { SalesTypeEnum, StatusB0aEnum } from '@/services/django';
+import { SalesTypeEnum, Status7D3Enum } from '@/services/django';
 import {
   ActionIcon,
   Badge,
@@ -94,8 +94,8 @@ const MyItems = () => {
     itemId: string,
     newStatus: 'draft' | 'available' | 'reserved' | 'rented' | 'sold' | 'archived',
   ) => {
-    // Map string status to StatusB0aEnum number
-    let statusEnum: StatusB0aEnum;
+    // Map string status to Status7D3Enum number
+    let statusEnum: Status7D3Enum;
     switch (newStatus) {
       case 'draft':
         statusEnum = 0;
@@ -170,7 +170,7 @@ const MyItems = () => {
     ];
   };
 
-  const getStatusText = (status: StatusB0aEnum | undefined) => {
+  const getStatusText = (status: Status7D3Enum | undefined) => {
     switch (status) {
       case 0:
         return t('status.draft');

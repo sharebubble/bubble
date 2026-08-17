@@ -1,7 +1,7 @@
 import {
   publicItemsList,
   type PublicItemsListData,
-  type StatusB0aEnum,
+  type Status7D3Enum,
   type ConditionEnum,
   type SalesTypeEnum,
 } from '@/services/django';
@@ -25,7 +25,7 @@ export const useItems = ({
   category?: ItemCategory;
   search?: string;
   page?: number;
-  status?: StatusB0aEnum | StatusB0aEnum[];
+  status?: Status7D3Enum | Status7D3Enum[];
   minPrice?: number;
   maxPrice?: number;
   /** Restrict to free items (null or zero price). */

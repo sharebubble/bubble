@@ -23,7 +23,7 @@ import {
   PatchedItemWritable,
   RentalPeriodEnum,
   SalesTypeEnum,
-  StatusB0aEnum,
+  Status7D3Enum,
   VisibilityEnum,
 } from '@/services/django';
 import {
@@ -61,7 +61,7 @@ export type EditItemFormData = {
   description: string;
   category: CategoryEnum | '';
   condition: ConditionEnum | '';
-  status: StatusB0aEnum | '';
+  status: Status7D3Enum | '';
   visibility: VisibilityEnum | '';
   sales_type: SalesTypeEnum | '';
   price: string;
@@ -170,7 +170,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
     description: '',
     category: '' as CategoryEnum | '',
     condition: '' as ConditionEnum | '',
-    status: '' as StatusB0aEnum | '',
+    status: '' as Status7D3Enum | '',
     visibility: 1 as VisibilityEnum | '',
     sales_type: '' as SalesTypeEnum | '',
     price: '',
@@ -370,7 +370,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
           description: formData.description,
           category: formData.category as CategoryEnum,
           condition: formData.condition as ConditionEnum,
-          status: formData.status !== '' ? (formData.status as StatusB0aEnum) : undefined,
+          status: formData.status !== '' ? (formData.status as Status7D3Enum) : undefined,
           visibility:
             formData.visibility !== '' ? (formData.visibility as VisibilityEnum) : undefined,
           sales_type: formData.sales_type as SalesTypeEnum,
