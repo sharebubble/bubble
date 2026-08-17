@@ -2,6 +2,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Count, Max, Q
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_spectacular.utils import extend_schema
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -157,6 +158,9 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
     SALE_TYPES = (SalesType.SELL, SalesType.DONATE)
     RENTAL_TYPES = (SalesType.RENT, SalesType.BORROW)
 
+    # These actions act on the booking identified by the URL alone; declaring
+    # request=None keeps the generated client from demanding a request body.
+    @extend_schema(request=None, responses=BookingSerializer)
     @action(detail=True, methods=["post"])
     def confirm_received(self, request, id=None):  # noqa: A002
         """Booker confirms they received the item.
@@ -204,6 +208,7 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
         serializer = self.get_serializer(booking)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @extend_schema(request=None, responses=BookingSerializer)
     @action(detail=True, methods=["post"])
     def confirm_returned(self, request, id=None):  # noqa: A002
         """Owner confirms a rented item was returned, completing the rental.
