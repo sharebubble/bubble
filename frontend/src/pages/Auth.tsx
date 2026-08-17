@@ -2,11 +2,13 @@ import LoginWithSocialButton from '@/components/auth/LoginWithSocialButton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppConfig } from '@/hooks/useAppConfig';
 import { authAPI, LoginCredentials } from '@/services/custom/auth';
+import { redirectToSocialProvider } from '@/lib/utils';
 import { client } from '@/services/django/client.gen';
 import { Alert, Button, Card, Divider, PasswordInput, Text, TextInput, Title } from '@mantine/core';
 import { Eye, EyeOff, Loader } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface AuthConfig {
@@ -29,6 +31,10 @@ const Auth = () => {
   const { toast } = useToast();
   const { t } = useLanguage();
   const { refreshAuth } = useAuth();
+  const { requireLogin } = useAppConfig();
+
+  // Guards the auto-redirect so it only fires once.
+  const autoRedirectedRef = useRef(false);
 
   const [authConfig, setAuthConfig] = useState<AuthConfig | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
@@ -37,6 +43,7 @@ const Auth = () => {
     username: '',
     password: '',
   });
+  const [redirectingTo, setRedirectingTo] = useState<string | null>(null);
 
   // Fetch CSRF token on component mount
   useEffect(() => {
@@ -54,6 +61,22 @@ const Auth = () => {
     initializeCSRF();
   }, []);
 
+  // When anonymous access is disabled and exactly one social provider is
+  // configured with no username/password login, skip the login screen and
+  // forward straight to the provider. Otherwise users would only ever see a
+  // single "Login with X" button that does the same thing.
+  const maybeAutoRedirect = (config: AuthConfig | null) => {
+    if (!requireLogin || autoRedirectedRef.current) return;
+    const providers = config?.data?.socialaccount?.providers ?? [];
+    const loginMethods = config?.data?.account?.login_methods ?? [];
+
+    if (providers.length === 1 && loginMethods.length === 0) {
+      autoRedirectedRef.current = true;
+      setRedirectingTo(providers[0].name);
+      redirectToSocialProvider(providers[0].id);
+    }
+  };
+
   // Fetch auth config to determine which login methods and social providers are available
   useEffect(() => {
     const fetchConfig = async () => {
@@ -65,6 +88,7 @@ const Auth = () => {
         }
         const json = await res.json();
         setAuthConfig(json);
+        maybeAutoRedirect(json);
       } catch (err) {
         console.error('Failed to fetch auth config:', err);
         setAuthConfig(null);
@@ -74,6 +98,8 @@ const Auth = () => {
     };
 
     fetchConfig();
+    // requireLogin is resolved by the time this screen renders (App gates on it)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -129,7 +155,11 @@ const Auth = () => {
           <div className="space-y-6 mt-6">
             {/* Social Login Button */}
             <div className="text-center">
-              {loadingConfig ? (
+              {redirectingTo ? (
+                <Text size="sm" c="dimmed">
+                  {t('auth.redirectingToProvider', { provider: redirectingTo })}
+                </Text>
+              ) : loadingConfig ? (
                 <Text size="sm" c="dimmed">
                   {t('common.loading')}
                 </Text>

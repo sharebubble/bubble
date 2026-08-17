@@ -9,7 +9,7 @@ interface LanguageContextType {
   /** Apply a language coming from an external source (e.g. profile API)
    *  without triggering a save-back. */
   syncLanguage: (lang: Language) => void;
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, string | number>) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -93,6 +93,7 @@ const translations = {
     'auth.loggedInAs': 'Logged in successfully as',
     'auth.loginFailed': 'Login failed. Please check your credentials.',
     'auth.unexpectedError': 'An unexpected error occurred. Please try again.',
+    'auth.redirectingToProvider': 'Redirecting to {{provider}}...',
 
     // Index Page
     'index.itemsFound': '{count} items found',
@@ -775,6 +776,7 @@ const translations = {
     'auth.loggedInAs': 'Erfolgreich eingeloggt als',
     'auth.loginFailed': 'Anmeldung fehlgeschlagen. Bitte überprüfe deine Zugangsdaten.',
     'auth.unexpectedError': 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.',
+    'auth.redirectingToProvider': 'Weiterleitung zu {{provider}}...',
 
     // Index Page
     'index.itemsFound': '{count} Artikel gefunden',
@@ -1427,8 +1429,14 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const t = useCallback(
-    (key: string): string => {
-      return translations[language][key as keyof (typeof translations)['en']] || key;
+    (key: string, params?: Record<string, string | number>): string => {
+      let value = translations[language][key as keyof (typeof translations)['en']] || key;
+      if (params) {
+        for (const [k, v] of Object.entries(params)) {
+          value = value.replace(new RegExp(`{{${k}}}`, 'g'), String(v));
+        }
+      }
+      return value;
     },
     [language],
   );
