@@ -1,9 +1,10 @@
 import { ImageUploadStep } from '@/components/items/ImageUploadStep';
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateItem, useUpdateItem } from '@/hooks/useCreateItem';
-import { Button, Text, Title } from '@mantine/core';
-import { ArrowLeft } from 'lucide-react';
+import { Text, Title } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -25,6 +26,7 @@ interface WizardData {
 const CreateItem = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const createItemMutation = useCreateItem();
   const updateItemMutation = useUpdateItem();
@@ -44,6 +46,8 @@ const CreateItem = () => {
     }
   };
 
+  // Also used by the breadcrumb's "Home" crumb, so the wizard's own back
+  // button and the page-level back navigation agree on the same target.
   const handleBack = () => {
     navigate('/');
   };
@@ -52,9 +56,9 @@ const CreateItem = () => {
     <div className="container mx-auto max-w-2xl px-4 py-8">
       {/* Header with Back Button */}
       <div className="space-y-6">
-        <Button variant="subtle" onClick={() => navigate(-1)} leftSection={<ArrowLeft size={16} />}>
-          Back
-        </Button>
+        <Breadcrumbs
+          items={[{ label: t('nav.home'), onClick: handleBack }, { label: t('editItem.listItem') }]}
+        />
 
         {/* Simple Header */}
         <div className="space-y-2">

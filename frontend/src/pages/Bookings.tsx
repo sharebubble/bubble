@@ -22,8 +22,8 @@ import { cn } from '@/lib/utils';
 import type { BookingList } from '@/services/django';
 import { format, formatDuration, intervalToDuration, isAfter, isBefore, parseISO } from 'date-fns';
 import { Calendar, Clock, Package, Search, Square, User } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -261,22 +261,73 @@ const MyBookingsPage = () => {
   };
 
   // ── controls ───────────────────────────────────────────────────────────────
-  const [searchInput, setSearchInput] = useState('');
-  const [debouncedSearch] = useDebouncedValue(searchInput.trim(), 300);
-  const [direction, setDirection] = useState<Direction>('upcoming');
-  const [role, setRole] = useState<Role>('');
+  // Filters live in the URL (rather than local state) so the current view
+  // survives a refresh and a shared link reproduces what was shared.
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const direction: Direction = searchParams.get('dir') === 'past' ? 'past' : 'upcoming';
+  const roleParam = searchParams.get('role');
+  const role: Role = roleParam === 'owner' || roleParam === 'renter' ? roleParam : '';
   // Pending requests are surfaced by default so incoming/outstanding requests
   // aren't hidden behind an extra click.
-  const [showPending, setShowPending] = useState(true);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
-  const [page, setPage] = useState(1);
+  const showPending = searchParams.get('pending') !== '0';
+  const pageSizeParam = searchParams.get('pageSize');
+  const pageSize =
+    pageSizeParam && PAGE_SIZE_OPTIONS.includes(pageSizeParam)
+      ? Number(pageSizeParam)
+      : DEFAULT_PAGE_SIZE;
+  const pageParam = Number(searchParams.get('page'));
+  const page = Number.isInteger(pageParam) && pageParam >= 1 ? pageParam : 1;
 
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('q') ?? '');
+  const [debouncedSearch] = useDebouncedValue(searchInput.trim(), 300);
   const isSearching = debouncedSearch.length > 0;
 
-  // Reset to the first page whenever any filter changes.
+  /** Apply a discrete filter change: pushes a new history entry (Back steps
+   *  through filter changes, matching the rest of the app) and drops 'page'
+   *  since a filter change invalidates whatever page was being viewed. */
+  const updateFilters = (updates: Record<string, string | null>) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      for (const [key, value] of Object.entries(updates)) {
+        if (value === null) next.delete(key);
+        else next.set(key, value);
+      }
+      next.delete('page');
+      return next;
+    });
+  };
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        if (newPage <= 1) next.delete('page');
+        else next.set('page', String(newPage));
+        return next;
+      });
+    },
+    [setSearchParams],
+  );
+
+  // The debounced search term is committed to the URL on its own, via
+  // `replace` so every keystroke doesn't spam browser history.
   useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, direction, role, showPending, pageSize]);
+    if ((searchParams.get('q') ?? '') === debouncedSearch) return;
+    setSearchParams(
+      prev => {
+        const next = new URLSearchParams(prev);
+        if (debouncedSearch) next.set('q', debouncedSearch);
+        else next.delete('q');
+        next.delete('page');
+        return next;
+      },
+      { replace: true },
+    );
+    // Only debouncedSearch should trigger this — reading searchParams here is
+    // just a guard against a redundant no-op update, not a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
 
   const handleEndBooking = async (id: string) => {
     setEndingId(id);
@@ -324,8 +375,8 @@ const MyBookingsPage = () => {
   // Keep the current page in range if the result set shrinks (e.g. after a
   // booking is ended and the list refetches with a smaller total).
   useEffect(() => {
-    if (page > totalPages) setPage(totalPages);
-  }, [page, totalPages]);
+    if (page > totalPages) handlePageChange(totalPages);
+  }, [page, totalPages, handlePageChange]);
 
   const annotated = useMemo(
     () => bookings.map(b => ({ booking: b, state: getBookingState(b) })),
@@ -364,7 +415,7 @@ const MyBookingsPage = () => {
                 />
                 <Checkbox
                   checked={showPending}
-                  onChange={e => setShowPending(e.currentTarget.checked)}
+                  onChange={e => updateFilters({ pending: e.currentTarget.checked ? null : '0' })}
                   label={t('bookings.showPending')}
                 />
               </div>
@@ -374,7 +425,7 @@ const MyBookingsPage = () => {
                   <SegmentedControl
                     size="xs"
                     value={direction}
-                    onChange={value => setDirection(value as Direction)}
+                    onChange={value => updateFilters({ dir: value === 'upcoming' ? null : value })}
                     data={[
                       { label: t('bookings.directionPast'), value: 'past' },
                       { label: t('bookings.directionUpcoming'), value: 'upcoming' },
@@ -384,7 +435,7 @@ const MyBookingsPage = () => {
                 <SegmentedControl
                   size="xs"
                   value={role || 'all'}
-                  onChange={value => setRole(value === 'all' ? '' : (value as Role))}
+                  onChange={value => updateFilters({ role: value === 'all' ? null : value })}
                   data={[
                     { label: t('bookings.filterAll'), value: 'all' },
                     { label: t('bookings.filterOwner'), value: 'owner' },
@@ -401,7 +452,11 @@ const MyBookingsPage = () => {
                   w={72}
                   size="xs"
                   value={String(pageSize)}
-                  onChange={value => value && setPageSize(Number(value))}
+                  onChange={value =>
+                    updateFilters({
+                      pageSize: value && value !== String(DEFAULT_PAGE_SIZE) ? value : null,
+                    })
+                  }
                   data={PAGE_SIZE_OPTIONS}
                   allowDeselect={false}
                   aria-label={t('bookings.perPage')}
@@ -459,7 +514,12 @@ const MyBookingsPage = () => {
 
               {totalPages > 1 && (
                 <div className="flex justify-center py-3 border-t shrink-0">
-                  <Pagination total={totalPages} value={page} onChange={setPage} size="sm" />
+                  <Pagination
+                    total={totalPages}
+                    value={page}
+                    onChange={handlePageChange}
+                    size="sm"
+                  />
                 </div>
               )}
             </Card>

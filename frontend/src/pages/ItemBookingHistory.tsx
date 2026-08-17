@@ -1,12 +1,13 @@
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useItem } from '@/hooks/useItem';
 import { useItemBookingHistory } from '@/hooks/useItemBookingHistory';
+import { BROWSE_PATH } from '@/lib/routes';
 import { formatPrice } from '@/lib/currency';
 import type { ItemBookingHistoryEntry } from '@/services/custom/itemBookings';
-import { Badge, Button, Loader, Table, Text, Title } from '@mantine/core';
+import { Badge, Loader, Table, Text, Title } from '@mantine/core';
 import { format, formatDistanceStrict } from 'date-fns';
-import { ArrowLeft } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 
 /** Map a booking status code to a coloured badge. */
 const StatusBadge = ({ status, label }: { status: number; label: string }) => {
@@ -22,7 +23,6 @@ const StatusBadge = ({ status, label }: { status: number; label: string }) => {
 
 const ItemBookingHistory = () => {
   const { itemUuid } = useParams<{ itemUuid: string }>();
-  const navigate = useNavigate();
   const { t } = useLanguage();
 
   const { data: item } = useItem(itemUuid);
@@ -45,14 +45,16 @@ const ItemBookingHistory = () => {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
-      <Button
-        variant="subtle"
-        onClick={() => (itemUuid ? navigate(`/item/${itemUuid}`) : navigate(-1))}
-        mb="lg"
-        leftSection={<ArrowLeft size={16} />}
-      >
-        {t('common.back')}
-      </Button>
+      <Breadcrumbs
+        className="mb-6"
+        items={[
+          { label: t('header.browse'), to: BROWSE_PATH },
+          ...(itemUuid
+            ? [{ label: item?.name || t('itemBookings.title'), to: `/item/${itemUuid}` }]
+            : []),
+          { label: t('itemBookings.title') },
+        ]}
+      />
 
       <Title order={2} mb={4}>
         {t('itemBookings.title')}

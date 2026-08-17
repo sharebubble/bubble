@@ -21,9 +21,7 @@ import {
 import { modals } from '@mantine/modals';
 import { BookMarked, ChevronRight, Grid3X3, List, Plus, Search, Trash2 } from 'lucide-react';
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-
-const LS_KEY = 'collectionsViewMode';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const Collections = () => {
   const { user } = useAuth();
@@ -38,13 +36,22 @@ const Collections = () => {
   const [newDescription, setNewDescription] = useState('');
   const [onlyMine, setOnlyMine] = useState(false);
   const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>(
-    () => (localStorage.getItem(LS_KEY) as 'list' | 'cards' | null) ?? 'list',
-  );
+
+  // View mode lives in the URL (rather than localStorage) so the view
+  // survives a refresh and a shared link reproduces what was shared.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const viewMode: 'list' | 'cards' = searchParams.get('view') === 'cards' ? 'cards' : 'list';
 
   const toggleViewMode = (mode: 'list' | 'cards') => {
-    setViewMode(mode);
-    localStorage.setItem(LS_KEY, mode);
+    setSearchParams(
+      prev => {
+        const next = new URLSearchParams(prev);
+        if (mode === 'list') next.delete('view');
+        else next.set('view', mode);
+        return next;
+      },
+      { replace: true },
+    );
   };
 
   const filtered = useMemo(() => {

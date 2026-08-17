@@ -1,6 +1,7 @@
 import { CalendarSubscribeButton } from '@/components/calendar/CalendarSubscribeButton';
 import { CollectionHistoryDialog } from '@/components/collections/CollectionHistoryDialog';
 import { CollectionPermissionsPanel } from '@/components/collections/CollectionPermissionsPanel';
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -24,9 +25,11 @@ import {
   Textarea,
 } from '@mantine/core';
 import { modals } from '@mantine/modals';
-import { ArrowLeft, BookMarked, Edit3, History, ShoppingCart, Trash2 } from 'lucide-react';
+import { BookMarked, Edit3, History, ShoppingCart, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+
+type EditTab = 'details' | 'permissions';
 
 const CollectionDetail = () => {
   const { collectionId } = useParams<{ collectionId: string }>();
@@ -38,7 +41,16 @@ const CollectionDetail = () => {
 
   const { data: collection, isLoading, error } = useCollection(collectionId);
 
-  const [showEdit, setShowEdit] = useState(false);
+  // The edit modal's open state and active tab both live in the URL — a
+  // survives-refresh, shareable "edit this collection's permissions" link —
+  // rather than local state. It's treated as page-local view state (like the
+  // list/card toggles), so every change replaces the current history entry
+  // instead of pushing a new one.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const editTabParam = searchParams.get('edit');
+  const showEdit = editTabParam === 'details' || editTabParam === 'permissions';
+  const editTab: EditTab = editTabParam === 'permissions' ? 'permissions' : 'details';
+
   const [showHistory, setShowHistory] = useState(false);
   const [editName, setEditName] = useState('');
   const [editSlug, setEditSlug] = useState('');
@@ -47,13 +59,27 @@ const CollectionDetail = () => {
   const isOwner = user && collection && user.username === collection.owner;
   const canRemoveItems = isOwner || !!collection?.can_remove_items;
 
+  const setEditTab = (tab: EditTab | null) => {
+    setSearchParams(
+      prev => {
+        const next = new URLSearchParams(prev);
+        if (tab) next.set('edit', tab);
+        else next.delete('edit');
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
   const openEdit = () => {
     if (!collection) return;
     setEditName(collection.name);
     setEditSlug(collection.slug ?? '');
     setEditDescription(collection.description ?? '');
-    setShowEdit(true);
+    setEditTab('details');
   };
+
+  const closeEdit = () => setEditTab(null);
 
   const handleSave = async () => {
     if (!collection || !editName.trim()) return;
@@ -63,7 +89,7 @@ const CollectionDetail = () => {
       slug: editSlug.trim() || undefined,
       description: editDescription.trim() || undefined,
     });
-    setShowEdit(false);
+    closeEdit();
   };
 
   const confirmRemove = (itemId: string) => {
@@ -98,14 +124,9 @@ const CollectionDetail = () => {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 space-y-6">
-      {/* Back button */}
-      <Button
-        variant="subtle"
-        leftSection={<ArrowLeft size={16} />}
-        onClick={() => navigate('/collections')}
-      >
-        {t('collections.backToCollections')}
-      </Button>
+      <Breadcrumbs
+        items={[{ label: t('collections.title'), to: '/collections' }, { label: collection.name }]}
+      />
 
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -261,11 +282,11 @@ const CollectionDetail = () => {
       {/* Edit dialog — tabbed: Details + Permissions (owner only) */}
       <Modal
         opened={showEdit}
-        onClose={() => setShowEdit(false)}
+        onClose={closeEdit}
         title={t('collections.editCollection')}
         size="lg"
       >
-        <Tabs defaultValue="details">
+        <Tabs value={editTab} onChange={value => setEditTab((value as EditTab) ?? 'details')}>
           <Tabs.List grow>
             <Tabs.Tab value="details">{t('collections.detailsTab')}</Tabs.Tab>
             <Tabs.Tab value="permissions">{t('collections.permissionsTab')}</Tabs.Tab>
@@ -295,7 +316,7 @@ const CollectionDetail = () => {
               rows={3}
             />
             <Group justify="flex-end">
-              <Button variant="outline" onClick={() => setShowEdit(false)}>
+              <Button variant="outline" onClick={closeEdit}>
                 {t('common.cancel')}
               </Button>
               <Button onClick={handleSave} disabled={!editName.trim() || updateMutation.isPending}>

@@ -22,7 +22,6 @@ import {
 } from '@/services/django';
 import { Badge, Group, Pagination, SegmentedControl, Table, Text } from '@mantine/core';
 import { Grid3X3, List } from 'lucide-react';
-import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 // ---------------------------------------------------------------------------
@@ -53,7 +52,6 @@ const AVAILABILITY_STATUSES = {
   rented: [4],
 } satisfies Record<string, Status7D3Enum[]>;
 type Availability = keyof typeof AVAILABILITY_STATUSES;
-const LS_KEY = 'indexViewMode';
 
 const VALID_CATEGORIES: ItemCategoryFilter[] = [
   'all',
@@ -83,10 +81,6 @@ const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>(() => {
-    const saved = localStorage.getItem(LS_KEY) as 'list' | 'cards' | null;
-    return saved ?? 'cards';
-  });
 
   // ---------------------------------------------------------------------------
   // URL param parsing
@@ -161,6 +155,10 @@ const Index = () => {
     scopeParam && (VALID_SCOPES as readonly string[]).includes(scopeParam) ? scopeParam : 'local';
   const isFederatedScope = scope === 'federated' || scope === 'all';
 
+  // View mode lives in the URL (rather than localStorage) so the browsing
+  // view survives a refresh and a shared link reproduces what was shared.
+  const viewMode: 'list' | 'cards' = params.get('view') === 'list' ? 'list' : 'cards';
+
   // ---------------------------------------------------------------------------
   // Navigation helpers
   // ---------------------------------------------------------------------------
@@ -197,9 +195,14 @@ const Index = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Display preference, not a content filter, so it replaces the current
+  // history entry rather than pushing a new one (unlike the filter changes
+  // above) and leaves 'page' untouched.
   const toggleViewMode = (mode: 'list' | 'cards') => {
-    setViewMode(mode);
-    localStorage.setItem(LS_KEY, mode);
+    const p = new URLSearchParams(location.search);
+    if (mode === 'cards') p.delete('view');
+    else p.set('view', mode);
+    navigate(`${BROWSE_PATH}?${p.toString()}`, { replace: true });
   };
 
   // ---------------------------------------------------------------------------
