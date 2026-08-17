@@ -21,7 +21,7 @@ const translations = {
     'header.shareItem': 'Share',
     'header.signIn': 'Sign In',
     'header.myProfile': 'Profile',
-    'header.items': 'Items',
+    'header.items': 'My Items',
     'header.signOut': 'Sign Out',
     'header.theme': 'Theme',
     'header.light': 'Light',
@@ -40,7 +40,7 @@ const translations = {
     'account.settings': 'Profile settings',
 
     // Mobile start page
-    'home.bookingsTitle': 'Your bookings',
+    'home.bookingsTitle': 'My bookings',
     'home.bookingsSubtitle': 'Latest',
     'home.noBookings': 'No bookings yet',
     'header.browse': 'Browse',
@@ -600,7 +600,7 @@ const translations = {
     'scanner.detected': 'Detected',
 
     // Collections
-    'collections.title': 'Collections',
+    'collections.title': 'My Collections',
     'collections.myCollections': 'My Collections',
     'collections.newCollection': 'New Collection',
     'collections.newCollectionShort': 'New',
@@ -704,7 +704,7 @@ const translations = {
     'header.shareItem': 'Teilen',
     'header.signIn': 'Anmelden',
     'header.myProfile': 'Profil',
-    'header.items': 'Artikel',
+    'header.items': 'Meine Artikel',
     'header.signOut': 'Abmelden',
     'header.theme': 'Design',
     'header.light': 'Hell',
@@ -723,7 +723,7 @@ const translations = {
     'account.settings': 'Profileinstellungen',
 
     // Mobile start page
-    'home.bookingsTitle': 'Deine Buchungen',
+    'home.bookingsTitle': 'Meine Buchungen',
     'home.bookingsSubtitle': 'Neueste',
     'home.noBookings': 'Noch keine Buchungen',
     'header.browse': 'Entdecken',
@@ -1295,7 +1295,7 @@ const translations = {
     'scanner.detected': 'Erkannt',
 
     // Collections
-    'collections.title': 'Sammlungen',
+    'collections.title': 'Meine Sammlungen',
     'collections.myCollections': 'Meine Sammlungen',
     'collections.newCollection': 'Neue Sammlung',
     'collections.newCollectionShort': 'Neu',
