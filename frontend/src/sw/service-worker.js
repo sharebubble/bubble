@@ -235,3 +235,101 @@ self.addEventListener('message', event => {
     event.waitUntil(caches.delete(MEDIA_CACHE));
   }
 });
+
+// ---------------------------------------------------------------------------
+// Push notifications
+//
+// Payloads are produced by bubble/notifications/tasks.deliver_web_push and are
+// JSON: { title, body, url, tag, event_type }. The backend has already resolved
+// the recipient's language, so nothing here needs translating.
+// ---------------------------------------------------------------------------
+
+const NOTIFICATION_ICON = '/icon-192.png';
+const NOTIFICATION_BADGE = '/icon-192.png';
+const FALLBACK_NOTIFICATION = {
+  title: 'Bubble',
+  body: 'You have a new notification.',
+  url: '/',
+};
+
+function parsePushData(event) {
+  if (!event.data) return { ...FALLBACK_NOTIFICATION };
+  try {
+    const data = event.data.json();
+    return {
+      title: data.title || FALLBACK_NOTIFICATION.title,
+      body: data.body || FALLBACK_NOTIFICATION.body,
+      url: data.url || FALLBACK_NOTIFICATION.url,
+      tag: data.tag || undefined,
+      eventType: data.event_type || undefined,
+    };
+  } catch {
+    // A payload that is not our JSON still deserves to reach the user: browsers
+    // may show their own generic notification if the handler shows nothing, and
+    // "Bubble sent you something" beats "This site has been updated in the
+    // background".
+    return { ...FALLBACK_NOTIFICATION, body: event.data.text() || FALLBACK_NOTIFICATION.body };
+  }
+}
+
+/** True when a tab of the app is open *and* on screen. */
+async function hasVisibleClient() {
+  const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  return clients.some(client => client.visibilityState === 'visible');
+}
+
+self.addEventListener('push', event => {
+  event.waitUntil(
+    (async () => {
+      const data = parsePushData(event);
+
+      // The app already shows an in-app toast over its WebSocket connection for
+      // these same events, so a system notification on top would be a duplicate.
+      // A hidden or closed tab gets no toast, which is exactly when push earns
+      // its place. (The test notification always shows: the user asked for it.)
+      if (data.eventType !== 'test' && (await hasVisibleClient())) {
+        return;
+      }
+
+      await self.registration.showNotification(data.title, {
+        body: data.body,
+        icon: NOTIFICATION_ICON,
+        badge: NOTIFICATION_BADGE,
+        // Collapses repeat notifications about one conversation into one entry.
+        tag: data.tag,
+        // With a tag set, renotify makes a follow-up message buzz again instead
+        // of silently replacing the previous entry.
+        renotify: Boolean(data.tag),
+        data: { url: data.url },
+      });
+    })(),
+  );
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+
+  const target = new URL(
+    (event.notification.data && event.notification.data.url) || '/',
+    self.location.origin,
+  );
+
+  event.waitUntil(
+    (async () => {
+      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+
+      // Prefer reusing an open tab: opening a second window on a phone leaves
+      // the user with two copies of the app.
+      for (const client of clients) {
+        if (new URL(client.url).origin !== target.origin) continue;
+        await client.focus();
+        if ('navigate' in client) {
+          await client.navigate(target.href).catch(() => {});
+        }
+        return;
+      }
+
+      await self.clients.openWindow(target.href);
+    })(),
+  );
+});

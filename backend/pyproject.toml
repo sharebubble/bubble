@@ -46,6 +46,7 @@ dependencies = [
     "http-message-signatures>=2.0.1",
     "cryptography>=50.0.0",
     "apprise>=1.12.0",
+    "pywebpush>=2.1.0",
 ]
 
 [[tool.uv.index]]

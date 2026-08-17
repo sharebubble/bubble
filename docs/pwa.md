@@ -5,17 +5,21 @@ pieces fit together, and which trade-offs were made deliberately.
 
 ## Moving parts
 
-| File                                     | Role                                                                          |
-| ---------------------------------------- | ----------------------------------------------------------------------------- |
-| `frontend/src/sw/service-worker.js`      | The worker itself. Plain JS, runs outside the bundle.                         |
-| `frontend/vite.config.ts`                | `serviceWorkerPlugin()` emits `dist/sw.js` with the build's real asset URLs.  |
-| `frontend/src/lib/serviceWorker.ts`      | Registration, update handover, cache purge on sign-out, standalone detection. |
-| `frontend/src/hooks/useInstallPrompt.ts` | Wraps `beforeinstallprompt` so the app can offer "Install app".               |
-| `frontend/public/manifest.json`          | Install metadata: icons, shortcuts, theme, scope.                             |
-| `frontend/public/offline.html`           | Last-resort fallback when even the cached shell is unavailable.               |
-| `frontend/nginx.default.conf.template`   | Serves `/sw.js` uncacheable; hashed assets immutable; icons for a week.       |
-| `e2e/specs/smoke/pwa.spec.ts`            | `@smoke`: manifest, icons, `/sw.js` cache headers.                            |
-| `e2e/specs/pwa/service-worker.spec.ts`   | `@regression`: install, precache, offline navigation, API bypass.             |
+| File                                                         | Role                                                                          |
+| ------------------------------------------------------------ | ----------------------------------------------------------------------------- |
+| `frontend/src/sw/service-worker.js`                          | The worker itself. Plain JS, runs outside the bundle.                         |
+| `frontend/vite.config.ts`                                    | `serviceWorkerPlugin()` emits `dist/sw.js` with the build's real asset URLs.  |
+| `frontend/src/lib/serviceWorker.ts`                          | Registration, update handover, cache purge on sign-out, standalone detection. |
+| `frontend/src/hooks/useInstallPrompt.ts`                     | Wraps `beforeinstallprompt` so the app can offer "Install app".               |
+| `frontend/public/manifest.json`                              | Install metadata: icons, shortcuts, theme, scope.                             |
+| `frontend/public/offline.html`                               | Last-resort fallback when even the cached shell is unavailable.               |
+| `frontend/nginx.default.conf.template`                       | Serves `/sw.js` uncacheable; hashed assets immutable; icons for a week.       |
+| `e2e/specs/smoke/pwa.spec.ts`                                | `@smoke`: manifest, icons, `/sw.js` cache headers.                            |
+| `e2e/specs/pwa/service-worker.spec.ts`                       | `@regression`: install, precache, offline navigation, API bypass.             |
+| `backend/bubble/notifications/webpush.py`                    | VAPID keys, subject normalisation, "is push usable here".                     |
+| `backend/bubble/notifications/providers/webpush_provider.py` | One send, and whether a failure means "gone".                                 |
+| `backend/bubble/notifications/api/push_views.py`             | subscribe / unsubscribe / status / test endpoints.                            |
+| `frontend/src/lib/push.ts`                                   | Permission, subscribe, and revoking on sign-out.                              |
 
 ## Why the worker is generated, not hand-written
 
@@ -101,13 +105,99 @@ npm run build --prefix frontend
 npx vite preview --prefix frontend   # or any static server; service workers need one
 ```
 
+## Push notifications
+
+Push is a second transport for the notifications Bubble already sends (new
+message, new booking, new item), reaching a user whose tab is closed. It rides on
+the existing `NotificationPreference` machinery as one more provider,
+`webpush`, alongside the Apprise channels.
+
+### Setup
+
+Push stays completely disabled until a VAPID keypair is configured — the settings
+UI hides itself, the subscribe endpoint answers 503, and the dispatcher skips the
+channel. To turn it on:
+
+```bash
+python manage.py generate_vapid_keys   # or: just manage generate_vapid_keys
+```
+
+That prints the two values to set:
+
+| Variable            | Secret? | Where                                              |
+| ------------------- | ------- | -------------------------------------------------- |
+| `VAPID_PUBLIC_KEY`  | No      | `backend.django` in Helm values / compose env      |
+| `VAPID_PRIVATE_KEY` | **Yes** | `backend.secrets.vapidPrivateKey` / compose env    |
+| `VAPID_SUBJECT`     | No      | Optional; defaults to `mailto:$DEFAULT_FROM_EMAIL` |
+
+`VAPID_SUBJECT` must be a `mailto:` or `https:` URL — a push service uses it to
+contact the operator about a misbehaving deployment, and rejects a bare address.
+A plain address is normalised to `mailto:` automatically.
+
+**Generating a new keypair invalidates every existing subscription.** Browsers
+subscribe _against_ the public key and push services reject anything signed with
+a different one, so users have to re-enable notifications. Generate once per
+environment and keep the private key with your other secrets; the command refuses
+to overwrite a configured key without `--force`.
+
+### How a device opts in
+
+Two independent things must be true before anyone is notified: the browser holds a
+subscription, and the account has the `webpush` event toggles on. The split is
+deliberate — the device grant is local and revocable per device, the event choice
+belongs to the account.
+
+1. `GET /api/config/` hands the frontend `VAPID_PUBLIC_KEY`.
+2. "Enable on this device" requests notification permission and calls
+   `pushManager.subscribe()`, then posts the subscription to
+   `POST /api/push-subscriptions/subscribe/` (`src/lib/push.ts`).
+3. Enabling also switches the `messages` event group on, so a device that opted
+   in actually receives something.
+4. `POST /api/push-subscriptions/test/` sends a test notification — the only way
+   to check the keys, the push service and the worker's handler all agree.
+
+Signing out revokes this browser's subscription _before_ the session ends
+(`revokePushOnSignOut`). Without that, the next person to sign in on a shared
+browser would inherit a subscription still registered to the previous account.
+
+### Delivery
+
+`dispatch_notification` already runs for every notifiable event; the `webpush`
+branch enqueues `deliver_web_push`, which resolves the user's devices at send time
+and fans out through `pywebpush`.
+
+- A push service answering **404/410** means the subscription is gone for good, so
+  the row is deleted. That is the only cleanup path — browsers never tell the
+  server when they drop one.
+- Any other failure (timeout, 5xx, 429) is transient and keeps the row.
+- The click target is a relative in-app path (`notification_path`), so the worker
+  can focus an already-open tab instead of opening a second window.
+
+The worker **suppresses a notification when a visible tab already has the app
+open**, because that tab has already shown an in-app toast over the WebSocket.
+The user-requested test notification is exempt.
+
+### Testing it locally
+
+Push needs a real push service, so it cannot be exercised against `localhost`
+alone — but everything up to the send can be:
+
+```bash
+just manage generate_vapid_keys       # set the printed values, restart the stack
+```
+
+Then enable notifications in Profile → Notifications and use "Send test". Chromium
+also lets you deliver a synthetic push from DevTools → Application → Service
+Workers → Push.
+
 ## Known gaps
 
-- **No push notifications.** Booking requests and messages would be a natural
-  fit, but it needs VAPID keys plus subscription endpoints on the backend; the
-  worker has no `push` handler yet.
 - **No `screenshots` in the manifest.** The entries that were there pointed at
   files that had never been committed, so they were removed. Adding real ones
   unlocks Chromium's richer install dialog.
 - **Background sync** is not used: an action taken offline fails rather than
   queueing.
+- **iOS needs the app installed.** Safari only exposes the Push API to a PWA added
+  to the home screen, so the settings block is hidden in the iOS browser.
+- **No per-device management UI.** A user can enable or disable the device they
+  are on; older devices are only visible (and removable) in the Django admin.

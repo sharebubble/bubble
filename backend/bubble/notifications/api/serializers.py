@@ -9,6 +9,7 @@ ProviderType = NotificationPreference.ProviderType
 
 # Channels the user can configure, in display order.
 PROVIDERS: tuple[str, ...] = (
+    ProviderType.WEBPUSH,
     ProviderType.ROCKETCHAT,
     ProviderType.SIGNAL,
     ProviderType.MATRIX,
@@ -35,7 +36,10 @@ class NotificationPreferenceMeSerializer(serializers.Serializer):
 
     * ``<provider>_available`` (read-only): the channel is configured on the
       backend *and* the user has filled in the field it needs to reach them.
-    * ``<provider>_target`` (read-only): the resolved recipient address.
+      For ``webpush`` there is no such field — availability means at least one
+      of the user's browsers has subscribed.
+    * ``<provider>_target`` (read-only): the resolved recipient address. Always
+      empty for ``webpush``, which addresses devices rather than an account.
     * ``<provider>_<group>`` (read/write): per event-group opt-in toggles.
       ``messages`` covers new messages and bookings; ``new_item`` covers newly
       created items.

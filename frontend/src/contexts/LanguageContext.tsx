@@ -46,6 +46,21 @@ const translations = {
     'pwa.updateAction': 'Reload now',
     'pwa.offline': "You're offline",
 
+    // Browser push notifications
+    'push.title': 'Browser notifications',
+    'push.description':
+      'Get notified about messages and bookings even when Bubble is closed. Enabled per device.',
+    'push.enable': 'Enable on this device',
+    'push.disable': 'Disable on this device',
+    'push.blocked':
+      'Notifications are blocked for this site. Allow them in your browser settings, then enable them again here.',
+    'push.deviceHint': 'These choices apply to every device you enabled.',
+    'push.test': 'Send test',
+    'push.testSent': 'Test notification sent',
+    'push.testFailed': 'Could not send the test notification',
+    'push.enableFailed': 'Could not enable notifications on this device',
+    'push.disableFailed': 'Could not disable notifications on this device',
+
     // Mobile start page
     'home.bookingsTitle': 'Your bookings',
     'home.bookingsSubtitle': 'Latest',
@@ -734,6 +749,21 @@ const translations = {
     'pwa.updateMessage': 'Eine neuere Version von Bubble ist bereit.',
     'pwa.updateAction': 'Jetzt neu laden',
     'pwa.offline': 'Du bist offline',
+
+    // Browser push notifications
+    'push.title': 'Browser-Benachrichtigungen',
+    'push.description':
+      'Werde über Nachrichten und Buchungen informiert, auch wenn Bubble geschlossen ist. Pro Gerät aktivierbar.',
+    'push.enable': 'Auf diesem Gerät aktivieren',
+    'push.disable': 'Auf diesem Gerät deaktivieren',
+    'push.blocked':
+      'Benachrichtigungen sind für diese Seite blockiert. Erlaube sie in den Browser-Einstellungen und aktiviere sie hier erneut.',
+    'push.deviceHint': 'Diese Auswahl gilt für alle Geräte, die du aktiviert hast.',
+    'push.test': 'Test senden',
+    'push.testSent': 'Test-Benachrichtigung gesendet',
+    'push.testFailed': 'Test-Benachrichtigung konnte nicht gesendet werden',
+    'push.enableFailed': 'Benachrichtigungen konnten auf diesem Gerät nicht aktiviert werden',
+    'push.disableFailed': 'Benachrichtigungen konnten auf diesem Gerät nicht deaktiviert werden',
 
     // Mobile start page
     'home.bookingsTitle': 'Deine Buchungen',

@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react';
+import { revokePushOnSignOut } from '@/lib/push';
 import { clearCachedMedia } from '@/lib/serviceWorker';
 import { authAPI, Session, SessionResponse, User } from '@/services/custom/auth';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -74,6 +75,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const signOut = useCallback(async () => {
+    // Before the session goes away: the unsubscribe call is authenticated, and a
+    // subscription left behind would keep delivering this account's notifications
+    // to a browser the next person signs in on.
+    await revokePushOnSignOut();
     await logoutMutation.mutateAsync();
   }, [logoutMutation]);
 

@@ -1,12 +1,16 @@
 import { Card, Checkbox, Paper, Stack, Text, Title } from '@mantine/core';
 import { Loader2 } from 'lucide-react';
+import { PushNotificationSettings } from '@/components/profile/PushNotificationSettings';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
   useNotificationPreferences,
   useUpdateNotificationPreferences,
 } from '@/hooks/useNotificationPreferences';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import type { NotificationPreferenceMe, PatchedNotificationPreferenceMe } from '@/services/django';
 
+// `webpush` is deliberately absent: it needs a per-device grant, so
+// PushNotificationSettings renders it instead of the generic row below.
 type Provider = 'rocketchat' | 'signal' | 'matrix' | 'email';
 
 // Only the writable boolean toggles — never the readonly availability/target fields.
@@ -23,6 +27,7 @@ export const NotificationSettings = () => {
   const { t } = useLanguage();
   const { data: prefs, isLoading } = useNotificationPreferences();
   const updatePrefs = useUpdateNotificationPreferences();
+  const { available: pushAvailable } = usePushNotifications();
 
   const isAvailable = (provider: Provider) =>
     prefs?.[`${provider}_available` as keyof NotificationPreferenceMe] === true;
@@ -45,12 +50,13 @@ export const NotificationSettings = () => {
         <div className="flex justify-center py-4">
           <Loader2 className="h-6 w-6 animate-spin" />
         </div>
-      ) : availableProviders.length === 0 ? (
+      ) : availableProviders.length === 0 && !pushAvailable ? (
         <Text size="sm" c="dimmed">
           {t('profile.notificationsUnavailable')}
         </Text>
       ) : (
         <Stack gap="lg">
+          <PushNotificationSettings />
           {availableProviders.map(provider => {
             const target = prefs?.[`${provider.id}_target` as keyof NotificationPreferenceMe] as
               string | undefined;

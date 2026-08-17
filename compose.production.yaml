@@ -29,6 +29,13 @@ x-backend: &backend
     - DJANGO_SESSION_COOKIE_SECURE=${DJANGO_SESSION_COOKIE_SECURE:-true}
     - ACCOUNT_EMAIL_VERIFICATION=${ACCOUNT_EMAIL_VERIFICATION:-mandatory}
     - SENTRY_DSN=${SENTRY_DSN:-}
+
+    # Browser push (VAPID). Generate a pair with
+    #   python manage.py generate_vapid_keys
+    # Push stays disabled while these are empty. See docs/pwa.md.
+    - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:-}
+    - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
+    - VAPID_SUBJECT=${VAPID_SUBJECT:-}
   env_file:
     - ./backend/.env-docker.production
   volumes:

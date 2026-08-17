@@ -69,4 +69,12 @@ class ConfigView(APIView):
             str(provider): is_backend_configured(provider) for provider in ProviderType
         }
 
+        # The VAPID application server key browsers must pass to
+        # pushManager.subscribe(). Public by design — it only identifies this
+        # deployment; the private half never leaves the backend. Empty when web
+        # push is not configured, which is how the frontend hides the feature.
+        from bubble.notifications.webpush import get_public_key  # noqa: PLC0415
+
+        config_values["VAPID_PUBLIC_KEY"] = get_public_key()
+
         return Response(config_values, status=status.HTTP_200_OK)
