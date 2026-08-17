@@ -1376,11 +1376,7 @@ export const itemsAiDescribeUpdate = <ThrowOnError extends boolean = true>(optio
         { name: 'X-Session-Token', type: 'apiKey' }
     ],
     url: '/api/items/{id}/ai_describe/',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
+    ...options
 });
 
 /**
@@ -1401,11 +1397,7 @@ export const itemsAiImageUpdate = <ThrowOnError extends boolean = true>(options:
         { name: 'X-Session-Token', type: 'apiKey' }
     ],
     url: '/api/items/{id}/ai_image/',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
+    ...options
 });
 
 /**

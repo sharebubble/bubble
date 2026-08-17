@@ -225,7 +225,7 @@ const EditBook = () => {
     condition: formData.condition as ConditionEnum,
     status:
       statusOverride ?? (formData.status !== '' ? (formData.status as Status7D3Enum) : undefined),
-    sales_type: formData.sales_type !== '' ? (formData.sales_type as SalesTypeEnum) : undefined,
+    sales_type: formData.sales_type as SalesTypeEnum,
     price: formData.price === '' ? null : formData.price,
     rental_period:
       formData.sales_type !== 'rent' && formData.sales_type !== 'borrow'

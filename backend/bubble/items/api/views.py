@@ -445,6 +445,7 @@ class ItemViewSet(viewsets.ModelViewSet, ItemBaseViewSet):
 
         return Response({"success": True})
 
+    @extend_schema(request=None)
     @action(detail=True, methods=["put"])
     def ai_describe(self, request, *args, **kwargs):
         """Ai describe the item and populate fields."""
@@ -470,6 +471,7 @@ class ItemViewSet(viewsets.ModelViewSet, ItemBaseViewSet):
         serializer = self.get_serializer(item)
         return Response(serializer.data)
 
+    @extend_schema(request=None)
     @action(detail=True, methods=["put"])
     def ai_image(self, request, uuid=None):
         """Generate an image from the item's name and description and attach it.
