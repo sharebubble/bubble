@@ -23,7 +23,7 @@ import type { BookingList } from '@/services/django';
 import { format, formatDuration, intervalToDuration, isAfter, isBefore, parseISO } from 'date-fns';
 import { Calendar, Clock, Package, Search, Square, User } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -233,6 +233,7 @@ const MyBookingsPage = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { bookingId: bookingIdParam } = useParams<{ bookingId?: string }>();
   const updateBookingMutation = useUpdateBooking();
   const [endingId, setEndingId] = useState<string | null>(null);
@@ -242,11 +243,20 @@ const MyBookingsPage = () => {
   // no local state (or effect to sync it) is needed.
   const selectedBookingId = bookingIdParam ?? null;
 
+  // Pushed, not replaced, so the browser Back button leaves the conversation
+  // the same way the mobile back button does.
   const handleSelectBooking = (id: string) => {
-    navigate(`/bookings/${id}`, { replace: true });
+    navigate(`/bookings/${id}`);
   };
 
+  // React Router stamps the initial history entry with key 'default', so a
+  // non-default key means the selection was pushed by us and can be popped.
+  // Deep links have nothing to pop and go to the list instead.
   const handleBack = () => {
+    if (location.key !== 'default') {
+      navigate(-1);
+      return;
+    }
     navigate('/bookings', { replace: true });
   };
 

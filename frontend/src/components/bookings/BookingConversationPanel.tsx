@@ -27,6 +27,7 @@ import { modals } from '@mantine/modals';
 import { format } from 'date-fns';
 import { ArrowLeft, Calendar, Clock, Package, RefreshCw, Send, User } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 interface BookingConversationPanelProps {
   /** The booking whose conversation should be shown. Undefined renders the
@@ -41,7 +42,7 @@ interface BookingConversationPanelProps {
 const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPanelProps) => {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { data: selectedBooking } = useBooking(bookingId || undefined);
+  const { data: selectedBooking, isLoading } = useBooking(bookingId || undefined);
   const { data: selectedItemDetails } = useItem(selectedBooking?.item_details?.id);
   const [messageText, setMessageText] = useState('');
   const updateBookingMutation = useUpdateBooking();
@@ -122,13 +123,23 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
     }
   };
 
-  if (!bookingId || !selectedBooking) {
+  if (!bookingId) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <Text component="div" c="dimmed" ta="center">
           <Calendar className="h-16 w-16 mx-auto mb-4 opacity-50" />
           <p>{t('requests.selectBooking')}</p>
         </Text>
+      </div>
+    );
+  }
+
+  // A selected-but-not-yet-loaded booking is its own state: showing the
+  // "select a booking" placeholder here would contradict the user's click.
+  if (isLoading || !selectedBooking) {
+    return (
+      <div className="flex-1 flex items-center justify-center">
+        <Text c="dimmed">{t('common.loading')}</Text>
       </div>
     );
   }
@@ -155,8 +166,8 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
           )}
 
           {/* Item Thumbnail */}
-          <a
-            href={`/item/${selectedBooking.item_details?.id || selectedBooking.item}`}
+          <Link
+            to={`/item/${selectedBooking.item_details?.id || selectedBooking.item}`}
             className="shrink-0"
           >
             <Box
@@ -175,16 +186,16 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
                 </div>
               )}
             </Box>
-          </a>
+          </Link>
 
           {/* Item Info */}
           <div className="flex-1 min-w-0">
-            <a
-              href={`/item/${selectedBooking.item_details?.id || selectedBooking.item}`}
+            <Link
+              to={`/item/${selectedBooking.item_details?.id || selectedBooking.item}`}
               className="text-lg md:text-xl font-bold mb-2 hover:underline block"
             >
               {selectedBooking.item_details?.name || t('requests.unknownItem')}
-            </a>
+            </Link>
             <div className="space-y-1">
               <Text component="div" size="sm" className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />
