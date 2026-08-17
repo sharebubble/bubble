@@ -677,10 +677,6 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
     try {
       await itemsAiImageUpdate({
         path: { id: editItemUuid },
-        body: {
-          name: formData.name,
-          description: formData.description,
-        },
       });
 
       toast({
