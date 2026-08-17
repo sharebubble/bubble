@@ -32,6 +32,7 @@ const DEFAULT_PAGE_SIZE = 20;
 
 // BookingStatus values (mirror of the backend IntegerChoices)
 const STATUS_PENDING = 1;
+const STATUS_CANCELLED = 2;
 const STATUS_CONFIRMED = 3;
 const STATUS_COMPLETED = 4;
 const STATUS_IN_PROGRESS = 6;
@@ -59,6 +60,9 @@ const formatBookedDuration = (from: string, to: string | null | undefined): stri
 type BookingState = 'active' | 'upcoming' | 'past';
 
 const getBookingState = (booking: BookingList): BookingState => {
+  // Completed / cancelled bookings are always "past", regardless of time fields.
+  // This matters for sale-type bookings which never set time_to.
+  if (booking.status === STATUS_COMPLETED || booking.status === STATUS_CANCELLED) return 'past';
   const now = new Date();
   const from = booking.time_from ? parseISO(booking.time_from) : null;
   const to = booking.time_to ? parseISO(booking.time_to) : null;

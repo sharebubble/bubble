@@ -4,6 +4,7 @@ from django.utils import timezone
 from guardian.shortcuts import get_objects_for_user
 
 from bubble.bookings.models import Booking, BookingStatus, Message
+from bubble.items.models import SalesType
 
 
 class BookingFilter(django_filters.FilterSet):
@@ -94,8 +95,21 @@ class BookingFilter(django_filters.FilterSet):
         """
         now = timezone.now()
         if value == "past":
-            # Already ended.
-            return queryset.filter(time_to__lt=now)
+            # Already ended.  Sale-type bookings (sell, donate, want_buy)
+            # never have a time_to, so treat them as ended once time_from
+            # is in the past.
+            return queryset.filter(
+                Q(time_to__lt=now)
+                | Q(
+                    time_to__isnull=True,
+                    time_from__lt=now,
+                    item__sales_type__in=[
+                        SalesType.SELL,
+                        SalesType.DONATE,
+                        SalesType.WANT_BUY,
+                    ],
+                )
+            )
         if value == "upcoming":
             # Current + future: anything that has not ended yet.
             return queryset.filter(Q(time_to__gte=now) | Q(time_to__isnull=True))

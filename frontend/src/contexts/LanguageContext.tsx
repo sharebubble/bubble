@@ -712,7 +712,7 @@ const translations = {
     'nav.primary': 'Hauptnavigation',
     'nav.home': 'Start',
     'nav.search': 'Suche',
-    'nav.add': 'Einstellen',
+    'nav.add': 'Teilen',
     'nav.bookings': 'Buchungen',
     'nav.profile': 'Profil',
 
