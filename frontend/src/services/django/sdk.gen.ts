@@ -168,11 +168,7 @@ export const bookingsConfirmReceivedCreate = <ThrowOnError extends boolean = tru
         { name: 'X-Session-Token', type: 'apiKey' }
     ],
     url: '/api/bookings/{id}/confirm_received/',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
+    ...options
 });
 
 /**
@@ -192,11 +188,7 @@ export const bookingsConfirmReturnedCreate = <ThrowOnError extends boolean = tru
         { name: 'X-Session-Token', type: 'apiKey' }
     ],
     url: '/api/bookings/{id}/confirm_returned/',
-    ...options,
-    headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-    }
+    ...options
 });
 
 /**

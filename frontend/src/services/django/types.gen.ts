@@ -2910,7 +2910,7 @@ export type BookingsUpdateResponses = {
 export type BookingsUpdateResponse = BookingsUpdateResponses[keyof BookingsUpdateResponses];
 
 export type BookingsConfirmReceivedCreateData = {
-    body: BookingWritable;
+    body?: never;
     path: {
         id: string;
     };
@@ -2925,7 +2925,7 @@ export type BookingsConfirmReceivedCreateResponses = {
 export type BookingsConfirmReceivedCreateResponse = BookingsConfirmReceivedCreateResponses[keyof BookingsConfirmReceivedCreateResponses];
 
 export type BookingsConfirmReturnedCreateData = {
-    body: BookingWritable;
+    body?: never;
     path: {
         id: string;
     };
