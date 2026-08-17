@@ -18,11 +18,10 @@ const translations = {
   en: {
     // Header
     'header.search': 'Search items in your community...',
-    'header.shareItem': 'Share Item',
+    'header.shareItem': 'Share',
     'header.signIn': 'Sign In',
     'header.myProfile': 'Profile',
     'header.items': 'Items',
-    'header.requests': 'Requests',
     'header.signOut': 'Sign Out',
     'header.theme': 'Theme',
     'header.light': 'Light',
@@ -33,7 +32,7 @@ const translations = {
     'nav.home': 'Home',
     'nav.search': 'Search',
     'nav.add': 'Add',
-    'nav.requests': 'Requests',
+    'nav.bookings': 'Bookings',
     'nav.profile': 'Profile',
 
     // Account hub (mobile)
@@ -299,14 +298,6 @@ const translations = {
     'imageManager.rotateLeft': 'Rotate left',
     'imageManager.rotateRight': 'Rotate right',
 
-    // Requests
-    'requests.title': 'Requests',
-    'requests.noConversations': 'No conversations yet',
-    'requests.startConversation': 'Start a conversation by messaging someone about their item!',
-    'requests.typeMessage': 'Type a message...',
-    'requests.send': 'Send',
-    'requests.selectConversation': 'Select a conversation to start messaging',
-
     // Common
     'common.loading': 'Loading...',
     'common.error': 'Error',
@@ -364,32 +355,21 @@ const translations = {
     'calendar.week': 'Week',
     'calendar.month': 'Month',
 
-    // Requests Page
-    'requests.allBookings': 'All Requests',
-    'requests.noBookings': 'No requests yet',
-    'requests.selectBooking': 'Select a request to view details',
-    'requests.bookingDetails': 'Request Details',
-    'requests.bookingItem': 'Request',
+    // Booking conversation panel (Bookings page)
+    'requests.selectBooking': 'Select a booking to view details',
     'requests.unknownItem': 'Unknown Item',
-    'requests.user': 'User',
-    'requests.bookingId': 'Request ID',
-    'requests.itemId': 'Item ID',
     'requests.requestFrom': 'Request from',
-    'requests.requestTo': 'Request to',
     'requests.offerAmount': 'Offer Amount',
     'requests.counterOffer': 'Counter Offer',
     'requests.rentalPeriod': 'Rental Period',
-    'requests.noDate': 'No date specified',
     'requests.accept': 'Accept',
     'requests.acceptCounterOffer': 'Accept counteroffer',
     'requests.reject': 'Reject',
     'requests.cancel': 'Cancel Request',
     'requests.noMessages': 'No messages yet',
-    'requests.messagesComingSoon': 'Messages feature coming soon',
-    'requests.messagesDescription': 'You will be able to chat about requests here',
-    'requests.messages': 'Messages',
+    'requests.startConversation': 'Start the conversation by sending a message',
+    'requests.typeMessage': 'Type a message...',
     'requests.refresh': 'Refresh',
-    'requests.refreshing': 'Refreshing...',
     'requests.editBooking': 'Edit Request',
     'requests.editBookingDescription': 'Edit rental period or offered price for this request.',
     'requests.update': 'Update',
@@ -400,7 +380,6 @@ const translations = {
     'requests.status.pending': 'Pending',
     'requests.status.cancelled': 'Cancelled',
     'requests.status.confirmed': 'Confirmed',
-    'requests.status.accepted': 'Accepted',
     'requests.status.rejected': 'Rejected',
     'requests.status.completed': 'Completed',
     'requests.status.inProgress': 'In Progress',
@@ -720,11 +699,10 @@ const translations = {
   de: {
     // Header
     'header.search': 'Suche Artikel in deiner Community...',
-    'header.shareItem': 'Artikel teilen',
+    'header.shareItem': 'Teilen',
     'header.signIn': 'Anmelden',
     'header.myProfile': 'Profil',
     'header.items': 'Artikel',
-    'header.requests': 'Anfragen',
     'header.signOut': 'Abmelden',
     'header.theme': 'Design',
     'header.light': 'Hell',
@@ -735,7 +713,7 @@ const translations = {
     'nav.home': 'Start',
     'nav.search': 'Suche',
     'nav.add': 'Einstellen',
-    'nav.requests': 'Anfragen',
+    'nav.bookings': 'Buchungen',
     'nav.profile': 'Profil',
 
     // Account hub (mobile)
@@ -1008,15 +986,6 @@ const translations = {
     'imageManager.rotateLeft': 'Links drehen',
     'imageManager.rotateRight': 'Rechts drehen',
 
-    // Requests
-    'requests.title': 'Anfragen',
-    'requests.noConversations': 'Noch keine Unterhaltungen',
-    'requests.startConversation':
-      'Beginne eine Unterhaltung, indem du jemanden wegen seines Artikels anschreibst!',
-    'requests.typeMessage': 'Nachricht eingeben...',
-    'requests.send': 'Senden',
-    'requests.selectConversation': 'Wähle eine Unterhaltung aus, um zu chatten',
-
     // Common
     'common.loading': 'Lädt...',
     'common.error': 'Fehler',
@@ -1077,32 +1046,21 @@ const translations = {
     'calendar.week': 'Woche',
     'calendar.month': 'Monat',
 
-    // Requests Page
-    'requests.allBookings': 'Alle Anfragen',
-    'requests.noBookings': 'Noch keine Anfragen',
-    'requests.selectBooking': 'Wähle eine Anfrage aus, um Details zu sehen',
-    'requests.bookingDetails': 'Anfragedetails',
-    'requests.bookingItem': 'Anfrage',
+    // Booking conversation panel (Bookings page)
+    'requests.selectBooking': 'Wähle eine Buchung aus, um Details zu sehen',
     'requests.unknownItem': 'Unbekannter Artikel',
-    'requests.user': 'Benutzer',
-    'requests.bookingId': 'Anfrage-ID',
-    'requests.itemId': 'Artikel-ID',
     'requests.requestFrom': 'Anfrage von',
-    'requests.requestTo': 'Anfrage an',
     'requests.offerAmount': 'Angebot',
     'requests.counterOffer': 'Gegenangebot',
     'requests.rentalPeriod': 'Mietzeitraum',
-    'requests.noDate': 'Kein Datum angegeben',
     'requests.accept': 'Annehmen',
     'requests.acceptCounterOffer': 'Gegenvorschlag akzeptieren',
     'requests.reject': 'Ablehnen',
     'requests.cancel': 'Anfrage stornieren',
     'requests.noMessages': 'Noch keine Nachrichten',
-    'requests.messagesComingSoon': 'Nachrichtenfunktion kommt bald',
-    'requests.messagesDescription': 'Hier kannst du bald über Anfragen chatten',
-    'requests.messages': 'Nachrichten',
+    'requests.startConversation': 'Beginne die Konversation, indem du eine Nachricht sendest',
+    'requests.typeMessage': 'Nachricht eingeben...',
     'requests.refresh': 'Aktualisieren',
-    'requests.refreshing': 'Wird aktualisiert...',
     'requests.editBooking': 'Anfrage bearbeiten',
     'requests.editBookingDescription':
       'Bearbeite Mietzeitraum oder angebotenen Preis für diese Anfrage.',
@@ -1114,7 +1072,6 @@ const translations = {
     'requests.status.pending': 'Ausstehend',
     'requests.status.cancelled': 'Storniert',
     'requests.status.confirmed': 'Bestätigt',
-    'requests.status.accepted': 'Angenommen',
     'requests.status.rejected': 'Abgelehnt',
     'requests.status.completed': 'Abgeschlossen',
     'requests.status.inProgress': 'In Bearbeitung',

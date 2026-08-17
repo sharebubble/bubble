@@ -43,7 +43,7 @@ const BookingLine = ({ booking }: { booking: BookingList }) => {
 
   return (
     <UnstyledButton
-      onClick={() => navigate(`/requests/${booking.id}`)}
+      onClick={() => navigate(`/bookings/${booking.id}`)}
       className="flex w-full items-center gap-3 p-2 text-left"
       style={{
         borderRadius: 'var(--mantine-radius-md)',

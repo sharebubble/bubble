@@ -1,3 +1,4 @@
+import BookingConversationPanel from '@/components/bookings/BookingConversationPanel';
 import {
   Badge,
   Button,
@@ -5,6 +6,7 @@ import {
   Checkbox,
   Group,
   Pagination,
+  ScrollArea,
   SegmentedControl,
   Select,
   Text,
@@ -21,7 +23,7 @@ import type { BookingList } from '@/services/django';
 import { format, formatDuration, intervalToDuration, isAfter, isBefore, parseISO } from 'date-fns';
 import { Calendar, Clock, Package, Search, Square, User } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -81,6 +83,7 @@ interface BookingRowProps {
   state: BookingState;
   t: (key: string) => string;
   currentUsername: string | undefined;
+  selected: boolean;
   onClick: (id: string) => void;
   onEnd: (id: string) => void;
   isEnding: boolean;
@@ -91,6 +94,7 @@ const BookingRow = ({
   state,
   t,
   currentUsername,
+  selected,
   onClick,
   onEnd,
   isEnding,
@@ -102,6 +106,7 @@ const BookingRow = ({
   const userName = booking.user?.name || booking.user?.username || '—';
   const price = booking.item_details?.price;
   const currency = booking.item_details?.price_currency;
+  const unreadCount = booking.unread_messages_count;
 
   const stateBadge =
     state === 'active' ? (
@@ -124,13 +129,18 @@ const BookingRow = ({
       padding="sm"
       className={cn(
         'transition-all cursor-pointer',
-        state !== 'active' && 'hover:bg-[var(--mantine-color-gray-0)]',
-        state === 'past' && 'opacity-60',
+        state !== 'active' && !selected && 'hover:bg-[var(--mantine-color-gray-0)]',
+        state === 'past' && !selected && 'opacity-60',
+        selected && 'ring-2 ring-[var(--mantine-color-green-5)]',
       )}
       style={{
         borderLeftWidth: 4,
         borderLeftColor: accentColor(state, isPending),
-        backgroundColor: state === 'active' ? 'var(--mantine-color-teal-light)' : undefined,
+        backgroundColor: selected
+          ? 'var(--mantine-color-green-light)'
+          : state === 'active'
+            ? 'var(--mantine-color-teal-light)'
+            : undefined,
       }}
       onClick={() => onClick(booking.id!)}
     >
@@ -149,9 +159,14 @@ const BookingRow = ({
         {/* Details */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <Text component="span" size="sm" fw={600} truncate>
+            <Text component="span" size="sm" fw={600} truncate className="flex-1">
               {itemTitle}
             </Text>
+            {!!unreadCount && (
+              <Badge color="red" size="sm" className="shrink-0">
+                {unreadCount}
+              </Badge>
+            )}
             {stateBadge}
             {isPending && (
               <Badge variant="light" color="yellow" size="sm" className="shrink-0">
@@ -218,15 +233,31 @@ const MyBookingsPage = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { bookingId: bookingIdParam } = useParams<{ bookingId?: string }>();
   const updateBookingMutation = useUpdateBooking();
   const [endingId, setEndingId] = useState<string | null>(null);
+
+  // ── selection (right-hand conversation panel) ─────────────────────────────
+  // The URL is the single source of truth for which booking is selected, so
+  // no local state (or effect to sync it) is needed.
+  const selectedBookingId = bookingIdParam ?? null;
+
+  const handleSelectBooking = (id: string) => {
+    navigate(`/bookings/${id}`, { replace: true });
+  };
+
+  const handleBack = () => {
+    navigate('/bookings', { replace: true });
+  };
 
   // ── controls ───────────────────────────────────────────────────────────────
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearch] = useDebouncedValue(searchInput.trim(), 300);
   const [direction, setDirection] = useState<Direction>('upcoming');
   const [role, setRole] = useState<Role>('');
-  const [showPending, setShowPending] = useState(false);
+  // Pending requests are surfaced by default so incoming/outstanding requests
+  // aren't hidden behind an extra click.
+  const [showPending, setShowPending] = useState(true);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [page, setPage] = useState(1);
 
@@ -292,119 +323,152 @@ const MyBookingsPage = () => {
   );
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      {/* Header */}
-      <Title order={1} className="mb-4">
-        {t('bookings.title')}
-      </Title>
+    // Below `md` the fixed MobileBottomNav covers the last 4rem of the
+    // viewport, so the page has to stop short of it or the message input ends
+    // up underneath.
+    <div className="container mx-auto p-4 h-[calc(100vh-8rem)] md:h-[calc(100vh-5rem)]">
+      <div className="flex flex-col h-full">
+        {/* Header — hidden on mobile once a conversation is open, where the
+            panel's own back button takes over. */}
+        <Title order={1} className={cn('mb-4 shrink-0', selectedBookingId && 'hidden md:block')}>
+          {t('bookings.title')}
+        </Title>
 
-      {/* Controls */}
-      <div className="flex flex-col gap-3 mb-5">
-        {/* Search + pending toggle */}
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-          <TextInput
-            className="w-full flex-1"
-            leftSection={<Search size={16} />}
-            placeholder={t('bookings.searchPlaceholder')}
-            aria-label={t('bookings.searchPlaceholder')}
-            value={searchInput}
-            onChange={e => setSearchInput(e.currentTarget.value)}
-          />
-          <Checkbox
-            className="shrink-0"
-            checked={showPending}
-            onChange={e => setShowPending(e.currentTarget.checked)}
-            label={t('bookings.showPending')}
-          />
-        </div>
-
-        {/* Direction + role + page size */}
-        <div className="flex flex-wrap gap-3 items-center justify-between">
-          <div className="flex flex-wrap gap-3 items-center">
-            {!isSearching && (
-              <SegmentedControl
-                value={direction}
-                onChange={value => setDirection(value as Direction)}
-                data={[
-                  { label: t('bookings.directionPast'), value: 'past' },
-                  { label: t('bookings.directionUpcoming'), value: 'upcoming' },
-                ]}
-              />
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0">
+          {/* Left column: filters + overview of all currently visible bookings */}
+          <div
+            className={cn(
+              'flex-col min-h-0 md:col-span-1',
+              selectedBookingId ? 'hidden md:flex' : 'flex',
             )}
-            <SegmentedControl
-              size="xs"
-              value={role || 'all'}
-              onChange={value => setRole(value === 'all' ? '' : (value as Role))}
-              data={[
-                { label: t('bookings.filterAll'), value: 'all' },
-                { label: t('bookings.filterOwner'), value: 'owner' },
-                { label: t('bookings.filterRenter'), value: 'renter' },
-              ]}
-            />
+          >
+            {/* Controls */}
+            <div className="flex flex-col gap-3 mb-3 shrink-0">
+              <div className="flex flex-col gap-3">
+                <TextInput
+                  leftSection={<Search size={16} />}
+                  placeholder={t('bookings.searchPlaceholder')}
+                  aria-label={t('bookings.searchPlaceholder')}
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.currentTarget.value)}
+                />
+                <Checkbox
+                  checked={showPending}
+                  onChange={e => setShowPending(e.currentTarget.checked)}
+                  label={t('bookings.showPending')}
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-3 items-center justify-between">
+                {!isSearching && (
+                  <SegmentedControl
+                    size="xs"
+                    value={direction}
+                    onChange={value => setDirection(value as Direction)}
+                    data={[
+                      { label: t('bookings.directionPast'), value: 'past' },
+                      { label: t('bookings.directionUpcoming'), value: 'upcoming' },
+                    ]}
+                  />
+                )}
+                <SegmentedControl
+                  size="xs"
+                  value={role || 'all'}
+                  onChange={value => setRole(value === 'all' ? '' : (value as Role))}
+                  data={[
+                    { label: t('bookings.filterAll'), value: 'all' },
+                    { label: t('bookings.filterOwner'), value: 'owner' },
+                    { label: t('bookings.filterRenter'), value: 'renter' },
+                  ]}
+                />
+              </div>
+
+              <Group gap="xs" wrap="nowrap" justify="flex-end">
+                <Text size="xs" c="dimmed">
+                  {t('bookings.perPage')}
+                </Text>
+                <Select
+                  w={72}
+                  size="xs"
+                  value={String(pageSize)}
+                  onChange={value => value && setPageSize(Number(value))}
+                  data={PAGE_SIZE_OPTIONS}
+                  allowDeselect={false}
+                  aria-label={t('bookings.perPage')}
+                />
+              </Group>
+
+              {isSearching && (
+                <Text size="xs" c="dimmed">
+                  {t('bookings.searchingAll')}
+                </Text>
+              )}
+            </div>
+
+            {/* List */}
+            <Card withBorder padding={0} className="flex-1 min-h-0 flex flex-col">
+              <ScrollArea className="flex-1">
+                <div
+                  className={cn(
+                    'flex flex-col gap-2 p-2 transition-opacity',
+                    isFetching && 'opacity-60 pointer-events-none',
+                  )}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-24">
+                      <Text c="dimmed">{t('common.loading')}</Text>
+                    </div>
+                  ) : annotated.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-24 gap-3">
+                      <Calendar
+                        size={56}
+                        color="var(--mantine-color-dimmed)"
+                        className="opacity-40"
+                      />
+                      <Text c="dimmed">
+                        {isSearching ? t('bookings.noSearchResults') : t('bookings.noBookings')}
+                      </Text>
+                    </div>
+                  ) : (
+                    annotated.map(({ booking, state }) => (
+                      <BookingRow
+                        key={booking.id}
+                        booking={booking}
+                        state={state}
+                        t={t}
+                        selected={selectedBookingId === booking.id}
+                        onClick={handleSelectBooking}
+                        onEnd={handleEndBooking}
+                        isEnding={endingId === booking.id}
+                        currentUsername={user?.username}
+                      />
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+
+              {totalPages > 1 && (
+                <div className="flex justify-center py-3 border-t shrink-0">
+                  <Pagination total={totalPages} value={page} onChange={setPage} size="sm" />
+                </div>
+              )}
+            </Card>
           </div>
-          <Group gap="xs" wrap="nowrap">
-            <Text size="sm" c="dimmed">
-              {t('bookings.perPage')}
-            </Text>
-            <Select
-              w={84}
-              size="xs"
-              value={String(pageSize)}
-              onChange={value => value && setPageSize(Number(value))}
-              data={PAGE_SIZE_OPTIONS}
-              allowDeselect={false}
-              aria-label={t('bookings.perPage')}
-            />
-          </Group>
-        </div>
 
-        {isSearching && (
-          <Text size="xs" c="dimmed">
-            {t('bookings.searchingAll')}
-          </Text>
-        )}
+          {/* Right column: conversation details for the selected booking.
+              `visibleFrom` rather than a Tailwind `hidden md:flex`: the Card
+              root class sets `display: flex` unlayered and would win the
+              cascade, showing the empty placeholder under the mobile list. */}
+          <Card
+            withBorder
+            padding={0}
+            visibleFrom={selectedBookingId ? undefined : 'md'}
+            className="md:col-span-2 min-h-0 flex flex-col"
+          >
+            <BookingConversationPanel bookingId={selectedBookingId} onBack={handleBack} />
+          </Card>
+        </div>
       </div>
-
-      {/* Content */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-24">
-          <Text c="dimmed">{t('common.loading')}</Text>
-        </div>
-      ) : annotated.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-3">
-          <Calendar size={56} color="var(--mantine-color-dimmed)" className="opacity-40" />
-          <Text c="dimmed">
-            {isSearching ? t('bookings.noSearchResults') : t('bookings.noBookings')}
-          </Text>
-        </div>
-      ) : (
-        <div
-          className={cn(
-            'flex flex-col gap-2 transition-opacity',
-            isFetching && 'opacity-60 pointer-events-none',
-          )}
-        >
-          {annotated.map(({ booking, state }) => (
-            <BookingRow
-              key={booking.id}
-              booking={booking}
-              state={state}
-              t={t}
-              onClick={id => navigate(`/requests/${id}`)}
-              onEnd={handleEndBooking}
-              isEnding={endingId === booking.id}
-              currentUsername={user?.username}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center pt-5">
-          <Pagination total={totalPages} value={page} onChange={setPage} />
-        </div>
-      )}
     </div>
   );
 };
