@@ -1,7 +1,8 @@
 import { getBookingStatusBadge, TERMINAL_BOOKING_STATUSES } from '@/components/bookings/status';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useCoinConfig } from '@/hooks/useAppConfig';
 import { useMyBookings } from '@/hooks/useBookings';
-import { formatPrice } from '@/lib/currency';
+import { formatItemPrice } from '@/lib/coins';
 import { cn } from '@/lib/utils';
 import type { BookingList } from '@/services/django';
 import { Badge, Card, Loader, Text, UnstyledButton } from '@mantine/core';
@@ -37,13 +38,13 @@ const getBookingState = (booking: BookingList): BookingState => {
 
 const BookingLine = ({ booking }: { booking: BookingList }) => {
   const { t } = useLanguage();
+  const coin = useCoinConfig();
   const navigate = useNavigate();
   const state = getBookingState(booking);
   const status = getBookingStatusBadge(booking.status);
   const itemTitle = booking.item_details?.name ?? t('bookings.item');
   const itemImage = booking.item_details?.first_image;
   const price = booking.item_details?.price;
-  const currency = booking.item_details?.price_currency;
 
   return (
     <UnstyledButton
@@ -82,7 +83,7 @@ const BookingLine = ({ booking }: { booking: BookingList }) => {
         <Text component="div" size="xs" c="dimmed" truncate>
           {booking.time_from ? format(parseISO(booking.time_from), 'dd MMM, HH:mm') : '—'}
           {booking.time_to && <> → {format(parseISO(booking.time_to), 'dd MMM, HH:mm')}</>}
-          {price ? ` · ${formatPrice(price, currency)}` : ''}
+          {price ? ` · ${formatItemPrice(booking.item_details ?? {}, coin.shortName)}` : ''}
         </Text>
       </div>
 

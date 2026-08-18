@@ -70,6 +70,7 @@ const Home = () => {
                   salesType={item.sales_type}
                   price={item.price ? parseFloat(item.price) : undefined}
                   priceCurrency={item.price_currency}
+                  priceUnit={(item as unknown as { price_unit?: string }).price_unit}
                   location="Location not set"
                   imageUrl={item.first_image || undefined}
                   owner={item.user}

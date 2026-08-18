@@ -212,6 +212,18 @@ def test_priced_item_cannot_be_valued(client_as, booker):
     assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
+def test_coin_priced_item_cannot_be_valued(client_as, booker):
+    """A fixed coin price is a binding listing term, not a voluntary valuation."""
+    item = ItemFactory(sales_type=SalesType.SELL, price="10.00", price_unit="coin")
+    booking = SettledBookingFactory(item=item, user=booker, time_to=None)
+
+    response = client_as(booker).post(
+        LIST_URL, {"booking": str(booking.id), "amount": "5"}, format="json"
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
 def test_valuing_again_replaces_the_previous_value(client_as, booker, sale_booking):
     """Correcting a value is an edit of the entry, not a second transaction."""
     client = client_as(booker)

@@ -1,9 +1,11 @@
 import { BackButton } from '@/components/layout/BackButton';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useCoinConfig } from '@/hooks/useAppConfig';
 import { useDeleteItem, useMyItems, useUpdateItemStatus } from '@/hooks/useMyItems';
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
-import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
+import { formatItemPrice } from '@/lib/coins';
+import { getRentalPeriodSuffixKey } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import {
   ACTIVE_STATUSES,
@@ -33,6 +35,7 @@ type ItemsTab = 'active' | 'archived';
 const MyItems = () => {
   const navigate = useNavigate();
   const { t, language } = useLanguage();
+  const coin = useCoinConfig();
 
   // Tab and view mode live in the URL (rather than local/localStorage state)
   // so the current view survives a refresh and a shared link reproduces what
@@ -373,7 +376,7 @@ const MyItems = () => {
                         <div className="text-sm font-medium">
                           {item.price && (
                             <div className="flex items-center gap-1">
-                              {formatPrice(item.price, item.price_currency)}
+                              {formatItemPrice(item, coin.shortName)}
                               {item.sales_type === 'rent' && (
                                 <Text component="span" size="xs" c="dimmed">
                                   {t(getRentalPeriodSuffixKey(item.rental_period))}
@@ -458,7 +461,7 @@ const MyItems = () => {
                   <Text component="div" size="sm" fw={600} c="green.7">
                     {item.price && (
                       <div className="flex items-center gap-1">
-                        {formatPrice(item.price, item.price_currency)}
+                        {formatItemPrice(item, coin.shortName)}
                         {item.sales_type === 'rent' && (
                           <Text component="span" size="xs" fw={400} c="dimmed">
                             {t(getRentalPeriodSuffixKey(item.rental_period))}

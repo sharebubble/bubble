@@ -74,6 +74,10 @@ One coin can be considered equal in value to one unit of `DEFAULT_CURRENCY`, and
 
 Every recorded value is public to everyone who can see the item and is shown on the item page as its **track record**: who got it, when, and how many coins they valued it at, plus the running total and average.
 
+## Pricing an item in coins
+
+That voluntary valuation is separate from — and only applies to — items with no price. An owner can instead give an item a real, binding price denominated directly in coins: when setting the price on a sell/rent listing, they choose between the default currency and community coins. A coin-priced item is not "free", so it does not get the post-transaction valuation prompt — its price was already fixed up front.
+
 ## Configuration
 
 | Setting           | Default           | Meaning                                |

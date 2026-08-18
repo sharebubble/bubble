@@ -3,6 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useUpdateItem } from '@/hooks/useCreateItem';
 import { FieldStates } from '@/hooks/useFieldAutoSave';
+import type { PriceUnit } from '@/lib/coins';
 import {
   BookWritable,
   CategoryEnum,
@@ -215,10 +216,12 @@ const EditBook = () => {
   );
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+  // `price_unit` is served by the backend but not in the generated SDK yet
+  // (see the note at the top of services/custom/coins.ts).
   const buildBookData = (
     formData: EditItemFormData,
     statusOverride?: Status7D3Enum,
-  ): BookWritable => ({
+  ): BookWritable & { price_unit?: PriceUnit } => ({
     name: formData.name,
     description: formData.description,
     category: formData.category as CategoryEnum,
@@ -227,6 +230,7 @@ const EditBook = () => {
       statusOverride ?? (formData.status !== '' ? (formData.status as Status7D3Enum) : undefined),
     sales_type: formData.sales_type as SalesTypeEnum,
     price: formData.price === '' ? null : formData.price,
+    price_unit: formData.price_unit === '' ? undefined : formData.price_unit,
     rental_period:
       formData.sales_type !== 'rent' && formData.sales_type !== 'borrow'
         ? undefined

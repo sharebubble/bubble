@@ -19,9 +19,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useItem } from '@/hooks/useItem';
 import { useDeleteItem } from '@/hooks/useMyItems';
 import { useItemCollections } from '@/hooks/useCollections';
-import { isFreeItem } from '@/lib/coins';
+import { useCoinConfig } from '@/hooks/useAppConfig';
+import { formatItemPrice, isFreeItem, type PriceUnit } from '@/lib/coins';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
-import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
+import { getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import { ActionIcon, Badge, Button, Text, Tooltip } from '@mantine/core';
@@ -36,6 +37,7 @@ const ItemDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useLanguage();
+  const coin = useCoinConfig();
   const { data: item, isLoading, error } = useItem(itemUuid);
   const deleteItemMutation = useDeleteItem();
   const { data: itemCollections } = useItemCollections(user ? itemUuid : undefined);
@@ -119,6 +121,9 @@ const ItemDetail = () => {
     created_at,
     images,
   } = item;
+  // `price_unit` is served by the backend but not in the generated SDK yet
+  // (see the note at the top of services/custom/coins.ts).
+  const price_unit = (item as unknown as { price_unit?: PriceUnit }).price_unit;
 
   // Canonical link to this item — without any hash/query of the current URL.
   const shareUrl = `${window.location.origin}/item/${item.id}`;
@@ -197,6 +202,7 @@ const ItemDetail = () => {
       itemName={name}
       price={price}
       priceCurrency={price_currency || undefined}
+      priceUnit={price_unit}
       salesType={sales_type}
       rentalPeriod={item.rental_period}
       rentalOpenEnd={item.rental_open_end ?? false}
@@ -291,7 +297,7 @@ const ItemDetail = () => {
 
             {price && (
               <p className="text-2xl font-bold">
-                {formatPrice(price, price_currency)}
+                {formatItemPrice({ price, price_currency, price_unit }, coin.shortName)}
                 {isRental && (
                   <span className="ml-1 text-base font-normal">
                     {t(getRentalPeriodSuffixKey(item.rental_period))}

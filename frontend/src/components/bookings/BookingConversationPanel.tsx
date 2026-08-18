@@ -3,6 +3,7 @@ import BookingEditDialog from '@/components/bookings/BookingEditDialog';
 import { getBookingStatusBadge } from '@/components/bookings/status';
 import { CoinValuationPrompt } from '@/components/coins/CoinValuationPrompt';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useCoinConfig } from '@/hooks/useAppConfig';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useBooking,
@@ -12,7 +13,8 @@ import {
 } from '@/hooks/useBookings';
 import { useItem } from '@/hooks/useItem';
 import { useCreateMessage, useMarkMessageAsRead, useMessages } from '@/hooks/useMessages';
-import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
+import { formatItemPrice, type PriceUnit } from '@/lib/coins';
+import { getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import type { CoinValuationBooking } from '@/services/custom/coins';
 import {
@@ -43,9 +45,14 @@ interface BookingConversationPanelProps {
  *  the message thread for a single booking. */
 const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPanelProps) => {
   const { t } = useLanguage();
+  const coin = useCoinConfig();
   const { user } = useAuth();
   const { data: selectedBooking, isLoading } = useBooking(bookingId || undefined);
   const { data: selectedItemDetails } = useItem(selectedBooking?.item_details?.id);
+  // `price_unit` is served by the backend but not in the generated SDK yet
+  // (see the note at the top of services/custom/coins.ts).
+  const itemPriceUnit = (selectedItemDetails as unknown as { price_unit?: PriceUnit } | undefined)
+    ?.price_unit;
   const [messageText, setMessageText] = useState('');
   const updateBookingMutation = useUpdateBooking();
   const confirmReceivedMutation = useConfirmReceived();
@@ -241,11 +248,8 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
               </Text>
               <Text size="lg" c="dimmed">
                 {selectedItemDetails.sales_type === 'rent'
-                  ? `${formatPrice(
-                      selectedItemDetails.price,
-                      selectedItemDetails.price_currency,
-                    )} ${t(getRentalPeriodSuffixKey(selectedItemDetails.rental_period))}`
-                  : formatPrice(selectedItemDetails.price, selectedItemDetails.price_currency)}
+                  ? `${formatItemPrice(selectedItemDetails, coin.shortName)} ${t(getRentalPeriodSuffixKey(selectedItemDetails.rental_period))}`
+                  : formatItemPrice(selectedItemDetails, coin.shortName)}
               </Text>
             </div>
           )}
@@ -255,7 +259,14 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
                 {t('requests.offerAmount')}
               </Text>
               <Text size="lg" fw={700}>
-                {formatPrice(selectedBooking.offer, 'EUR')}
+                {formatItemPrice(
+                  {
+                    price: selectedBooking.offer,
+                    price_currency: selectedItemDetails?.price_currency,
+                    price_unit: itemPriceUnit,
+                  },
+                  coin.shortName,
+                )}
               </Text>
             </div>
           )}
@@ -280,7 +291,14 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
                 {t('requests.counterOffer')}
               </Text>
               <Text size="lg" fw={700} c="orange.5">
-                {formatPrice(selectedBooking.counter_offer, 'EUR')}
+                {formatItemPrice(
+                  {
+                    price: selectedBooking.counter_offer,
+                    price_currency: selectedItemDetails?.price_currency,
+                    price_unit: itemPriceUnit,
+                  },
+                  coin.shortName,
+                )}
               </Text>
             </div>
           )}

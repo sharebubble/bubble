@@ -12,6 +12,7 @@ from bubble.items.models import (
     Item,
     ItemStatus,
     Location,
+    PricingUnit,
     SalesType,
     money_defaults,
 )
@@ -182,6 +183,8 @@ class ItemSerializer(serializers.ModelSerializer):
         - sell / rent:      price is optional, but if set must be > 0
         - donate / borrow:  price must be null (auto-cleared on sales_type change)
         - want_buy / want_rent: price is unconstrained (any value or null)
+        - price_unit (money/coin) is forced back to money whenever the price
+          ends up null — it has nothing to denominate otherwise
 
         Enforces status restrictions per sales_type:
         - sell / donate / want_buy:   Draft, Available, Reserved, Sold
@@ -232,6 +235,14 @@ class ItemSerializer(serializers.ModelSerializer):
 
         # want_buy / want_rent: no price constraint
 
+        # price_unit only makes sense alongside an actual price: whenever the
+        # price ends up unset (donate/borrow, or simply left blank), force
+        # the unit back to money so it doesn't linger as a stale "coin"
+        # selection with nothing to denominate (see the DB constraint).
+        final_price = attrs.get("price", price)
+        if final_price is None:
+            attrs["price_unit"] = PricingUnit.MONEY
+
         # Validate status is allowed for the given sales_type
         if item_status is not None and sales_type is not None:
             allowed = ItemStatus.for_sales_type(sales_type)
@@ -266,5 +277,6 @@ class ItemMinimalSerializer(ItemListSerializer):
             "sales_type",
             "price",
             "price_currency",
+            "price_unit",
             "rental_period",
         ]

@@ -25,8 +25,8 @@ import {
   useMyBookingsInfinite,
   useUpdateBooking,
 } from '@/hooks/useBookings';
-import { formatCoins } from '@/lib/coins';
-import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
+import { formatCoins, formatItemPrice } from '@/lib/coins';
+import { getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import type { CoinValuationBooking } from '@/services/custom/coins';
 import type { BookingList } from '@/services/django';
@@ -124,6 +124,10 @@ const BookingRow = ({
   const userName = booking.user?.name || booking.user?.username || '—';
   const price = booking.item_details?.price;
   const currency = booking.item_details?.price_currency;
+  // `price_unit` is served by the backend but not in the generated SDK yet
+  // (see the note at the top of services/custom/coins.ts).
+  const priceUnit = (booking.item_details as unknown as { price_unit?: string } | undefined)
+    ?.price_unit;
   const unreadCount = booking.unread_messages_count;
 
   const stateBadge =
@@ -213,7 +217,10 @@ const BookingRow = ({
             </span>
             {price && (
               <Text component="span" size="xs" fw={500} c="var(--mantine-color-text)">
-                {formatPrice(price, currency)}
+                {formatItemPrice(
+                  { price, price_currency: currency, price_unit: priceUnit },
+                  coinShortName,
+                )}
                 {booking.item_details?.sales_type === 'rent' &&
                   ` ${t(getRentalPeriodSuffixKey(booking.item_details?.rental_period))}`}
               </Text>

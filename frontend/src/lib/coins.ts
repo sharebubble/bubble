@@ -1,10 +1,18 @@
 // Community-coin helpers.
 //
-// Items handed over for free (price blank or 0) are the ones that can be
-// valued in community coins after the transaction — the rules here mirror
-// `bubble.coins.models` on the backend.
+// Two distinct features share this "coins" vocabulary:
+// - A free item (price blank or 0) can be valued in coins after the fact —
+//   a voluntary, per-transaction judgement call (see CoinValuationDialog).
+// - Any sell/rent item can instead be *listed* with its price denominated in
+//   coins rather than money — a binding term the owner picks up front (the
+//   item's `price_unit`). The rules mirror `bubble.coins`/`bubble.items`
+//   models on the backend.
 
 import type { SalesTypeEnum } from '@/services/django';
+import { formatPrice } from './currency';
+
+/** What an item's `price` is denominated in. Mirrors `PricingUnit` on the backend. */
+export type PriceUnit = 'money' | 'coin';
 
 /** Listing types where something actually changes hands. */
 const VALUABLE_SALES_TYPES = ['sell', 'rent', 'donate', 'borrow'];
@@ -40,3 +48,29 @@ export const formatCoins = (amount: string | number | null | undefined): string 
   if (isNaN(numeric)) return '0';
   return String(Math.round(numeric * 100) / 100);
 };
+
+/** Whether an item's price is denominated in community coins rather than money. */
+export const isCoinPriced = (priceUnit: PriceUnit | string | null | undefined): boolean =>
+  priceUnit === 'coin';
+
+/**
+ * The pricing fields of an item, wherever they're needed for display. A
+ * structural subset of the generated `Item`/`ItemList`/`ItemMinimal` types —
+ * those are passed in directly — plus `price_unit`, which isn't in the
+ * generated SDK yet (see the note at the top of services/custom/coins.ts).
+ */
+export interface ItemPricing {
+  price?: string | number | null;
+  price_currency?: string | null;
+  price_unit?: PriceUnit | string | null;
+}
+
+/**
+ * Format an item's price for display, in whichever unit the owner chose:
+ * the default currency, or a plain "{amount} {coin.shortName}" for
+ * coin-priced listings.
+ */
+export const formatItemPrice = (item: ItemPricing, coinShortName: string): string =>
+  isCoinPriced(item.price_unit)
+    ? `${formatCoins(item.price)} ${coinShortName}`
+    : formatPrice(item.price, item.price_currency);

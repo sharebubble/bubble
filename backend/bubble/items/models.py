@@ -79,6 +79,19 @@ class RentalPeriodType(models.TextChoices):
     WEEKLY = "w", _("Weekly")
 
 
+class PricingUnit(models.TextChoices):
+    """What an item's ``price`` is denominated in.
+
+    ``MONEY`` is the default: the price is in ``DEFAULT_CURRENCY``. An owner
+    may instead price an item directly in community coins (``COIN``) — a
+    binding listing price, distinct from the voluntary post-transaction
+    valuation offered on free items (see ``bubble.coins``).
+    """
+
+    MONEY = "money", _("Money")
+    COIN = "coin", _("Community coins")
+
+
 class VisibilityType(models.IntegerChoices):
     PUBLIC = 0, _("Public")
     AUTHENTICATED = 1, _("Authenticated")
@@ -278,6 +291,16 @@ class Item(models.Model):
             "Rental price per rental_period (when sales type is rent)."
         ),
     )
+    price_unit = models.CharField(
+        max_length=10,
+        choices=PricingUnit,
+        default=PricingUnit.MONEY,
+        help_text=_(
+            "What ``price`` is denominated in: the default currency, or "
+            "community coins. Meaningless (and forced back to money) when "
+            "price is left blank."
+        ),
+    )
 
     rental_period = models.CharField(
         max_length=1,
@@ -407,6 +430,14 @@ class Item(models.Model):
                     | models.Q(price__isnull=True)
                 ),
                 name="items_donate_borrow_require_null_price",
+            ),
+            # price_unit is meaningless without a price to denominate
+            models.CheckConstraint(
+                condition=(
+                    models.Q(price__isnull=False)
+                    | models.Q(price_unit=PricingUnit.MONEY)
+                ),
+                name="items_price_unit_money_when_no_price",
             ),
         ]
 

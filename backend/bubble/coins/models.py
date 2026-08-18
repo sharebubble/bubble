@@ -48,7 +48,12 @@ CENTS = Decimal("0.01")
 
 
 def is_free_item(item: Item) -> bool:
-    """Whether *item* is offered without a price (blank or exactly zero)."""
+    """Whether *item* is offered without a price (blank or exactly zero).
+
+    A coin-*priced* item (``price_unit == COIN`` with a real amount) is not
+    free — that price is a binding listing term, set by the owner, and is
+    unrelated to this voluntary post-transaction valuation.
+    """
     return item.price is None or item.price.amount == 0
 
 

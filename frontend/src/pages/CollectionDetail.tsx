@@ -3,6 +3,7 @@ import { CollectionHistoryDialog } from '@/components/collections/CollectionHist
 import { CollectionPermissionsPanel } from '@/components/collections/CollectionPermissionsPanel';
 import { BackButton } from '@/components/layout/BackButton';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useCoinConfig } from '@/hooks/useAppConfig';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useCollection,
@@ -10,7 +11,8 @@ import {
   useRemoveItemFromCollection,
 } from '@/hooks/useCollections';
 import { getCategoryIcon } from '@/lib/categoryIcons';
-import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
+import { formatItemPrice } from '@/lib/coins';
+import { getRentalPeriodSuffixKey } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import {
   Badge,
@@ -37,6 +39,7 @@ const CollectionDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t, language } = useLanguage();
+  const coin = useCoinConfig();
   const updateMutation = useUpdateCollection();
   const removeMutation = useRemoveItemFromCollection();
 
@@ -231,7 +234,7 @@ const CollectionDetail = () => {
                   </h3>
                   {item.price && (
                     <p className="text-sm font-medium">
-                      {formatPrice(item.price, item.price_currency)}
+                      {formatItemPrice(item, coin.shortName)}
                       {item.sales_type === 'rent' && (
                         <span className="ml-1 text-xs font-normal text-muted-foreground">
                           {t(getRentalPeriodSuffixKey(item.rental_period))}
