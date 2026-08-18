@@ -8,7 +8,9 @@ import { SearchBar } from '@/components/layout/SearchBar';
 import { BROWSE_PATH } from '@/lib/routes';
 import { cn } from '@/lib/utils';
 import {
+  Bell,
   BookMarked,
+  Calendar,
   CalendarCheck,
   Compass,
   Download,
@@ -184,6 +186,20 @@ export const Header = () => {
                   leftSection={<User size={16} aria-hidden="true" />}
                 >
                   {t('header.myProfile')}
+                </Menu.Item>
+                <Menu.Item
+                  component={NavLink}
+                  to="/profile/notifications"
+                  leftSection={<Bell size={16} aria-hidden="true" />}
+                >
+                  {t('header.notificationSettings')}
+                </Menu.Item>
+                <Menu.Item
+                  component={NavLink}
+                  to="/profile/calendar"
+                  leftSection={<Calendar size={16} aria-hidden="true" />}
+                >
+                  {t('header.calendarSettings')}
                 </Menu.Item>
                 {/* Only rendered while the browser is actually offering an
                     install; Safari never does and handles it in its share menu. */}

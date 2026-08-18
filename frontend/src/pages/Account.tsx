@@ -2,7 +2,16 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
 import { Avatar, Button, Card, Divider, Group, NavLink, Stack, Text } from '@mantine/core';
-import { BookMarked, ChevronRight, Download, Library, LogOut, Settings } from 'lucide-react';
+import {
+  Bell,
+  BookMarked,
+  Calendar,
+  ChevronRight,
+  Download,
+  Library,
+  LogOut,
+  Settings,
+} from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Fragment } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -19,6 +28,8 @@ const ENTRIES: HubEntry[] = [
   { labelKey: 'header.items', icon: Library, to: '/my-items' },
   { labelKey: 'collections.title', icon: BookMarked, to: '/collections' },
   { labelKey: 'account.settings', icon: Settings, to: '/profile' },
+  { labelKey: 'header.notificationSettings', icon: Bell, to: '/profile/notifications' },
+  { labelKey: 'header.calendarSettings', icon: Calendar, to: '/profile/calendar' },
 ];
 
 const Account = () => {

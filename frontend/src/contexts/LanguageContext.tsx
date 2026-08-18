@@ -22,6 +22,8 @@ const translations = {
     'header.signIn': 'Sign In',
     'header.myProfile': 'Profile',
     'header.items': 'My Items',
+    'header.notificationSettings': 'Notifications',
+    'header.calendarSettings': 'Calendar',
     'header.signOut': 'Sign Out',
     'header.theme': 'Theme',
     'header.light': 'Light',
@@ -37,7 +39,7 @@ const translations = {
     'nav.profile': 'Profile',
 
     // Account hub (mobile)
-    'account.settings': 'Profile settings',
+    'account.settings': 'Personal settings',
 
     // Installable app / service worker
     'pwa.install': 'Install app',
@@ -530,7 +532,7 @@ const translations = {
     'status.archived': 'Archived',
     'status.unknown': 'Unknown',
     // Profile
-    'profile.title': 'Profile Settings',
+    'profile.title': 'Personal Settings',
     'profile.manage': 'Manage your profile information',
     'profile.name': 'Name',
     'profile.phone': 'Phone',
@@ -730,6 +732,8 @@ const translations = {
     'header.signIn': 'Anmelden',
     'header.myProfile': 'Profil',
     'header.items': 'Meine Artikel',
+    'header.notificationSettings': 'Benachrichtigungen',
+    'header.calendarSettings': 'Kalender',
     'header.signOut': 'Abmelden',
     'header.theme': 'Design',
     'header.light': 'Hell',
@@ -745,7 +749,7 @@ const translations = {
     'nav.profile': 'Profil',
 
     // Account hub (mobile)
-    'account.settings': 'Profileinstellungen',
+    'account.settings': 'Persönliche Einstellungen',
 
     // Installable app / service worker
     'pwa.install': 'App installieren',
@@ -1249,7 +1253,7 @@ const translations = {
     'status.archived': 'Archiviert',
     'status.unknown': 'Unbekannt',
     // Profile
-    'profile.title': 'Profileinstellungen',
+    'profile.title': 'Persönliche Einstellungen',
     'profile.manage': 'Verwalte deine Profilinformationen',
     'profile.name': 'Name',
     'profile.phone': 'Telefon',
