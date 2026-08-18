@@ -1,6 +1,5 @@
 import { ImageUploadStep } from '@/components/items/ImageUploadStep';
-import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { BackButton } from '@/components/layout/BackButton';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateItem, useUpdateItem } from '@/hooks/useCreateItem';
@@ -26,7 +25,6 @@ interface WizardData {
 const CreateItem = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { t } = useLanguage();
   const { toast } = useToast();
   const createItemMutation = useCreateItem();
   const updateItemMutation = useUpdateItem();
@@ -46,8 +44,7 @@ const CreateItem = () => {
     }
   };
 
-  // Also used by the breadcrumb's "Home" crumb, so the wizard's own back
-  // button and the page-level back navigation agree on the same target.
+  // Used by the wizard's own back/cancel button.
   const handleBack = () => {
     navigate('/');
   };
@@ -56,9 +53,7 @@ const CreateItem = () => {
     <div className="container mx-auto max-w-2xl px-4 py-8">
       {/* Header with Back Button */}
       <div className="space-y-6">
-        <Breadcrumbs
-          items={[{ label: t('nav.home'), onClick: handleBack }, { label: t('editItem.listItem') }]}
-        />
+        <BackButton />
 
         {/* Simple Header */}
         <div className="space-y-2">
