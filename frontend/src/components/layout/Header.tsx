@@ -185,7 +185,7 @@ export const Header = () => {
                   to="/profile"
                   leftSection={<User size={16} aria-hidden="true" />}
                 >
-                  {t('header.myProfile')}
+                  {t('account.settings')}
                 </Menu.Item>
                 <Menu.Item
                   component={NavLink}
