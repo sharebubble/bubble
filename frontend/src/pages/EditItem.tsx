@@ -220,7 +220,13 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
   // for confirmation first, regardless of the navigation target.
   const handleGuardedNavigate = useCallback(
     (target: string | number) => {
-      const go = () => (typeof target === 'number' ? navigate(target) : navigate(target));
+      const go = () => {
+        if (typeof target === 'number') {
+          navigate(target);
+        } else {
+          navigate(target);
+        }
+      };
       if (editItemUuid && missingFields.length > 0) {
         modals.openConfirmModal({
           title: (

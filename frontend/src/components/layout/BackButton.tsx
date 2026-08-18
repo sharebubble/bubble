@@ -18,6 +18,7 @@ export const BackButton = ({ onClick, className }: BackButtonProps) => {
 
   return (
     <ActionIcon
+      type="button"
       variant="subtle"
       color="gray"
       size="lg"
