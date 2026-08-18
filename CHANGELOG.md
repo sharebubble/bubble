@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/sharebubble/bubble/compare/v0.1.2...v0.5.2) (2026-08-18)
+
+
+### Miscellaneous Chores
+
+* align application and Helm chart versions at 0.5.2
+
 ## [0.1.2](https://github.com/sharebubble/bubble/compare/v0.1.1...v0.1.2) (2026-07-07)
 
 

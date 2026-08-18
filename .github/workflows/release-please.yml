@@ -57,16 +57,12 @@ jobs:
 
           text = open(chart_path).read()
 
-          # Bump the chart version patch so the OCI artifact gets a new tag
-          # (Helm/OCI registries reject re-publishing an existing version).
-          def bump_version(match):
-              base = match.group(1)
-              major, minor, patch = (int(part) for part in base.split("."))
-              return f"version: {major}.{minor}.{patch + 1}"
-
+          # Keep the chart version in lockstep with the application release so
+          # the chart and app share the same version number. The OCI artifact
+          # still gets a fresh tag because every app release bumps this value.
           text = re.sub(
               r'^version:\s*([0-9]+\.[0-9]+\.[0-9]+)',
-              bump_version,
+              f"version: {app_version}",
               text,
               flags=re.MULTILINE,
           )
