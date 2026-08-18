@@ -28,16 +28,18 @@ export const useProfileFieldAutoSave = () => {
   }, []);
 
   const saveField = useCallback(
-    async (fieldName: string, value: unknown) => {
+    async (fieldName: string, value: unknown): Promise<boolean> => {
       setFieldState(fieldName, { status: 'saving' });
       try {
         const body: PatchedProfile = { [fieldName]: value };
         await profilesMePartialUpdate({ body });
         setFieldState(fieldName, { status: 'success' });
         clearSuccessAfterDelay(fieldName);
+        return true;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to save field';
         setFieldState(fieldName, { status: 'error', errorMessage });
+        return false;
       }
     },
     [setFieldState, clearSuccessAfterDelay],

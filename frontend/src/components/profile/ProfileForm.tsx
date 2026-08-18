@@ -32,11 +32,12 @@ export const ProfileForm = () => {
   // those fields is saved — otherwise the Notifications card would keep
   // showing its previous, now-stale set of channels until the next reload.
   const saveFieldAndRefreshNotifications = React.useCallback(
-    async (fieldName: string, value: unknown) => {
-      await saveField(fieldName, value);
+    async (fieldName: string, value: unknown): Promise<boolean> => {
+      const success = await saveField(fieldName, value);
       queryClient.invalidateQueries({
         queryKey: ['notification-preferences', profile?.username],
       });
+      return success;
     },
     [saveField, queryClient, profile?.username],
   );
@@ -71,9 +72,19 @@ export const ProfileForm = () => {
     if (!notificationPrefs.matrix_configured) return;
     if (profile.matrix_id || !profile.username) return;
 
+    // Set the ref up front so a re-render during the save (e.g. from the
+    // optimistic form update below) can't trigger a second attempt.
     hasPrefilledMatrixId.current = true;
-    form.setFieldValue('matrix_id', profile.username);
-    saveFieldAndRefreshNotifications('matrix_id', profile.username);
+    const username = profile.username;
+    form.setFieldValue('matrix_id', username);
+    saveFieldAndRefreshNotifications('matrix_id', username).then(success => {
+      if (!success) {
+        // Roll back so the form doesn't show an unpersisted value, and clear
+        // the ref so the next profile/notificationPrefs refetch can retry.
+        hasPrefilledMatrixId.current = false;
+        form.setFieldValue('matrix_id', '');
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, notificationPrefs]);
 
