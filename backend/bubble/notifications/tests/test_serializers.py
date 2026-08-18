@@ -55,6 +55,22 @@ def test_configured_is_true_even_without_a_user_target() -> None:
 
 
 @pytest.mark.django_db
+@override_config(APPRISE_MAILTOS_URL="mailtos://user:pass@smtp.example.com?to={target}")
+def test_email_is_available_but_disabled_by_default() -> None:
+    # Unlike RocketChat, email gets no default-enabled preference row on
+    # signup — it only ever turns on when the user opts in themselves.
+    user = UserFactory(username="alice", email="alice@example.com")
+
+    data = NotificationPreferenceMeSerializer().to_representation(user)
+
+    assert data["email_configured"] is True
+    assert data["email_available"] is True
+    assert data["email_target"] == "alice@example.com"
+    assert data["email_messages"] is False
+    assert data["email_new_item"] is False
+
+
+@pytest.mark.django_db
 @override_config(APPRISE_ROCKETCHAT_URL=ROCKET_URL)
 def test_messages_toggle_writes_message_and_booking_events() -> None:
     user = UserFactory(username="alice")

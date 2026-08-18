@@ -13,7 +13,6 @@ import { z } from 'zod';
 const profileSchema = z.object({
   name: z.string().optional(),
   phone: z.string().optional(),
-  matrix_id: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -25,7 +24,6 @@ export const ProfileForm = () => {
   const { language, setLanguage, t } = useLanguage();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const queryClient = useQueryClient();
-  const hasPrefilledMatrixId = React.useRef(false);
 
   // Notification availability (which channels a user can be reached on)
   // depends on the profile fields saved above, so refresh it whenever one of
@@ -47,7 +45,6 @@ export const ProfileForm = () => {
     initialValues: {
       name: '',
       phone: '',
-      matrix_id: '',
     },
   });
 
@@ -56,37 +53,10 @@ export const ProfileForm = () => {
       form.setValues({
         name: profile.name ?? '',
         phone: profile.phone ?? '',
-        matrix_id: profile.matrix_id ?? '',
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile]);
-
-  // When Matrix notifications are configured on the backend but this user has
-  // no Matrix ID yet, prefill it with their bubble username (same as
-  // RocketChat, which always addresses users by their bubble username) so the
-  // Matrix notification options appear without requiring manual setup.
-  React.useEffect(() => {
-    if (hasPrefilledMatrixId.current) return;
-    if (!profile || !notificationPrefs) return;
-    if (!notificationPrefs.matrix_configured) return;
-    if (profile.matrix_id || !profile.username) return;
-
-    // Set the ref up front so a re-render during the save (e.g. from the
-    // optimistic form update below) can't trigger a second attempt.
-    hasPrefilledMatrixId.current = true;
-    const username = profile.username;
-    form.setFieldValue('matrix_id', username);
-    saveFieldAndRefreshNotifications('matrix_id', username).then(success => {
-      if (!success) {
-        // Roll back so the form doesn't show an unpersisted value, and clear
-        // the ref so the next profile/notificationPrefs refetch can retry.
-        hasPrefilledMatrixId.current = false;
-        form.setFieldValue('matrix_id', '');
-      }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile, notificationPrefs]);
 
   const getFieldBorderClass = (fieldName: string) => {
     const status = fieldStates[fieldName]?.status;
@@ -164,16 +134,6 @@ export const ProfileForm = () => {
               variant="filled"
             />
           )}
-
-          <TextInput
-            label={t('profile.matrixId')}
-            placeholder="@alice:matrix.org"
-            description={t('profile.matrixIdDesc')}
-            classNames={{ input: getFieldBorderClass('matrix_id') }}
-            rightSection={renderFieldStatusIcon('matrix_id')}
-            {...form.getInputProps('matrix_id')}
-            onBlur={() => saveFieldAndRefreshNotifications('matrix_id', form.getValues().matrix_id)}
-          />
         </form>
       </Card>
 

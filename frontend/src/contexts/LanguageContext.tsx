@@ -545,9 +545,9 @@ const translations = {
     'profile.emailReminderDesc': 'Receive email reminders for bookings and messages',
     'profile.notifications': 'Notifications',
     'profile.notificationsDesc':
-      'Choose how you want to be notified. Channels appear once configured and the matching profile field (RocketChat username, Signal phone number, Matrix ID, email) is filled in.',
+      'Choose how you want to be notified. A channel appears once an administrator has configured it. RocketChat and email use your account automatically; Signal needs a phone number on your profile; Matrix needs a Matrix ID, which you can set right here.',
     'profile.notificationsUnavailable':
-      'No notification channels are available yet. Add a phone number or Matrix ID, or ask an administrator to configure the notification services.',
+      'No notification channels are available yet. Add a phone number for Signal, or ask an administrator to configure the notification services.',
     'profile.channelRocketchat': 'RocketChat',
     'profile.channelSignal': 'Signal',
     'profile.channelMatrix': 'Matrix',
@@ -1264,9 +1264,9 @@ const translations = {
     'profile.emailReminderDesc': 'E-Mail-Erinnerungen für Buchungen und Nachrichten erhalten',
     'profile.notifications': 'Benachrichtigungen',
     'profile.notificationsDesc':
-      'Wähle, wie du benachrichtigt werden möchtest. Kanäle erscheinen, sobald sie konfiguriert sind und das passende Profilfeld (RocketChat-Benutzername, Signal-Telefonnummer, Matrix-ID, E-Mail) ausgefüllt ist.',
+      'Wähle, wie du benachrichtigt werden möchtest. Ein Kanal erscheint, sobald ihn ein Administrator konfiguriert hat. RocketChat und E-Mail nutzen automatisch dein Konto; Signal benötigt eine Telefonnummer in deinem Profil; Matrix benötigt eine Matrix-ID, die du direkt hier festlegen kannst.',
     'profile.notificationsUnavailable':
-      'Es sind noch keine Benachrichtigungskanäle verfügbar. Hinterlege eine Telefonnummer oder Matrix-ID oder bitte einen Administrator, die Benachrichtigungsdienste zu konfigurieren.',
+      'Es sind noch keine Benachrichtigungskanäle verfügbar. Hinterlege eine Telefonnummer für Signal oder bitte einen Administrator, die Benachrichtigungsdienste zu konfigurieren.',
     'profile.channelRocketchat': 'RocketChat',
     'profile.channelSignal': 'Signal',
     'profile.channelMatrix': 'Matrix',
