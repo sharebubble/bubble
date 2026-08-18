@@ -60,6 +60,9 @@ updates:
       interval: 'daily'
     commit-message:
       prefix: 'chore'
+    ignore:
+      - dependency-name: 'typescript'
+        # update-types: ['version-update:semver-major']
     groups:
       npm:
         patterns:
