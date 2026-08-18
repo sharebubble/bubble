@@ -1,5 +1,6 @@
 import BookingConversationPanel from '@/components/bookings/BookingConversationPanel';
 import { BOOKING_STATUS, TERMINAL_BOOKING_STATUSES } from '@/components/bookings/status';
+import { BackButton } from '@/components/layout/BackButton';
 import {
   Badge,
   Button,
@@ -391,9 +392,12 @@ const MyBookingsPage = () => {
       <div className="flex flex-col h-full">
         {/* Header — hidden on mobile once a conversation is open, where the
             panel's own back button takes over. */}
-        <Title order={1} className={cn('mb-4 shrink-0', selectedBookingId && 'hidden md:block')}>
-          {t('bookings.title')}
-        </Title>
+        <div className={cn('shrink-0', selectedBookingId && 'hidden md:block')}>
+          <BackButton />
+          <Title order={1} className="mb-4">
+            {t('bookings.title')}
+          </Title>
+        </div>
 
         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 min-h-0">
           {/* Left column: filters + overview of all currently visible bookings */}
