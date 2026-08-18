@@ -2,8 +2,10 @@ import { Button, Card, Text, TextInput, Title, useMantineColorScheme } from '@ma
 import { useForm } from '@mantine/form';
 import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
 import { useProfile } from '@/hooks/useProfile';
 import { useProfileFieldAutoSave } from '@/hooks/useProfileFieldAutoSave';
+import { useQueryClient } from '@tanstack/react-query';
 import { Check, Loader2, Monitor, Moon, Sun } from 'lucide-react';
 import React from 'react';
 import { z } from 'zod';
@@ -18,9 +20,26 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 
 export const ProfileForm = () => {
   const { data: profile, isLoading } = useProfile();
+  const { data: notificationPrefs } = useNotificationPreferences();
   const { fieldStates, saveField } = useProfileFieldAutoSave();
   const { language, setLanguage, t } = useLanguage();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
+  const queryClient = useQueryClient();
+  const hasPrefilledMatrixId = React.useRef(false);
+
+  // Notification availability (which channels a user can be reached on)
+  // depends on the profile fields saved above, so refresh it whenever one of
+  // those fields is saved — otherwise the Notifications card would keep
+  // showing its previous, now-stale set of channels until the next reload.
+  const saveFieldAndRefreshNotifications = React.useCallback(
+    async (fieldName: string, value: unknown) => {
+      await saveField(fieldName, value);
+      queryClient.invalidateQueries({
+        queryKey: ['notification-preferences', profile?.username],
+      });
+    },
+    [saveField, queryClient, profile?.username],
+  );
 
   const form = useForm<ProfileFormData>({
     validate: zod4Resolver(profileSchema),
@@ -41,6 +60,22 @@ export const ProfileForm = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile]);
+
+  // When Matrix notifications are configured on the backend but this user has
+  // no Matrix ID yet, prefill it with their bubble username (same as
+  // RocketChat, which always addresses users by their bubble username) so the
+  // Matrix notification options appear without requiring manual setup.
+  React.useEffect(() => {
+    if (hasPrefilledMatrixId.current) return;
+    if (!profile || !notificationPrefs) return;
+    if (!notificationPrefs.matrix_configured) return;
+    if (profile.matrix_id || !profile.username) return;
+
+    hasPrefilledMatrixId.current = true;
+    form.setFieldValue('matrix_id', profile.username);
+    saveFieldAndRefreshNotifications('matrix_id', profile.username);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, notificationPrefs]);
 
   const getFieldBorderClass = (fieldName: string) => {
     const status = fieldStates[fieldName]?.status;
@@ -106,8 +141,18 @@ export const ProfileForm = () => {
             classNames={{ input: getFieldBorderClass('phone') }}
             rightSection={renderFieldStatusIcon('phone')}
             {...form.getInputProps('phone')}
-            onBlur={() => saveField('phone', form.getValues().phone)}
+            onBlur={() => saveFieldAndRefreshNotifications('phone', form.getValues().phone)}
           />
+
+          {notificationPrefs?.rocketchat_configured && (
+            <TextInput
+              label={t('profile.rocketchatUsername')}
+              description={t('profile.rocketchatUsernameDesc')}
+              value={profile?.username ?? ''}
+              readOnly
+              variant="filled"
+            />
+          )}
 
           <TextInput
             label={t('profile.matrixId')}
@@ -116,7 +161,7 @@ export const ProfileForm = () => {
             classNames={{ input: getFieldBorderClass('matrix_id') }}
             rightSection={renderFieldStatusIcon('matrix_id')}
             {...form.getInputProps('matrix_id')}
-            onBlur={() => saveField('matrix_id', form.getValues().matrix_id)}
+            onBlur={() => saveFieldAndRefreshNotifications('matrix_id', form.getValues().matrix_id)}
           />
         </form>
       </Card>

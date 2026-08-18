@@ -51,6 +51,8 @@ Users then choose, per channel, which events they want:
 
 The phone number can be filled in manually on the profile, or is pre-populated from the `phone_number` claim of your OIDC provider when available (the `phone` scope is requested automatically).
 
+RocketChat always addresses a user by their bubble username, so it needs no separate field — once `APPRISE_ROCKETCHAT_URL` is configured, the RocketChat channel and its notification options appear automatically. Matrix works the same way: once `APPRISE_MATRIX_URL` is configured, a user's empty Matrix ID is prefilled with their bubble username so the Matrix channel becomes available immediately (they can still edit it to their real `@user:server` address).
+
 # Federation (ActivityPub)
 
 Bubble supports ActivityPub federation, allowing items, bookings, and messages to flow between Bubble instances and interact with the broader fediverse (Mastodon, etc.).

@@ -534,6 +534,9 @@ const translations = {
     'profile.manage': 'Manage your profile information',
     'profile.name': 'Name',
     'profile.phone': 'Phone',
+    'profile.rocketchatUsername': 'RocketChat username',
+    'profile.rocketchatUsernameDesc':
+      'Matches your bubble username and is used for RocketChat notifications',
     'profile.matrixId': 'Matrix ID',
     'profile.matrixIdDesc': 'Your Matrix user ID, used for Matrix notifications',
     'profile.bio': 'Bio',
@@ -1250,6 +1253,9 @@ const translations = {
     'profile.manage': 'Verwalte deine Profilinformationen',
     'profile.name': 'Name',
     'profile.phone': 'Telefon',
+    'profile.rocketchatUsername': 'RocketChat-Benutzername',
+    'profile.rocketchatUsernameDesc':
+      'Entspricht deinem bubble-Benutzernamen und wird für RocketChat-Benachrichtigungen verwendet',
     'profile.matrixId': 'Matrix-ID',
     'profile.matrixIdDesc': 'Deine Matrix-Benutzer-ID, für Matrix-Benachrichtigungen',
     'profile.bio': 'Bio',

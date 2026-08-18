@@ -27,14 +27,31 @@ def test_to_representation_reports_availability_and_toggles() -> None:
 
     data = NotificationPreferenceMeSerializer().to_representation(user)
 
+    assert data["rocketchat_configured"] is True
     assert data["rocketchat_available"] is True
     assert data["rocketchat_target"] == "alice"
     # messages group is on only when *all* underlying events are enabled
     assert data["rocketchat_messages"] is True
     assert data["rocketchat_new_item"] is False
     # signal/email are not configured → unavailable
+    assert data["signal_configured"] is False
     assert data["signal_available"] is False
+    assert data["email_configured"] is False
     assert data["email_available"] is False
+
+
+@pytest.mark.django_db
+@override_config(APPRISE_MATRIX_URL="matrixs://user:pass@matrix.example.com/{target}")
+def test_configured_is_true_even_without_a_user_target() -> None:
+    # "configured" reflects backend setup only, unlike "available" which also
+    # requires the user to have filled in their address for the channel.
+    user = UserFactory(username="alice")
+
+    data = NotificationPreferenceMeSerializer().to_representation(user)
+
+    assert data["matrix_configured"] is True
+    assert data["matrix_available"] is False
+    assert data["matrix_target"] == ""
 
 
 @pytest.mark.django_db
