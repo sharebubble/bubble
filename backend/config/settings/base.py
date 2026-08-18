@@ -544,13 +544,13 @@ CONSTANCE_CONFIG = {
         "Default federation visibility for new items: 'public_federated' or 'local_only'.",
     ),
     "COIN_NAME": (
-        env("COIN_NAME", default="Treibhaus Coins"),
+        env("COIN_NAME", default="Sharebubble Coin"),
         "Name of the community currency offered after a free (zero-price) "
-        "transaction, e.g. 'Treibhaus Coins'.",
+        "transaction, e.g. 'Sharebubble Coin'.",
     ),
     "COIN_SHORT_NAME": (
-        env("COIN_SHORT_NAME", default="THC"),
-        "Short name of the community currency used next to amounts, e.g. 'THC'.",
+        env("COIN_SHORT_NAME", default="SBC"),
+        "Short name of the community currency used next to amounts, e.g. 'SBC'.",
     ),
     "COIN_SLIDER_MAX": (
         env.int("COIN_SLIDER_MAX", default=100),

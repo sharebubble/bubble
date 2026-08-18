@@ -80,15 +80,15 @@ That voluntary valuation is separate from — and only applies to — items with
 
 ## Configuration
 
-| Setting           | Default           | Meaning                                |
-| ----------------- | ----------------- | -------------------------------------- |
-| `COIN_NAME`       | `Treibhaus Coins` | Name of the currency, shown in prompts |
-| `COIN_SHORT_NAME` | `THC`             | Short name shown next to amounts       |
-| `COIN_SLIDER_MAX` | `100`             | Upper end of the slider                |
+| Setting           | Default            | Meaning                                |
+| ----------------- | ------------------ | -------------------------------------- |
+| `COIN_NAME`       | `Sharebubble Coin` | Name of the currency, shown in prompts |
+| `COIN_SHORT_NAME` | `SBC`              | Short name shown next to amounts       |
+| `COIN_SLIDER_MAX` | `100`              | Upper end of the slider                |
 
 ```env
-COIN_NAME=Treibhaus Coins
-COIN_SHORT_NAME=THC
+COIN_NAME=Sharebubble Coin
+COIN_SHORT_NAME=SBC
 COIN_SLIDER_MAX=100
 ```
 

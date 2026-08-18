@@ -21,17 +21,17 @@ interface UseAppConfigResult {
 
 /** Name and scale of the community currency, as configured on the backend. */
 export interface CoinConfig {
-  /** Full name, e.g. "Treibhaus Coins". */
+  /** Full name, e.g. "Sharebubble Coin". */
   name: string;
-  /** Short name shown next to amounts, e.g. "THC". */
+  /** Short name shown next to amounts, e.g. "SBC". */
   shortName: string;
   /** Upper end of the coin slider. */
   sliderMax: number;
 }
 
 const COIN_FALLBACK: CoinConfig = {
-  name: 'Treibhaus Coins',
-  shortName: 'THC',
+  name: 'Sharebubble Coin',
+  shortName: 'SBC',
   sliderMax: 100,
 };
 
