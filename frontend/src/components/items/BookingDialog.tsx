@@ -8,9 +8,14 @@ import {
   type RentalPeriod,
 } from '@/lib/currency';
 import { SalesTypeEnum } from '@/services/django';
+import { addDays } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DateHourPicker } from './DateHourPicker';
+
+// Guest-room style turnover: check-in at noon, check-out at noon the next
+// day — matches the noon-to-noon default used by the rental calendar.
+const NOON_HOUR = 12;
 
 interface BookingDialogProps {
   itemUuid: string;
@@ -116,14 +121,29 @@ export const BookingDialog = ({
     }
   }, [dialogOpen, isRental, price, timeFrom, timeTo, rentalPeriod]);
 
-  // Pre-populate timeFrom with current time (rounded down to the started hour)
-  // when no preselectedStartDate is provided and the dialog opens.
+  // Pre-populate the dates when the dialog is opened directly (e.g. its own
+  // "Book Now" button) rather than via a calendar selection, which already
+  // supplies preselectedStartDate/EndDate.
   useEffect(() => {
-    if (dialogOpen && !preselectedStartDate && !timeFrom) {
+    if (!dialogOpen || preselectedStartDate || timeFrom) return;
+
+    if (rentalPeriod === 'd') {
+      // Guest-room style default: check in at the next occurring noon,
+      // check out 24h later at noon the following day.
       const now = new Date();
-      now.setMinutes(0, 0, 0);
-      setTimeFrom(formatDateLocal(now));
+      const todayNoon = new Date(now);
+      todayNoon.setHours(NOON_HOUR, 0, 0, 0);
+      const checkIn = now < todayNoon ? todayNoon : addDays(todayNoon, 1);
+      setTimeFrom(formatDateLocal(checkIn));
+      if (!preselectedEndDate && !timeTo) {
+        setTimeTo(formatDateLocal(addDays(checkIn, 1)));
+      }
+      return;
     }
+
+    const now = new Date();
+    now.setMinutes(0, 0, 0);
+    setTimeFrom(formatDateLocal(now));
   }, [dialogOpen]);
 
   // Set preselected dates when they change

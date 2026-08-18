@@ -13,6 +13,7 @@ import { configureApiClient } from './config/apiClient';
 import Account from './pages/Account';
 import Auth from './pages/Auth';
 import Bookings from './pages/Bookings';
+import CalendarSettings from './pages/CalendarSettings';
 import Collections from './pages/Collections';
 import CollectionDetail from './pages/CollectionDetail';
 import CreateItem from './pages/CreateItem';
@@ -24,7 +25,8 @@ import ItemDetail from './pages/ItemDetail';
 import ItemBookingHistory from './pages/ItemBookingHistory';
 import MyItems from './pages/MyItems';
 import NotFound from './pages/NotFound';
-import Profile from './pages/Profile';
+import NotificationSettings from './pages/NotificationSettings';
+import PersonalSettings from './pages/PersonalSettings';
 import { AppUpdatePrompt } from './components/layout/AppUpdatePrompt';
 import { Header } from './components/layout/Header';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
@@ -136,7 +138,23 @@ const ProtectedRoutes = () => {
           path="/profile"
           element={
             <AuthRequired>
-              <Profile />
+              <PersonalSettings />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path="/profile/notifications"
+          element={
+            <AuthRequired>
+              <NotificationSettings />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path="/profile/calendar"
+          element={
+            <AuthRequired>
+              <CalendarSettings />
             </AuthRequired>
           }
         />

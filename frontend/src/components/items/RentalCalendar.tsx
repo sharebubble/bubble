@@ -9,11 +9,13 @@ import {
   Title,
 } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
+import type { RentalPeriod } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { publicBookingsList } from '@/services/django';
 import { useQuery } from '@tanstack/react-query';
 import {
   addDays,
+  addHours,
   addMonths,
   addWeeks,
   eachDayOfInterval,
@@ -31,8 +33,14 @@ import {
 import { ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+// Guest-room style turnover: check-in at noon, check-out at noon the next
+// day, so the same calendar day can host a morning checkout and an
+// afternoon check-in without the two bookings overlapping.
+const NOON_HOUR = 12;
+
 interface RentalCalendarProps {
   itemUuid?: string;
+  rentalPeriod?: RentalPeriod;
   onDateRangeSelect?: (start: Date, end: Date) => void;
   selectedStart?: Date;
   selectedEnd?: Date;
@@ -41,13 +49,20 @@ interface RentalCalendarProps {
 
 export const RentalCalendar = ({
   itemUuid,
+  rentalPeriod,
   onDateRangeSelect,
   selectedStart,
   selectedEnd,
   onBookNow,
 }: RentalCalendarProps) => {
   const { t } = useLanguage();
-  const [viewMode, setViewMode] = useState<'weekly' | 'monthly'>('weekly');
+  const isDailyRental = rentalPeriod === 'd';
+  // Daily-rate items (guest rooms, etc.) default to the monthly grid, since
+  // that's where the noon-to-noon check-in/out split is shown; other rental
+  // periods keep the hourly weekly grid as the default.
+  const [viewMode, setViewMode] = useState<'weekly' | 'monthly'>(
+    isDailyRental ? 'monthly' : 'weekly',
+  );
 
   // Fetch existing bookings for this item
   const { data: bookingsData } = useQuery({
@@ -133,9 +148,24 @@ export const RentalCalendar = ({
     } else {
       const start = isBefore(dayStart, selectingStart) ? dayStart : selectingStart;
       const end = isBefore(dayStart, selectingStart) ? selectingStart : dayStart;
-      const adjustedEnd = addDays(end, 1); // Next day at 00:00:00 for full 24h
 
-      onDateRangeSelect?.(start, adjustedEnd);
+      let rangeStart: Date;
+      let rangeEnd: Date;
+      if (isDailyRental) {
+        // Check in at noon on the start day; check out at noon on the end
+        // day itself (that day's morning is still the departing guest's, so
+        // its afternoon is free for someone else). The same tile clicked
+        // twice means a single night, so the checkout rolls to the next day.
+        rangeStart = addHours(start, NOON_HOUR);
+        rangeEnd = isSameDay(start, end)
+          ? addHours(addDays(end, 1), NOON_HOUR)
+          : addHours(end, NOON_HOUR);
+      } else {
+        rangeStart = start;
+        rangeEnd = addDays(end, 1); // Next day at 00:00:00 for full 24h
+      }
+
+      onDateRangeSelect?.(rangeStart, rangeEnd);
       setSelectingStart(null);
       setHoveredDate(null);
     }
@@ -323,6 +353,20 @@ export const RentalCalendar = ({
     });
   };
 
+  // For daily/noon-to-noon rentals, a calendar day splits into a morning
+  // half [00:00, noon) and an afternoon half [noon, 24:00) so a checkout at
+  // noon and a check-in at noon the same day can both show correctly: the
+  // departing guest's booking only occupies the morning, the new one only
+  // the afternoon.
+  const isDayHalfBooked = (day: Date, half: 'morning' | 'afternoon'): boolean => {
+    const dayStart = startOfDay(day);
+    const noon = addHours(dayStart, NOON_HOUR);
+    const rangeStart = half === 'morning' ? dayStart : noon;
+    const rangeEnd = half === 'morning' ? noon : addDays(dayStart, 1);
+
+    return existingBookings.some(booking => rangeStart < booking.end && booking.start < rangeEnd);
+  };
+
   const clearSelection = () => {
     setSelectingStart(null);
     setHoveredDate(null);
@@ -337,16 +381,26 @@ export const RentalCalendar = ({
   };
 
   // Live range while a start is pending: ordered start/end plus the unit padding
-  // (a full hour in weekly view, a full day in monthly) used for the final booking.
+  // (a full hour in weekly view, a full day — or noon-to-noon for daily
+  // rentals — in monthly) used for the final booking.
   const previewRange = useMemo(() => {
     if (!selectingStart || !hoveredDate) return null;
     const [start, last] = isBefore(hoveredDate, selectingStart)
       ? [hoveredDate, selectingStart]
       : [selectingStart, hoveredDate];
-    const end =
-      viewMode === 'weekly' ? new Date(last.getTime() + 60 * 60 * 1000) : addDays(last, 1);
-    return { start, end };
-  }, [selectingStart, hoveredDate, viewMode]);
+
+    if (viewMode === 'weekly') {
+      return { start, end: new Date(last.getTime() + 60 * 60 * 1000) };
+    }
+    if (isDailyRental) {
+      const rangeStart = addHours(start, NOON_HOUR);
+      const rangeEnd = isSameDay(start, last)
+        ? addHours(addDays(last, 1), NOON_HOUR)
+        : addHours(last, NOON_HOUR);
+      return { start: rangeStart, end: rangeEnd };
+    }
+    return { start, end: addDays(last, 1) };
+  }, [selectingStart, hoveredDate, viewMode, isDailyRental]);
 
   const renderWeeklyView = () => (
     <div className="overflow-x-auto" onMouseLeave={() => selectingStart && setHoveredDate(null)}>
@@ -463,17 +517,70 @@ export const RentalCalendar = ({
       >
         {daysInMonthGrid.map((day, index) => {
           const isPast = isDayPast(day);
-          const isBooked = isDayBooked(day);
+          const morningBooked = isDailyRental && isDayHalfBooked(day, 'morning');
+          const afternoonBooked = isDailyRental && isDayHalfBooked(day, 'afternoon');
+          const isBooked = isDailyRental ? morningBooked || afternoonBooked : isDayBooked(day);
+          // Daily rentals only block a day once *both* halves are taken —
+          // a checkout-only morning still leaves the afternoon free to book.
+          const isFullyBooked = isDailyRental ? morningBooked && afternoonBooked : isBooked;
           const bookings = isBooked ? getBookingsForDay(day) : [];
           const isPendingStart = isDayPendingStart(day);
           // Hide the previously confirmed range while a new selection is in progress.
           const isSelected = !selectingStart && isDaySelected(day);
           const isPreview = isDayInPreview(day) && !isPendingStart;
           const isCurrentMonth = isSameMonth(day, currentDate);
-          const isClickDisabled = isPast || isBooked;
+          const isClickDisabled = isPast || isFullyBooked;
           const isHighlighted = isSelected || isPendingStart;
 
-          const dayButton = (
+          const halfClass = (half: 'morning' | 'afternoon') => {
+            const halfBooked = half === 'morning' ? morningBooked : afternoonBooked;
+            return cn(
+              'flex-1 w-full',
+              isPast && 'bg-[var(--mantine-color-gray-2)]',
+              !isPast &&
+                halfBooked &&
+                'bg-[var(--mantine-color-red-1)] border-[var(--mantine-color-red-3)]',
+              !isPast && halfBooked && half === 'morning' && 'border-b',
+              !isPast && halfBooked && half === 'afternoon' && 'border-t',
+              !isPast && !halfBooked && isHighlighted && 'bg-[var(--mantine-color-green-6)]',
+              !isPast &&
+                !halfBooked &&
+                !isHighlighted &&
+                isPreview &&
+                'bg-[var(--mantine-color-green-2)]',
+              !isPast && !halfBooked && !isHighlighted && !isPreview && 'bg-transparent',
+            );
+          };
+
+          const dayButton = isDailyRental ? (
+            <button
+              onClick={() => !isClickDisabled && handleDayClick(day)}
+              onMouseEnter={() => {
+                if (selectingStart && !isClickDisabled) setHoveredDate(startOfDay(day));
+              }}
+              disabled={isPast && !isBooked}
+              className={cn(
+                'h-16 rounded transition-colors flex flex-col overflow-hidden w-full border',
+                isPast && 'cursor-not-allowed opacity-50',
+                isBooked && !isPast && 'cursor-pointer opacity-90',
+                !isClickDisabled && 'hover:brightness-95',
+                isSameDay(day, new Date()) &&
+                  !isHighlighted &&
+                  'border-2 border-[var(--mantine-color-green-6)]',
+              )}
+            >
+              <span className={halfClass('morning')} />
+              <span
+                className={cn(
+                  'text-sm font-medium py-0.5 text-center',
+                  !isCurrentMonth && 'text-[var(--mantine-color-dimmed)]',
+                )}
+              >
+                {format(day, 'd')}
+              </span>
+              <span className={halfClass('afternoon')} />
+            </button>
+          ) : (
             <button
               onClick={() => !isClickDisabled && handleDayClick(day)}
               onMouseEnter={() => {

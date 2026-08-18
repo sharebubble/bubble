@@ -3,12 +3,15 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
 import { useUnreadMessages } from '@/hooks/useMessages';
+import { useProfile } from '@/hooks/useProfile';
 import { SearchBar } from '@/components/layout/SearchBar';
 
 import { BROWSE_PATH } from '@/lib/routes';
 import { cn } from '@/lib/utils';
 import {
+  Bell,
   BookMarked,
+  Calendar,
   CalendarCheck,
   Compass,
   Download,
@@ -25,6 +28,7 @@ export const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: unreadMessages } = useUnreadMessages();
+  const { data: profile } = useProfile();
   const { canInstall, promptInstall } = useInstallPrompt();
 
   const { t } = useLanguage();
@@ -172,7 +176,7 @@ export const Header = () => {
             <Menu position="bottom-end" shadow="md" width={224}>
               <Menu.Target>
                 <ActionIcon variant="default" size="lg" aria-label={t('header.myProfile')}>
-                  <Avatar size={20} radius="xl" color="green">
+                  <Avatar size={20} radius="xl" color="green" src={profile?.profile_image}>
                     {user.email?.charAt(0).toUpperCase()}
                   </Avatar>
                 </ActionIcon>
@@ -183,7 +187,21 @@ export const Header = () => {
                   to="/profile"
                   leftSection={<User size={16} aria-hidden="true" />}
                 >
-                  {t('header.myProfile')}
+                  {t('account.settings')}
+                </Menu.Item>
+                <Menu.Item
+                  component={NavLink}
+                  to="/profile/notifications"
+                  leftSection={<Bell size={16} aria-hidden="true" />}
+                >
+                  {t('header.notificationSettings')}
+                </Menu.Item>
+                <Menu.Item
+                  component={NavLink}
+                  to="/profile/calendar"
+                  leftSection={<Calendar size={16} aria-hidden="true" />}
+                >
+                  {t('header.calendarSettings')}
                 </Menu.Item>
                 {/* Only rendered while the browser is actually offering an
                     install; Safari never does and handles it in its share menu. */}
