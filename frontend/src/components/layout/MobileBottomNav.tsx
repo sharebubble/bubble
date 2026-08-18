@@ -64,7 +64,11 @@ export const MobileBottomNav = () => {
       key: 'nav.profile',
       icon: User,
       to: ACCOUNT_PATH,
-      isActive: pathname => pathname.startsWith(ACCOUNT_PATH) || pathname.startsWith('/profile'),
+      // Only the hub itself counts as "active" — /profile and its sub-pages
+      // (notifications, calendar) are destinations reached *from* the hub,
+      // same as /my-items or /collections, so they stay clickable rather
+      // than looking selected and swallowing the tap as a scroll-to-top.
+      isActive: pathname => pathname.startsWith(ACCOUNT_PATH),
     },
   ];
 
