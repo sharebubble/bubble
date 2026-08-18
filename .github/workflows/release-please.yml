@@ -1,0 +1,97 @@
+name: Release Please
+
+# Opens/maintains a release PR on `main` using Conventional Commits, and cuts a
+# GitHub release + tag when that PR is merged. After a release is created we
+# bump the Helm chart (charts/Chart.yaml) so it gets a fresh OCI version and is
+# re-published by the `release-charts.yml` workflow.
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - uses: googleapis/release-please-action@v5
+        id: release
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+  bump-helm-chart:
+    name: Bump Helm chart version for release
+    needs: release-please
+    if: needs.release-please.outputs.release_created == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      NEW_VERSION: ${{ needs.release-please.outputs.tag_name }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+
+      - name: Bump chart version and appVersion
+        run: |
+          # Strip the leading "v" from the release tag (e.g. v0.1.3 -> 0.1.3).
+          APP_VERSION="${NEW_VERSION#v}"
+
+          python3 - <<'PY'
+          import re, os
+
+          chart_path = "charts/Chart.yaml"
+          app_version = os.environ["APP_VERSION"]
+
+          text = open(chart_path).read()
+
+          # Bump the chart version patch so the OCI artifact gets a new tag
+          # (Helm/OCI registries reject re-publishing an existing version).
+          def bump_version(match):
+              base = match.group(1)
+              major, minor, patch = (int(part) for part in base.split("."))
+              return f"version: {major}.{minor}.{patch + 1}"
+
+          text = re.sub(
+              r'^version:\s*([0-9]+\.[0-9]+\.[0-9]+)',
+              bump_version,
+              text,
+              flags=re.MULTILINE,
+          )
+
+          # Keep appVersion in lockstep with the application release.
+          text = re.sub(
+              r"^appVersion:\s*['\"]?[0-9][^'\"]*['\"]?",
+              f"appVersion: '{app_version}'",
+              text,
+              flags=re.MULTILINE,
+          )
+
+          open(chart_path, "w").write(text)
+          PY
+
+          echo "Updated charts/Chart.yaml:"
+          grep -E '^(version|appVersion):' "${chart_path}"
+
+      - name: Commit and push chart bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add charts/Chart.yaml
+          # Non-Conventional-Commits message on purpose: release-please ignores
+          # it, so it won't open a follow-up release PR (avoids an update loop).
+          git commit -m "helm: sync chart to app release ${NEW_VERSION}"
+          git push
