@@ -1,7 +1,18 @@
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
-import { Avatar, Button, Card, Divider, Group, NavLink, Stack, Text } from '@mantine/core';
+import { useProfile } from '@/hooks/useProfile';
+import {
+  Avatar,
+  Button,
+  Card,
+  Divider,
+  Group,
+  NavLink,
+  Stack,
+  Text,
+  UnstyledButton,
+} from '@mantine/core';
 import {
   Bell,
   BookMarked,
@@ -35,6 +46,7 @@ const ENTRIES: HubEntry[] = [
 const Account = () => {
   const { t } = useLanguage();
   const { user, signOut } = useAuth();
+  const { data: profile } = useProfile();
   const { canInstall, promptInstall } = useInstallPrompt();
   const navigate = useNavigate();
 
@@ -46,20 +58,27 @@ const Account = () => {
   return (
     <main className="container mx-auto max-w-2xl px-4 py-4">
       <Stack gap="md">
-        {/* Identity */}
-        <Group gap="sm" wrap="nowrap">
-          <Avatar size={48} radius="xl" color="green">
-            {user?.email?.charAt(0).toUpperCase()}
-          </Avatar>
-          <div className="min-w-0">
-            <Text fw={600} truncate>
-              {user?.display || user?.username}
-            </Text>
-            <Text size="sm" c="dimmed" truncate>
-              {user?.email}
-            </Text>
-          </div>
-        </Group>
+        {/* Identity — links to Personal Settings, same destination as the
+            account.settings entry below. */}
+        <UnstyledButton
+          onClick={() => navigate('/profile')}
+          aria-label={t('account.settings')}
+          className="w-full"
+        >
+          <Group gap="sm" wrap="nowrap">
+            <Avatar size={48} radius="xl" color="green" src={profile?.profile_image}>
+              {user?.email?.charAt(0).toUpperCase()}
+            </Avatar>
+            <div className="min-w-0">
+              <Text fw={600} truncate>
+                {profile?.name || user?.username}
+              </Text>
+              <Text size="sm" c="dimmed" truncate>
+                {user?.email}
+              </Text>
+            </div>
+          </Group>
+        </UnstyledButton>
 
         {/* Destinations */}
         <Card withBorder padding={0}>

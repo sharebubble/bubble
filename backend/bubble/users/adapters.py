@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import logging
+import mimetypes
 import typing
 
+import requests
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.conf import settings
 from django.contrib.auth.models import Group
+from django.core.files.base import ContentFile
 
 from bubble.core.permissions_config import DefaultGroup
 
@@ -13,7 +17,9 @@ if typing.TYPE_CHECKING:
     from allauth.socialaccount.models import SocialLogin
     from django.http import HttpRequest
 
-    from bubble.users.models import User
+    from bubble.users.models import Profile, User
+
+logger = logging.getLogger(__name__)
 
 
 class AccountAdapter(DefaultAccountAdapter):
@@ -74,23 +80,45 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
 
     @staticmethod
     def sync_profile_from_oidc(user: User, userinfo: dict[str, typing.Any]) -> None:
-        """Populate profile fields from OIDC claims (currently the phone number).
+        """Populate profile fields from OIDC claims (phone number, avatar).
 
-        Standard OIDC exposes the phone as ``phone_number``; some providers use
-        ``phone``. Only an empty profile field is filled so a value the user set
-        in Bubble is never overwritten.
+        Standard OIDC exposes the phone as ``phone_number`` (some providers use
+        ``phone``) and the avatar as ``picture``. Only an empty profile field is
+        filled so a value the user set in Bubble is never overwritten.
         """
         from bubble.users.models import Profile  # noqa: PLC0415
 
-        phone = userinfo.get("phone_number") or userinfo.get("phone")
-        if not phone:
-            return
-
         profile, _created = Profile.objects.get_or_create(user=user)
-        if not profile.phone:
+
+        phone = userinfo.get("phone_number") or userinfo.get("phone")
+        if phone and not profile.phone:
             max_length = Profile._meta.get_field("phone").max_length  # noqa: SLF001
             profile.phone = str(phone)[:max_length]
             profile.save(update_fields=["phone"])
+
+        picture_url = userinfo.get("picture")
+        if picture_url and not profile.profile_image:
+            SocialAccountAdapter._sync_avatar_from_url(profile, picture_url)
+
+    @staticmethod
+    def _sync_avatar_from_url(profile: Profile, picture_url: str) -> None:
+        """Download the SSO-provided avatar and attach it as the profile image."""
+        try:
+            response = requests.get(picture_url, timeout=10)
+            response.raise_for_status()
+        except requests.RequestException:
+            logger.warning(
+                "Could not fetch SSO avatar for %s from %s",
+                profile.user.username,
+                picture_url,
+                exc_info=True,
+            )
+            return
+
+        content_type = response.headers.get("Content-Type", "").split(";")[0]
+        extension = mimetypes.guess_extension(content_type) or ".jpg"
+        filename = f"{profile.user.username}-avatar{extension}"
+        profile.profile_image.save(filename, ContentFile(response.content), save=True)
 
     def populate_user(
         self,
