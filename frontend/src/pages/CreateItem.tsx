@@ -1,5 +1,4 @@
 import { ImageUploadStep } from '@/components/items/ImageUploadStep';
-import { BackButton } from '@/components/layout/BackButton';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateItem, useUpdateItem } from '@/hooks/useCreateItem';
@@ -51,10 +50,7 @@ const CreateItem = () => {
 
   return (
     <div className="container mx-auto max-w-2xl px-4 py-8">
-      {/* Header with Back Button */}
       <div className="space-y-6">
-        <BackButton />
-
         {/* Simple Header */}
         <div className="space-y-2">
           <Title order={1} size="h3">
