@@ -412,6 +412,7 @@ const ItemDetail = () => {
         <div className="mt-10" id="booking" ref={rentalCalendarRef}>
           <RentalCalendar
             itemUuid={itemUuid}
+            rentalPeriod={item.rental_period}
             onDateRangeSelect={handleDateRangeSelect}
             selectedStart={selectedStartDate}
             selectedEnd={selectedEndDate}
