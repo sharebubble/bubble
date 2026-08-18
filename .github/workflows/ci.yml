@@ -262,6 +262,7 @@ jobs:
 
   promote:
     if: startsWith(github.ref, 'refs/tags/v')
+    needs: [linter, pytest]
     runs-on: ubuntu-latest
 
     permissions:
@@ -269,6 +270,9 @@ jobs:
       packages: write
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
       - name: Log in to Container Registry
         uses: docker/login-action@v4
         with:
@@ -283,23 +287,38 @@ jobs:
         id: version
         run: echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Promote backend image to latest and version tag
-        run: |
-          SOURCE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:main-${{ github.sha }}"
-          echo "Promoting $SOURCE"
-          docker buildx imagetools create \
-            --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.version.outputs.tag }}" \
-            --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest" \
-            "$SOURCE"
+      # Build and push directly in this job so promotion does not depend on a
+      # cross-run image from the earlier `main` push (which can be cancelled by
+      # `cancel-in-progress` or not yet complete when the tag run executes).
+      - name: Build and push backend image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ steps.version.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:latest
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
 
-      - name: Promote frontend image to latest and version tag
-        run: |
-          SOURCE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:main-${{ github.sha }}"
-          echo "Promoting $SOURCE"
-          docker buildx imagetools create \
-            --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.version.outputs.tag }}" \
-            --tag "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest" \
-            "$SOURCE"
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v7
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ steps.version.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:latest
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64
 
       - name: Output promoted image information
         run: |
