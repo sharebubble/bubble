@@ -44,11 +44,12 @@ const ItemBookingHistory = () => {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
-      <BackButton className="mb-6" />
-
-      <Title order={2} mb={4}>
-        {t('itemBookings.title')}
-      </Title>
+      <div className="flex items-center gap-2 mb-4">
+        <BackButton />
+        <Title order={1} size="h3">
+          {t('itemBookings.title')}
+        </Title>
+      </div>
       {item?.name && (
         <Text c="dimmed" mb="lg">
           {item.name}
