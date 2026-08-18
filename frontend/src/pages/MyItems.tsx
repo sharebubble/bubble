@@ -228,9 +228,13 @@ const MyItems = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <BackButton className="mb-4" />
       <div className="flex items-center justify-between mb-8">
-        <Title order={1}>{t('myItems.title')}</Title>
+        <div className="flex items-center gap-2">
+          <BackButton />
+          <Title order={1} size="h3">
+            {t('myItems.title')}
+          </Title>
+        </div>
         <div className="flex items-center gap-4">
           {/* View Mode Toggle */}
           <div className="flex items-center gap-1 border rounded-lg p-1">

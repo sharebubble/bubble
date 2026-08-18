@@ -748,12 +748,15 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
 
   return (
     <div className="container mx-auto py-8 space-y-0 p-3">
-      <BackButton className="mb-6" onClick={() => handleGuardedNavigate(-1)} />
-
       <Card withBorder padding="lg">
         <div className="mb-6">
           <div className="flex items-center justify-between">
-            <Title order={3}>{editItemUuid ? t('itemDetail.editItem') : t('editItem.name')}</Title>
+            <div className="flex items-center gap-2">
+              <BackButton onClick={() => handleGuardedNavigate(-1)} />
+              <Title order={3}>
+                {editItemUuid ? t('itemDetail.editItem') : t('editItem.name')}
+              </Title>
+            </div>
             <div className="flex gap-2 items-center">
               {/* ── Desktop: inline buttons ── */}
               <div className="hidden md:flex gap-2">

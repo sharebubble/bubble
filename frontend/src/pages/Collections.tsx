@@ -18,6 +18,7 @@ import {
   Text,
   TextInput,
   Textarea,
+  Title,
 } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { BookMarked, ChevronRight, Grid3X3, List, Plus, Search, Trash2 } from 'lucide-react';
@@ -93,13 +94,13 @@ const Collections = () => {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 space-y-6">
-      <BackButton />
-
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <BookMarked className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">{t('collections.header.myCollections')}</h1>
+        <div className="flex items-center gap-2">
+          <BackButton />
+          <Title order={1} size="h3">
+            {t('collections.header.myCollections')}
+          </Title>
         </div>
         <div className="flex items-center gap-2">
           {/* View mode toggle */}

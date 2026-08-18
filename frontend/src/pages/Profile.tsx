@@ -10,9 +10,13 @@ const Profile = () => {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <BackButton className="mb-4" />
       <div className="mb-8">
-        <Title order={1}>{t('profile.title')}</Title>
+        <div className="flex items-center gap-2">
+          <BackButton />
+          <Title order={1} size="h3">
+            {t('profile.title')}
+          </Title>
+        </div>
         <Text c="dimmed" className="mt-2">
           {t('profile.manage')}
         </Text>

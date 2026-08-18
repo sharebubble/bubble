@@ -23,6 +23,7 @@ import {
   Text,
   TextInput,
   Textarea,
+  Title,
 } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { BookMarked, Edit3, History, ShoppingCart, Trash2 } from 'lucide-react';
@@ -124,14 +125,15 @@ const CollectionDetail = () => {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 space-y-6">
-      <BackButton />
-
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <BackButton />
           <BookMarked className="h-6 w-6 text-primary shrink-0" />
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold truncate">{collection.name}</h1>
+            <Title order={1} size="h3" className="truncate">
+              {collection.name}
+            </Title>
             {collection.description && (
               <Text size="sm" c="dimmed" className="mt-1">
                 {collection.description}

@@ -392,9 +392,14 @@ const MyBookingsPage = () => {
       <div className="flex flex-col h-full">
         {/* Header — hidden on mobile once a conversation is open, where the
             panel's own back button takes over. */}
-        <div className={cn('shrink-0', selectedBookingId && 'hidden md:block')}>
+        <div
+          className={cn(
+            'flex items-center gap-2 mb-4 shrink-0',
+            selectedBookingId && 'hidden md:flex',
+          )}
+        >
           <BackButton />
-          <Title order={1} className="mb-4">
+          <Title order={1} size="h3">
             {t('bookings.title')}
           </Title>
         </div>
