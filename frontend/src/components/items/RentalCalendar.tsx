@@ -364,9 +364,7 @@ export const RentalCalendar = ({
     const rangeStart = half === 'morning' ? dayStart : noon;
     const rangeEnd = half === 'morning' ? noon : addDays(dayStart, 1);
 
-    return existingBookings.some(
-      booking => rangeStart < booking.end && booking.start < rangeEnd,
-    );
+    return existingBookings.some(booking => rangeStart < booking.end && booking.start < rangeEnd);
   };
 
   const clearSelection = () => {
