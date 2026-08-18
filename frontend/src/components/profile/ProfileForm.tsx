@@ -2,8 +2,10 @@ import { Button, Card, Text, TextInput, Title, useMantineColorScheme } from '@ma
 import { useForm } from '@mantine/form';
 import { zod4Resolver } from 'mantine-form-zod-resolver';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useNotificationPreferences } from '@/hooks/useNotificationPreferences';
 import { useProfile } from '@/hooks/useProfile';
 import { useProfileFieldAutoSave } from '@/hooks/useProfileFieldAutoSave';
+import { useQueryClient } from '@tanstack/react-query';
 import { Check, Loader2, Monitor, Moon, Sun } from 'lucide-react';
 import React from 'react';
 import { z } from 'zod';
@@ -11,23 +13,38 @@ import { z } from 'zod';
 const profileSchema = z.object({
   name: z.string().optional(),
   phone: z.string().optional(),
-  matrix_id: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 export const ProfileForm = () => {
   const { data: profile, isLoading } = useProfile();
+  const { data: notificationPrefs } = useNotificationPreferences();
   const { fieldStates, saveField } = useProfileFieldAutoSave();
   const { language, setLanguage, t } = useLanguage();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
+  const queryClient = useQueryClient();
+
+  // Notification availability (which channels a user can be reached on)
+  // depends on the profile fields saved above, so refresh it whenever one of
+  // those fields is saved — otherwise the Notifications card would keep
+  // showing its previous, now-stale set of channels until the next reload.
+  const saveFieldAndRefreshNotifications = React.useCallback(
+    async (fieldName: string, value: unknown): Promise<boolean> => {
+      const success = await saveField(fieldName, value);
+      queryClient.invalidateQueries({
+        queryKey: ['notification-preferences', profile?.username],
+      });
+      return success;
+    },
+    [saveField, queryClient, profile?.username],
+  );
 
   const form = useForm<ProfileFormData>({
     validate: zod4Resolver(profileSchema),
     initialValues: {
       name: '',
       phone: '',
-      matrix_id: '',
     },
   });
 
@@ -36,7 +53,6 @@ export const ProfileForm = () => {
       form.setValues({
         name: profile.name ?? '',
         phone: profile.phone ?? '',
-        matrix_id: profile.matrix_id ?? '',
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -106,18 +122,18 @@ export const ProfileForm = () => {
             classNames={{ input: getFieldBorderClass('phone') }}
             rightSection={renderFieldStatusIcon('phone')}
             {...form.getInputProps('phone')}
-            onBlur={() => saveField('phone', form.getValues().phone)}
+            onBlur={() => saveFieldAndRefreshNotifications('phone', form.getValues().phone)}
           />
 
-          <TextInput
-            label={t('profile.matrixId')}
-            placeholder="@alice:matrix.org"
-            description={t('profile.matrixIdDesc')}
-            classNames={{ input: getFieldBorderClass('matrix_id') }}
-            rightSection={renderFieldStatusIcon('matrix_id')}
-            {...form.getInputProps('matrix_id')}
-            onBlur={() => saveField('matrix_id', form.getValues().matrix_id)}
-          />
+          {notificationPrefs?.rocketchat_configured && (
+            <TextInput
+              label={t('profile.rocketchatUsername')}
+              description={t('profile.rocketchatUsernameDesc')}
+              value={profile?.username ?? ''}
+              readOnly
+              variant="filled"
+            />
+          )}
         </form>
       </Card>
 

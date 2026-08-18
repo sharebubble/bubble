@@ -951,22 +951,27 @@ export type Message = {
  * created items.
  */
 export type NotificationPreferenceMe = {
+    readonly webpush_configured: boolean;
     readonly webpush_available: boolean;
     readonly webpush_target: string;
     webpush_messages?: boolean;
     webpush_new_item?: boolean;
+    readonly rocketchat_configured: boolean;
     readonly rocketchat_available: boolean;
     readonly rocketchat_target: string;
     rocketchat_messages?: boolean;
     rocketchat_new_item?: boolean;
+    readonly signal_configured: boolean;
     readonly signal_available: boolean;
     readonly signal_target: string;
     signal_messages?: boolean;
     signal_new_item?: boolean;
+    readonly matrix_configured: boolean;
     readonly matrix_available: boolean;
     readonly matrix_target: string;
     matrix_messages?: boolean;
     matrix_new_item?: boolean;
+    readonly email_configured: boolean;
     readonly email_available: boolean;
     readonly email_target: string;
     email_messages?: boolean;
@@ -1501,22 +1506,27 @@ export type PatchedMessage = {
  * created items.
  */
 export type PatchedNotificationPreferenceMe = {
+    readonly webpush_configured?: boolean;
     readonly webpush_available?: boolean;
     readonly webpush_target?: string;
     webpush_messages?: boolean;
     webpush_new_item?: boolean;
+    readonly rocketchat_configured?: boolean;
     readonly rocketchat_available?: boolean;
     readonly rocketchat_target?: string;
     rocketchat_messages?: boolean;
     rocketchat_new_item?: boolean;
+    readonly signal_configured?: boolean;
     readonly signal_available?: boolean;
     readonly signal_target?: string;
     signal_messages?: boolean;
     signal_new_item?: boolean;
+    readonly matrix_configured?: boolean;
     readonly matrix_available?: boolean;
     readonly matrix_target?: string;
     matrix_messages?: boolean;
     matrix_new_item?: boolean;
+    readonly email_configured?: boolean;
     readonly email_available?: boolean;
     readonly email_target?: string;
     email_messages?: boolean;

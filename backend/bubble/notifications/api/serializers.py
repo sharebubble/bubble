@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from bubble.notifications.channels import is_channel_available, resolve_target
+from bubble.notifications.channels import (
+    is_backend_configured,
+    is_channel_available,
+    resolve_target,
+)
 from bubble.notifications.models import EVENT_GROUPS, NotificationPreference
 
 ProviderType = NotificationPreference.ProviderType
@@ -21,6 +25,10 @@ def _toggle_field(provider: str, group: str) -> str:
     return f"{provider}_{group}"
 
 
+def _configured_field(provider: str) -> str:
+    return f"{provider}_configured"
+
+
 def _available_field(provider: str) -> str:
     return f"{provider}_available"
 
@@ -32,8 +40,15 @@ def _target_field(provider: str) -> str:
 class NotificationPreferenceMeSerializer(serializers.Serializer):
     """Flat serializer for GET/PATCH /api/notification-preferences/me/.
 
-    For every provider (RocketChat, Signal, Email) it exposes:
+    For every provider (webpush, RocketChat, Signal, Matrix, email) it
+    exposes:
 
+    * ``<provider>_configured`` (read-only): the channel is set up on the
+      backend, independent of whether this particular user is reachable on
+      it yet. For the Apprise-backed channels (RocketChat, Signal, Matrix,
+      email) that means an Apprise URL template is configured (Constance/env);
+      for ``webpush`` it means a VAPID keypair is configured. The frontend
+      uses this to decide whether to prefill a user's address for a channel.
     * ``<provider>_available`` (read-only): the channel is configured on the
       backend *and* the user has filled in the field it needs to reach them.
       For ``webpush`` there is no such field — availability means at least one
@@ -48,6 +63,9 @@ class NotificationPreferenceMeSerializer(serializers.Serializer):
     def get_fields(self):
         fields = super().get_fields()
         for provider in PROVIDERS:
+            fields[_configured_field(provider)] = serializers.BooleanField(
+                read_only=True
+            )
             fields[_available_field(provider)] = serializers.BooleanField(
                 read_only=True
             )
@@ -66,6 +84,7 @@ class NotificationPreferenceMeSerializer(serializers.Serializer):
 
         data: dict[str, object] = {}
         for provider in PROVIDERS:
+            data[_configured_field(provider)] = is_backend_configured(provider)
             data[_available_field(provider)] = is_channel_available(provider, user)
             data[_target_field(provider)] = resolve_target(provider, user)
             for group, events in EVENT_GROUPS.items():

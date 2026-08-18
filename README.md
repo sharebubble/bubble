@@ -42,7 +42,7 @@ These can be set via environment variables or edited at runtime in the Django ad
 A channel only appears in a user's profile once it is **both**:
 
 1. configured on the backend (the Apprise URL above is set), and
-2. addressable for that user (the matching profile field is filled in — RocketChat username, Signal phone number, Matrix ID or email).
+2. addressable for that user (RocketChat and email use the bubble username/account email automatically; Signal needs a phone number on the profile; Matrix needs a Matrix ID, editable right in the Notifications section).
 
 Users then choose, per channel, which events they want:
 
@@ -50,6 +50,8 @@ Users then choose, per channel, which events they want:
 - **New items** — whenever a new item is published.
 
 The phone number can be filled in manually on the profile, or is pre-populated from the `phone_number` claim of your OIDC provider when available (the `phone` scope is requested automatically).
+
+RocketChat and email always address a user by their bubble username/account email, so they need no separate field — once `APPRISE_ROCKETCHAT_URL`/`APPRISE_MAILTOS_URL` is configured, those channels and their notification options appear automatically (email notifications, like every other channel, start out **disabled** until the user opts in). Matrix works similarly but needs a per-user Matrix ID: once `APPRISE_MATRIX_URL` is configured, the Matrix panel appears in the **Notifications** section of the profile with an editable Matrix ID field, prefilled with the user's bubble username so the channel becomes available immediately (they can still edit it to their real `@user:server` address).
 
 # Federation (ActivityPub)
 
