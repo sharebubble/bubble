@@ -29,7 +29,7 @@ const translations = {
 
     // Mobile bottom navigation
     'nav.primary': 'Main navigation',
-    'nav.breadcrumbs': 'Breadcrumb',
+    'nav.back': 'Back',
     'nav.home': 'Home',
     'nav.search': 'Search',
     'nav.add': 'Add',
@@ -734,7 +734,7 @@ const translations = {
 
     // Mobile bottom navigation
     'nav.primary': 'Hauptnavigation',
-    'nav.breadcrumbs': 'Brotkrümelnavigation',
+    'nav.back': 'Zurück',
     'nav.home': 'Start',
     'nav.search': 'Suche',
     'nav.add': 'Teilen',

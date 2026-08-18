@@ -8,12 +8,11 @@ import {
   StatusField,
   VisibilityField,
 } from '@/components/items/ItemFormFields';
-import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
+import { BackButton } from '@/components/layout/BackButton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useUpdateItem } from '@/hooks/useCreateItem';
 import { useMyItem } from '@/hooks/useMyItem';
-import { BROWSE_PATH } from '@/lib/routes';
 import { imagesAPI } from '@/services/custom/images';
 import {
   CategoryEnum,
@@ -217,11 +216,11 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
     return missing;
   }, [formData.name, formData.category, formData.condition, formData.sales_type, t]);
 
-  // Shared by the breadcrumb trail and the back button: leaving with
-  // incomplete required fields asks for confirmation first, regardless of
-  // which ancestor the user is navigating to.
+  // Used by the back button: leaving with incomplete required fields asks
+  // for confirmation first, regardless of the navigation target.
   const handleGuardedNavigate = useCallback(
-    (target: string) => {
+    (target: string | number) => {
+      const go = () => (typeof target === 'number' ? navigate(target) : navigate(target));
       if (editItemUuid && missingFields.length > 0) {
         modals.openConfirmModal({
           title: (
@@ -244,10 +243,10 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
             confirm: t('editItem.leaveAnyway'),
             cancel: t('editItem.stayAndComplete'),
           },
-          onConfirm: () => navigate(target),
+          onConfirm: go,
         });
       } else {
-        navigate(target);
+        go();
       }
     },
     [editItemUuid, missingFields, navigate, t],
@@ -743,21 +742,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
 
   return (
     <div className="container mx-auto py-8 space-y-0 p-3">
-      <Breadcrumbs
-        className="mb-6"
-        items={[
-          { label: t('header.browse'), onClick: () => handleGuardedNavigate(BROWSE_PATH) },
-          ...(editItemUuid
-            ? [
-                {
-                  label: item?.name || t('itemDetail.editItem'),
-                  onClick: () => handleGuardedNavigate(`/item/${editItemUuid}`),
-                },
-              ]
-            : []),
-          { label: t('itemDetail.editItem') },
-        ]}
-      />
+      <BackButton className="mb-6" onClick={() => handleGuardedNavigate(-1)} />
 
       <Card withBorder padding="lg">
         <div className="mb-6">

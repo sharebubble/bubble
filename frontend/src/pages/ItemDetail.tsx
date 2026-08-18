@@ -11,14 +11,13 @@ import {
   getStatusMantineColor,
 } from '@/components/items/status';
 import { AddToCollectionPopover } from '@/components/collections/AddToCollectionPopover';
-import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
+import { BackButton } from '@/components/layout/BackButton';
 import UserInfoBox from '@/components/users/UserInfoBox';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useItem } from '@/hooks/useItem';
 import { useDeleteItem } from '@/hooks/useMyItems';
 import { useItemCollections } from '@/hooks/useCollections';
-import { BROWSE_PATH } from '@/lib/routes';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
@@ -211,12 +210,7 @@ const ItemDetail = () => {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
       <div className="mb-4 flex items-center justify-between gap-2">
-        <Breadcrumbs
-          items={[
-            { label: t('header.browse'), to: BROWSE_PATH },
-            { label: name || t('requests.unknownItem') },
-          ]}
-        />
+        <BackButton />
         <div className="flex items-center gap-2">
           <ShareButton url={shareUrl} title={name} text={description || undefined} />
           {/* Calendar subscription — any logged-in user, bookable items only */}
