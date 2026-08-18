@@ -1,8 +1,7 @@
-import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
+import { BackButton } from '@/components/layout/BackButton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useItem } from '@/hooks/useItem';
 import { useItemBookingHistory } from '@/hooks/useItemBookingHistory';
-import { BROWSE_PATH } from '@/lib/routes';
 import { formatPrice } from '@/lib/currency';
 import type { ItemBookingHistoryEntry } from '@/services/custom/itemBookings';
 import { Badge, Loader, Table, Text, Title } from '@mantine/core';
@@ -45,16 +44,7 @@ const ItemBookingHistory = () => {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
-      <Breadcrumbs
-        className="mb-6"
-        items={[
-          { label: t('header.browse'), to: BROWSE_PATH },
-          ...(itemUuid
-            ? [{ label: item?.name || t('itemBookings.title'), to: `/item/${itemUuid}` }]
-            : []),
-          { label: t('itemBookings.title') },
-        ]}
-      />
+      <BackButton className="mb-6" />
 
       <Title order={2} mb={4}>
         {t('itemBookings.title')}

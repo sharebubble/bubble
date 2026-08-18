@@ -1,7 +1,7 @@
 import { CalendarSubscribeButton } from '@/components/calendar/CalendarSubscribeButton';
 import { CollectionHistoryDialog } from '@/components/collections/CollectionHistoryDialog';
 import { CollectionPermissionsPanel } from '@/components/collections/CollectionPermissionsPanel';
-import { Breadcrumbs } from '@/components/layout/Breadcrumbs';
+import { BackButton } from '@/components/layout/BackButton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -124,9 +124,7 @@ const CollectionDetail = () => {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 space-y-6">
-      <Breadcrumbs
-        items={[{ label: t('collections.title'), to: '/collections' }, { label: collection.name }]}
-      />
+      <BackButton />
 
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">

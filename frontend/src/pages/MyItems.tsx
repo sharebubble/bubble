@@ -1,3 +1,4 @@
+import { BackButton } from '@/components/layout/BackButton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useDeleteItem, useMyItems, useUpdateItemStatus } from '@/hooks/useMyItems';
 import { getCategoryIcon } from '@/lib/categoryIcons';
@@ -227,6 +228,7 @@ const MyItems = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      <BackButton className="mb-4" />
       <div className="flex items-center justify-between mb-8">
         <Title order={1}>{t('myItems.title')}</Title>
         <div className="flex items-center gap-4">

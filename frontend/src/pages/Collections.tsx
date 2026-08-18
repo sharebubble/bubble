@@ -1,4 +1,5 @@
 import { CollectionCard } from '@/components/collections/CollectionCard';
+import { BackButton } from '@/components/layout/BackButton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -92,6 +93,8 @@ const Collections = () => {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 space-y-6">
+      <BackButton />
+
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
