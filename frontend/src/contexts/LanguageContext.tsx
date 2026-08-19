@@ -466,7 +466,8 @@ const translations = {
     'itemDetail.requestDonate': 'Request',
     'itemDetail.itemDetails': 'Item Details',
     'itemDetail.description': 'Description',
-    'itemDetail.listedSince': 'Listed since {{time}} by',
+    'itemDetail.listedSince': 'Listed {{time}}',
+    'itemDetail.by': 'by',
     'itemDetail.location': 'Location',
     'itemDetail.deleteConfirmTitle': 'Are you sure?',
     'itemDetail.deleteConfirmDescription':
@@ -1191,7 +1192,8 @@ const translations = {
     'itemDetail.requestDonate': 'Anfragen',
     'itemDetail.itemDetails': 'Artikel Details',
     'itemDetail.description': 'Beschreibung',
-    'itemDetail.listedSince': 'Gelistet seit {{time}} von',
+    'itemDetail.listedSince': 'Gelistet {{time}}',
+    'itemDetail.by': 'von',
     'itemDetail.location': 'Standort',
     'itemDetail.deleteConfirmTitle': 'Bist du sicher?',
     'itemDetail.deleteConfirmDescription':

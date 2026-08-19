@@ -267,9 +267,14 @@ const ItemDetail = () => {
               <Calendar size={16} />
               <span>
                 {t('itemDetail.listedSince', {
-                  time: formatDistanceToNow(new Date(created_at)),
-                })}{' '}
-                <OwnerLink userUuid={item.user} />
+                  time: formatDistanceToNow(new Date(created_at), { addSuffix: true }),
+                })}
+                {user && (
+                  <>
+                    {' '}
+                    <OwnerLink userUuid={item.user} />
+                  </>
+                )}
               </span>
             </Text>
 
