@@ -226,7 +226,7 @@ const BookingRow = ({
 
 // ─── main page ───────────────────────────────────────────────────────────────
 
-type Direction = 'upcoming' | 'past';
+type Direction = 'all' | 'upcoming' | 'past';
 type Role = '' | 'owner' | 'renter';
 
 const MyBookingsPage = () => {
@@ -265,7 +265,11 @@ const MyBookingsPage = () => {
   // survives a refresh and a shared link reproduces what was shared.
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const direction: Direction = searchParams.get('dir') === 'past' ? 'past' : 'upcoming';
+  const dirParam = searchParams.get('dir');
+  // Defaults to 'all' so the page opens showing the full booking history
+  // (like the start-page widget), rather than hiding anything not currently
+  // ongoing/upcoming behind a filter the user has to discover.
+  const direction: Direction = dirParam === 'past' || dirParam === 'upcoming' ? dirParam : 'all';
   const roleParam = searchParams.get('role');
   const role: Role = roleParam === 'owner' || roleParam === 'renter' ? roleParam : '';
   // Pending requests are surfaced by default so incoming/outstanding requests
@@ -350,15 +354,25 @@ const MyBookingsPage = () => {
 
   const queryParams = useMemo<BookingsFilterParams>(() => {
     const base: BookingsFilterParams = {
-      status: statuses,
       page,
       page_size: pageSize,
       ...(role ? { role } : {}),
+      // The status filter (approved/pending) only applies to the
+      // current/past agenda views. The default 'all' view — and any active
+      // search, which already claims to span "past, current & upcoming" —
+      // intentionally leaves it off so every booking, including
+      // cancelled/rejected ones, shows up.
+      ...(!isSearching && direction !== 'all' ? { status: statuses } : {}),
     };
     // When searching we span the whole timeline (past, current & upcoming),
     // ordered newest-first so recent/upcoming matches surface at the top.
     if (isSearching) {
       return { ...base, search: debouncedSearch, ordering: '-time_from' };
+    }
+    // Default view: every booking, most recent conversation activity first
+    // (same ordering as the start-page widget).
+    if (direction === 'all') {
+      return { ...base, ordering: '-latest_message_at' };
     }
     // Otherwise browse one direction of the agenda at a time.
     return {
@@ -422,11 +436,17 @@ const MyBookingsPage = () => {
                   value={searchInput}
                   onChange={e => setSearchInput(e.currentTarget.value)}
                 />
-                <Checkbox
-                  checked={showPending}
-                  onChange={e => updateFilters({ pending: e.currentTarget.checked ? null : '0' })}
-                  label={t('bookings.showPending')}
-                />
+                {/* Only meaningful once narrowed to current/past, where the
+                    status filter is applied — in the default 'all' view, and
+                    while searching (which also skips the status filter),
+                    every status (including pending) is already shown. */}
+                {!isSearching && direction !== 'all' && (
+                  <Checkbox
+                    checked={showPending}
+                    onChange={e => updateFilters({ pending: e.currentTarget.checked ? null : '0' })}
+                    label={t('bookings.showPending')}
+                  />
+                )}
               </div>
 
               <div className="flex flex-wrap gap-3 items-center justify-between">
@@ -434,10 +454,11 @@ const MyBookingsPage = () => {
                   <SegmentedControl
                     size="xs"
                     value={direction}
-                    onChange={value => updateFilters({ dir: value === 'upcoming' ? null : value })}
+                    onChange={value => updateFilters({ dir: value === 'all' ? null : value })}
                     data={[
-                      { label: t('bookings.directionPast'), value: 'past' },
+                      { label: t('bookings.directionAll'), value: 'all' },
                       { label: t('bookings.directionUpcoming'), value: 'upcoming' },
+                      { label: t('bookings.directionPast'), value: 'past' },
                     ]}
                   />
                 )}
