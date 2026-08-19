@@ -39,13 +39,8 @@ const UserInfoBox = ({ userUuid }: { userUuid: string }) => {
       {owner && (
         <div className="mt-2 space-y-1">
           <Text size="sm">
-            <strong>{t('user.name')}:</strong> {owner.name || owner.username || owner.email}
+            <strong>{t('user.name')}:</strong> {owner.name || owner.username}
           </Text>
-          {owner.email && (
-            <Text size="sm">
-              <strong>{t('user.email')}:</strong> {owner.email}
-            </Text>
-          )}
           {/* Add more fields as needed, keep it minimal for privacy */}
         </div>
       )}
