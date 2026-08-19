@@ -1,5 +1,6 @@
 import pytest
 from constance.test import override_config
+from django.test import override_settings
 
 from bubble.notifications.api.serializers import NotificationPreferenceMeSerializer
 from bubble.notifications.models import EventType, NotificationPreference
@@ -42,6 +43,7 @@ def test_to_representation_reports_availability_and_toggles() -> None:
 
 @pytest.mark.django_db
 @override_config(APPRISE_MATRIX_URL="matrixs://user:pass@matrix.example.com/{target}")
+@override_settings(APPRISE_MATRIX_HOSTNAME="example.com")
 def test_configured_is_true_even_without_a_user_target() -> None:
     # "configured" reflects backend setup only, unlike "available" which also
     # requires the user to have filled in their address for the channel.
@@ -52,6 +54,7 @@ def test_configured_is_true_even_without_a_user_target() -> None:
     assert data["matrix_configured"] is True
     assert data["matrix_available"] is False
     assert data["matrix_target"] == ""
+    assert data["matrix_default_id"] == "@alice:example.com"
 
 
 @pytest.mark.django_db

@@ -3,6 +3,7 @@ from __future__ import annotations
 from rest_framework import serializers
 
 from bubble.notifications.channels import (
+    default_matrix_id,
     is_backend_configured,
     is_channel_available,
     resolve_target,
@@ -58,7 +59,16 @@ class NotificationPreferenceMeSerializer(serializers.Serializer):
     * ``<provider>_<group>`` (read/write): per event-group opt-in toggles.
       ``messages`` covers new messages and bookings; ``new_item`` covers newly
       created items.
+
+    Additionally exposes ``matrix_default_id`` (read-only): the Matrix ID the
+    frontend should prefill for this user (their bubble username on this
+    deployment's own homeserver — see ``APPRISE_MATRIX_HOSTNAME``), or "" when
+    that can't be determined. Every other channel's target is derived
+    automatically (bubble username/email), so only Matrix needs a suggested
+    default for the user to accept or edit.
     """
+
+    matrix_default_id = serializers.CharField(read_only=True)
 
     def get_fields(self):
         fields = super().get_fields()
@@ -82,7 +92,7 @@ class NotificationPreferenceMeSerializer(serializers.Serializer):
             for p in NotificationPreference.objects.filter(user=user)
         }
 
-        data: dict[str, object] = {}
+        data: dict[str, object] = {"matrix_default_id": default_matrix_id(user)}
         for provider in PROVIDERS:
             data[_configured_field(provider)] = is_backend_configured(provider)
             data[_available_field(provider)] = is_channel_available(provider, user)

@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import quote
 
 from constance import config
+from django.conf import settings
 
 from bubble.notifications import webpush
 from bubble.notifications.models import NotificationPreference
@@ -65,6 +66,20 @@ def resolve_target(provider_type: str, user: User) -> str:
     if provider_type == ProviderType.EMAIL:
         return (user.email or "").strip()
     return ""
+
+
+def default_matrix_id(user: User) -> str:
+    """Return the Matrix ID a user would have on this deployment's homeserver
+    (e.g. "@alice:example.com"), or "" when either half is unavailable.
+
+    Used to prefill the Matrix ID field with a sensible guess — the user's
+    bubble username on this site's own homeserver — see APPRISE_MATRIX_HOSTNAME.
+    """
+    username = (user.username or "").strip().lstrip("@")
+    hostname = (settings.APPRISE_MATRIX_HOSTNAME or "").strip()
+    if not username or not hostname:
+        return ""
+    return f"@{username}:{hostname}"
 
 
 def is_backend_configured(provider_type: str) -> bool:
