@@ -1,6 +1,6 @@
 # Bibliography import
 
-Tools to bulk-import a literature bibliography (the *Soziale Bewegungen*
+Tools to bulk-import a literature bibliography (the _Soziale Bewegungen_
 library list) into the catalogue as borrowable **book items**.
 
 Books are not a separate model: they are `items.Item` records with
@@ -9,10 +9,10 @@ Books are not a separate model: they are `items.Item` records with
 
 ## Files
 
-| File | Purpose |
-| --- | --- |
-| `biblio_books.json` | Structured, ready-to-import records (one per book). |
-| `build_biblio.py` | Regenerates `biblio_books.json` from the source ODT. |
+| File                | Purpose                                              |
+| ------------------- | ---------------------------------------------------- |
+| `biblio_books.json` | Structured, ready-to-import records (one per book).  |
+| `build_biblio.py`   | Regenerates `biblio_books.json` from the source ODT. |
 
 ## Record schema
 
@@ -20,7 +20,7 @@ Each record in `biblio_books.json`:
 
 ```json
 {
-  "import_key": "c2a435d3062b81ae",   // stable id (sha1 of the raw citation)
+  "import_key": "c2a435d3062b81ae", // stable id (sha1 of the raw citation)
   "title": "Die Aktualität der Arbeiterbewegung",
   "subtitle": "Beiträge zu ihrer Theorie und Geschichte",
   "authors": ["Abendroth, Wolfgang"],
@@ -28,11 +28,11 @@ Each record in `biblio_books.json`:
   "year": 1985,
   "publisher": "Suhrkamp",
   "place": "Frankfurt am Main",
-  "shelf": "KritTheorie",             // normalised "Regal" / thematic shelf
-  "isbn": "9783518113103",            // empty unless enriched
+  "shelf": "KritTheorie", // normalised "Regal" / thematic shelf
+  "isbn": "9783518113103", // empty unless enriched
   "language": "",
   "note": "",
-  "confidence": "high",               // high | medium | low (parse quality)
+  "confidence": "high", // high | medium | low (parse quality)
   "raw_citation": "Abendroth, Wolfgang (1985): Die Aktualität …"
 }
 ```

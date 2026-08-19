@@ -297,7 +297,7 @@ def build(odt_path: Path, out_path: Path) -> None:
             }
         )
     out_path.write_text(
-        json.dumps(out, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+        json.dumps(out, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     print(f"wrote {len(out)} records to {out_path}")  # noqa: T201
 
