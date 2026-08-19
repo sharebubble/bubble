@@ -513,6 +513,9 @@ const translations = {
     'itemBookings.noPreviousRentals': 'This item has not been rented yet.',
     'itemBookings.anonymousBooker': 'Someone',
     'itemBookings.seeAll': 'See all bookings ({count})',
+    'itemBookings.statsButton': 'Booking stats',
+    'itemBookings.statsTitle': 'Total time booked per user',
+    'itemBookings.statsEmpty': 'No completed bookings yet.',
 
     // My Items
     'myItems.title': 'My Items',
@@ -1239,6 +1242,9 @@ const translations = {
     'itemBookings.noPreviousRentals': 'Dieser Artikel wurde noch nicht vermietet.',
     'itemBookings.anonymousBooker': 'Jemand',
     'itemBookings.seeAll': 'Alle Buchungen ansehen ({count})',
+    'itemBookings.statsButton': 'Buchungsstatistik',
+    'itemBookings.statsTitle': 'Gesamte Buchungszeit pro Nutzer',
+    'itemBookings.statsEmpty': 'Noch keine abgeschlossenen Buchungen.',
 
     // My Items
     'myItems.title': 'Meine Artikel',
