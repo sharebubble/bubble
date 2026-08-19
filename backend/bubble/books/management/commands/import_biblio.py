@@ -39,6 +39,11 @@ DEFAULT_DATA_FILE = Path(__file__).resolve().parents[2] / "data" / "biblio_books
 # Mark imported items so they can be found / cleaned up later.
 IMPORT_SOURCE = "biblio-import"
 
+# Properties that always reflect the import data, never a manual edit.
+IMPORT_BOOKKEEPING_KEYS = frozenset(
+    {"source", "import_key", "raw_citation", "import_confidence"}
+)
+
 STATUS_CHOICES = {
     "draft": ItemStatus.DRAFT,
     "available": ItemStatus.AVAILABLE,
@@ -145,10 +150,9 @@ class Command(BaseCommand):
         if existing:
             existing.name = title[:200]
             existing.description = description
-            # Preserve any manually-added properties, override imported ones.
-            merged = dict(existing.properties or {})
-            merged.update(properties)
-            existing.properties = merged
+            existing.properties = self._merge_properties(
+                existing.properties, properties
+            )
             existing.save()
             return "updated"
 
@@ -164,6 +168,22 @@ class Command(BaseCommand):
             properties=properties,
         )
         return "created"
+
+    @staticmethod
+    def _merge_properties(existing_properties: dict | None, imported: dict) -> dict:
+        """Merge freshly imported properties into an existing item's properties.
+
+        Import bookkeeping keys (source/import_key/raw_citation/
+        import_confidence) are always kept in sync with the import data.
+        For every other key, a truthy existing value is treated as a manual
+        edit and preserved; only missing/empty values are filled in from the
+        import, so re-running the import cannot clobber manual corrections.
+        """
+        merged = dict(existing_properties or {})
+        for key, value in imported.items():
+            if key in IMPORT_BOOKKEEPING_KEYS or not merged.get(key):
+                merged[key] = value
+        return merged
 
     @staticmethod
     def _build_properties(record) -> dict:

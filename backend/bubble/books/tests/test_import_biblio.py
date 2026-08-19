@@ -104,7 +104,9 @@ class TestImportBiblio:
         call_command("import_biblio", user="library", file=str(data_file))
         assert Item.objects.filter(user=owner).count() == EXPECTED_RECORD_COUNT
 
-    def test_rerun_preserves_manual_properties(self, owner, data_file):
+    def test_rerun_preserves_manual_properties_absent_from_import(
+        self, owner, data_file
+    ):
         call_command("import_biblio", user="library", file=str(data_file))
         book = Item.objects.get(name="Caliban and the Witch")
         book.properties = {**book.properties, "isbn": "9781570270598"}
@@ -114,6 +116,34 @@ class TestImportBiblio:
         book.refresh_from_db()
         # Manually-added ISBN is preserved because the record has none.
         assert book.properties["isbn"] == "9781570270598"
+
+    def test_rerun_preserves_manual_edit_of_imported_field(self, owner, data_file):
+        """A manual correction to a field the import *does* populate (e.g.
+        shelf) must survive a re-run, not be clobbered by the import value.
+        """
+        call_command("import_biblio", user="library", file=str(data_file))
+        book = Item.objects.get(name="Caliban and the Witch")
+        assert book.properties["shelf"] == ""  # sample record has no shelf
+        book.properties = {**book.properties, "shelf": "Feminismus", "authors": []}
+        book.save()
+
+        call_command("import_biblio", user="library", file=str(data_file))
+        book.refresh_from_db()
+        assert book.properties["shelf"] == "Feminismus"
+        # The record's authors are non-empty, so the manual clear-out (an
+        # empty list, which is falsy) is *not* preserved: this documents the
+        # "fill only if missing/empty" trade-off rather than asserting a bug.
+        assert book.properties["authors"] == ["Federici, Silvia"]
+
+    def test_rerun_syncs_bookkeeping_keys(self, owner, data_file):
+        call_command("import_biblio", user="library", file=str(data_file))
+        book = Item.objects.get(name="Caliban and the Witch")
+        book.properties = {**book.properties, "raw_citation": "tampered"}
+        book.save()
+
+        call_command("import_biblio", user="library", file=str(data_file))
+        book.refresh_from_db()
+        assert book.properties["raw_citation"] == SAMPLE_RECORDS[1]["raw_citation"]
 
     def test_dry_run_writes_nothing(self, owner, data_file):
         call_command("import_biblio", user="library", file=str(data_file), dry_run=True)
