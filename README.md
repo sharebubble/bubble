@@ -29,11 +29,18 @@ Bubble delivers user notifications through the [Apprise](https://github.com/caro
 Each value is an [Apprise URL](https://github.com/caronc/apprise/wiki) **template** containing a `{target}` placeholder that is substituted with the recipient's address. Examples:
 
 ```env
-APPRISE_ROCKETCHAT_URL=rocket://user:password@rocketchat.example.com/@{target}
+APPRISE_ROCKETCHAT_URL=rocket://user:password@rocketchat.example.com/{target}
 APPRISE_SIGNAL_URL=signal://signal-api.example.com/+15551230000/{target}
 APPRISE_MATRIX_URL=matrixs://user:password@matrix.example.com/{target}
 APPRISE_MAILTOS_URL=mailtos://user:password@smtp.example.com?to={target}
 ```
+
+For RocketChat, `{target}` already resolves to an `@`-prefixed username (e.g. `@alice`) so Apprise addresses the user directly by DM — don't add another `@` in the template. A plain login password can only post to rooms/channels, not DM a user, so `APPRISE_ROCKETCHAT_URL` needs one of:
+
+- **Token mode** (recommended): a Personal Access Token + User ID pair from **Rocket.Chat → Account → Personal Access Tokens**, with `?mode=token`:
+  `rocket://<UserID>:<PersonalAccessToken>@rocketchat.example.com/{target}?mode=token`
+- **Webhook mode**: an Incoming Webhook's two-part token (`<token1>/<token2>` from the webhook's URL), with no login credentials:
+  `rocket://<token1>/<token2>@rocketchat.example.com/{target}`
 
 These can be set via environment variables or edited at runtime in the Django admin under **Constance → Config**.
 

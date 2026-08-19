@@ -5,7 +5,7 @@ from bubble.notifications.api.serializers import NotificationPreferenceMeSeriali
 from bubble.notifications.models import EventType, NotificationPreference
 from bubble.users.tests.factories import UserFactory
 
-ROCKET_URL = "rocket://user:pass@chat.example.com/@{target}"
+ROCKET_URL = "rocket://user:pass@chat.example.com/{target}"
 
 
 @pytest.mark.django_db
@@ -29,7 +29,7 @@ def test_to_representation_reports_availability_and_toggles() -> None:
 
     assert data["rocketchat_configured"] is True
     assert data["rocketchat_available"] is True
-    assert data["rocketchat_target"] == "alice"
+    assert data["rocketchat_target"] == "@alice"
     # messages group is on only when *all* underlying events are enabled
     assert data["rocketchat_messages"] is True
     assert data["rocketchat_new_item"] is False

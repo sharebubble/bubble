@@ -51,7 +51,11 @@ def resolve_target(provider_type: str, user: User) -> str:
     :func:`is_channel_available` to decide whether a user can be pushed to.
     """
     if provider_type == ProviderType.ROCKETCHAT:
-        return (user.username or "").strip()
+        username = (user.username or "").strip()
+        # Apprise only recognizes a RocketChat target as a user to DM (rather
+        # than dropping it, or misreading it as a room ID) when it is
+        # "@"-prefixed — see NotifyRocketChat's IS_USER pattern.
+        return f"@{username}" if username else ""
     if provider_type == ProviderType.SIGNAL:
         profile = getattr(user, "profile", None)
         return (getattr(profile, "phone", "") or "").strip()

@@ -22,7 +22,11 @@ def send_apprise_notification(url: str, title: str, body: str) -> bool:
     """
     client = apprise.Apprise()
     if not client.add(url):
-        logger.error("Apprise rejected notification URL (invalid configuration).")
+        # The caller (deliver_notification) logs the ERROR that reaches Sentry,
+        # with provider/event context this function doesn't have. Logging at
+        # WARNING here still leaves a breadcrumb without creating a duplicate
+        # Sentry issue for the same failure.
+        logger.warning("Apprise rejected notification URL (invalid configuration).")
         return False
 
     success = client.notify(title=title, body=body)

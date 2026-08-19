@@ -10,7 +10,7 @@ from bubble.notifications.dispatch import (
 from bubble.notifications.models import EventType, NotificationPreference
 from bubble.users.tests.factories import UserFactory
 
-ROCKET_URL = "rocket://user:pass@chat.example.com/@{target}"
+ROCKET_URL = "rocket://user:pass@chat.example.com/{target}"
 
 
 @pytest.mark.django_db
@@ -35,7 +35,7 @@ def test_dispatch_notification_enqueues_enabled_preferences() -> None:
         NotificationPreference.ProviderType.ROCKETCHAT,
         EventType.NEW_MESSAGE,
         {"message": "hello"},
-        target="alice",
+        target="@alice",
         language=None,
     )
 
@@ -99,6 +99,6 @@ def test_dispatch_item_created_notifies_each_subscriber() -> None:
         NotificationPreference.ProviderType.ROCKETCHAT,
         EventType.NEW_ITEM,
         {"name": "Bike"},
-        target="alice",
+        target="@alice",
         language=None,
     )
