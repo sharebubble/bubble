@@ -38,6 +38,17 @@ if not FRONTEND_URL:
         f"https://{ALLOWED_HOSTS[0]}" if ALLOWED_HOSTS else "http://localhost:3000"
     )
 
+# Homeserver part of a Matrix ID (the "example.com" in "@alice:example.com").
+# Matrix IDs conventionally use the bare site domain even when the
+# client-server API itself is served from a subdomain (e.g. matrix.example.com),
+# via .well-known delegation — so this defaults to the site's own domain
+# rather than parsing it out of APPRISE_MATRIX_URL. Override it explicitly
+# when that doesn't hold (e.g. the Matrix homeserver lives on a different
+# domain entirely).
+APPRISE_MATRIX_HOSTNAME = env("APPRISE_MATRIX_HOSTNAME", default="") or (
+    ALLOWED_HOSTS[0] if ALLOWED_HOSTS else ""
+)
+
 # ------------------------------------------------------------------------------
 # https://docs.djangoproject.com/en/dev/ref/settings/#debug
 DEBUG = env.bool("DJANGO_DEBUG", False)

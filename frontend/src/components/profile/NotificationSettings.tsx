@@ -78,21 +78,21 @@ export const NotificationSettings = () => {
   );
 
   // When Matrix notifications are configured on the backend but this user has
-  // no Matrix ID yet, prefill it with their bubble username (same as
-  // RocketChat, which always addresses users by their bubble username) so the
-  // Matrix notification options work without requiring manual setup.
+  // no Matrix ID yet, prefill it with their full Matrix ID on this
+  // deployment's own homeserver (`@username:hostname`, from matrix_default_id)
+  // so the Matrix notification options work without requiring manual setup.
   React.useEffect(() => {
     if (hasPrefilledMatrixId.current) return;
     if (!profile || !prefs) return;
     if (!prefs.matrix_configured) return;
-    if (profile.matrix_id || !profile.username) return;
+    if (profile.matrix_id || !prefs.matrix_default_id) return;
 
     // Set the ref up front so a re-render during the save can't trigger a
     // second attempt.
     hasPrefilledMatrixId.current = true;
-    const username = profile.username;
-    matrixIdForm.setFieldValue('matrix_id', username);
-    saveMatrixId(username).then(success => {
+    const defaultId = prefs.matrix_default_id;
+    matrixIdForm.setFieldValue('matrix_id', defaultId);
+    saveMatrixId(defaultId).then(success => {
       if (!success) {
         // Roll back so the form doesn't show an unpersisted value, and clear
         // the ref so the next profile/prefs refetch can retry.

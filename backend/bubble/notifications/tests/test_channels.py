@@ -1,8 +1,10 @@
 import pytest
 from constance.test import override_config
+from django.test import override_settings
 
 from bubble.notifications.channels import (
     build_apprise_url,
+    default_matrix_id,
     is_channel_available,
     resolve_target,
 )
@@ -66,3 +68,24 @@ def test_is_channel_available_requires_backend_and_target() -> None:
 
     # RocketChat has a target (username) but no backend URL configured.
     assert is_channel_available(ProviderType.ROCKETCHAT, user) is False
+
+
+@pytest.mark.django_db
+@override_settings(APPRISE_MATRIX_HOSTNAME="example.com")
+def test_default_matrix_id_combines_username_and_hostname() -> None:
+    user = UserFactory(username="alice")
+    assert default_matrix_id(user) == "@alice:example.com"
+
+
+@pytest.mark.django_db
+@override_settings(APPRISE_MATRIX_HOSTNAME="")
+def test_default_matrix_id_empty_without_hostname() -> None:
+    user = UserFactory(username="alice")
+    assert default_matrix_id(user) == ""
+
+
+@pytest.mark.django_db
+@override_settings(APPRISE_MATRIX_HOSTNAME="example.com")
+def test_default_matrix_id_empty_without_username() -> None:
+    user = UserFactory(username="")
+    assert default_matrix_id(user) == ""

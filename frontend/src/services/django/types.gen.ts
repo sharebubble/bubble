@@ -951,6 +951,7 @@ export type Message = {
  * created items.
  */
 export type NotificationPreferenceMe = {
+    readonly matrix_default_id: string;
     readonly webpush_configured: boolean;
     readonly webpush_available: boolean;
     readonly webpush_target: string;
@@ -1506,6 +1507,7 @@ export type PatchedMessage = {
  * created items.
  */
 export type PatchedNotificationPreferenceMe = {
+    readonly matrix_default_id?: string;
     readonly webpush_configured?: boolean;
     readonly webpush_available?: boolean;
     readonly webpush_target?: string;

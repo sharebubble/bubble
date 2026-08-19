@@ -58,7 +58,13 @@ Users then choose, per channel, which events they want:
 
 The phone number can be filled in manually on the profile, or is pre-populated from the `phone_number` claim of your OIDC provider when available (the `phone` scope is requested automatically).
 
-RocketChat and email always address a user by their bubble username/account email, so they need no separate field — once `APPRISE_ROCKETCHAT_URL`/`APPRISE_MAILTOS_URL` is configured, those channels and their notification options appear automatically (email notifications, like every other channel, start out **disabled** until the user opts in). Matrix works similarly but needs a per-user Matrix ID: once `APPRISE_MATRIX_URL` is configured, the Matrix panel appears in the **Notifications** section of the profile with an editable Matrix ID field, prefilled with the user's bubble username so the channel becomes available immediately (they can still edit it to their real `@user:server` address).
+RocketChat and email always address a user by their bubble username/account email, so they need no separate field — once `APPRISE_ROCKETCHAT_URL`/`APPRISE_MAILTOS_URL` is configured, those channels and their notification options appear automatically (email notifications, like every other channel, start out **disabled** until the user opts in). Matrix works similarly but needs a per-user Matrix ID: once `APPRISE_MATRIX_URL` is configured, the Matrix panel appears in the **Notifications** section of the profile with an editable Matrix ID field, prefilled with `@<bubble username>:<homeserver>` so the channel becomes available immediately (they can still edit it to their real `@user:server` address).
+
+The `<homeserver>` part of that prefill defaults to `DJANGO_ALLOWED_HOSTS[0]` (Matrix IDs conventionally use the bare site domain even when the client-server API itself lives on a subdomain, e.g. `matrix.example.com`, via `.well-known` delegation). Set `APPRISE_MATRIX_HOSTNAME` to override it when that doesn't hold, e.g.:
+
+```env
+APPRISE_MATRIX_HOSTNAME=example.com
+```
 
 # Federation (ActivityPub)
 
