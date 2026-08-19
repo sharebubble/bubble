@@ -30,6 +30,7 @@ class ProfileSerializer(serializers.ModelSerializer[Profile]):
             "email_reminder",
             "profile_image",
             "language",
+            "pwa_install_dismissed",
         ]
 
     def update(self, instance, validated_data):
@@ -40,6 +41,11 @@ class ProfileSerializer(serializers.ModelSerializer[Profile]):
             for attr, value in user_data.items():
                 setattr(user, attr, value)
             user.save(update_fields=list(user_data.keys()))
+
+        # Write-once: once the install prompt has been dismissed, nothing
+        # should be able to bring it back for that account.
+        if validated_data.get("pwa_install_dismissed") is False:
+            validated_data.pop("pwa_install_dismissed")
 
         return super().update(instance, validated_data)
 

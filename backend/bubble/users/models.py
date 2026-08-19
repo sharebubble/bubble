@@ -88,6 +88,14 @@ class Profile(models.Model):
         ),
     )
 
+    pwa_install_dismissed = models.BooleanField(
+        default=False,
+        help_text=_(
+            "User has dismissed the home-screen prompt to install Bubble as a PWA. "
+            "Once set, the prompt is not shown again."
+        ),
+    )
+
     def __str__(self):
         return f"{self.user.username}'s Profile"
 

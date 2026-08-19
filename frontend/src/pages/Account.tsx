@@ -1,4 +1,5 @@
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
 import { useProfile } from '@/hooks/useProfile';
@@ -13,6 +14,7 @@ import {
   Text,
   UnstyledButton,
 } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import {
   Bell,
   BookMarked,
@@ -47,12 +49,30 @@ const Account = () => {
   const { t } = useLanguage();
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
-  const { canInstall, promptInstall } = useInstallPrompt();
+  const { installed, canInstall, promptInstall } = useInstallPrompt();
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  // `beforeinstallprompt` only fires once the browser decides the visit is
+  // "engaged" enough, and Safari never fires it at all — so `canInstall` can
+  // still be false here even though installing is possible. The entry stays
+  // visible regardless and falls back to manual instructions when there's no
+  // captured prompt to trigger.
+  const handleInstallClick = async () => {
+    if (canInstall) {
+      await promptInstall();
+      return;
+    }
+    notifications.show({
+      message: t('pwa.installManualInstructions'),
+      color: 'blue',
+      autoClose: 8000,
+    });
   };
 
   return (
@@ -94,13 +114,15 @@ const Account = () => {
             </Fragment>
           ))}
           {/* The header's avatar menu is hidden on mobile, so the install offer
-              lives here too — this hub is where phone users end up. */}
-          {canInstall && (
+              lives here too — this hub is where phone users end up. Shown
+              whenever the app isn't already installed, not just when a
+              `beforeinstallprompt` has been captured (see handleInstallClick). */}
+          {isMobile && !installed && (
             <>
               <Divider />
               <NavLink
                 label={t('pwa.install')}
-                onClick={() => void promptInstall()}
+                onClick={() => void handleInstallClick()}
                 leftSection={<Download size={20} aria-hidden="true" />}
                 rightSection={<ChevronRight size={16} aria-hidden="true" />}
               />
