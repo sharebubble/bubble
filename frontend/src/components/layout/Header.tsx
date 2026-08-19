@@ -35,6 +35,17 @@ export const Header = () => {
 
   const unreadCount = unreadMessages?.count || 0;
 
+  // The search bar (and its icon) is always shown on desktop. On mobile it's
+  // only relevant on the screens that act as its entry points — the start
+  // page and the browse/search screen itself — so it's hidden everywhere
+  // else to keep those headers uncluttered. `md:block` keeps it unconditional
+  // on desktop regardless of route.
+  const showSearchOnMobile = location.pathname === '/' || location.pathname === BROWSE_PATH;
+  const searchWrapperClassName = cn(
+    'min-w-0 flex-1 max-w-lg md:block',
+    showSearchOnMobile ? 'block' : 'hidden',
+  );
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
@@ -54,7 +65,7 @@ export const Header = () => {
                 <p className="text-xs text-muted-foreground">Community Network</p>
               </div>
             </NavLink>
-            <div className="min-w-0 flex-1 max-w-lg">
+            <div className={searchWrapperClassName}>
               <SearchBar loggedIn={false} />
             </div>
 
@@ -90,7 +101,7 @@ export const Header = () => {
           </NavLink>
 
           {/* Search Bar */}
-          <div className="min-w-0 flex-1 max-w-lg">
+          <div className={searchWrapperClassName}>
             <SearchBar loggedIn />
           </div>
 
