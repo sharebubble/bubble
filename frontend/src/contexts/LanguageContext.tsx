@@ -46,6 +46,8 @@ const translations = {
     'pwa.installBannerTitle': 'Install Bubble',
     'pwa.installBannerMessage': 'Add Bubble to your home screen for quick, full-screen access.',
     'pwa.installBannerDismiss': 'Dismiss install prompt',
+    'pwa.installManualInstructions':
+      'Open your browser menu and choose "Add to Home Screen" or "Install app".',
     'pwa.updateTitle': 'Update available',
     'pwa.updateMessage': 'A newer version of Bubble is ready.',
     'pwa.updateAction': 'Reload now',
@@ -760,6 +762,8 @@ const translations = {
     'pwa.installBannerMessage':
       'Füge Bubble deinem Startbildschirm hinzu für schnellen, vollflächigen Zugriff.',
     'pwa.installBannerDismiss': 'Installationshinweis schließen',
+    'pwa.installManualInstructions':
+      'Öffne dein Browsermenü und wähle „Zum Startbildschirm hinzufügen“ oder „App installieren“.',
     'pwa.updateTitle': 'Update verfügbar',
     'pwa.updateMessage': 'Eine neuere Version von Bubble ist bereit.',
     'pwa.updateAction': 'Jetzt neu laden',
