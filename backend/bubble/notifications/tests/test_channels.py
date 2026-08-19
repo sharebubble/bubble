@@ -33,7 +33,7 @@ def test_resolve_target_per_provider() -> None:
     user.profile.matrix_id = "@alice:matrix.org"
     user.profile.save()
 
-    assert resolve_target(ProviderType.ROCKETCHAT, user) == "alice"
+    assert resolve_target(ProviderType.ROCKETCHAT, user) == "@alice"
     assert resolve_target(ProviderType.SIGNAL, user) == "+15551234"
     assert resolve_target(ProviderType.MATRIX, user) == "@alice:matrix.org"
     assert resolve_target(ProviderType.EMAIL, user) == "alice@example.com"
