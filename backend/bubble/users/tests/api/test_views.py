@@ -107,3 +107,16 @@ class TestProfileViewSet:
         assert response.data["pwa_install_dismissed"] is True
         user.profile.refresh_from_db()
         assert user.profile.pwa_install_dismissed is True
+
+    def test_pwa_install_dismissed_is_write_once(self, authenticated_client, user):
+        """Once dismissed, the flag cannot be flipped back to false via the API."""
+        user.profile.pwa_install_dismissed = True
+        user.profile.save(update_fields=["pwa_install_dismissed"])
+
+        response = authenticated_client.patch(
+            reverse("api:profile-me"), {"pwa_install_dismissed": False}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        user.profile.refresh_from_db()
+        assert user.profile.pwa_install_dismissed is True

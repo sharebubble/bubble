@@ -20,11 +20,20 @@ export const PwaInstallBanner = () => {
   const { t } = useLanguage();
   const isMobile = useIsMobile();
   const { canInstall, installed, promptInstall } = useInstallPrompt();
-  const { data: profile } = useProfile();
+  const { data: profile, isLoading: profileLoading } = useProfile();
   const dismissPrompt = useDismissPwaInstallPrompt();
   const [dismissed, setDismissed] = useState(false);
 
-  if (!isMobile || !canInstall || installed || dismissed || profile?.pwa_install_dismissed) {
+  // Wait for the profile before deciding — otherwise an already-dismissed
+  // account would see the banner flash for the instant it takes to load.
+  if (
+    !isMobile ||
+    !canInstall ||
+    installed ||
+    dismissed ||
+    profileLoading ||
+    profile?.pwa_install_dismissed
+  ) {
     return null;
   }
 
@@ -39,7 +48,8 @@ export const PwaInstallBanner = () => {
         <Group gap="sm" wrap="nowrap" className="min-w-0">
           <Download
             size={20}
-            className="shrink-0 text-[var(--mantine-color-green-6)]"
+            className="shrink-0"
+            color="light-dark(var(--mantine-color-green-6), var(--mantine-color-green-4))"
             aria-hidden="true"
           />
           <div className="min-w-0">
