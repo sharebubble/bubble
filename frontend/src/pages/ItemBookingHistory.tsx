@@ -1,11 +1,14 @@
+import { BookingStatsDialog } from '@/components/items/BookingStatsDialog';
 import { BackButton } from '@/components/layout/BackButton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useItem } from '@/hooks/useItem';
 import { useItemBookingHistory } from '@/hooks/useItemBookingHistory';
 import { formatPrice } from '@/lib/currency';
 import type { ItemBookingHistoryEntry } from '@/services/custom/itemBookings';
-import { Badge, Loader, Table, Text, Title } from '@mantine/core';
+import { Badge, Button, Group, Loader, Table, Text, Title } from '@mantine/core';
 import { format, formatDistanceStrict } from 'date-fns';
+import { ChartBar } from 'lucide-react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 /** Map a booking status code to a coloured badge. */
@@ -26,6 +29,7 @@ const ItemBookingHistory = () => {
 
   const { data: item } = useItem(itemUuid);
   const { data: bookings, isLoading, error } = useItemBookingHistory(itemUuid);
+  const [showStats, setShowStats] = useState(false);
 
   const formatPeriod = (entry: ItemBookingHistoryEntry) => {
     if (!entry.time_from) return '—';
@@ -44,12 +48,25 @@ const ItemBookingHistory = () => {
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8">
-      <div className="flex items-center gap-2 mb-4">
-        <BackButton />
-        <Title order={1} size="h3">
-          {t('itemBookings.title')}
-        </Title>
-      </div>
+      <Group justify="space-between" wrap="nowrap" mb="md">
+        <div className="flex items-center gap-2">
+          <BackButton />
+          <Title order={1} size="h3">
+            {t('itemBookings.title')}
+          </Title>
+        </div>
+        {bookings && bookings.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0"
+            leftSection={<ChartBar size={16} />}
+            onClick={() => setShowStats(true)}
+          >
+            {t('itemBookings.statsButton')}
+          </Button>
+        )}
+      </Group>
       {item?.name && (
         <Text c="dimmed" mb="lg">
           {item.name}
@@ -99,6 +116,10 @@ const ItemBookingHistory = () => {
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
+      )}
+
+      {itemUuid && (
+        <BookingStatsDialog itemId={itemUuid} open={showStats} onOpenChange={setShowStats} />
       )}
     </div>
   );

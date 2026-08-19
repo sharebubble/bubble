@@ -466,9 +466,9 @@ const translations = {
     'itemDetail.requestDonate': 'Request',
     'itemDetail.itemDetails': 'Item Details',
     'itemDetail.description': 'Description',
-    'itemDetail.listed': 'Listed',
+    'itemDetail.listedSince': 'Listed {{time}}',
+    'itemDetail.by': 'by',
     'itemDetail.location': 'Location',
-    'itemDetail.ownerInfo': 'Owner Information',
     'itemDetail.deleteConfirmTitle': 'Are you sure?',
     'itemDetail.deleteConfirmDescription':
       'This action cannot be undone. This will permanently delete your item.',
@@ -513,6 +513,9 @@ const translations = {
     'itemBookings.noPreviousRentals': 'This item has not been rented yet.',
     'itemBookings.anonymousBooker': 'Someone',
     'itemBookings.seeAll': 'See all bookings ({count})',
+    'itemBookings.statsButton': 'Booking stats',
+    'itemBookings.statsTitle': 'Total time booked per user',
+    'itemBookings.statsEmpty': 'No completed bookings yet.',
 
     // My Items
     'myItems.title': 'My Items',
@@ -620,7 +623,6 @@ const translations = {
     'rentalPeriod.d': 'Daily',
     'rentalPeriod.w': 'Weekly',
     // User labels
-    'user.name': 'Name',
     'user.email': 'Email',
     // Scanner
     'scanner.open': 'Open scanner',
@@ -1193,9 +1195,9 @@ const translations = {
     'itemDetail.requestDonate': 'Anfragen',
     'itemDetail.itemDetails': 'Artikel Details',
     'itemDetail.description': 'Beschreibung',
-    'itemDetail.listed': 'Gelistet',
+    'itemDetail.listedSince': 'Gelistet {{time}}',
+    'itemDetail.by': 'von',
     'itemDetail.location': 'Standort',
-    'itemDetail.ownerInfo': 'Besitzer Informationen',
     'itemDetail.deleteConfirmTitle': 'Bist du sicher?',
     'itemDetail.deleteConfirmDescription':
       'Diese Aktion kann nicht rückgängig gemacht werden. Dieser Artikel wird dauerhaft gelöscht.',
@@ -1240,6 +1242,9 @@ const translations = {
     'itemBookings.noPreviousRentals': 'Dieser Artikel wurde noch nicht vermietet.',
     'itemBookings.anonymousBooker': 'Jemand',
     'itemBookings.seeAll': 'Alle Buchungen ansehen ({count})',
+    'itemBookings.statsButton': 'Buchungsstatistik',
+    'itemBookings.statsTitle': 'Gesamte Buchungszeit pro Nutzer',
+    'itemBookings.statsEmpty': 'Noch keine abgeschlossenen Buchungen.',
 
     // My Items
     'myItems.title': 'Meine Artikel',
@@ -1348,7 +1353,6 @@ const translations = {
     'rentalPeriod.d': 'Täglich',
     'rentalPeriod.w': 'Wöchentlich',
     // User labels
-    'user.name': 'Name',
     'user.email': 'E-Mail',
     // Scanner
     'scanner.open': 'Scanner öffnen',

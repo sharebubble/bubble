@@ -12,7 +12,7 @@ import {
 } from '@/components/items/status';
 import { AddToCollectionPopover } from '@/components/collections/AddToCollectionPopover';
 import { BackButton } from '@/components/layout/BackButton';
-import UserInfoBox from '@/components/users/UserInfoBox';
+import OwnerLink from '@/components/users/OwnerLink';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useItem } from '@/hooks/useItem';
@@ -266,8 +266,15 @@ const ItemDetail = () => {
             <Text component="div" size="sm" c="dimmed" className="flex items-center gap-2">
               <Calendar size={16} />
               <span>
-                {t('itemDetail.listed')}{' '}
-                {formatDistanceToNow(new Date(created_at), { addSuffix: true })}
+                {t('itemDetail.listedSince', {
+                  time: formatDistanceToNow(new Date(created_at), { addSuffix: true }),
+                })}
+                {user && (
+                  <>
+                    {' '}
+                    <OwnerLink userUuid={item.user} />
+                  </>
+                )}
               </span>
             </Text>
 
@@ -321,9 +328,6 @@ const ItemDetail = () => {
               </dl>
             </div>
           )}
-
-          {/* Owner details are shown to logged-in users only */}
-          {user && <UserInfoBox userUuid={item.user} />}
 
           {/* Action buttons */}
           {(isOwner || showBookingAction) && (
