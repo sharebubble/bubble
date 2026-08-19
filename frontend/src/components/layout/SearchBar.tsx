@@ -108,7 +108,7 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
     const state = location.state as { focusSearch?: boolean } | null;
     if (!state?.focusSearch) return;
     searchInputRef.current?.focus();
-    navigate(location.pathname + location.search, { replace: true });
+    navigate(location.pathname + location.search + location.hash, { replace: true });
   }, [location, navigate]);
 
   const facets: Facet[] = useMemo(
