@@ -38,6 +38,66 @@ import { useMemo, useState } from 'react';
 // afternoon check-in without the two bookings overlapping.
 const NOON_HOUR = 12;
 
+// Fixed palette (not the "selected" green or a semantic red) so each
+// booker gets a consistent, distinguishable color. Class names are kept
+// literal so Tailwind's static scanner can pick them up.
+const BOOKER_COLOR_PALETTE = [
+  {
+    bg: 'bg-[var(--mantine-color-blue-1)]',
+    border: 'border-[var(--mantine-color-blue-3)]',
+    dot: 'bg-[var(--mantine-color-blue-5)]',
+  },
+  {
+    bg: 'bg-[var(--mantine-color-grape-1)]',
+    border: 'border-[var(--mantine-color-grape-3)]',
+    dot: 'bg-[var(--mantine-color-grape-5)]',
+  },
+  {
+    bg: 'bg-[var(--mantine-color-orange-1)]',
+    border: 'border-[var(--mantine-color-orange-3)]',
+    dot: 'bg-[var(--mantine-color-orange-5)]',
+  },
+  {
+    bg: 'bg-[var(--mantine-color-cyan-1)]',
+    border: 'border-[var(--mantine-color-cyan-3)]',
+    dot: 'bg-[var(--mantine-color-cyan-5)]',
+  },
+  {
+    bg: 'bg-[var(--mantine-color-pink-1)]',
+    border: 'border-[var(--mantine-color-pink-3)]',
+    dot: 'bg-[var(--mantine-color-pink-5)]',
+  },
+  {
+    bg: 'bg-[var(--mantine-color-indigo-1)]',
+    border: 'border-[var(--mantine-color-indigo-3)]',
+    dot: 'bg-[var(--mantine-color-indigo-5)]',
+  },
+  {
+    bg: 'bg-[var(--mantine-color-teal-1)]',
+    border: 'border-[var(--mantine-color-teal-3)]',
+    dot: 'bg-[var(--mantine-color-teal-5)]',
+  },
+  {
+    bg: 'bg-[var(--mantine-color-yellow-1)]',
+    border: 'border-[var(--mantine-color-yellow-3)]',
+    dot: 'bg-[var(--mantine-color-yellow-5)]',
+  },
+  {
+    bg: 'bg-[var(--mantine-color-red-1)]',
+    border: 'border-[var(--mantine-color-red-3)]',
+    dot: 'bg-[var(--mantine-color-red-5)]',
+  },
+];
+
+// Deterministic hash so the same booker always maps to the same palette entry.
+const getBookerColor = (userId: string) => {
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = (hash * 31 + userId.charCodeAt(i)) | 0;
+  }
+  return BOOKER_COLOR_PALETTE[Math.abs(hash) % BOOKER_COLOR_PALETTE.length];
+};
+
 interface RentalCalendarProps {
   itemUuid?: string;
   rentalPeriod?: RentalPeriod;
@@ -92,6 +152,7 @@ export const RentalCalendar = ({
       .map(booking => ({
         start: new Date(booking.time_from!),
         end: new Date(booking.time_to!),
+        userId: booking.user.id,
         userName: booking.user.username,
         userFullName: booking.user.name || booking.user.username,
       }));
@@ -367,6 +428,15 @@ export const RentalCalendar = ({
     return existingBookings.some(booking => rangeStart < booking.end && booking.start < rangeEnd);
   };
 
+  const getBookingForDayHalf = (day: Date, half: 'morning' | 'afternoon') => {
+    const dayStart = startOfDay(day);
+    const noon = addHours(dayStart, NOON_HOUR);
+    const rangeStart = half === 'morning' ? dayStart : noon;
+    const rangeEnd = half === 'morning' ? noon : addDays(dayStart, 1);
+
+    return existingBookings.find(booking => rangeStart < booking.end && booking.start < rangeEnd);
+  };
+
   const clearSelection = () => {
     setSelectingStart(null);
     setHoveredDate(null);
@@ -441,6 +511,7 @@ export const RentalCalendar = ({
                 const isPreview = isTimeSlotInPreview(day, hour) && !isPendingStart;
                 const isClickDisabled = isPast || isBooked;
                 const isHighlighted = isSelected || isPendingStart;
+                const bookerColor = booking ? getBookerColor(booking.userId) : null;
 
                 const slotButton = (
                   <button
@@ -455,9 +526,8 @@ export const RentalCalendar = ({
                     className={cn(
                       'h-8 rounded transition-colors w-full',
                       isPast && 'bg-[var(--mantine-color-gray-2)] cursor-not-allowed opacity-50',
-                      isBooked &&
-                        !isPast &&
-                        'bg-[var(--mantine-color-red-1)] cursor-pointer opacity-70 border border-[var(--mantine-color-red-3)]',
+                      isBooked && !isPast && bookerColor && [bookerColor.bg, bookerColor.border],
+                      isBooked && !isPast && 'cursor-pointer opacity-70 border',
                       !isClickDisabled &&
                         !isHighlighted &&
                         !isPreview &&
@@ -477,6 +547,12 @@ export const RentalCalendar = ({
                       <Popover.Dropdown p={12}>
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-2 font-semibold text-sm">
+                            <span
+                              className={cn(
+                                'inline-block h-2.5 w-2.5 rounded-full',
+                                bookerColor?.dot,
+                              )}
+                            />
                             <User size={14} />
                             {booking.userFullName}
                           </div>
@@ -534,12 +610,14 @@ export const RentalCalendar = ({
 
           const halfClass = (half: 'morning' | 'afternoon') => {
             const halfBooked = half === 'morning' ? morningBooked : afternoonBooked;
+            const halfBooking = halfBooked ? getBookingForDayHalf(day, half) : undefined;
+            const halfBookerColor = halfBooking ? getBookerColor(halfBooking.userId) : null;
             return cn(
               'flex-1 w-full',
               isPast && 'bg-[var(--mantine-color-gray-2)]',
               !isPast &&
                 halfBooked &&
-                'bg-[var(--mantine-color-red-1)] border-[var(--mantine-color-red-3)]',
+                halfBookerColor && [halfBookerColor.bg, halfBookerColor.border],
               !isPast && halfBooked && half === 'morning' && 'border-b',
               !isPast && halfBooked && half === 'afternoon' && 'border-t',
               !isPast && !halfBooked && isHighlighted && 'bg-[var(--mantine-color-green-6)]',
@@ -593,7 +671,11 @@ export const RentalCalendar = ({
                 isPast && 'bg-[var(--mantine-color-gray-2)] cursor-not-allowed opacity-50',
                 isBooked &&
                   !isPast &&
-                  'bg-[var(--mantine-color-red-1)] cursor-pointer opacity-70 border border-[var(--mantine-color-red-3)]',
+                  bookings[0] && [
+                    getBookerColor(bookings[0].userId).bg,
+                    getBookerColor(bookings[0].userId).border,
+                  ],
+                isBooked && !isPast && 'cursor-pointer opacity-70 border',
                 !isClickDisabled &&
                   !isHighlighted &&
                   !isPreview &&
@@ -621,6 +703,12 @@ export const RentalCalendar = ({
                     {bookings.map((booking, idx) => (
                       <div key={idx} className="flex flex-col gap-0.5">
                         <div className="flex items-center gap-2 text-sm">
+                          <span
+                            className={cn(
+                              'inline-block h-2.5 w-2.5 rounded-full shrink-0',
+                              getBookerColor(booking.userId).dot,
+                            )}
+                          />
                           <User size={14} className="shrink-0" />
                           <span className="font-medium">{booking.userFullName}</span>
                         </div>

@@ -325,23 +325,6 @@ const ItemDetail = () => {
           {/* Owner details are shown to logged-in users only */}
           {user && <UserInfoBox userUuid={item.user} />}
 
-          {/* Previous rentals — logged-in users can see who rented a rental
-              item and for how long. Other items link to the full history. */}
-          {isRental && user ? (
-            <PreviousRentals itemId={item.id} />
-          ) : (
-            <div>
-              <Button
-                component={Link}
-                to={`/item/${item.id}/bookings`}
-                variant="light"
-                leftSection={<History size={16} />}
-              >
-                {t('itemBookings.viewHistory')}
-              </Button>
-            </div>
-          )}
-
           {/* Action buttons */}
           {(isOwner || showBookingAction) && (
             <div className="flex flex-wrap items-center gap-2 pt-2">
@@ -420,6 +403,25 @@ const ItemDetail = () => {
           />
         </div>
       )}
+
+      {/* Previous rentals — logged-in users can see who rented a rental
+          item and for how long. Other items link to the full history. */}
+      <div className="mt-10">
+        {isRental && user ? (
+          <PreviousRentals itemId={item.id} />
+        ) : (
+          <div>
+            <Button
+              component={Link}
+              to={`/item/${item.id}/bookings`}
+              variant="light"
+              leftSection={<History size={16} />}
+            >
+              {t('itemBookings.viewHistory')}
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
