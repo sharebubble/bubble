@@ -86,6 +86,15 @@ def test_default_matrix_id_empty_without_hostname() -> None:
 
 @pytest.mark.django_db
 @override_settings(APPRISE_MATRIX_HOSTNAME="example.com")
+def test_default_matrix_id_does_not_double_prefix_at_sign() -> None:
+    # Django's UnicodeUsernameValidator allows "@" in usernames, so a user
+    # named "@alice" shouldn't produce the invalid "@@alice:example.com".
+    user = UserFactory(username="@alice")
+    assert default_matrix_id(user) == "@alice:example.com"
+
+
+@pytest.mark.django_db
+@override_settings(APPRISE_MATRIX_HOSTNAME="example.com")
 def test_default_matrix_id_empty_without_username() -> None:
     user = UserFactory(username="")
     assert default_matrix_id(user) == ""

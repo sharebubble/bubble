@@ -45,7 +45,7 @@ if not FRONTEND_URL:
 # rather than parsing it out of APPRISE_MATRIX_URL. Override it explicitly
 # when that doesn't hold (e.g. the Matrix homeserver lives on a different
 # domain entirely).
-APPRISE_MATRIX_HOSTNAME = env("APPRISE_MATRIX_HOSTNAME", default="") or (
+APPRISE_MATRIX_HOSTNAME = env("APPRISE_MATRIX_HOSTNAME", default="").strip() or (
     ALLOWED_HOSTS[0] if ALLOWED_HOSTS else ""
 )
 

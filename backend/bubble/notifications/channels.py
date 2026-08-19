@@ -75,8 +75,8 @@ def default_matrix_id(user: User) -> str:
     Used to prefill the Matrix ID field with a sensible guess — the user's
     bubble username on this site's own homeserver — see APPRISE_MATRIX_HOSTNAME.
     """
-    username = (user.username or "").strip()
-    hostname = settings.APPRISE_MATRIX_HOSTNAME
+    username = (user.username or "").strip().lstrip("@")
+    hostname = (settings.APPRISE_MATRIX_HOSTNAME or "").strip()
     if not username or not hostname:
         return ""
     return f"@{username}:{hostname}"
