@@ -466,9 +466,8 @@ const translations = {
     'itemDetail.requestDonate': 'Request',
     'itemDetail.itemDetails': 'Item Details',
     'itemDetail.description': 'Description',
-    'itemDetail.listed': 'Listed',
+    'itemDetail.listedSince': 'Listed since {{time}} by',
     'itemDetail.location': 'Location',
-    'itemDetail.ownerInfo': 'Owner Information',
     'itemDetail.deleteConfirmTitle': 'Are you sure?',
     'itemDetail.deleteConfirmDescription':
       'This action cannot be undone. This will permanently delete your item.',
@@ -620,7 +619,6 @@ const translations = {
     'rentalPeriod.d': 'Daily',
     'rentalPeriod.w': 'Weekly',
     // User labels
-    'user.name': 'Name',
     'user.email': 'Email',
     // Scanner
     'scanner.open': 'Open scanner',
@@ -1193,9 +1191,8 @@ const translations = {
     'itemDetail.requestDonate': 'Anfragen',
     'itemDetail.itemDetails': 'Artikel Details',
     'itemDetail.description': 'Beschreibung',
-    'itemDetail.listed': 'Gelistet',
+    'itemDetail.listedSince': 'Gelistet seit {{time}} von',
     'itemDetail.location': 'Standort',
-    'itemDetail.ownerInfo': 'Besitzer Informationen',
     'itemDetail.deleteConfirmTitle': 'Bist du sicher?',
     'itemDetail.deleteConfirmDescription':
       'Diese Aktion kann nicht rückgängig gemacht werden. Dieser Artikel wird dauerhaft gelöscht.',
@@ -1348,7 +1345,6 @@ const translations = {
     'rentalPeriod.d': 'Täglich',
     'rentalPeriod.w': 'Wöchentlich',
     // User labels
-    'user.name': 'Name',
     'user.email': 'E-Mail',
     // Scanner
     'scanner.open': 'Scanner öffnen',
