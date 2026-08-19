@@ -96,6 +96,21 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
   const maxPriceValue = currentParams.get('maxPrice') ?? '';
 
   const [opened, setOpened] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // The mobile nav's search tab navigates here with `focusSearch` state so
+  // tapping it starts typing right away, instead of landing on the browse
+  // screen with the bar merely visible. Focusing the field opens the popover
+  // via its own `onFocus` handler below. The state is consumed once via a
+  // replace navigation so it doesn't refire on back/forward or a later
+  // remount.
+  useEffect(() => {
+    const state = location.state as { focusSearch?: boolean } | null;
+    if (!state?.focusSearch) return;
+    searchInputRef.current?.focus();
+    navigate(location.pathname + location.search, { replace: true });
+  }, [location, navigate]);
+
   const facets: Facet[] = useMemo(
     () =>
       (['type', 'category', 'collection', 'availability', 'owner', 'price'] as const).filter(
@@ -540,6 +555,7 @@ export const SearchBar = ({ loggedIn, className }: SearchBarProps) => {
               </Pill>
             ))}
             <PillsInput.Field
+              ref={searchInputRef}
               value={inputValue}
               placeholder={chips.length > 0 ? '' : t('header.search')}
               onFocus={() => setOpened(true)}

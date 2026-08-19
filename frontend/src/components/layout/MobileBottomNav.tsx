@@ -100,10 +100,22 @@ export const MobileBottomNav = () => {
             <UnstyledButton
               key={item.key}
               // Re-tapping the active tab scrolls to top rather than pushing a
-              // duplicate history entry.
-              onClick={() =>
-                active ? window.scrollTo({ top: 0, behavior: 'smooth' }) : navigate(item.to)
-              }
+              // duplicate history entry. The search tab is the exception: it
+              // always (re-)focuses the search bar so tapping it starts typing
+              // right away, whether or not the browse screen is already open.
+              onClick={() => {
+                if (item.key === 'nav.search') {
+                  // Preserve any filters already in the URL when re-tapping
+                  // from the browse screen itself, rather than dropping them.
+                  navigate(
+                    { pathname: item.to, search: active ? location.search : '' },
+                    { state: { focusSearch: true }, replace: active },
+                  );
+                  return;
+                }
+                if (active) window.scrollTo({ top: 0, behavior: 'smooth' });
+                else navigate(item.to);
+              }}
               aria-current={active ? 'page' : undefined}
               className="flex flex-1 flex-col items-center justify-center gap-0.5"
             >
