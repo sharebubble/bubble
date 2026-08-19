@@ -100,16 +100,17 @@ export const MobileBottomNav = () => {
             <UnstyledButton
               key={item.key}
               // Re-tapping the active tab scrolls to top rather than pushing a
-              // duplicate history entry. The search tab is the exception: it
-              // always (re-)focuses the search bar so tapping it starts typing
-              // right away, whether or not the browse screen is already open.
+              // duplicate history entry. The search tab is the exception: the
+              // first tap just opens the browse screen, and only a second tap
+              // (while already there) focuses the search bar — so tapping the
+              // tab doesn't yank the keyboard open immediately.
               onClick={() => {
                 if (item.key === 'nav.search') {
                   // Preserve any filters already in the URL when re-tapping
                   // from the browse screen itself, rather than dropping them.
                   navigate(
                     { pathname: item.to, search: active ? location.search : '' },
-                    { state: { focusSearch: true }, replace: active },
+                    { state: { focusSearch: active }, replace: active },
                   );
                   return;
                 }

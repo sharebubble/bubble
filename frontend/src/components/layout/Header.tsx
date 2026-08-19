@@ -35,16 +35,17 @@ export const Header = () => {
 
   const unreadCount = unreadMessages?.count || 0;
 
-  // The search bar (and its icon) is always shown on desktop. On mobile it's
-  // only relevant on the screens that act as its entry points — the start
-  // page and the browse/search screen itself — so it's hidden everywhere
-  // else to keep those headers uncluttered. `md:block` keeps it unconditional
-  // on desktop regardless of route.
-  const showSearchOnMobile = location.pathname === '/' || location.pathname === BROWSE_PATH;
-  const searchWrapperClassName = cn(
-    'min-w-0 flex-1 max-w-lg md:block',
-    showSearchOnMobile ? 'block' : 'hidden',
+  // The header (logo + search bar) is always shown on desktop. On mobile it's
+  // only relevant on the screens that act as the search bar's entry points —
+  // the start page and the browse/search screen itself — so the whole bar is
+  // hidden everywhere else to keep those screens uncluttered. `md:block`
+  // keeps it unconditional on desktop regardless of route.
+  const showHeaderOnMobile = location.pathname === '/' || location.pathname === BROWSE_PATH;
+  const headerClassName = cn(
+    'sticky top-0 z-50 w-full border-b border-border bg-background/95 md:block md:bg-background/80 md:backdrop-blur-md',
+    showHeaderOnMobile ? 'block' : 'hidden',
   );
+  const searchWrapperClassName = 'min-w-0 flex-1 max-w-lg';
 
   const handleSignOut = async () => {
     await signOut();
@@ -53,7 +54,7 @@ export const Header = () => {
 
   if (!user) {
     return (
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 md:bg-background/80 md:backdrop-blur-md">
+      <header className={headerClassName}>
         <div className="mx-auto w-full max-w-[1400px] px-4 py-3 sm:px-8">
           <div className="flex items-center justify-between gap-2 sm:gap-4">
             <NavLink to="/" className="flex shrink-0 items-center gap-3">
@@ -86,7 +87,7 @@ export const Header = () => {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 md:bg-background/80 md:backdrop-blur-md">
+    <header className={headerClassName}>
       <div className="mx-auto w-full max-w-[1400px] px-4 py-3 sm:px-8">
         <div className="flex items-center justify-between gap-2 sm:gap-4">
           {/* Logo */}
