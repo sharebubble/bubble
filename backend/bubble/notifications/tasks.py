@@ -52,7 +52,7 @@ def deliver_notification(
     try:
         success = send_apprise_notification(url, title, body)
         if not success:
-            logger.warning(
+            logger.error(
                 "Apprise delivery failed (provider=%s event=%s)",
                 provider_type,
                 event_type,

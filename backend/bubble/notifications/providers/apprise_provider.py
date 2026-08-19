@@ -27,5 +27,5 @@ def send_apprise_notification(url: str, title: str, body: str) -> bool:
 
     success = client.notify(title=title, body=body)
     if not success:
-        logger.warning("Apprise failed to deliver notification.")
+        logger.error("Apprise failed to deliver notification.")
     return bool(success)
