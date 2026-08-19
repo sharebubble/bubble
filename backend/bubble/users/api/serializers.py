@@ -30,6 +30,7 @@ class ProfileSerializer(serializers.ModelSerializer[Profile]):
             "email_reminder",
             "profile_image",
             "language",
+            "pwa_install_dismissed",
         ]
 
     def update(self, instance, validated_data):

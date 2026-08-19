@@ -93,3 +93,17 @@ class TestProfileViewSet:
         # Test DELETE is not allowed
         response = authenticated_client.delete(url)
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+
+    def test_dismiss_pwa_install_prompt(self, authenticated_client, user):
+        """PATCHing pwa_install_dismissed persists so the prompt stays gone."""
+        url = reverse("api:profile-me")
+        assert user.profile.pwa_install_dismissed is False
+
+        response = authenticated_client.patch(
+            url, {"pwa_install_dismissed": True}, format="json"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["pwa_install_dismissed"] is True
+        user.profile.refresh_from_db()
+        assert user.profile.pwa_install_dismissed is True

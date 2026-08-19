@@ -1555,6 +1555,10 @@ export type PatchedProfile = {
      * * `de` - Deutsch
      */
     language?: LanguageEnum | BlankEnum;
+    /**
+     * User has dismissed the home-screen prompt to install Bubble as a PWA. Once set, the prompt is not shown again.
+     */
+    pwa_install_dismissed?: boolean;
 };
 
 export type PatchedUser = {
@@ -1918,6 +1922,10 @@ export type Profile = {
      * * `de` - Deutsch
      */
     language?: LanguageEnum | BlankEnum;
+    /**
+     * User has dismissed the home-screen prompt to install Bubble as a PWA. Once set, the prompt is not shown again.
+     */
+    pwa_install_dismissed?: boolean;
 };
 
 /**
@@ -3117,6 +3125,10 @@ export type PatchedProfileWritable = {
      * * `de` - Deutsch
      */
     language?: LanguageEnum | BlankEnum;
+    /**
+     * User has dismissed the home-screen prompt to install Bubble as a PWA. Once set, the prompt is not shown again.
+     */
+    pwa_install_dismissed?: boolean;
 };
 
 export type PatchedUserWritable = {
@@ -3156,6 +3168,10 @@ export type ProfileWritable = {
      * * `de` - Deutsch
      */
     language?: LanguageEnum | BlankEnum;
+    /**
+     * User has dismissed the home-screen prompt to install Bubble as a PWA. Once set, the prompt is not shown again.
+     */
+    pwa_install_dismissed?: boolean;
 };
 
 export type UserWritable = {

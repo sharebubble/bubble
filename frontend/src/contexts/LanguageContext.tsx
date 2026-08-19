@@ -43,6 +43,9 @@ const translations = {
 
     // Installable app / service worker
     'pwa.install': 'Install app',
+    'pwa.installBannerTitle': 'Install Bubble',
+    'pwa.installBannerMessage': 'Add Bubble to your home screen for quick, full-screen access.',
+    'pwa.installBannerDismiss': 'Dismiss install prompt',
     'pwa.updateTitle': 'Update available',
     'pwa.updateMessage': 'A newer version of Bubble is ready.',
     'pwa.updateAction': 'Reload now',
@@ -753,6 +756,10 @@ const translations = {
 
     // Installable app / service worker
     'pwa.install': 'App installieren',
+    'pwa.installBannerTitle': 'Bubble installieren',
+    'pwa.installBannerMessage':
+      'Füge Bubble deinem Startbildschirm hinzu für schnellen, vollflächigen Zugriff.',
+    'pwa.installBannerDismiss': 'Installationshinweis schließen',
     'pwa.updateTitle': 'Update verfügbar',
     'pwa.updateMessage': 'Eine neuere Version von Bubble ist bereit.',
     'pwa.updateAction': 'Jetzt neu laden',

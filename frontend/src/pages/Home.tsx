@@ -1,5 +1,6 @@
 import { UpcomingBookingsWidget } from '@/components/bookings/UpcomingBookingsWidget';
 import { ItemCard } from '@/components/browse/ItemCard';
+import { PwaInstallBanner } from '@/components/home/PwaInstallBanner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useItems } from '@/hooks/useItems';
 import { BROWSE_PATH } from '@/lib/routes';
@@ -20,6 +21,8 @@ const Home = () => {
 
   return (
     <main className="container mx-auto max-w-6xl px-4 py-4 md:py-6">
+      <PwaInstallBanner />
+
       {/* Single column on small screens (bookings first); on large screens the
           bookings rail sits beside the item grid. */}
       <div className="grid gap-5 lg:grid-cols-3 lg:items-start">

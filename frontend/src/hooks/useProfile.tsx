@@ -22,6 +22,30 @@ export const useProfile = () => {
   });
 };
 
+/**
+ * Persists that the user closed the "install as app" prompt, so it never
+ * reappears for them — on this device or any other. Silent by design: a
+ * dismissal isn't a settings change worth toasting about.
+ */
+export const useDismissPwaInstallPrompt = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('User not authenticated');
+      const response = await profilesMePartialUpdate({ body: { pwa_install_dismissed: true } });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', user?.username] });
+    },
+    onError: error => {
+      console.error('Error dismissing PWA install prompt:', error);
+    },
+  });
+};
+
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
