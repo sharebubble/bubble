@@ -42,7 +42,7 @@ dependencies = [
     "uvicorn-worker",
     "uvicorn[standard]",
     "whitenoise",
-    "pyld>=3.1.0",
+    "pyld>=3.2.0",
     "http-message-signatures>=2.0.1",
     "cryptography>=50.0.0",
     "apprise>=1.12.0",
