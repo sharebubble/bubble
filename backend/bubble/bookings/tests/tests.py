@@ -1835,3 +1835,97 @@ class BookingFulfillmentTestCase(APITestCase):
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         booking.refresh_from_db()
         assert booking.status == BookingStatus.CONFIRMED
+
+
+class BookingPastCancelValidationTestCase(APITestCase):
+    """A booking whose rental period has already ended can no longer be
+    cancelled - only a still-open (or never-confirmed) booking can be."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.default_group, _ = Group.objects.get_or_create(name=DefaultGroup.DEFAULT)
+
+        self.item_owner = UserFactory()
+        self.item_owner.groups.add(self.default_group)
+
+        self.booking_user = UserFactory()
+        self.booking_user.groups.add(self.default_group)
+
+        self.item = ItemFactory(
+            user=self.item_owner, sales_type=SalesType.RENT, price="10.00"
+        )
+
+    def _booking(self, booking_status, time_to):
+        return BookingFactory(
+            user=self.booking_user,
+            item=self.item,
+            status=booking_status,
+            time_from=time_to - timedelta(hours=2),
+            time_to=time_to,
+        )
+
+    def test_booker_cannot_cancel_past_confirmed_booking(self):
+        """The booker cannot cancel a CONFIRMED booking once time_to has passed."""
+        booking = self._booking(
+            BookingStatus.CONFIRMED, timezone.now() - timedelta(days=1)
+        )
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.patch(
+            f"/api/bookings/{booking.id}/",
+            {"status": BookingStatus.CANCELLED},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        booking.refresh_from_db()
+        assert booking.status == BookingStatus.CONFIRMED
+
+    def test_owner_cannot_cancel_past_confirmed_booking(self):
+        """The item owner cannot cancel a CONFIRMED booking once time_to has passed."""
+        booking = self._booking(
+            BookingStatus.CONFIRMED, timezone.now() - timedelta(days=1)
+        )
+        self.client.force_authenticate(user=self.item_owner)
+        response = self.client.patch(
+            f"/api/bookings/{booking.id}/",
+            {"status": BookingStatus.CANCELLED},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        booking.refresh_from_db()
+        assert booking.status == BookingStatus.CONFIRMED
+
+    def test_can_cancel_confirmed_booking_still_in_window(self):
+        """A CONFIRMED booking can still be cancelled before time_to passes."""
+        booking = self._booking(
+            BookingStatus.CONFIRMED, timezone.now() + timedelta(days=1)
+        )
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.patch(
+            f"/api/bookings/{booking.id}/",
+            {"status": BookingStatus.CANCELLED},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.content
+        booking.refresh_from_db()
+        assert booking.status == BookingStatus.CANCELLED
+
+    def test_can_cancel_past_pending_booking(self):
+        """A never-confirmed PENDING request stays cancellable after its
+        requested window has passed - that's how a stale request gets
+        cleared out."""
+        booking = self._booking(
+            BookingStatus.PENDING, timezone.now() - timedelta(days=1)
+        )
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.patch(
+            f"/api/bookings/{booking.id}/",
+            {"status": BookingStatus.CANCELLED},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.content
+        booking.refresh_from_db()
+        assert booking.status == BookingStatus.CANCELLED

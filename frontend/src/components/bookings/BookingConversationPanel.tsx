@@ -429,6 +429,10 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
             const isRental = salesType === 'rent' || salesType === 'borrow';
             const showConfirmReceived =
               isBuyer && (isSale || (isRental && !selectedItemDetails?.rental_self_service));
+            // Once the rental period has ended there's nothing left to cancel -
+            // cancelling it now wouldn't undo anything that already happened.
+            const isPast =
+              !!selectedBooking.time_to && new Date(selectedBooking.time_to) < new Date();
 
             return (
               <div className="flex items-center gap-2 mt-4">
@@ -443,22 +447,26 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
                       : t('requests.confirmReceived')}
                   </Button>
                 )}
-                <Button
-                  variant="outline"
-                  onClick={async () => {
-                    try {
-                      await updateBookingMutation.mutateAsync({
-                        id: selectedBooking.id,
-                        data: { status: 2 }, // Cancelled
-                      });
-                    } catch (error) {
-                      console.error('Error cancelling booking:', error);
-                    }
-                  }}
-                  disabled={updateBookingMutation.isPending}
-                >
-                  {updateBookingMutation.isPending ? t('common.submitting') : t('requests.cancel')}
-                </Button>
+                {!isPast && (
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        await updateBookingMutation.mutateAsync({
+                          id: selectedBooking.id,
+                          data: { status: 2 }, // Cancelled
+                        });
+                      } catch (error) {
+                        console.error('Error cancelling booking:', error);
+                      }
+                    }}
+                    disabled={updateBookingMutation.isPending}
+                  >
+                    {updateBookingMutation.isPending
+                      ? t('common.submitting')
+                      : t('requests.cancel')}
+                  </Button>
+                )}
 
                 <div className="ml-auto">
                   <ActionIcon
