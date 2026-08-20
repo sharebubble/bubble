@@ -7,7 +7,7 @@ import {
   Card,
   Checkbox,
   Group,
-  Pagination,
+  Loader,
   ScrollArea,
   SegmentedControl,
   Select,
@@ -18,7 +18,11 @@ import {
 import { useDebouncedValue } from '@mantine/hooks';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
-import { type BookingsFilterParams, useMyBookings, useUpdateBooking } from '@/hooks/useBookings';
+import {
+  type BookingsFilterParams,
+  useMyBookingsInfinite,
+  useUpdateBooking,
+} from '@/hooks/useBookings';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import type { BookingList } from '@/services/django';
@@ -280,16 +284,13 @@ const MyBookingsPage = () => {
     pageSizeParam && PAGE_SIZE_OPTIONS.includes(pageSizeParam)
       ? Number(pageSizeParam)
       : DEFAULT_PAGE_SIZE;
-  const pageParam = Number(searchParams.get('page'));
-  const page = Number.isInteger(pageParam) && pageParam >= 1 ? pageParam : 1;
 
   const [searchInput, setSearchInput] = useState(() => searchParams.get('q') ?? '');
   const [debouncedSearch] = useDebouncedValue(searchInput.trim(), 300);
   const isSearching = debouncedSearch.length > 0;
 
   /** Apply a discrete filter change: pushes a new history entry (Back steps
-   *  through filter changes, matching the rest of the app) and drops 'page'
-   *  since a filter change invalidates whatever page was being viewed. */
+   *  through filter changes, matching the rest of the app). */
   const updateFilters = (updates: Record<string, string | null>) => {
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
@@ -297,22 +298,9 @@ const MyBookingsPage = () => {
         if (value === null) next.delete(key);
         else next.set(key, value);
       }
-      next.delete('page');
       return next;
     });
   };
-
-  const handlePageChange = useCallback(
-    (newPage: number) => {
-      setSearchParams(prev => {
-        const next = new URLSearchParams(prev);
-        if (newPage <= 1) next.delete('page');
-        else next.set('page', String(newPage));
-        return next;
-      });
-    },
-    [setSearchParams],
-  );
 
   // The debounced search term is committed to the URL on its own, via
   // `replace` so every keystroke doesn't spam browser history.
@@ -323,7 +311,6 @@ const MyBookingsPage = () => {
         const next = new URLSearchParams(prev);
         if (debouncedSearch) next.set('q', debouncedSearch);
         else next.delete('q');
-        next.delete('page');
         return next;
       },
       { replace: true },
@@ -352,9 +339,8 @@ const MyBookingsPage = () => {
     [showPending],
   );
 
-  const queryParams = useMemo<BookingsFilterParams>(() => {
-    const base: BookingsFilterParams = {
-      page,
+  const queryParams = useMemo<Omit<BookingsFilterParams, 'page'>>(() => {
+    const base: Omit<BookingsFilterParams, 'page'> = {
       page_size: pageSize,
       ...(role ? { role } : {}),
       // The status filter (approved/pending) only applies to the
@@ -380,23 +366,22 @@ const MyBookingsPage = () => {
       temporal: direction,
       ordering: direction === 'past' ? '-time_from' : 'time_from',
     };
-  }, [statuses, page, pageSize, role, isSearching, debouncedSearch, direction]);
+  }, [statuses, pageSize, role, isSearching, debouncedSearch, direction]);
 
-  const { data, isLoading, isFetching } = useMyBookings(queryParams);
-  const bookings = data?.results ?? [];
-  const totalCount = data?.count ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
-
-  // Keep the current page in range if the result set shrinks (e.g. after a
-  // booking is ended and the list refetches with a smaller total).
-  useEffect(() => {
-    if (page > totalPages) handlePageChange(totalPages);
-  }, [page, totalPages, handlePageChange]);
+  const { data, isLoading, isFetching, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useMyBookingsInfinite(queryParams);
+  const bookings = useMemo(() => data?.pages.flatMap(page => page?.results ?? []) ?? [], [data]);
 
   const annotated = useMemo(
     () => bookings.map(b => ({ booking: b, state: getBookingState(b) })),
     [bookings],
   );
+
+  // Auto-load the next batch once the list is scrolled to the bottom,
+  // instead of exposing numbered pages.
+  const handleBottomReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
     // Below `md` the fixed MobileBottomNav covers the last 4rem of the
@@ -502,11 +487,11 @@ const MyBookingsPage = () => {
 
             {/* List */}
             <Card withBorder padding={0} className="flex-1 min-h-0 flex flex-col">
-              <ScrollArea className="flex-1">
+              <ScrollArea className="flex-1" onBottomReached={handleBottomReached}>
                 <div
                   className={cn(
                     'flex flex-col gap-2 p-2 transition-opacity',
-                    isFetching && 'opacity-60 pointer-events-none',
+                    isFetching && !isFetchingNextPage && 'opacity-60 pointer-events-none',
                   )}
                 >
                   {isLoading ? (
@@ -525,33 +510,29 @@ const MyBookingsPage = () => {
                       </Text>
                     </div>
                   ) : (
-                    annotated.map(({ booking, state }) => (
-                      <BookingRow
-                        key={booking.id}
-                        booking={booking}
-                        state={state}
-                        t={t}
-                        selected={selectedBookingId === booking.id}
-                        onClick={handleSelectBooking}
-                        onEnd={handleEndBooking}
-                        isEnding={endingId === booking.id}
-                        currentUsername={user?.username}
-                      />
-                    ))
+                    <>
+                      {annotated.map(({ booking, state }) => (
+                        <BookingRow
+                          key={booking.id}
+                          booking={booking}
+                          state={state}
+                          t={t}
+                          selected={selectedBookingId === booking.id}
+                          onClick={handleSelectBooking}
+                          onEnd={handleEndBooking}
+                          isEnding={endingId === booking.id}
+                          currentUsername={user?.username}
+                        />
+                      ))}
+                      {isFetchingNextPage && (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader size="sm" />
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </ScrollArea>
-
-              {totalPages > 1 && (
-                <div className="flex justify-center py-3 border-t shrink-0">
-                  <Pagination
-                    total={totalPages}
-                    value={page}
-                    onChange={handlePageChange}
-                    size="sm"
-                  />
-                </div>
-              )}
             </Card>
           </div>
 

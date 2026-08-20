@@ -10,7 +10,7 @@ import {
   type BookingWritable,
   type PatchedBooking,
 } from '@/services/django';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 // Extended filter params not yet reflected in the auto-generated BookingsListData type
 // (the authenticated BookingViewSet queryset fails schema introspection for anonymous users)
@@ -47,6 +47,20 @@ export const useMyBookings = (params: BookingsFilterParams = {}) => {
       const response = await bookingsList({ query: params as any });
       return response.data;
     },
+  });
+};
+
+/** Same filters as `useMyBookings`, but accumulates pages for infinite-scroll
+ *  lists instead of replacing the result set on every `page` change. */
+export const useMyBookingsInfinite = (params: Omit<BookingsFilterParams, 'page'> = {}) => {
+  return useInfiniteQuery({
+    queryKey: ['bookings', 'filtered', 'infinite', params],
+    queryFn: async ({ pageParam }) => {
+      const response = await bookingsList({ query: { ...params, page: pageParam } as any });
+      return response.data;
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => (lastPage?.next ? allPages.length + 1 : undefined),
   });
 };
 
