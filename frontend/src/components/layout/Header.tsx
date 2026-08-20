@@ -1,4 +1,5 @@
-import { ActionIcon, Avatar, Button, Indicator, Menu } from '@mantine/core';
+import { ActionIcon, Avatar, Button, Indicator, Menu, UnstyledButton } from '@mantine/core';
+import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
@@ -21,7 +22,72 @@ import {
   Plus,
   User,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+
+// Icon-over-label between `md` and `lg`: at `md` the header first gets wide
+// enough to show these destinations at all, but there isn't yet room for
+// icon-and-label side by side across five items plus the logo, search bar
+// and avatar — that combination used to force the header itself to scroll
+// horizontally. Stacking icon above a smaller label keeps every item
+// narrow until `lg`, where there's space to lay them out in a row again.
+//
+// Colors go through Mantine's `bg`/`c` style props rather than Tailwind
+// color utilities: Mantine's own component CSS is unlayered and beats
+// Tailwind's layered utilities in the cascade (see the `hiddenFrom` note
+// on MobileBottomNav below for the same gotcha), so a Tailwind
+// `bg-[...]`/`text-...` class on an UnstyledButton is silently overridden.
+type HeaderNavButtonProps = {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  active?: boolean;
+  variant?: 'subtle' | 'filled';
+  badge?: number;
+};
+
+const HeaderNavButton = ({
+  icon: Icon,
+  label,
+  onClick,
+  active,
+  variant = 'subtle',
+  badge,
+}: HeaderNavButtonProps) => {
+  const [hovered, setHovered] = useState(false);
+  const icon = <Icon size={20} aria-hidden="true" />;
+  const filled = variant === 'filled';
+
+  return (
+    <UnstyledButton
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      aria-current={active ? 'page' : undefined}
+      bg={
+        filled
+          ? hovered
+            ? 'green.7'
+            : 'green.6'
+          : hovered
+            ? 'var(--mantine-color-default-hover)'
+            : undefined
+      }
+      c={filled ? 'white' : active ? undefined : 'dimmed'}
+      fw={active && !filled ? 600 : undefined}
+      className="flex flex-col items-center gap-0.5 rounded-md px-2.5 py-1.5 text-[11px] leading-none transition-colors lg:flex-row lg:gap-2 lg:text-sm"
+    >
+      {badge !== undefined && badge > 0 ? (
+        <Indicator label={badge} color="red" size={16} offset={2}>
+          {icon}
+        </Indicator>
+      ) : (
+        icon
+      )}
+      <span>{label}</span>
+    </UnstyledButton>
+  );
+};
 
 export const Header = () => {
   const { user, signOut } = useAuth();
@@ -109,80 +175,50 @@ export const Header = () => {
           {/* Actions — hidden below `md`, where MobileBottomNav covers the same
               destinations (Browse, Bookings, Add, Account). The breakpoint must
               stay in sync with that bar's `hiddenFrom="md"`. */}
-          <div className="hidden shrink-0 items-center gap-2 md:flex">
+          <div className="hidden shrink-0 items-center gap-1 md:flex lg:gap-2">
             {/* Browse — "/" is the start page, so the catalogue needs its own
                 entry point here. */}
-            <Button
-              variant="subtle"
-              size="sm"
-              color="gray"
+            <HeaderNavButton
+              icon={Compass}
+              label={t('header.browse')}
               onClick={() => navigate(BROWSE_PATH)}
-              aria-current={location.pathname === BROWSE_PATH ? 'page' : undefined}
-              className={cn(location.pathname === BROWSE_PATH && '!font-semibold')}
-              leftSection={<Compass size={20} aria-hidden="true" />}
-            >
-              {t('header.browse')}
-            </Button>
+              active={location.pathname === BROWSE_PATH}
+            />
 
             {/* My Items */}
-            <Button
-              variant="subtle"
-              size="sm"
-              color="gray"
+            <HeaderNavButton
+              icon={Library}
+              label={t('header.items')}
               onClick={() => navigate('/my-items')}
-              aria-current={location.pathname.startsWith('/my-items') ? 'page' : undefined}
-              className={cn(location.pathname.startsWith('/my-items') && '!font-semibold')}
-              leftSection={<Library size={20} aria-hidden="true" />}
-            >
-              {t('header.items')}
-            </Button>
+              active={location.pathname.startsWith('/my-items')}
+            />
 
             {/* Bookings — also the home of booking conversations and their
                 unread-message notifications, hence the badge. */}
-            <Indicator
-              label={unreadCount}
-              color="red"
-              size={20}
-              disabled={unreadCount === 0}
-              offset={4}
-            >
-              <Button
-                variant="subtle"
-                size="sm"
-                color="gray"
-                onClick={() => navigate('/bookings')}
-                aria-current={location.pathname.startsWith('/bookings') ? 'page' : undefined}
-                className={cn(location.pathname.startsWith('/bookings') && '!font-semibold')}
-                title={t('header.bookings')}
-                leftSection={<CalendarCheck size={20} aria-hidden="true" />}
-              >
-                {t('header.bookings')}
-              </Button>
-            </Indicator>
+            <HeaderNavButton
+              icon={CalendarCheck}
+              label={t('header.bookings')}
+              onClick={() => navigate('/bookings')}
+              active={location.pathname.startsWith('/bookings')}
+              badge={unreadCount}
+            />
 
             {/* Collections */}
-            <Button
-              variant="subtle"
-              size="sm"
-              color="gray"
+            <HeaderNavButton
+              icon={BookMarked}
+              label={t('collections.title')}
               onClick={() => navigate('/collections')}
-              aria-current={location.pathname.startsWith('/collections') ? 'page' : undefined}
-              className={cn(location.pathname.startsWith('/collections') && '!font-semibold')}
-              leftSection={<BookMarked size={20} aria-hidden="true" />}
-            >
-              {t('collections.title')}
-            </Button>
+              active={location.pathname.startsWith('/collections')}
+            />
 
             {/* Add Item */}
-            <Button
-              variant="filled"
-              size="sm"
-              leftSection={<Plus size={16} aria-hidden="true" />}
+            <HeaderNavButton
+              icon={Plus}
+              label={t('header.shareItem')}
               onClick={() => navigate('/create-item')}
-              aria-current={location.pathname.startsWith('/create-item') ? 'page' : undefined}
-            >
-              {t('header.shareItem')}
-            </Button>
+              active={location.pathname.startsWith('/create-item')}
+              variant="filled"
+            />
 
             {/* Profile Dropdown */}
             <Menu position="bottom-end" shadow="md" width={224}>
