@@ -1896,6 +1896,23 @@ class BookingPastCancelValidationTestCase(APITestCase):
         booking.refresh_from_db()
         assert booking.status == BookingStatus.CONFIRMED
 
+    def test_owner_cannot_cancel_past_in_progress_booking(self):
+        """The item owner cannot cancel an IN_PROGRESS booking once time_to
+        has passed - it should be completed via confirm_returned instead."""
+        booking = self._booking(
+            BookingStatus.IN_PROGRESS, timezone.now() - timedelta(days=1)
+        )
+        self.client.force_authenticate(user=self.item_owner)
+        response = self.client.patch(
+            f"/api/bookings/{booking.id}/",
+            {"status": BookingStatus.CANCELLED},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        booking.refresh_from_db()
+        assert booking.status == BookingStatus.IN_PROGRESS
+
     def test_can_cancel_confirmed_booking_still_in_window(self):
         """A CONFIRMED booking can still be cancelled before time_to passes."""
         booking = self._booking(

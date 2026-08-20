@@ -152,7 +152,7 @@ class BookingSerializer(serializers.ModelSerializer):
             and self.instance.status
             in (BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS)
             and self.instance.time_to
-            and self.instance.time_to < timezone.now()
+            and self.instance.time_to <= timezone.now()
         ):
             msg = _("This booking has already ended and can no longer be cancelled.")
             raise serializers.ValidationError(msg)

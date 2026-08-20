@@ -432,7 +432,7 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
             // Once the rental period has ended there's nothing left to cancel -
             // cancelling it now wouldn't undo anything that already happened.
             const isPast =
-              !!selectedBooking.time_to && new Date(selectedBooking.time_to) < new Date();
+              !!selectedBooking.time_to && new Date(selectedBooking.time_to) <= new Date();
 
             return (
               <div className="flex items-center gap-2 mt-4">
