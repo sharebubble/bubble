@@ -27,7 +27,7 @@
     "barcode-detector": "^3.2.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "dayjs": "^1.11.22",
+    "dayjs": "^1.11.23",
     "embla-carousel-react": "^8.6.0",
     "lucide-react": "^1.31.0",
     "mantine-form-zod-resolver": "^1.3.0",
