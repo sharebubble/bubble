@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
@@ -138,6 +139,22 @@ class BookingSerializer(serializers.ModelSerializer):
         """
         if self.instance and value == BookingStatus.IN_PROGRESS:
             msg = _("Use the confirm-received action to start a rental.")
+            raise serializers.ValidationError(msg)
+
+        # A confirmed/in-progress booking whose rental period has already ended
+        # actually happened - cancelling it after the fact wouldn't undo
+        # anything and would misrepresent what took place. A still-pending
+        # request that simply timed out without ever being accepted is
+        # unaffected: cancelling it is how a stale request gets cleared out.
+        if (
+            self.instance
+            and value == BookingStatus.CANCELLED
+            and self.instance.status
+            in (BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS)
+            and self.instance.time_to
+            and self.instance.time_to <= timezone.now()
+        ):
+            msg = _("This booking has already ended and can no longer be cancelled.")
             raise serializers.ValidationError(msg)
 
         user = self.context["request"].user
