@@ -2,7 +2,7 @@
 
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
-from rest_framework import filters, status, viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.response import Response
@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from bubble.books.api.filters import BookFilter
 from bubble.books.api.serializers import BookListSerializer, BookSerializer
 from bubble.books.services import ISBNLookupService
+from bubble.items.api.search import RelevanceOrderingFilter
 from bubble.items.models import Item
 
 
@@ -29,13 +30,13 @@ class BookViewSet(viewsets.ModelViewSet):
     permission_classes = [DjangoModelPermissions]
     lookup_field = "id"
     filterset_class = BookFilter
+    # `BookFilter.search` replaces DRF's SearchFilter so the same `search`
+    # parameter is matched once, and ranked title-first.
     filter_backends = [
         DjangoFilterBackend,
-        filters.SearchFilter,
-        filters.OrderingFilter,
+        RelevanceOrderingFilter,
     ]
-    search_fields = ["name", "description", "properties__isbn", "properties__topic"]
-    ordering_fields = ["created_at", "updated_at", "name"]
+    ordering_fields = ["created_at", "updated_at", "name", "relevance"]
     ordering = ["-created_at"]
 
     def get_queryset(self):

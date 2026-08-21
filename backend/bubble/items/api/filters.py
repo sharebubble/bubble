@@ -6,7 +6,9 @@ import logging
 
 import django_filters
 from django.db.models import Q, QuerySet
+from django.utils.translation import gettext_lazy as _
 
+from bubble.items.api.search import ranked_search
 from bubble.items.models import (
     ConditionType,
     Item,
@@ -30,7 +32,10 @@ class ItemFilter(django_filters.FilterSet):
     - free: boolean; if true restrict to free (null or zero price) items
     - user: user id for owner filtering
     - collection: collection id; restrict to items in the given collection
-    - search: substring match on name or description (case-insensitive)
+    - search: relevance-ranked match on name and description. Every term has
+      to occur (quoted "phrases" count as one term); title matches rank above
+      description-only ones. Use ``ordering=relevance`` to sort by that rank —
+      it is the default ordering while a search is active.
     - created_after / created_before: ISO8601 datetime filtering
     """
 
@@ -65,8 +70,17 @@ class ItemFilter(django_filters.FilterSet):
     # Restrict to items contained in a given collection
     collection = django_filters.UUIDFilter(field_name="collections__id")
 
-    # Use built-in search filter
-    search = django_filters.CharFilter(method="filter_search")
+    # Free-text search. Ranked so that title matches come first — see
+    # ``bubble.items.api.search`` for the matching and weighting rules.
+    search = django_filters.CharFilter(
+        method="filter_search",
+        label=_("Search"),
+        help_text=_(
+            "Free-text search over title and description. All terms must "
+            'match; use "quotes" to search for a phrase. Results are ranked '
+            "with title matches first."
+        ),
+    )
 
     # Use built-in datetime filters
     created_after = django_filters.IsoDateTimeFilter(
@@ -113,9 +127,5 @@ class ItemFilter(django_filters.FilterSet):
         return queryset.exclude(free_q)
 
     def filter_search(self, queryset: QuerySet[Item], name: str, value: str):
-        """Search in name and description fields."""
-        if not value:
-            return queryset
-        return queryset.filter(
-            Q(name__icontains=value) | Q(description__icontains=value)
-        )
+        """Match name and description, annotating each row with its rank."""
+        return ranked_search(queryset, value)

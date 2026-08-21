@@ -33,7 +33,7 @@ type BrowseItemsPageFilters = {
   salesTypes?: SalesTypeEnum[];
 };
 
-type SortField = 'name' | 'price' | 'date';
+type SortField = 'relevance' | 'name' | 'price' | 'date';
 type SortDir = 'asc' | 'desc';
 type Scope = 'local' | 'federated' | 'all';
 
@@ -70,7 +70,7 @@ const VALID_CATEGORIES: ItemCategoryFilter[] = [
 ] satisfies (CategoryEnum | 'all')[];
 
 const VALID_CONDITIONS: ConditionEnum[] = [0, 1, 2];
-const VALID_SORT_FIELDS: SortField[] = ['name', 'price', 'date'];
+const VALID_SORT_FIELDS: SortField[] = ['relevance', 'name', 'price', 'date'];
 const VALID_SCOPES = ['local', 'federated', 'all'] as const;
 
 // ---------------------------------------------------------------------------
@@ -134,9 +134,15 @@ const Index = () => {
 
   const sortFieldParam = params.get('sortField');
   const sortDirParam = params.get('sortDir');
-  const sortField: SortField = VALID_SORT_FIELDS.includes(sortFieldParam as SortField)
+  // Searching defaults to relevance (title matches first); browsing without a
+  // term has nothing to rank, so it stays newest-first. Relevance is only
+  // offered while a term is active.
+  const defaultSortField: SortField = searchQuery ? 'relevance' : 'date';
+  const requestedSortField = VALID_SORT_FIELDS.includes(sortFieldParam as SortField)
     ? (sortFieldParam as SortField)
-    : 'date';
+    : defaultSortField;
+  const sortField: SortField =
+    requestedSortField === 'relevance' && !searchQuery ? 'date' : requestedSortField;
   const sortDir: SortDir =
     sortDirParam === 'asc' || sortDirParam === 'desc'
       ? sortDirParam
@@ -145,6 +151,8 @@ const Index = () => {
         : 'asc';
   const ordering = (() => {
     const prefix = sortDir === 'desc' ? '-' : '';
+    // `relevance` already means best-first, so it carries no direction prefix.
+    if (sortField === 'relevance') return 'relevance';
     if (sortField === 'name') return `${prefix}name`;
     if (sortField === 'price') return `${prefix}price`;
     return `${prefix}created_at`;
@@ -316,6 +324,7 @@ const Index = () => {
               sortField={sortField}
               sortDir={sortDir}
               onSortChange={handleSortChange}
+              searchActive={!!searchQuery}
               scope={scope}
               onScopeChange={handleScopeChange}
             />
