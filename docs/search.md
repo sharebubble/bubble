@@ -15,17 +15,24 @@ every endpoint that accepts a `search` query parameter:
 | `api:federated-item-list` (`/api/federated-items/`) | title, description (local **and** remote items) |
 | `api:book-list` (`/api/books/`) | title, description, ISBN, author, publisher, topic |
 
+All of them fold accents on both sides of the comparison, and all of them apply
+the approximate (typo-tolerant) pass to the **title** only. The book metadata is
+matched literally: those are JSONB paths, where Django reads an `unaccent`
+transform as one more key in the document rather than as a function call.
+
 ---
 
 ## 1. What changed
 
 Previously every endpoint ran the same query: `name ILIKE %q% OR description ILIKE %q%`,
-returning matches newest-first. Two consequences:
+returning matches newest-first. Three consequences:
 
 - An item **named** "Ladder" and an item whose description happens to end with
   "…store it next to the ladder" were equally good hits, and the newer one won.
 - A two-word query was matched as one literal string, so "ladder aluminium"
   found nothing unless those words appeared adjacent, in that order.
+- A diacritic or a typo was fatal: "fahrrader" missed *Fahrräder* entirely, and
+  a listing spelled *Bohrmaschiene* was unreachable.
 
 ### Matching
 
@@ -35,8 +42,47 @@ any of the searched fields — terms are ANDed, fields are ORed. So "ladder
 aluminium" now finds *Aluminium step ladder*, and adding a word narrows results
 instead of emptying them.
 
+Every comparison folds diacritics through PostgreSQL's `unaccent`, on both the
+column and the term, so "fahrrader" finds *Fahrräder* and "Fahrräder" finds
+*Fahrrader*. A term that matches nothing literally gets a second, approximate
+pass against the **title** using `pg_trgm`'s word similarity, so
+"bohrmaschiene" still finds *Bohrmaschine*. Both extensions are installed by
+`items` migration `0020_search_extensions`; they are *trusted* on PostgreSQL 13+,
+so the database owner can create them without superuser rights.
+
 Facet counts use the exact same matcher, so the number on a facet chip always
 matches the number of results you get by clicking it.
+
+#### Calibrating the fuzzy pass
+
+`word_similarity(term, title)` scores the term against the best-matching run of
+words in the title. Measured against realistic German/English listings:
+
+| Term / title | Score |
+| --- | --- |
+| bohrmaschine / Bohrmaschiene | 0.77 |
+| kinderwagen / Kinderwagn | 0.75 |
+| gitarre / Gitare | 0.67 |
+| projektor / Projecktor | 0.62 |
+| hammer / Hammar drill | 0.57 |
+| leiter / Leitre | 0.57 |
+| **threshold** | **0.55** |
+| drucker / Druker | 0.50 |
+| tisch / Fisch Eimer | 0.50 |
+| law / Ladder | 0.50 |
+| leiter / Liter Flasche | 0.44 |
+
+`FUZZY_SIMILARITY_THRESHOLD = 0.55` sits in the gap between one-letter slips in
+words of six characters or more and the coincidental matches below. Two terms
+never get the fuzzy pass at all (`is_fuzzy_matchable`):
+
+- **Shorter than `MIN_FUZZY_TERM_LENGTH` (5).** At that length one different
+  character is usually a different word — "law" scores 0.50 against *Ladder*.
+- **Quoted phrases.** Asking for a phrase is already an instruction to take the
+  spelling literally.
+
+Only the title is matched fuzzily. A typo-tolerant description match pulls in
+far more than it rescues.
 
 ### Ranking
 
@@ -51,17 +97,24 @@ Each row is scored, and higher scores come first:
 | *per term:* term in title | 8 |
 | *per term:* term in an extra field (ISBN, author, …) | 4 |
 | *per term:* term in description | 2 |
+| *per term:* term merely *similar* to the title | 1 |
 
-The tiers are additive, so an exact title match scores 100 + 50 + 25 + 8 = 183
-while a description-only hit scores 12. Anything matching in the title outranks
-everything matching only in the description — which is the property the ranking
-exists for. Ties fall back to the endpoint's default ordering (newest first), so
-pagination stays stable.
+The tiers are additive, so an exact title match scores 100 + 50 + 25 + 8 + 1 =
+184 while a description-only hit scores 12 and a rescued typo scores 1. Anything
+matching in the title outranks everything matching only in the description —
+which is the property the ranking exists for — and an approximate match ranks
+below both, so typo tolerance extends the result list downwards instead of
+reshuffling it. Ties fall back to the endpoint's default ordering (newest
+first), so pagination stays stable.
 
 Two implementations share those weights: `relevance_annotation` builds a SQL
 expression for querysets, and `relevance_score` scores a row in Python for the
 federated endpoint, which merges local and remote rows in memory and so cannot
-sort them in the database. **They must stay in sync.**
+sort them in the database. **They must stay in sync.** The Python side has no
+fuzzy tier — that needs PostgreSQL — so a federated row rescued by a typo scores
+0 and lands at the bottom of that list, which is where its one point would have
+put it anyway. Its `strip_accents` helper mirrors `unaccent` for the European
+letters; the SQL path, which calls `unaccent` itself, is what decides inclusion.
 
 ### Ordering
 
@@ -77,8 +130,10 @@ PostgreSQL full-text search (`SearchVector`/`SearchRank`) was considered and not
 adopted *yet*. `tsvector` matching is lexeme-based: it would stop "saw" from
 finding "Chainsaw" and stop "9780441" from finding a full ISBN — both things
 people do here, on a catalogue whose titles are short, multilingual, and full of
-model numbers. Substring matching keeps those working. The cost is that ranking
-signals stay coarse and matching cannot handle typos; see below.
+model numbers. Substring matching keeps those working, and `pg_trgm` covers the
+typo tolerance that would otherwise be the main argument for switching. The cost
+is that ranking signals stay coarse: there is no term-frequency or field-length
+normalisation, only the tier table above.
 
 ---
 
@@ -86,21 +141,33 @@ signals stay coarse and matching cannot handle typos; see below.
 
 Roughly in order of value per unit of work.
 
-### 2.1 Typo tolerance with `pg_trgm` (high value)
+### 2.1 Index the search columns (small, do it when the catalogue grows)
 
-`CREATE EXTENSION pg_trgm` plus a `TrigramSimilarity` annotation would make
-"laddr" find *Ladder*, and a GIN trigram index on `items_item.name` would
-additionally make the current `ILIKE %…%` title matching index-backed rather
-than a sequential scan. Suggested shape: keep the strict match as-is, and fall
-back to `similarity(name, query) > 0.3` when it returns nothing, so fuzzy hits
-never dilute exact ones. Needs a migration with `TrigramExtension()`, so check
-that the deploy database user may create extensions.
+Every comparison wraps the column in `unaccent(…)`, so no plain index on `name`
+or `description` can serve it, and each search is a sequential scan. On a
+neighbourhood catalogue (thousands of rows) that is fine and no index was added.
+When it stops being fine, the fix is a functional GIN trigram index — which needs
+an `IMMUTABLE` wrapper, because `unaccent` itself is not:
 
-### 2.2 Accent and case folding with `unaccent` (high value, small)
+```sql
+CREATE FUNCTION immutable_unaccent(text) RETURNS text
+  LANGUAGE sql IMMUTABLE PARALLEL SAFE STRICT AS
+$$ SELECT public.unaccent('public.unaccent'::regdictionary, $1) $$;
 
-"Fahrrader" does not currently find *Fahrräder*, and for a German-language
-instance that is a common miss. `CREATE EXTENSION unaccent` plus an
-`unaccent(lower(name))` functional index fixes it for both matching and ranking.
+CREATE INDEX items_item_name_trgm
+  ON items_item USING gin (immutable_unaccent(name) gin_trgm_ops);
+```
+
+The catch: Django's `__unaccent` lookup emits `UNACCENT(…)`, not
+`immutable_unaccent(…)`, so the index is only used once a custom `Transform` is
+registered to emit the wrapper. Measure first — `EXPLAIN ANALYZE` on a real
+search — before taking that on.
+
+### 2.2 Tune the fuzzy threshold against real queries (small)
+
+`FUZZY_SIMILARITY_THRESHOLD` (0.55) and `MIN_FUZZY_TERM_LENGTH` (5) were
+calibrated against invented typos, not observed ones. Once §2.8 is in place,
+recheck them against queries that actually returned nothing.
 
 ### 2.3 A word-boundary ranking tier (small)
 
@@ -150,5 +217,5 @@ cheapest way to find out which of 2.1–2.7 actually matters here.
 
 | File | Covers |
 | --- | --- |
-| `backend/bubble/items/tests/test_search.py` | Query parsing (quoting, dedup, term cap), the Python scorer, list ranking, explicit-ordering override, facet/list agreement, federated ranking |
+| `backend/bubble/items/tests/test_search.py` | Query parsing (quoting, dedup, term cap), the Python scorer and accent fold, fuzzy eligibility, list ranking, explicit-ordering override, accent-insensitive search, typo tolerance and its ranking, facet/list agreement, federated ranking |
 | `backend/bubble/books/tests/test_search.py` | Book ranking and JSONB metadata matching (ISBN, author) |

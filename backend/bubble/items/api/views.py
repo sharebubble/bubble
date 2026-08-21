@@ -810,8 +810,9 @@ class FederatedItemViewSet(viewsets.ViewSet):
     Query parameters
     ----------------
     search : str
-        Case-insensitive match on name / description. Every term has to occur
-        and results come back ranked, title matches first — the same rules the
+        Case-insensitive match on name / description. Every term has to occur,
+        accents are folded, misspelled terms still match similar titles, and
+        results come back ranked with title matches first — the same rules the
         local item list uses, applied to local and remote items alike.
     scope : ``local`` | ``federated`` | ``all`` (default ``all``)
         Restrict results to local items, remote items, or both.

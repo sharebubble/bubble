@@ -33,8 +33,10 @@ class ItemFilter(django_filters.FilterSet):
     - user: user id for owner filtering
     - collection: collection id; restrict to items in the given collection
     - search: relevance-ranked match on name and description. Every term has
-      to occur (quoted "phrases" count as one term); title matches rank above
-      description-only ones. Use ``ordering=relevance`` to sort by that rank —
+      to occur (quoted "phrases" count as one term); accents are folded, and a
+      term that matches nothing literally still matches a title it is close
+      enough to. Title matches rank above description-only ones, which rank
+      above approximate ones. Use ``ordering=relevance`` to sort by that rank —
       it is the default ordering while a search is active.
     - created_after / created_before: ISO8601 datetime filtering
     """
@@ -77,8 +79,9 @@ class ItemFilter(django_filters.FilterSet):
         label=_("Search"),
         help_text=_(
             "Free-text search over title and description. All terms must "
-            'match; use "quotes" to search for a phrase. Results are ranked '
-            "with title matches first."
+            'match; use "quotes" to search for a phrase. Accents are ignored '
+            "and misspelled terms still match similar titles. Results are "
+            "ranked with title matches first and approximate matches last."
         ),
     )
 

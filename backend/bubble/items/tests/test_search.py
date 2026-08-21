@@ -2,6 +2,8 @@
 
 # mypy: ignore-errors
 
+from urllib.parse import quote
+
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -9,8 +11,10 @@ from rest_framework.test import APIClient
 
 from bubble.items.api.search import (
     MAX_SEARCH_TERMS,
+    is_fuzzy_matchable,
     parse_search_query,
     relevance_score,
+    strip_accents,
 )
 from bubble.items.models import Item, ItemStatus, SalesType, VisibilityType
 from bubble.items.tests.factories import ItemOwnerUserFactory
@@ -215,3 +219,138 @@ class FederatedSearchRankingTestCase(TestCase):
         names = [item["name"] for item in response.json()["results"]]
         # Alphabetically "Apron" would come first; relevance puts it last.
         assert names == ["Ladder", "Apron"]
+
+
+class StripAccentsTestCase(TestCase):
+    """The Python fold used to rank federated results."""
+
+    def test_folds_combining_marks(self):
+        assert strip_accents("Fahrräder Anhänger") == "Fahrrader Anhanger"
+
+    def test_folds_letters_without_a_decomposition(self):
+        """PostgreSQL's unaccent expands these; Unicode decomposition does not."""
+        assert strip_accents("Straße") == "Strasse"
+        assert strip_accents("Œuf") == "OEuf"
+
+    def test_leaves_unaccented_text_alone(self):
+        assert strip_accents("Ladder rack 3m") == "Ladder rack 3m"
+
+
+class FuzzyMatchEligibilityTestCase(TestCase):
+    """Which terms are allowed a second, approximate pass."""
+
+    def test_long_single_words_are_eligible(self):
+        assert is_fuzzy_matchable("bohrmaschine")
+
+    def test_short_words_are_not(self):
+        assert not is_fuzzy_matchable("saw")
+        assert not is_fuzzy_matchable("bike")
+
+    def test_quoted_phrases_are_not(self):
+        assert not is_fuzzy_matchable("ladder rack")
+
+
+class AccentInsensitiveSearchTestCase(TestCase):
+    """Diacritics never decide whether an item is found."""
+
+    def setUp(self):
+        self.user = ItemOwnerUserFactory(
+            username="accentuser", email="accent@example.com", password=TEST_PASSWORD
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+        def make(name, description=""):
+            return Item.objects.create(
+                name=name,
+                description=description,
+                user=self.user,
+                sales_type=SalesType.SELL,
+                status=ItemStatus.AVAILABLE,
+                visibility=VisibilityType.PUBLIC,
+                category="tools",
+            )
+
+        self.accented = make("Fahrräder Anhänger")
+        self.plain = make("Fahrraeder Zubehoer", "Passt an einen Anhanger")
+
+    def search(self, query):
+        url = reverse("api:public-item-list") + f"?search={quote(query)}"
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        return [item["name"] for item in response.json()["results"]]
+
+    def test_unaccented_query_finds_accented_item(self):
+        assert self.search("fahrrader")[0] == self.accented.name
+
+    def test_accented_query_finds_accented_item(self):
+        assert self.search("Fahrräder")[0] == self.accented.name
+
+    def test_ae_spelling_is_reached_through_the_fuzzy_tier(self):
+        """German transliteration ("ae" for "ä") survives, ranked second."""
+        assert self.search("fahrrader") == [self.accented.name, self.plain.name]
+
+    def test_accents_are_folded_in_the_description_too(self):
+        assert self.search("anhänger") == [self.accented.name, self.plain.name]
+
+
+class FuzzySearchTestCase(TestCase):
+    """A mistyped term still finds the item, ranked below every literal match."""
+
+    def setUp(self):
+        self.user = ItemOwnerUserFactory(
+            username="fuzzyuser", email="fuzzy@example.com", password=TEST_PASSWORD
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+        def make(name, description=""):
+            return Item.objects.create(
+                name=name,
+                description=description,
+                user=self.user,
+                sales_type=SalesType.SELL,
+                status=ItemStatus.AVAILABLE,
+                visibility=VisibilityType.PUBLIC,
+                category="tools",
+            )
+
+        self.literal = make("Bohrmaschine")
+        self.in_description = make("Werkbank", "Passend für eine Bohrmaschine")
+        # Misspelled in the listing itself — only reachable approximately.
+        self.misspelled = make("Bohrmaschiene Ersatzteil", "Kleinteile")
+        self.unrelated = make("Leiter", "Aus Holz")
+
+    def search(self, query):
+        url = reverse("api:public-item-list") + f"?search={quote(query)}"
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        return [item["name"] for item in response.json()["results"]]
+
+    def test_typo_in_the_listing_is_still_found(self):
+        assert self.misspelled.name in self.search("bohrmaschine")
+
+    def test_typo_in_the_query_is_still_found(self):
+        assert self.literal.name in self.search("bohrmaschiene")
+
+    def test_fuzzy_matches_rank_below_literal_ones(self):
+        assert self.search("bohrmaschine") == [
+            self.literal.name,
+            self.in_description.name,
+            self.misspelled.name,
+        ]
+
+    def test_unrelated_items_stay_out(self):
+        assert self.unrelated.name not in self.search("bohrmaschine")
+
+    def test_short_terms_are_not_matched_fuzzily(self):
+        """ "tisch" scores 0.5 against "Fisch Eimer" — below the bar, and too short."""
+        Item.objects.create(
+            name="Fisch Eimer",
+            user=self.user,
+            sales_type=SalesType.SELL,
+            status=ItemStatus.AVAILABLE,
+            visibility=VisibilityType.PUBLIC,
+            category="tools",
+        )
+        assert self.search("tisch") == []

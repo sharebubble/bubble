@@ -21,20 +21,37 @@ Matching stays substring-based (``ILIKE %term%``) rather than moving to
 PostgreSQL full-text search: item titles are short, frequently multilingual
 and full of model numbers ("AEG L6FB"), where stemming and dictionary lookups
 help less than a plain substring match — and lexeme matching would stop "saw"
-from finding "Chainsaw". ``docs/search.md`` records that trade-off along with
-the follow-ups it leaves open (``pg_trgm`` typo tolerance, ``unaccent``).
+from finding "Chainsaw". Two PostgreSQL extensions close the gaps that leaves
+(both installed by ``items`` migration 0020):
+
+``unaccent``
+    Every comparison folds diacritics on both sides, so "fahrrader" finds
+    *Fahrräder* and "Fahrräder" finds an item someone typed as "Fahrraeder".
+
+``pg_trgm``
+    A term that matches nothing literally still matches a title it is merely
+    *similar* to, so "bohrmaschiene" finds *Bohrmaschine*. Fuzzy hits score
+    below every literal one, so they extend the results rather than reorder
+    them.
+
+``docs/search.md`` records the trade-off and the calibration behind the
+thresholds.
 """
 
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 
+from django.contrib.postgres.lookups import Unaccent
+from django.contrib.postgres.search import TrigramWordSimilarity
 from django.db.models import Case, IntegerField, Q, QuerySet, Value, When
+from django.db.models.lookups import GreaterThanOrEqual
 from rest_framework import filters
 
 # Matching/ranking is capped so a pathological query ("a b c d e …") cannot
-# turn into an unbounded number of ILIKE comparisons per row.
+# turn into an unbounded number of ILIKE and similarity comparisons per row.
 MAX_SEARCH_TERMS = 8
 
 # Score contributions, highest first. A title hit is worth more than a
@@ -47,6 +64,42 @@ WEIGHT_DESCRIPTION_PHRASE = 10  # the description contains the query verbatim
 WEIGHT_NAME_TERM = 8  # per query term found in the title
 WEIGHT_EXTRA_TERM = 4  # per query term found in an extra field (e.g. ISBN)
 WEIGHT_DESCRIPTION_TERM = 2  # per query term found in the description
+WEIGHT_NAME_FUZZY = 1  # per query term merely *similar* to the title
+
+# Typo tolerance, calibrated against realistic German/English item titles (the
+# numbers behind these are in docs/search.md). `word_similarity` compares the
+# term against the best-matching run of words in the title, so 0.55 catches a
+# one-letter slip in "bohrmaschiene" while leaving "tisch"/"Fisch Eimer" (0.5)
+# out. Terms shorter than five characters are never matched fuzzily: at that
+# length a single character's difference is usually a different word.
+FUZZY_SIMILARITY_THRESHOLD = 0.55
+MIN_FUZZY_TERM_LENGTH = 5
+
+# PostgreSQL's `unaccent` folds a handful of letters that Unicode decomposition
+# leaves alone (they have no combining-mark form). Only the European letters
+# are listed: this table backs the in-memory scorer for the federated list,
+# where a small mismatch shifts a row's rank but never its inclusion — the SQL
+# path, which calls `unaccent` itself, is what decides that.
+_UNACCENT_EXTRAS = str.maketrans(
+    {
+        "ß": "ss",
+        "æ": "ae",
+        "Æ": "AE",
+        "œ": "oe",
+        "Œ": "OE",
+        "ø": "o",
+        "Ø": "O",
+        "ð": "d",
+        "Ð": "D",
+        "þ": "th",
+        "Þ": "TH",
+        "đ": "d",
+        "Đ": "D",
+        "ł": "l",
+        "Ł": "L",
+        "\u0131": "i",  # dotless i, spelled out to keep the lint quiet
+    }
+)
 
 # `"…"` keeps a phrase together; anything else is split on whitespace.
 _TERM_RE = re.compile(r'"([^"]+)"|(\S+)')
@@ -82,6 +135,40 @@ def parse_search_query(value: str | None) -> SearchQuery:
     return SearchQuery(phrase=phrase, terms=tuple(terms[:MAX_SEARCH_TERMS]))
 
 
+def strip_accents(value: str) -> str:
+    """Fold diacritics the way PostgreSQL's ``unaccent`` does.
+
+    Used only by :func:`relevance_score`; every database comparison calls
+    ``unaccent`` itself on both sides.
+    """
+    decomposed = unicodedata.normalize("NFKD", value.translate(_UNACCENT_EXTRAS))
+    return "".join(char for char in decomposed if not unicodedata.combining(char))
+
+
+def is_fuzzy_matchable(term: str) -> bool:
+    """Whether ``term`` should also be matched approximately.
+
+    Short terms are excluded because at that length one different character is
+    usually a different word, and quoted phrases because asking for a phrase is
+    already an instruction to take the spelling literally.
+    """
+    return len(term) >= MIN_FUZZY_TERM_LENGTH and " " not in term
+
+
+def fuzzy_name_q(term: str) -> Q:
+    """Match titles similar enough to ``term`` to be a plausible typo.
+
+    Only the title is matched fuzzily. A typo-tolerant description match would
+    pull in far more than it rescues, and the title is what people type.
+    """
+    return Q(
+        GreaterThanOrEqual(
+            TrigramWordSimilarity(Unaccent(Value(term)), Unaccent("name")),
+            Value(FUZZY_SIMILARITY_THRESHOLD),
+        )
+    )
+
+
 def search_filter_q(
     query: SearchQuery,
     *,
@@ -90,15 +177,23 @@ def search_filter_q(
     """Return the ``Q`` matching every term in name, description or extras.
 
     Terms are ANDed and fields are ORed: an item matches when each term is
-    found somewhere, not necessarily all in the same field.
-    """
-    fields = ("name", "description", *extra_fields)
+    found somewhere, not necessarily all in the same field. Long enough terms
+    also match titles they are merely similar to, which is what makes a
+    mistyped query return anything at all.
 
+    ``extra_fields`` are compared without ``unaccent``: today they are JSONB
+    paths (``properties__isbn``), where Django would read the transform as one
+    more key in the document rather than as a function call.
+    """
     combined = Q()
     for term in query.terms:
-        term_q = Q()
-        for field in fields:
+        term_q = Q(name__unaccent__icontains=term) | Q(
+            description__unaccent__icontains=term
+        )
+        for field in extra_fields:
             term_q |= Q(**{f"{field}__icontains": term})
+        if is_fuzzy_matchable(term):
+            term_q |= fuzzy_name_q(term)
         combined &= term_q
     return combined
 
@@ -123,10 +218,10 @@ def relevance_annotation(
     """
     phrase = query.phrase
     expression = (
-        _when(Q(name__iexact=phrase), WEIGHT_NAME_EXACT)
-        + _when(Q(name__istartswith=phrase), WEIGHT_NAME_PREFIX)
-        + _when(Q(name__icontains=phrase), WEIGHT_NAME_PHRASE)
-        + _when(Q(description__icontains=phrase), WEIGHT_DESCRIPTION_PHRASE)
+        _when(Q(name__unaccent__iexact=phrase), WEIGHT_NAME_EXACT)
+        + _when(Q(name__unaccent__istartswith=phrase), WEIGHT_NAME_PREFIX)
+        + _when(Q(name__unaccent__icontains=phrase), WEIGHT_NAME_PHRASE)
+        + _when(Q(description__unaccent__icontains=phrase), WEIGHT_DESCRIPTION_PHRASE)
     )
 
     # Per-term credit, so a two-of-three-terms title still outranks a
@@ -134,13 +229,17 @@ def relevance_annotation(
     for term in query.terms:
         expression = (
             expression
-            + _when(Q(name__icontains=term), WEIGHT_NAME_TERM)
-            + _when(Q(description__icontains=term), WEIGHT_DESCRIPTION_TERM)
+            + _when(Q(name__unaccent__icontains=term), WEIGHT_NAME_TERM)
+            + _when(Q(description__unaccent__icontains=term), WEIGHT_DESCRIPTION_TERM)
         )
         for field in extra_fields:
             expression = expression + _when(
                 Q(**{f"{field}__icontains": term}), WEIGHT_EXTRA_TERM
             )
+        # Worth one point: enough to sort a rescued typo above the rows that
+        # matched nothing, far below anything that matched literally.
+        if is_fuzzy_matchable(term):
+            expression = expression + _when(fuzzy_name_q(term), WEIGHT_NAME_FUZZY)
 
     return expression
 
@@ -148,13 +247,16 @@ def relevance_annotation(
 def relevance_score(query: SearchQuery, name: str, description: str) -> int:
     """Score an in-memory row as :func:`relevance_annotation` scores a database row.
 
-    There is no ``extra_fields`` counterpart here: the only in-memory caller is
-    the federated list, and remote items carry no metadata beyond title and
-    description.
+    Two tiers have no counterpart here. ``extra_fields`` does not apply — the
+    only in-memory caller is the federated list, and remote items carry no
+    metadata beyond title and description — and neither does the fuzzy tier,
+    which needs PostgreSQL. A row rescued by a typo therefore scores zero and
+    lands at the bottom of that list, which is where its one point would have
+    put it anyway.
     """
-    name = (name or "").lower()
-    description = (description or "").lower()
-    phrase = query.phrase.lower()
+    name = strip_accents(name or "").lower()
+    description = strip_accents(description or "").lower()
+    phrase = strip_accents(query.phrase).lower()
 
     score = 0
     if name == phrase:
@@ -167,7 +269,7 @@ def relevance_score(query: SearchQuery, name: str, description: str) -> int:
         score += WEIGHT_DESCRIPTION_PHRASE
 
     for term in query.terms:
-        lowered = term.lower()
+        lowered = strip_accents(term).lower()
         if lowered in name:
             score += WEIGHT_NAME_TERM
         if lowered in description:

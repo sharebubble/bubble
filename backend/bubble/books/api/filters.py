@@ -28,7 +28,9 @@ class BookFilter(django_filters.FilterSet):
         help_text=_(
             "Free-text search over title, description, author, publisher, "
             'topic and ISBN. All terms must match; use "quotes" to search '
-            "for a phrase. Results are ranked with title matches first."
+            "for a phrase. Accents are ignored and misspelled terms still "
+            "match similar titles. Results are ranked with title matches "
+            "first and approximate matches last."
         ),
     )
 
