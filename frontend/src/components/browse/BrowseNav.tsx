@@ -1,11 +1,11 @@
 import { Button as MantineButton, Checkbox, Menu, Radio } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Sparkles } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { ConditionEnum } from '@/services/django';
 
-type SortField = 'name' | 'price' | 'date';
+type SortField = 'relevance' | 'name' | 'price' | 'date';
 type SortDir = 'asc' | 'desc';
 type Scope = 'local' | 'federated' | 'all';
 
@@ -15,6 +15,8 @@ type BrowseNavProps = {
   sortField: SortField;
   sortDir: SortDir;
   onSortChange: (field: SortField, dir: SortDir) => void;
+  /** Whether a search term is active — relevance can only be sorted on then. */
+  searchActive: boolean;
   scope: Scope;
   onScopeChange: (scope: Scope) => void;
   className?: string;
@@ -28,6 +30,7 @@ export const BrowseNav = ({
   sortField,
   sortDir,
   onSortChange,
+  searchActive,
   scope,
   onScopeChange,
   className,
@@ -59,6 +62,10 @@ export const BrowseNav = ({
       : [...selectedConditions, condition];
     onSelectedConditionsChange(nextConditions);
   };
+
+  // Relevance has a single meaningful direction (best match first), so it is
+  // not a toggle like the other two.
+  const handleRelevanceSortClick = (): void => onSortChange('relevance', 'desc');
 
   const handleDateSortClick = (): void => {
     if (sortField === 'date') {
@@ -108,7 +115,9 @@ export const BrowseNav = ({
           variant="default"
           className={cn('shrink-0', className)}
           leftSection={
-            sortDir === 'asc' ? (
+            sortField === 'relevance' ? (
+              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+            ) : sortDir === 'asc' ? (
               <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
             ) : (
               <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
@@ -117,7 +126,11 @@ export const BrowseNav = ({
           aria-label={t('index.filterAndSort')}
           title={t('index.filterAndSort')}
         >
-          {sortField === 'price' ? t('index.sortPrice') : t('index.sortDate')}
+          {sortField === 'relevance'
+            ? t('index.sortRelevance')
+            : sortField === 'price'
+              ? t('index.sortPrice')
+              : t('index.sortDate')}
         </MantineButton>
       </Menu.Target>
 
@@ -149,6 +162,19 @@ export const BrowseNav = ({
 
         {/* Sort control */}
         <Menu.Label>{t('index.sort')}</Menu.Label>
+        {searchActive && (
+          <Menu.Item
+            onClick={handleRelevanceSortClick}
+            leftSection={
+              <Sparkles
+                className={sortField === 'relevance' ? activeSortIconClass : inactiveSortIconClass}
+                aria-hidden="true"
+              />
+            }
+          >
+            {t('index.sortRelevance')}
+          </Menu.Item>
+        )}
         <Menu.Item onClick={handleDateSortClick} leftSection={dateSortIconColored}>
           {t('index.sortDate')}
         </Menu.Item>

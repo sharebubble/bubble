@@ -139,6 +139,7 @@ const translations = {
     'index.scopeFederated': 'Federated',
     'index.scope': 'Scope',
     'index.sortDate': 'Date',
+    'index.sortRelevance': 'Relevance',
 
     // Browse Nav
     'browse.buy': 'Donate/Sell',
@@ -854,6 +855,7 @@ const translations = {
     'index.sortPrice': 'Preis',
     'index.filterAndSort': 'Filtern und sortieren',
     'index.sortDate': 'Datum',
+    'index.sortRelevance': 'Relevanz',
     'index.scope': 'Bereich',
     'index.scopeLocal': 'Lokal',
     'index.scopeAll': 'Alle',

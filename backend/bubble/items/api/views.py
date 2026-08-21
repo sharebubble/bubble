@@ -23,7 +23,7 @@ from guardian.shortcuts import (
 )
 from PIL import Image as PILImage
 from PIL import ImageOps as PILImageOps
-from rest_framework import filters, serializers, status, viewsets
+from rest_framework import serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import (
@@ -40,6 +40,12 @@ from bubble.core.storage import absolute_media_url
 from bubble.federation.models import RemoteItem
 from bubble.items.ai.image_analyze import analyze_image
 from bubble.items.ai.image_create import generate_image_from_prompt
+from bubble.items.api.search import (
+    RelevanceOrderingFilter,
+    parse_search_query,
+    relevance_score,
+    search_filter_q,
+)
 from bubble.items.api.serializers import (
     ImageSerializer,
     ItemListSerializer,
@@ -81,15 +87,16 @@ class ItemBaseViewSet(viewsets.GenericViewSet):
     lookup_field = "id"
     serializer_class = ItemListSerializer
 
-    # Filtering / searching / ordering
+    # Filtering / searching / ordering.
+    # Free-text search lives in `ItemFilter.search` (ranked, title-first)
+    # rather than DRF's SearchFilter, which would apply a second, unranked
+    # pass over the same `search` query parameter.
     filterset_class = ItemFilter
     filter_backends = [
         DjangoFilterBackend,
-        filters.SearchFilter,
-        filters.OrderingFilter,
+        RelevanceOrderingFilter,
     ]
-    search_fields = ["name", "description"]
-    ordering_fields = ["created_at", "updated_at", "price", "name"]
+    ordering_fields = ["created_at", "updated_at", "price", "name", "relevance"]
     ordering = ["-created_at"]
 
     def filter_queryset(self, queryset):
@@ -271,7 +278,9 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
         )
         availability = request.query_params.get("availability") or None
         type_ = request.query_params.get("type") or None
-        search = (request.query_params.get("search") or "").strip()
+        # Parsed with the same rules as the item list, so a facet count never
+        # promises more (or fewer) results than the list actually returns.
+        search_query = parse_search_query(request.query_params.get("search"))
 
         base = self.get_queryset()
 
@@ -288,11 +297,8 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
                 qs = qs.filter(user_id=owner)
             if availability and exclude != "availability":
                 qs = qs.filter(status__in=AVAILABILITY_STATUSES.get(availability, []))
-            if search:
-                qs = qs.filter(
-                    models.Q(name__icontains=search)
-                    | models.Q(description__icontains=search)
-                )
+            if search_query:
+                qs = qs.filter(search_filter_q(search_query))
             return qs
 
         count = models.Count("id", distinct=True)
@@ -782,13 +788,32 @@ class FederatedItemListSerializer(serializers.Serializer):
     rental_period = serializers.CharField(allow_null=True, required=False)
 
 
+def _federated_sort_key(search_query):
+    """Return the sort key for merged local + remote results.
+
+    The two sources are merged in memory, so they are ranked in Python (with
+    the same weights as the SQL annotation) rather than in the database. With
+    no search term there is nothing to rank and the name alone keeps the order
+    stable and deterministic.
+    """
+    if not search_query:
+        return lambda row: (0, row["name"].lower())
+    return lambda row: (
+        -relevance_score(search_query, row["name"], row["description"]),
+        row["name"].lower(),
+    )
+
+
 class FederatedItemViewSet(viewsets.ViewSet):
     """Read-only ViewSet that returns a unified local + remote item search.
 
     Query parameters
     ----------------
     search : str
-        Case-insensitive substring match on name / description.
+        Case-insensitive match on name / description. Every term has to occur,
+        accents are folded, misspelled terms still match similar titles, and
+        results come back ranked with title matches first — the same rules the
+        local item list uses, applied to local and remote items alike.
     scope : ``local`` | ``federated`` | ``all`` (default ``all``)
         Restrict results to local items, remote items, or both.
     category : str
@@ -804,7 +829,7 @@ class FederatedItemViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def list(self, request):
-        search = request.query_params.get("search", "").strip()
+        search_query = parse_search_query(request.query_params.get("search"))
         scope = request.query_params.get("scope", "all")
         category = request.query_params.get("category", "").strip()
         sales_type = request.query_params.get("sales_type", "").strip()
@@ -824,10 +849,8 @@ class FederatedItemViewSet(viewsets.ViewSet):
                 .select_related("user")
                 .prefetch_related("images")
             )
-            if search:
-                local_qs = local_qs.filter(
-                    Q(name__icontains=search) | Q(description__icontains=search)
-                )
+            if search_query:
+                local_qs = local_qs.filter(search_filter_q(search_query))
             if category:
                 local_qs = local_qs.filter(category=category)
             if sales_type:
@@ -868,10 +891,8 @@ class FederatedItemViewSet(viewsets.ViewSet):
                 .select_related("instance", "remote_actor")
                 .prefetch_related("images")
             )
-            if search:
-                remote_qs = remote_qs.filter(
-                    Q(name__icontains=search) | Q(description__icontains=search)
-                )
+            if search_query:
+                remote_qs = remote_qs.filter(search_filter_q(search_query))
             if category:
                 remote_qs = remote_qs.filter(category=category)
             if sales_type:
@@ -898,8 +919,7 @@ class FederatedItemViewSet(viewsets.ViewSet):
                     }
                 )
 
-        # Sort by name for a stable deterministic order, then paginate
-        results.sort(key=lambda r: r["name"].lower())
+        results.sort(key=_federated_sort_key(search_query))
         total = len(results)
         page = results[offset : offset + limit]
 

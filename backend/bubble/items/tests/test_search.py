@@ -1,0 +1,414 @@
+"""Tests for relevance-ranked item search."""
+
+# mypy: ignore-errors
+
+from urllib.parse import quote
+
+from django.test import TestCase
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.request import Request
+from rest_framework.test import APIClient, APIRequestFactory
+
+from bubble.items.api.search import (
+    MAX_SEARCH_TERMS,
+    RelevanceOrderingFilter,
+    is_fuzzy_matchable,
+    parse_search_query,
+    ranked_search,
+    relevance_score,
+    strip_accents,
+)
+from bubble.items.models import Item, ItemStatus, SalesType, VisibilityType
+from bubble.items.tests.factories import ItemOwnerUserFactory
+
+TEST_PASSWORD = "testpass123"  # noqa: S105
+
+
+class ParseSearchQueryTestCase(TestCase):
+    """The query parser: splitting, quoting, de-duplication and the cap."""
+
+    def test_splits_on_whitespace(self):
+        query = parse_search_query("  cordless   drill ")
+        assert query.phrase == "cordless   drill"
+        assert query.terms == ("cordless", "drill")
+
+    def test_quoted_phrase_stays_one_term(self):
+        query = parse_search_query('"drill press" cordless')
+        assert query.terms == ("drill press", "cordless")
+
+    def test_repeated_terms_are_collapsed(self):
+        assert parse_search_query("drill drill").terms == ("drill",)
+
+    def test_term_count_is_capped(self):
+        query = parse_search_query(" ".join(f"term{i}" for i in range(20)))
+        assert len(query.terms) == MAX_SEARCH_TERMS
+
+    def test_blank_query_is_falsy(self):
+        assert not parse_search_query("   ")
+        assert not parse_search_query(None)
+
+
+class RelevanceScoreTestCase(TestCase):
+    """The in-memory scorer used to rank merged local + remote results."""
+
+    def test_title_match_outranks_description_match(self):
+        query = parse_search_query("ladder")
+        title_hit = relevance_score(query, "Ladder", "")
+        description_hit = relevance_score(query, "Paint bucket", "Comes with a ladder")
+        assert title_hit > description_hit
+
+    def test_exact_title_outranks_partial_title(self):
+        query = parse_search_query("ladder")
+        assert relevance_score(query, "Ladder", "") > relevance_score(
+            query, "Ladder rack for a van", ""
+        )
+
+    def test_prefix_outranks_mid_title_match(self):
+        query = parse_search_query("ladder")
+        assert relevance_score(query, "Ladder rack", "") > relevance_score(
+            query, "Wooden ladder", ""
+        )
+
+    def test_no_match_scores_zero(self):
+        assert relevance_score(parse_search_query("ladder"), "Hammer", "A hammer") == 0
+
+
+class ItemSearchRankingAPITestCase(TestCase):
+    """The public item list ranks title matches above description matches."""
+
+    def setUp(self):
+        self.user = ItemOwnerUserFactory(
+            username="searchuser", email="search@example.com", password=TEST_PASSWORD
+        )
+        # Anonymous browsing is gated by the REQUIRE_LOGIN setting, so the
+        # ranking is exercised as a logged-in visitor.
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+        def make(name, description):
+            return Item.objects.create(
+                name=name,
+                description=description,
+                user=self.user,
+                sales_type=SalesType.SELL,
+                status=ItemStatus.AVAILABLE,
+                visibility=VisibilityType.PUBLIC,
+                category="tools",
+            )
+
+        # Created oldest-first, so the default `-created_at` ordering would
+        # return the exact reverse of the expected relevance order.
+        self.exact = make("Ladder", "Reaches the roof")
+        self.prefix = make("Ladder rack", "Fits on a van")
+        self.contains = make("Wooden ladder", "Sturdy")
+        self.description_only = make("Paint bucket", "Sold with a ladder")
+        # Every item mentions "ladder", so a search for it matches all of them
+        # and only the ordering distinguishes the expectations below.
+        self.ranked_names = [
+            self.exact.name,
+            self.prefix.name,
+            self.contains.name,
+            self.description_only.name,
+        ]
+
+    def search(self, query, extra=""):
+        url = reverse("api:public-item-list") + f"?search={query}{extra}"
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        return [item["name"] for item in response.json()["results"]]
+
+    def test_results_are_ranked_title_first(self):
+        assert self.search("ladder") == self.ranked_names
+
+    def test_explicit_ordering_still_wins(self):
+        """A client that asks for a specific order keeps getting it."""
+        assert self.search("ladder", extra="&ordering=name") == sorted(
+            self.ranked_names
+        )
+
+    def test_ordering_relevance_can_be_requested_explicitly(self):
+        assert self.search("ladder", extra="&ordering=relevance")[0] == self.exact.name
+
+    def test_ordering_relevance_without_a_search_falls_back(self):
+        """Nothing to rank by: the request must not error out."""
+        url = reverse("api:public-item-list") + "?ordering=relevance"
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        names = [item["name"] for item in response.json()["results"]]
+        assert sorted(names) == sorted(self.ranked_names)
+
+    def test_all_terms_must_match(self):
+        """Multi-word queries match across fields instead of as one phrase."""
+        names = self.search("ladder+van")
+        assert names == [self.prefix.name]
+
+    def test_quoted_phrase_is_matched_verbatim(self):
+        names = self.search('"ladder rack"')
+        assert names == [self.prefix.name]
+
+    def test_search_is_case_insensitive(self):
+        assert self.search("LADDER")[0] == self.exact.name
+
+
+class SearchFacetsMatchListTestCase(TestCase):
+    """Facet counts are computed with the same matching rules as the list."""
+
+    def setUp(self):
+        self.user = ItemOwnerUserFactory(
+            username="facetsearch", email="facet@example.com", password=TEST_PASSWORD
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+        Item.objects.create(
+            name="Ladder rack",
+            description="Fits on a van",
+            user=self.user,
+            sales_type=SalesType.SELL,
+            status=ItemStatus.AVAILABLE,
+            visibility=VisibilityType.PUBLIC,
+            category="tools",
+        )
+        Item.objects.create(
+            name="Paint bucket",
+            description="Sold with a ladder",
+            user=self.user,
+            sales_type=SalesType.SELL,
+            status=ItemStatus.AVAILABLE,
+            visibility=VisibilityType.PUBLIC,
+            category="garden",
+        )
+
+    def test_multi_term_query_narrows_facet_counts(self):
+        url = reverse("api:public-item-facets") + "?search=ladder+van"
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        categories = response.json()["categories"]
+        assert categories == [{"category": "tools", "count": 1}]
+
+
+class FederatedSearchRankingTestCase(TestCase):
+    """The unified local + remote search ranks by relevance, not by name.
+
+    Local and remote rows are merged in Python, so this covers the in-memory
+    ranking path; only local items are needed to pin the ordering down.
+    """
+
+    def setUp(self):
+        self.user = ItemOwnerUserFactory(
+            username="fedsearch", email="fed@example.com", password=TEST_PASSWORD
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+        for name, description in [
+            ("Apron", "Protects from a ladder's rust"),
+            ("Ladder", "Reaches the roof"),
+        ]:
+            Item.objects.create(
+                name=name,
+                description=description,
+                user=self.user,
+                sales_type=SalesType.SELL,
+                status=ItemStatus.AVAILABLE,
+                visibility=VisibilityType.PUBLIC,
+                category="tools",
+            )
+
+    def test_title_match_comes_before_description_match(self):
+        url = reverse("api:federated-item-list") + "?search=ladder&scope=local"
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        names = [item["name"] for item in response.json()["results"]]
+        # Alphabetically "Apron" would come first; relevance puts it last.
+        assert names == ["Ladder", "Apron"]
+
+
+class StripAccentsTestCase(TestCase):
+    """The Python fold used to rank federated results."""
+
+    def test_folds_combining_marks(self):
+        assert strip_accents("Fahrräder Anhänger") == "Fahrrader Anhanger"
+
+    def test_folds_letters_without_a_decomposition(self):
+        """PostgreSQL's unaccent expands these; Unicode decomposition does not."""
+        assert strip_accents("Straße") == "Strasse"
+        assert strip_accents("Œuf") == "OEuf"
+
+    def test_leaves_unaccented_text_alone(self):
+        assert strip_accents("Ladder rack 3m") == "Ladder rack 3m"
+
+
+class FuzzyMatchEligibilityTestCase(TestCase):
+    """Which terms are allowed a second, approximate pass."""
+
+    def test_long_single_words_are_eligible(self):
+        assert is_fuzzy_matchable("bohrmaschine")
+
+    def test_short_words_are_not(self):
+        assert not is_fuzzy_matchable("saw")
+        assert not is_fuzzy_matchable("bike")
+
+    def test_quoted_phrases_are_not(self):
+        assert not is_fuzzy_matchable("ladder rack")
+
+
+class AccentInsensitiveSearchTestCase(TestCase):
+    """Diacritics never decide whether an item is found."""
+
+    def setUp(self):
+        self.user = ItemOwnerUserFactory(
+            username="accentuser", email="accent@example.com", password=TEST_PASSWORD
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+        def make(name, description=""):
+            return Item.objects.create(
+                name=name,
+                description=description,
+                user=self.user,
+                sales_type=SalesType.SELL,
+                status=ItemStatus.AVAILABLE,
+                visibility=VisibilityType.PUBLIC,
+                category="tools",
+            )
+
+        self.accented = make("Fahrräder Anhänger")
+        self.plain = make("Fahrraeder Zubehoer", "Passt an einen Anhanger")
+
+    def search(self, query):
+        url = reverse("api:public-item-list") + f"?search={quote(query)}"
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        return [item["name"] for item in response.json()["results"]]
+
+    def test_unaccented_query_finds_accented_item(self):
+        assert self.search("fahrrader")[0] == self.accented.name
+
+    def test_accented_query_finds_accented_item(self):
+        assert self.search("Fahrräder")[0] == self.accented.name
+
+    def test_ae_spelling_is_reached_through_the_fuzzy_tier(self):
+        """German transliteration ("ae" for "ä") survives, ranked second."""
+        assert self.search("fahrrader") == [self.accented.name, self.plain.name]
+
+    def test_accents_are_folded_in_the_description_too(self):
+        assert self.search("anhänger") == [self.accented.name, self.plain.name]
+
+
+class FuzzySearchTestCase(TestCase):
+    """A mistyped term still finds the item, ranked below every literal match."""
+
+    def setUp(self):
+        self.user = ItemOwnerUserFactory(
+            username="fuzzyuser", email="fuzzy@example.com", password=TEST_PASSWORD
+        )
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.user)
+
+        def make(name, description=""):
+            return Item.objects.create(
+                name=name,
+                description=description,
+                user=self.user,
+                sales_type=SalesType.SELL,
+                status=ItemStatus.AVAILABLE,
+                visibility=VisibilityType.PUBLIC,
+                category="tools",
+            )
+
+        self.literal = make("Bohrmaschine")
+        self.in_description = make("Werkbank", "Passend für eine Bohrmaschine")
+        # Misspelled in the listing itself — only reachable approximately.
+        self.misspelled = make("Bohrmaschiene Ersatzteil", "Kleinteile")
+        self.unrelated = make("Leiter", "Aus Holz")
+
+    def search(self, query):
+        url = reverse("api:public-item-list") + f"?search={quote(query)}"
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        return [item["name"] for item in response.json()["results"]]
+
+    def test_typo_in_the_listing_is_still_found(self):
+        assert self.misspelled.name in self.search("bohrmaschine")
+
+    def test_typo_in_the_query_is_still_found(self):
+        assert self.literal.name in self.search("bohrmaschiene")
+
+    def test_fuzzy_matches_rank_below_literal_ones(self):
+        assert self.search("bohrmaschine") == [
+            self.literal.name,
+            self.in_description.name,
+            self.misspelled.name,
+        ]
+
+    def test_unrelated_items_stay_out(self):
+        assert self.unrelated.name not in self.search("bohrmaschine")
+
+    def test_short_terms_are_not_matched_fuzzily(self):
+        """ "tisch" scores 0.5 against "Fisch Eimer" — below the bar, and too short."""
+        Item.objects.create(
+            name="Fisch Eimer",
+            user=self.user,
+            sales_type=SalesType.SELL,
+            status=ItemStatus.AVAILABLE,
+            visibility=VisibilityType.PUBLIC,
+            category="tools",
+        )
+        assert self.search("tisch") == []
+
+
+class _OrderingView:
+    """The bits of a viewset that ``OrderingFilter`` actually reads."""
+
+    ordering = ["-created_at"]
+    ordering_fields = ["created_at", "name", "price", "relevance"]
+
+
+class RelevanceOrderingFilterTestCase(TestCase):
+    """How a requested ordering is resolved against the rank annotation."""
+
+    def setUp(self):
+        self.filter = RelevanceOrderingFilter()
+        self.view = _OrderingView()
+        self.factory = APIRequestFactory()
+
+    def resolve(self, query, *, searching=True):
+        """Return the ordering terms the filter would sort by."""
+        queryset = Item.objects.all()
+        if searching:
+            queryset = ranked_search(queryset, "ladder")
+        request = Request(self.factory.get("/", query))
+        return self.filter.get_ordering(request, queryset, self.view)
+
+    def test_no_ordering_while_searching_ranks_then_falls_back(self):
+        assert self.resolve({"search": "ladder"}) == ["-search_rank", "-created_at"]
+
+    def test_explicit_relevance_keeps_the_tie_breaker(self):
+        """Rank alone would let equally-ranked rows drift between pages."""
+        assert self.resolve({"ordering": "relevance"}) == [
+            "-search_rank",
+            "-created_at",
+        ]
+
+    def test_reversed_relevance_keeps_the_tie_breaker(self):
+        assert self.resolve({"ordering": "-relevance"}) == [
+            "search_rank",
+            "-created_at",
+        ]
+
+    def test_relevance_followed_by_a_field_is_left_alone(self):
+        """An explicit second term already settles the ties."""
+        assert self.resolve({"ordering": "relevance,name"}) == ["-search_rank", "name"]
+
+    def test_explicit_field_ordering_wins_over_relevance(self):
+        assert self.resolve({"ordering": "-price"}) == ["-price"]
+
+    def test_relevance_without_a_search_falls_back_to_the_default(self):
+        assert self.resolve({"ordering": "relevance"}, searching=False) == [
+            "-created_at"
+        ]
+
+    def test_no_ordering_without_a_search_keeps_the_default(self):
+        assert self.resolve({}, searching=False) == ["-created_at"]
