@@ -305,9 +305,9 @@ class RelevanceOrderingFilter(filters.OrderingFilter):
 
     ``?ordering=relevance`` sorts the best matches first and ``-relevance``
     reverses that. When a search is active and the client asked for no
-    particular order, relevance leads and the viewset's own default ordering
-    breaks ties, so equally-relevant items still come back newest-first (and
-    pagination stays stable).
+    particular order, relevance leads. Either way the viewset's own default
+    ordering follows the rank to break ties, so equally-relevant items still
+    come back newest-first and pagination stays stable.
 
     Without an active search there is nothing to rank, so a ``relevance`` term
     is dropped rather than raising on the missing annotation.
@@ -327,12 +327,22 @@ class RelevanceOrderingFilter(filters.OrderingFilter):
             return ordering
 
         resolved = []
+        rank_only = True
         for term in ordering:
             if term.lstrip("-") != self.relevance_param:
                 resolved.append(term)
+                rank_only = False
             elif is_search:
                 # `relevance` means best-first, hence the inverted sign.
                 descending = not term.startswith("-")
                 resolved.append("-search_rank" if descending else "search_rank")
 
-        return resolved or self.get_default_ordering(view)
+        if not resolved:
+            return self.get_default_ordering(view)
+        if rank_only:
+            # Rank alone leaves every tie unbroken, and rows with equal ranks
+            # can then drift between pages. An explicitly requested
+            # `ordering=relevance` gets the same fallback the implicit default
+            # builds in above.
+            resolved.extend(self.get_default_ordering(view) or [])
+        return resolved

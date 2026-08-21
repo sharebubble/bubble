@@ -121,7 +121,10 @@ letters; the SQL path, which calls `unaccent` itself, is what decides inclusion.
 `?ordering=relevance` sorts best-match-first, and is the **default whenever a
 search term is present**. Any explicit `ordering` (`name`, `-price`,
 `-created_at`, …) still wins, and `relevance` is ignored when no search is
-active, since there is nothing to rank. The browse page adds a "Relevance" entry
+active, since there is nothing to rank. Rank on its own never ends the sort:
+whether relevance was requested or applied by default, the endpoint's own
+ordering follows it to settle ties, so equally-ranked rows cannot drift between
+pages. The browse page adds a "Relevance" entry
 to its sort menu that only appears while a term is active.
 
 ### Why substring matching, not full-text search

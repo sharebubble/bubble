@@ -7,12 +7,15 @@ from urllib.parse import quote
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APIClient
+from rest_framework.request import Request
+from rest_framework.test import APIClient, APIRequestFactory
 
 from bubble.items.api.search import (
     MAX_SEARCH_TERMS,
+    RelevanceOrderingFilter,
     is_fuzzy_matchable,
     parse_search_query,
+    ranked_search,
     relevance_score,
     strip_accents,
 )
@@ -354,3 +357,58 @@ class FuzzySearchTestCase(TestCase):
             category="tools",
         )
         assert self.search("tisch") == []
+
+
+class _OrderingView:
+    """The bits of a viewset that ``OrderingFilter`` actually reads."""
+
+    ordering = ["-created_at"]
+    ordering_fields = ["created_at", "name", "price", "relevance"]
+
+
+class RelevanceOrderingFilterTestCase(TestCase):
+    """How a requested ordering is resolved against the rank annotation."""
+
+    def setUp(self):
+        self.filter = RelevanceOrderingFilter()
+        self.view = _OrderingView()
+        self.factory = APIRequestFactory()
+
+    def resolve(self, query, *, searching=True):
+        """Return the ordering terms the filter would sort by."""
+        queryset = Item.objects.all()
+        if searching:
+            queryset = ranked_search(queryset, "ladder")
+        request = Request(self.factory.get("/", query))
+        return self.filter.get_ordering(request, queryset, self.view)
+
+    def test_no_ordering_while_searching_ranks_then_falls_back(self):
+        assert self.resolve({"search": "ladder"}) == ["-search_rank", "-created_at"]
+
+    def test_explicit_relevance_keeps_the_tie_breaker(self):
+        """Rank alone would let equally-ranked rows drift between pages."""
+        assert self.resolve({"ordering": "relevance"}) == [
+            "-search_rank",
+            "-created_at",
+        ]
+
+    def test_reversed_relevance_keeps_the_tie_breaker(self):
+        assert self.resolve({"ordering": "-relevance"}) == [
+            "search_rank",
+            "-created_at",
+        ]
+
+    def test_relevance_followed_by_a_field_is_left_alone(self):
+        """An explicit second term already settles the ties."""
+        assert self.resolve({"ordering": "relevance,name"}) == ["-search_rank", "name"]
+
+    def test_explicit_field_ordering_wins_over_relevance(self):
+        assert self.resolve({"ordering": "-price"}) == ["-price"]
+
+    def test_relevance_without_a_search_falls_back_to_the_default(self):
+        assert self.resolve({"ordering": "relevance"}, searching=False) == [
+            "-created_at"
+        ]
+
+    def test_no_ordering_without_a_search_keeps_the_default(self):
+        assert self.resolve({}, searching=False) == ["-created_at"]
