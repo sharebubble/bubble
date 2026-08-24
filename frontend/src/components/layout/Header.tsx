@@ -1,5 +1,4 @@
-import { ActionIcon, Avatar, Button, Indicator, Menu, UnstyledButton } from '@mantine/core';
-import { useState } from 'react';
+import { ActionIcon, Avatar, Button, Indicator, Menu } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
@@ -25,69 +24,123 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 
-// Icon-over-label between `md` and `lg`: at `md` the header first gets wide
-// enough to show these destinations at all, but there isn't yet room for
-// icon-and-label side by side across five items plus the logo, search bar
-// and avatar — that combination used to force the header itself to scroll
-// horizontally. Stacking icon above a smaller label keeps every item
-// narrow until `lg`, where there's space to lay them out in a row again.
+// Icon-only below `lg`, icon+label from `lg` up: at `md` the header first
+// has room to show these destinations at all, but not enough for
+// icon-and-label buttons across five items plus the logo, search bar and
+// avatar — that combination used to force the header itself to scroll
+// horizontally. Compact icon buttons keep every item narrow until `lg`,
+// where there's space for the full row.
 //
-// Colors go through Mantine's `bg`/`c` style props rather than Tailwind
-// color utilities: Mantine's own component CSS is unlayered and beats
-// Tailwind's layered utilities in the cascade (see the `hiddenFrom` note
-// on MobileBottomNav below for the same gotcha), so a Tailwind
-// `bg-[...]`/`text-...` class on an UnstyledButton is silently overridden.
+// Each item renders two real Mantine buttons rather than one button whose
+// internal layout gets hacked per breakpoint, so both states keep Mantine's
+// own filled/subtle/light styling (padding, radius, hover, focus ring)
+// instead of a hand-rolled approximation. `visibleFrom`/`hiddenFrom` pick
+// between them: plain Tailwind `hidden`/`lg:flex` can't do this on a real
+// Button/ActionIcon root, because Mantine's component CSS is unlayered and
+// its own `display` declaration beats Tailwind's layered utility regardless
+// of breakpoint (same gotcha called out on MobileBottomNav's `hiddenFrom`
+// below).
 type HeaderNavButtonProps = {
   icon: LucideIcon;
   label: string;
   onClick: () => void;
   active?: boolean;
-  variant?: 'subtle' | 'filled';
   badge?: number;
 };
 
-const HeaderNavButton = ({
-  icon: Icon,
-  label,
-  onClick,
-  active,
-  variant = 'subtle',
-  badge,
-}: HeaderNavButtonProps) => {
-  const [hovered, setHovered] = useState(false);
+const HeaderNavButton = ({ icon: Icon, label, onClick, active, badge }: HeaderNavButtonProps) => {
   const icon = <Icon size={20} aria-hidden="true" />;
-  const filled = variant === 'filled';
+  const color = active ? 'green' : 'gray';
+  const variant = active ? 'light' : 'subtle';
+
+  const hasBadge = badge !== undefined && badge > 0;
 
   return (
-    <UnstyledButton
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      aria-current={active ? 'page' : undefined}
-      bg={
-        filled
-          ? hovered
-            ? 'green.7'
-            : 'green.6'
-          : hovered
-            ? 'var(--mantine-color-default-hover)'
-            : undefined
-      }
-      c={filled ? 'white' : active ? undefined : 'dimmed'}
-      fw={active && !filled ? 600 : undefined}
-      className="flex flex-col items-center gap-0.5 rounded-md px-2.5 py-1.5 text-[11px] leading-none transition-colors lg:flex-row lg:gap-2 lg:text-sm"
-    >
-      {badge !== undefined && badge > 0 ? (
-        <Indicator label={badge} color="red" size={16} offset={2}>
+    <>
+      {/* `disabled` (rather than conditionally rendering Indicator) keeps the
+          wrapper itself present so `hiddenFrom`/`visibleFrom` — which must
+          sit on this outer element, not the button inside it, or the badge
+          stays visible after the button it's pinned to is hidden — always
+          has something to toggle. */}
+      <Indicator
+        label={badge}
+        color="red"
+        size={16}
+        offset={3}
+        disabled={!hasBadge}
+        hiddenFrom="lg"
+      >
+        <ActionIcon
+          variant={variant}
+          color={color}
+          size="lg"
+          onClick={onClick}
+          aria-current={active ? 'page' : undefined}
+          aria-label={label}
+          title={label}
+        >
           {icon}
-        </Indicator>
-      ) : (
-        icon
-      )}
-      <span>{label}</span>
-    </UnstyledButton>
+        </ActionIcon>
+      </Indicator>
+      <Indicator
+        label={badge}
+        color="red"
+        size={16}
+        offset={4}
+        disabled={!hasBadge}
+        visibleFrom="lg"
+      >
+        <Button
+          variant={variant}
+          color={color}
+          size="sm"
+          leftSection={icon}
+          onClick={onClick}
+          aria-current={active ? 'page' : undefined}
+        >
+          {label}
+        </Button>
+      </Indicator>
+    </>
   );
 };
+
+// The primary CTA gets the same compact/row treatment, always in filled
+// green, with a fully round icon button at the compact size — the same "+"
+// affordance MobileBottomNav already uses for this exact action.
+type HeaderShareButtonProps = {
+  label: string;
+  onClick: () => void;
+  active?: boolean;
+};
+
+const HeaderShareButton = ({ label, onClick, active }: HeaderShareButtonProps) => (
+  <>
+    <ActionIcon
+      variant="filled"
+      color="green"
+      radius="xl"
+      size="lg"
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      aria-label={label}
+      title={label}
+      hiddenFrom="lg"
+    >
+      <Plus size={20} aria-hidden="true" />
+    </ActionIcon>
+    <Button
+      variant="filled"
+      size="sm"
+      leftSection={<Plus size={16} aria-hidden="true" />}
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      visibleFrom="lg"
+    >
+      {label}
+    </Button>
+  </>
+);
 
 export const Header = () => {
   const { user, signOut } = useAuth();
@@ -212,12 +265,10 @@ export const Header = () => {
             />
 
             {/* Add Item */}
-            <HeaderNavButton
-              icon={Plus}
+            <HeaderShareButton
               label={t('header.shareItem')}
               onClick={() => navigate('/create-item')}
               active={location.pathname.startsWith('/create-item')}
-              variant="filled"
             />
 
             {/* Profile Dropdown */}
