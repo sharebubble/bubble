@@ -21,7 +21,126 @@ import {
   Plus,
   User,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+
+// Icon-only below `lg`, icon+label from `lg` up: at `md` the header first
+// has room to show these destinations at all, but not enough for
+// icon-and-label buttons across five items plus the logo, search bar and
+// avatar — that combination used to force the header itself to scroll
+// horizontally. Compact icon buttons keep every item narrow until `lg`,
+// where there's space for the full row.
+//
+// Each item renders two real Mantine buttons rather than one button whose
+// internal layout gets hacked per breakpoint, so both states keep Mantine's
+// own filled/subtle/light styling (padding, radius, hover, focus ring)
+// instead of a hand-rolled approximation. `visibleFrom`/`hiddenFrom` pick
+// between them: plain Tailwind `hidden`/`lg:flex` can't do this on a real
+// Button/ActionIcon root, because Mantine's component CSS is unlayered and
+// its own `display` declaration beats Tailwind's layered utility regardless
+// of breakpoint (same gotcha called out on MobileBottomNav's `hiddenFrom`
+// below).
+type HeaderNavButtonProps = {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+  active?: boolean;
+  badge?: number;
+};
+
+const HeaderNavButton = ({ icon: Icon, label, onClick, active, badge }: HeaderNavButtonProps) => {
+  const icon = <Icon size={20} aria-hidden="true" />;
+  const color = active ? 'green' : 'gray';
+  const variant = active ? 'light' : 'subtle';
+
+  const hasBadge = badge !== undefined && badge > 0;
+
+  return (
+    <>
+      {/* `disabled` (rather than conditionally rendering Indicator) keeps the
+          wrapper itself present so `hiddenFrom`/`visibleFrom` — which must
+          sit on this outer element, not the button inside it, or the badge
+          stays visible after the button it's pinned to is hidden — always
+          has something to toggle. */}
+      <Indicator
+        label={badge}
+        color="red"
+        size={16}
+        offset={3}
+        disabled={!hasBadge}
+        hiddenFrom="lg"
+      >
+        <ActionIcon
+          variant={variant}
+          color={color}
+          size="lg"
+          onClick={onClick}
+          aria-current={active ? 'page' : undefined}
+          aria-label={label}
+          title={label}
+        >
+          {icon}
+        </ActionIcon>
+      </Indicator>
+      <Indicator
+        label={badge}
+        color="red"
+        size={16}
+        offset={4}
+        disabled={!hasBadge}
+        visibleFrom="lg"
+      >
+        <Button
+          variant={variant}
+          color={color}
+          size="sm"
+          leftSection={icon}
+          onClick={onClick}
+          aria-current={active ? 'page' : undefined}
+        >
+          {label}
+        </Button>
+      </Indicator>
+    </>
+  );
+};
+
+// The primary CTA gets the same compact/row treatment, always in filled
+// green, with a fully round icon button at the compact size — the same "+"
+// affordance MobileBottomNav already uses for this exact action.
+type HeaderShareButtonProps = {
+  label: string;
+  onClick: () => void;
+  active?: boolean;
+};
+
+const HeaderShareButton = ({ label, onClick, active }: HeaderShareButtonProps) => (
+  <>
+    <ActionIcon
+      variant="filled"
+      color="green"
+      radius="xl"
+      size="lg"
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      aria-label={label}
+      title={label}
+      hiddenFrom="lg"
+    >
+      <Plus size={20} aria-hidden="true" />
+    </ActionIcon>
+    <Button
+      variant="filled"
+      size="sm"
+      leftSection={<Plus size={16} aria-hidden="true" />}
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      visibleFrom="lg"
+    >
+      {label}
+    </Button>
+  </>
+);
 
 export const Header = () => {
   const { user, signOut } = useAuth();
@@ -109,80 +228,48 @@ export const Header = () => {
           {/* Actions — hidden below `md`, where MobileBottomNav covers the same
               destinations (Browse, Bookings, Add, Account). The breakpoint must
               stay in sync with that bar's `hiddenFrom="md"`. */}
-          <div className="hidden shrink-0 items-center gap-2 md:flex">
+          <div className="hidden shrink-0 items-center gap-1 md:flex lg:gap-2">
             {/* Browse — "/" is the start page, so the catalogue needs its own
                 entry point here. */}
-            <Button
-              variant="subtle"
-              size="sm"
-              color="gray"
+            <HeaderNavButton
+              icon={Compass}
+              label={t('header.browse')}
               onClick={() => navigate(BROWSE_PATH)}
-              aria-current={location.pathname === BROWSE_PATH ? 'page' : undefined}
-              className={cn(location.pathname === BROWSE_PATH && '!font-semibold')}
-              leftSection={<Compass size={20} aria-hidden="true" />}
-            >
-              {t('header.browse')}
-            </Button>
+              active={location.pathname === BROWSE_PATH}
+            />
 
             {/* My Items */}
-            <Button
-              variant="subtle"
-              size="sm"
-              color="gray"
+            <HeaderNavButton
+              icon={Library}
+              label={t('header.items')}
               onClick={() => navigate('/my-items')}
-              aria-current={location.pathname.startsWith('/my-items') ? 'page' : undefined}
-              className={cn(location.pathname.startsWith('/my-items') && '!font-semibold')}
-              leftSection={<Library size={20} aria-hidden="true" />}
-            >
-              {t('header.items')}
-            </Button>
+              active={location.pathname.startsWith('/my-items')}
+            />
 
             {/* Bookings — also the home of booking conversations and their
                 unread-message notifications, hence the badge. */}
-            <Indicator
-              label={unreadCount}
-              color="red"
-              size={20}
-              disabled={unreadCount === 0}
-              offset={4}
-            >
-              <Button
-                variant="subtle"
-                size="sm"
-                color="gray"
-                onClick={() => navigate('/bookings')}
-                aria-current={location.pathname.startsWith('/bookings') ? 'page' : undefined}
-                className={cn(location.pathname.startsWith('/bookings') && '!font-semibold')}
-                title={t('header.bookings')}
-                leftSection={<CalendarCheck size={20} aria-hidden="true" />}
-              >
-                {t('header.bookings')}
-              </Button>
-            </Indicator>
+            <HeaderNavButton
+              icon={CalendarCheck}
+              label={t('header.bookings')}
+              onClick={() => navigate('/bookings')}
+              active={location.pathname.startsWith('/bookings')}
+              badge={unreadCount}
+            />
 
             {/* Collections */}
-            <Button
-              variant="subtle"
-              size="sm"
-              color="gray"
+            <HeaderNavButton
+              icon={BookMarked}
+              label={t('collections.title')}
               onClick={() => navigate('/collections')}
-              aria-current={location.pathname.startsWith('/collections') ? 'page' : undefined}
-              className={cn(location.pathname.startsWith('/collections') && '!font-semibold')}
-              leftSection={<BookMarked size={20} aria-hidden="true" />}
-            >
-              {t('collections.title')}
-            </Button>
+              active={location.pathname.startsWith('/collections')}
+            />
 
             {/* Add Item */}
-            <Button
-              variant="filled"
-              size="sm"
-              leftSection={<Plus size={16} aria-hidden="true" />}
+            <HeaderShareButton
+              label={t('header.shareItem')}
               onClick={() => navigate('/create-item')}
-              aria-current={location.pathname.startsWith('/create-item') ? 'page' : undefined}
-            >
-              {t('header.shareItem')}
-            </Button>
+              active={location.pathname.startsWith('/create-item')}
+            />
 
             {/* Profile Dropdown */}
             <Menu position="bottom-end" shadow="md" width={224}>
