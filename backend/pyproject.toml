@@ -5,7 +5,7 @@ description = "Treibhaus donaufeld sharing platform"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "anthropic>=0.122.0",
+    "anthropic>=1.0.0",
     "argon2-cffi",
     "channels-redis",
     "channels[daphne]",
@@ -30,7 +30,7 @@ dependencies = [
     "drf-orjson-renderer>=1.8.0",
     "drf-spectacular",
     "fido2",
-    "google-genai>=2.18.1",
+    "google-genai>=2.19.0",
     "gunicorn",
     "hiredis",
     "httpx>=0.28.1",
@@ -45,7 +45,7 @@ dependencies = [
     "pyld>=3.2.0",
     "http-message-signatures>=2.0.1",
     "cryptography>=50.0.0",
-    "apprise>=1.12.0",
+    "apprise>=1.13.0",
     "pywebpush>=2.4.0",
 ]
 
