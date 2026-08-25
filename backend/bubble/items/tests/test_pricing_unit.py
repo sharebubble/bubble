@@ -6,15 +6,18 @@ sale or rent, the price can be denominated in the default currency or
 directly in community coins.
 """
 
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
 from django.contrib.auth.models import Group
 from django.db import IntegrityError
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
+from bubble.bookings.models import Booking, BookingStatus
 from bubble.core.permissions_config import DefaultGroup
 from bubble.items.models import Item, ItemStatus, PricingUnit, SalesType
 from bubble.users.tests.factories import UserFactory
@@ -159,6 +162,35 @@ def test_switching_sales_type_to_borrow_clears_coin_unit(client_as, owner):
     assert response.status_code == status.HTTP_200_OK
     assert response.data["price"] is None
     assert response.data["price_unit"] == "money"
+
+
+def test_booking_history_reports_the_items_pricing_unit(client_as, owner):
+    """The history table renders amounts in whichever unit the item uses."""
+    item = Item.objects.create(
+        user=owner,
+        name="Coin-priced drill",
+        category="tools",
+        sales_type=SalesType.RENT,
+        status=ItemStatus.AVAILABLE,
+        price=Decimal("3.00"),
+        price_unit=PricingUnit.COIN,
+        rental_period="d",
+    )
+    booker = UserFactory()
+    time_from = timezone.now() - timedelta(days=3)
+    Booking.objects.create(
+        item=item,
+        user=booker,
+        status=BookingStatus.COMPLETED,
+        time_from=time_from,
+        time_to=time_from + timedelta(days=1),
+    )
+
+    url = reverse("api:public-item-booking-history", kwargs={"id": item.id})
+    response = client_as(owner).get(url)
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.data[0]["price_unit"] == "coin"
 
 
 def test_database_rejects_a_coin_unit_without_a_price(db, owner):

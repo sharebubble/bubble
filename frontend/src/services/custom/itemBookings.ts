@@ -15,6 +15,8 @@ export interface ItemBookingHistoryEntry {
   official_price_currency: string;
   amount_paid: string | null;
   amount_paid_currency: string;
+  /** Whether the amounts above are in currency or community coins. */
+  price_unit?: string | null;
   offer: string | null;
   counter_offer: string | null;
   rental_price: string | null;

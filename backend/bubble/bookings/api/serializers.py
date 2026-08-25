@@ -289,6 +289,7 @@ class ItemBookingHistorySerializer(serializers.ModelSerializer):
     official_price_currency = serializers.SerializerMethodField()
     amount_paid = serializers.SerializerMethodField()
     amount_paid_currency = serializers.SerializerMethodField()
+    price_unit = serializers.SerializerMethodField()
     rental_price = serializers.SerializerMethodField()
     offer = serializers.SerializerMethodField()
     counter_offer = serializers.SerializerMethodField()
@@ -305,6 +306,7 @@ class ItemBookingHistorySerializer(serializers.ModelSerializer):
             "official_price_currency",
             "amount_paid",
             "amount_paid_currency",
+            "price_unit",
             "offer",
             "counter_offer",
             "rental_price",
@@ -354,6 +356,15 @@ class ItemBookingHistorySerializer(serializers.ModelSerializer):
 
     def get_amount_paid_currency(self, obj) -> str:
         return _money_currency(self._paid_money(obj))
+
+    def get_price_unit(self, obj) -> str:
+        """What the amounts in this row are denominated in (money or coins).
+
+        Both the listed price and what was paid follow the item's pricing
+        unit, so the history table can render coin-priced rentals in coins
+        rather than mislabelling them as currency.
+        """
+        return obj.item.price_unit
 
     def get_rental_price(self, obj) -> str | None:
         return _money_amount(obj.rental_price)
