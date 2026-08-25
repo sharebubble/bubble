@@ -1,5 +1,6 @@
 """Serializers for the payments/ledger API."""
 
+import logging
 from decimal import Decimal
 
 from django.conf import settings
@@ -16,6 +17,8 @@ from bubble.ledger.services import (
     record_booking_payment,
 )
 from bubble.users.models import User
+
+logger = logging.getLogger(__name__)
 
 
 class PaymentUserSerializer(serializers.ModelSerializer[User]):
@@ -123,6 +126,10 @@ class BookingPaymentSerializer(serializers.ModelSerializer):
                     "once the booking has completed."
                 )
             )
+        if booking.user_id == booking.item.user_id:
+            raise serializers.ValidationError(
+                _("A booking on your own item cannot be paid for.")
+            )
         return booking
 
     def create(self, validated_data):
@@ -134,8 +141,16 @@ class BookingPaymentSerializer(serializers.ModelSerializer):
                 recorded_by=self.context["request"].user,
                 voluntary=is_free_booking(booking),
             )
-        except LedgerError as exc:
-            raise serializers.ValidationError(str(exc)) from exc
+        except LedgerError:
+            # Everything a caller can actually provoke is caught by the
+            # validators above, so reaching here means the ledger refused a
+            # write for a reason the client cannot act on. Log the detail
+            # rather than echoing it back — the message and its traceback are
+            # internal, and returning them would leak implementation detail.
+            logger.exception("Refused to record a payment for booking %s", booking.pk)
+            raise serializers.ValidationError(
+                _("This payment could not be recorded.")
+            ) from None
 
 
 class ItemPaymentSummarySerializer(serializers.Serializer):

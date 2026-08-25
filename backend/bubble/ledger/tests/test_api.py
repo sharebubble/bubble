@@ -115,6 +115,23 @@ def test_only_the_booker_may_record_the_payment(client_as, stranger, free_bookin
     assert not Transaction.objects.exists()
 
 
+def test_paying_for_your_own_item_is_refused(client_as, booker):
+    """Both legs would be the same account, so nothing would actually move."""
+    booking = CompletedBookingFactory(
+        item=FreeSaleItemFactory(user=booker), user=booker
+    )
+
+    response = client_as(booker).post(
+        LIST_URL, {"booking": str(booking.id), "amount": "5"}, format="json"
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    # Refused by a validator, so the message names the reason rather than
+    # falling through to the ledger's generic refusal.
+    assert "own item" in str(response.data)
+    assert not Transaction.objects.exists()
+
+
 def test_anonymous_users_cannot_record_payments(client_as, free_booking):
     response = client_as().post(
         LIST_URL, {"booking": str(free_booking.id), "amount": "5"}, format="json"
