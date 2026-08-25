@@ -1,7 +1,10 @@
 import BookingConversationPanel from '@/components/bookings/BookingConversationPanel';
 import { BOOKING_STATUS, TERMINAL_BOOKING_STATUSES } from '@/components/bookings/status';
-import { CoinValuationDialog } from '@/components/coins/CoinValuationDialog';
 import { BackButton } from '@/components/layout/BackButton';
+import {
+  RecordPaymentDialog,
+  type PayableBooking,
+} from '@/components/payments/RecordPaymentDialog';
 import {
   Badge,
   Button,
@@ -18,20 +21,18 @@ import {
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useCoinConfig } from '@/hooks/useAppConfig';
 import { useAuth } from '@/hooks/useAuth';
 import {
   type BookingsFilterParams,
   useMyBookingsInfinite,
   useUpdateBooking,
 } from '@/hooks/useBookings';
-import { formatCoins, formatItemPrice } from '@/lib/coins';
-import { getRentalPeriodSuffixKey } from '@/lib/currency';
+import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
-import type { CoinValuationBooking } from '@/services/custom/coins';
+import type { BookingWithPayment } from '@/services/custom/payments';
 import type { BookingList } from '@/services/django';
 import { format, formatDuration, intervalToDuration, isAfter, isBefore, parseISO } from 'date-fns';
-import { Calendar, Clock, Coins, Package, Search, Square, User } from 'lucide-react';
+import { Calendar, Clock, HandCoins, Package, Search, Square, User } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
@@ -91,11 +92,10 @@ interface BookingRowProps {
   state: BookingState;
   t: (key: string) => string;
   currentUsername: string | undefined;
-  coinShortName: string;
   selected: boolean;
   onClick: (id: string) => void;
   onEnd: (id: string) => void;
-  onValue: (booking: CoinValuationBooking) => void;
+  onRecordPayment: (booking: PayableBooking) => void;
   isEnding: boolean;
 }
 
@@ -104,31 +104,27 @@ const BookingRow = ({
   state,
   t,
   currentUsername,
-  coinShortName,
   selected,
   onClick,
   onEnd,
-  onValue,
+  onRecordPayment,
   isEnding,
 }: BookingRowProps) => {
   const isOwner = booking.user?.username !== currentUsername;
-  // The coin fields are served by the bookings endpoint but are not part of
-  // the generated BookingList type yet — see services/custom/coins.ts.
-  const coinBooking = booking as unknown as CoinValuationBooking;
-  // Only the person who received the item is offered the valuation.
-  const canValue = !isOwner && Boolean(coinBooking.coin_valuation_eligible);
-  const recordedCoins = coinBooking.coin_valuation;
   const isPending = booking.status === BOOKING_STATUS.pending;
   const itemTitle = booking.item_details?.name ?? t('bookings.item');
   const itemImage = booking.item_details?.first_image;
   const userName = booking.user?.name || booking.user?.username || '—';
   const price = booking.item_details?.price;
   const currency = booking.item_details?.price_currency;
-  // `price_unit` is served by the backend but not in the generated SDK yet
-  // (see the note at the top of services/custom/coins.ts).
-  const priceUnit = (booking.item_details as unknown as { price_unit?: string } | undefined)
-    ?.price_unit;
   const unreadCount = booking.unread_messages_count;
+
+  // The payment fields are served by the bookings endpoint but are not part
+  // of the generated BookingList type yet — see services/custom/payments.ts.
+  const payableBooking = booking as unknown as BookingWithPayment;
+  // Only the person who received the item is asked what they paid.
+  const canRecordPayment = !isOwner && Boolean(payableBooking.payment_recordable);
+  const recordedPayment = payableBooking.payment;
 
   const stateBadge =
     state === 'active' ? (
@@ -217,35 +213,13 @@ const BookingRow = ({
             </span>
             {price && (
               <Text component="span" size="xs" fw={500} c="var(--mantine-color-text)">
-                {formatItemPrice(
-                  { price, price_currency: currency, price_unit: priceUnit },
-                  coinShortName,
-                )}
+                {formatPrice(price, currency)}
                 {booking.item_details?.sales_type === 'rent' &&
                   ` ${t(getRentalPeriodSuffixKey(booking.item_details?.rental_period))}`}
               </Text>
             )}
           </Text>
         </div>
-
-        {/* Coin valuation — offered to the booker on free transactions */}
-        {canValue && (
-          <Button
-            size="xs"
-            variant={recordedCoins ? 'light' : 'outline'}
-            color="teal"
-            className="shrink-0"
-            leftSection={<Coins size={12} />}
-            onClick={e => {
-              e.stopPropagation();
-              onValue(coinBooking);
-            }}
-          >
-            {recordedCoins
-              ? `${formatCoins(recordedCoins.rate ?? recordedCoins.amount)} ${coinShortName}`
-              : t('coins.setValueShort')}
-          </Button>
-        )}
 
         {/* End booking button — only for active bookings owned by the current user */}
         {state === 'active' && isOwner && !isPending && (
@@ -261,6 +235,25 @@ const BookingRow = ({
             }}
           >
             <span className="hidden sm:inline">{t('bookings.endBooking')}</span>
+          </Button>
+        )}
+
+        {/* Payment — offered to the booker once the booking has completed */}
+        {canRecordPayment && (
+          <Button
+            size="xs"
+            variant={recordedPayment ? 'light' : 'outline'}
+            color="teal"
+            className="shrink-0"
+            leftSection={<HandCoins size={12} />}
+            onClick={e => {
+              e.stopPropagation();
+              onRecordPayment({ ...payableBooking, item_name: itemTitle });
+            }}
+          >
+            {recordedPayment
+              ? formatPrice(recordedPayment.amount, recordedPayment.currency)
+              : t('payments.setAmountShort')}
           </Button>
         )}
       </div>
@@ -280,9 +273,8 @@ const MyBookingsPage = () => {
   const location = useLocation();
   const { bookingId: bookingIdParam } = useParams<{ bookingId?: string }>();
   const updateBookingMutation = useUpdateBooking();
-  const coin = useCoinConfig();
   const [endingId, setEndingId] = useState<string | null>(null);
-  const [valuationBooking, setValuationBooking] = useState<CoinValuationBooking | null>(null);
+  const [payingBooking, setPayingBooking] = useState<PayableBooking | null>(null);
 
   // ── selection (right-hand conversation panel) ─────────────────────────────
   // The URL is the single source of truth for which booking is selected, so
@@ -562,10 +554,9 @@ const MyBookingsPage = () => {
                           selected={selectedBookingId === booking.id}
                           onClick={handleSelectBooking}
                           onEnd={handleEndBooking}
-                          onValue={setValuationBooking}
+                          onRecordPayment={setPayingBooking}
                           isEnding={endingId === booking.id}
                           currentUsername={user?.username}
-                          coinShortName={coin.shortName}
                         />
                       ))}
                       {isFetchingNextPage && (
@@ -595,10 +586,10 @@ const MyBookingsPage = () => {
         </div>
       </div>
 
-      <CoinValuationDialog
-        booking={valuationBooking}
-        opened={valuationBooking !== null}
-        onClose={() => setValuationBooking(null)}
+      <RecordPaymentDialog
+        booking={payingBooking}
+        opened={payingBooking !== null}
+        onClose={() => setPayingBooking(null)}
       />
     </div>
   );

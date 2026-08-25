@@ -1,6 +1,7 @@
 import { BookingDialog } from '@/components/items/BookingDialog';
 import { CalendarSubscribeButton } from '@/components/calendar/CalendarSubscribeButton';
 import { ItemComments } from '@/components/items/ItemComments';
+import { ItemPaymentRecord } from '@/components/payments/ItemPaymentRecord';
 import { PreviousRentals } from '@/components/items/PreviousRentals';
 import { ItemImageCarousel } from '@/components/items/ItemImageCarousel';
 import { RentalCalendar } from '@/components/items/RentalCalendar';
@@ -11,7 +12,6 @@ import {
   getStatusMantineColor,
 } from '@/components/items/status';
 import { AddToCollectionPopover } from '@/components/collections/AddToCollectionPopover';
-import { CoinTrackRecord } from '@/components/coins/CoinTrackRecord';
 import { BackButton } from '@/components/layout/BackButton';
 import OwnerLink from '@/components/users/OwnerLink';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -19,10 +19,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useItem } from '@/hooks/useItem';
 import { useDeleteItem } from '@/hooks/useMyItems';
 import { useItemCollections } from '@/hooks/useCollections';
-import { useCoinConfig } from '@/hooks/useAppConfig';
-import { formatItemPrice, isFreeItem, type PriceUnit } from '@/lib/coins';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
-import { getRentalPeriodSuffixKey } from '@/lib/currency';
+import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import { ActionIcon, Badge, Button, Text, Tooltip } from '@mantine/core';
@@ -37,7 +35,6 @@ const ItemDetail = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t } = useLanguage();
-  const coin = useCoinConfig();
   const { data: item, isLoading, error } = useItem(itemUuid);
   const deleteItemMutation = useDeleteItem();
   const { data: itemCollections } = useItemCollections(user ? itemUuid : undefined);
@@ -121,9 +118,6 @@ const ItemDetail = () => {
     created_at,
     images,
   } = item;
-  // `price_unit` is served by the backend but not in the generated SDK yet
-  // (see the note at the top of services/custom/coins.ts).
-  const price_unit = (item as unknown as { price_unit?: PriceUnit }).price_unit;
 
   // Canonical link to this item — without any hash/query of the current URL.
   const shareUrl = `${window.location.origin}/item/${item.id}`;
@@ -202,7 +196,6 @@ const ItemDetail = () => {
       itemName={name}
       price={price}
       priceCurrency={price_currency || undefined}
-      priceUnit={price_unit}
       salesType={sales_type}
       rentalPeriod={item.rental_period}
       rentalOpenEnd={item.rental_open_end ?? false}
@@ -297,7 +290,7 @@ const ItemDetail = () => {
 
             {price && (
               <p className="text-2xl font-bold">
-                {formatItemPrice({ price, price_currency, price_unit }, coin.shortName)}
+                {formatPrice(price, price_currency)}
                 {isRental && (
                   <span className="ml-1 text-base font-normal">
                     {t(getRentalPeriodSuffixKey(item.rental_period))}
@@ -435,13 +428,11 @@ const ItemDetail = () => {
         )}
       </div>
 
-      {/* What the community has valued this free item at so far — sits with
-          the rental history, since both record what happened with the item. */}
-      {isFreeItem(item) && (
-        <div className="mt-10">
-          <CoinTrackRecord itemId={item.id} />
-        </div>
-      )}
+      {/* What this item has actually been paid — the record that gives a
+          free item a visible worth. Renders nothing until there is one. */}
+      <div className="mt-6">
+        <ItemPaymentRecord itemId={item.id} />
+      </div>
     </div>
   );
 };

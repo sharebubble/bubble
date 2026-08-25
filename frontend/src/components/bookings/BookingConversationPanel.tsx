@@ -1,9 +1,8 @@
 import BookingCounterOfferDialog from '@/components/bookings/BookingCounterOfferDialog';
 import BookingEditDialog from '@/components/bookings/BookingEditDialog';
 import { getBookingStatusBadge } from '@/components/bookings/status';
-import { CoinValuationPrompt } from '@/components/coins/CoinValuationPrompt';
+import { RecordPaymentPrompt } from '@/components/payments/RecordPaymentPrompt';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useCoinConfig } from '@/hooks/useAppConfig';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useBooking,
@@ -13,10 +12,9 @@ import {
 } from '@/hooks/useBookings';
 import { useItem } from '@/hooks/useItem';
 import { useCreateMessage, useMarkMessageAsRead, useMessages } from '@/hooks/useMessages';
-import { formatItemPrice, type PriceUnit } from '@/lib/coins';
-import { getRentalPeriodSuffixKey } from '@/lib/currency';
+import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
-import type { CoinValuationBooking } from '@/services/custom/coins';
+import type { BookingWithPayment } from '@/services/custom/payments';
 import {
   ActionIcon,
   Badge,
@@ -45,14 +43,9 @@ interface BookingConversationPanelProps {
  *  the message thread for a single booking. */
 const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPanelProps) => {
   const { t } = useLanguage();
-  const coin = useCoinConfig();
   const { user } = useAuth();
   const { data: selectedBooking, isLoading } = useBooking(bookingId || undefined);
   const { data: selectedItemDetails } = useItem(selectedBooking?.item_details?.id);
-  // `price_unit` is served by the backend but not in the generated SDK yet
-  // (see the note at the top of services/custom/coins.ts).
-  const itemPriceUnit = (selectedItemDetails as unknown as { price_unit?: PriceUnit } | undefined)
-    ?.price_unit;
   const [messageText, setMessageText] = useState('');
   const updateBookingMutation = useUpdateBooking();
   const confirmReceivedMutation = useConfirmReceived();
@@ -73,12 +66,12 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
     );
   }, [messagesData]);
 
-  // The coin fields are served by the bookings endpoint but are not part of
-  // the generated Booking type yet — see services/custom/coins.ts.
-  const coinBooking = selectedBooking as unknown as CoinValuationBooking | undefined;
-  // Only the person who received the item is asked what it was worth.
-  const showCoinPrompt = Boolean(
-    coinBooking?.coin_valuation_eligible && user?.username === selectedBooking?.user?.username,
+  // The payment fields are served by the bookings endpoint but are not part
+  // of the generated Booking type yet — see services/custom/payments.ts.
+  const payableBooking = selectedBooking as unknown as BookingWithPayment | undefined;
+  // Only the person who received the item is asked what they paid.
+  const showPaymentPrompt = Boolean(
+    payableBooking?.payment_recordable && user?.username === selectedBooking?.user?.username,
   );
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -248,8 +241,11 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
               </Text>
               <Text size="lg" c="dimmed">
                 {selectedItemDetails.sales_type === 'rent'
-                  ? `${formatItemPrice(selectedItemDetails, coin.shortName)} ${t(getRentalPeriodSuffixKey(selectedItemDetails.rental_period))}`
-                  : formatItemPrice(selectedItemDetails, coin.shortName)}
+                  ? `${formatPrice(
+                      selectedItemDetails.price,
+                      selectedItemDetails.price_currency,
+                    )} ${t(getRentalPeriodSuffixKey(selectedItemDetails.rental_period))}`
+                  : formatPrice(selectedItemDetails.price, selectedItemDetails.price_currency)}
               </Text>
             </div>
           )}
@@ -259,14 +255,7 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
                 {t('requests.offerAmount')}
               </Text>
               <Text size="lg" fw={700}>
-                {formatItemPrice(
-                  {
-                    price: selectedBooking.offer,
-                    price_currency: selectedItemDetails?.price_currency,
-                    price_unit: itemPriceUnit,
-                  },
-                  coin.shortName,
-                )}
+                {formatPrice(selectedBooking.offer, 'EUR')}
               </Text>
             </div>
           )}
@@ -291,25 +280,23 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
                 {t('requests.counterOffer')}
               </Text>
               <Text size="lg" fw={700} c="orange.5">
-                {formatItemPrice(
-                  {
-                    price: selectedBooking.counter_offer,
-                    price_currency: selectedItemDetails?.price_currency,
-                    price_unit: itemPriceUnit,
-                  },
-                  coin.shortName,
-                )}
+                {formatPrice(selectedBooking.counter_offer, 'EUR')}
               </Text>
             </div>
           )}
         </Box>
 
-        {/* Coin valuation — asked of the booker once a free transaction is
-            settled */}
-        {showCoinPrompt && coinBooking && (
-          <div className="mt-4">
-            <CoinValuationPrompt booking={coinBooking} />
-          </div>
+        {/* Payment — asked of the booker once the booking has completed, so
+            the question is what it was worth rather than what to charge. */}
+        {showPaymentPrompt && payableBooking && (
+          <Box mt="md">
+            <RecordPaymentPrompt
+              booking={{
+                ...payableBooking,
+                item_name: selectedBooking.item_details?.name,
+              }}
+            />
+          </Box>
         )}
 
         {/* Action Buttons - For pending bookings */}

@@ -1,9 +1,8 @@
 import { Button, Group, Input, Modal, NumberInput, Text } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useCoinConfig } from '@/hooks/useAppConfig';
 import { useCreateBooking } from '@/hooks/useBookings';
-import { formatItemPrice, isCoinPriced, type PriceUnit } from '@/lib/coins';
 import {
+  formatPrice,
   getHoursPerRentalPeriod,
   getRentalPeriodSuffixKey,
   type RentalPeriod,
@@ -23,7 +22,6 @@ interface BookingDialogProps {
   itemName?: string;
   price?: string | null;
   priceCurrency?: string;
-  priceUnit?: PriceUnit | string | null;
   salesType?: SalesTypeEnum;
   rentalPeriod?: RentalPeriod;
   rentalOpenEnd?: boolean;
@@ -63,7 +61,6 @@ export const BookingDialog = ({
   itemName = '',
   price,
   priceCurrency,
-  priceUnit,
   salesType,
   rentalPeriod,
   rentalOpenEnd = false,
@@ -77,7 +74,6 @@ export const BookingDialog = ({
   onControlledOpenChange,
 }: BookingDialogProps) => {
   const { t } = useLanguage();
-  const coin = useCoinConfig();
   const createBookingMutation = useCreateBooking();
   const navigate = useNavigate();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -219,19 +215,12 @@ export const BookingDialog = ({
               {isRental && price != null ? (
                 <Text>
                   <span className="font-medium">{t('booking.listedRentalPrice')}:</span>{' '}
-                  {formatItemPrice(
-                    { price, price_currency: priceCurrency, price_unit: priceUnit },
-                    coin.shortName,
-                  )}{' '}
-                  {t(getRentalPeriodSuffixKey(rentalPeriod))}
+                  {formatPrice(price, priceCurrency)} {t(getRentalPeriodSuffixKey(rentalPeriod))}
                 </Text>
               ) : price != null ? (
                 <Text>
                   <span className="font-medium">{t('booking.listedPrice')}:</span>{' '}
-                  {formatItemPrice(
-                    { price, price_currency: priceCurrency, price_unit: priceUnit },
-                    coin.shortName,
-                  )}
+                  {formatPrice(price, priceCurrency)}
                 </Text>
               ) : null}
             </div>
@@ -296,7 +285,6 @@ export const BookingDialog = ({
                 placeholder={t('booking.enterYourOffer')}
                 value={offerPrice}
                 onChange={value => setOfferPrice(value === '' ? '' : String(value))}
-                suffix={isCoinPriced(priceUnit) ? ` ${coin.shortName}` : undefined}
               />
             </div>
           </div>

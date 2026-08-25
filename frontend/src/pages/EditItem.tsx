@@ -13,7 +13,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { useUpdateItem } from '@/hooks/useCreateItem';
 import { useMyItem } from '@/hooks/useMyItem';
-import type { PriceUnit } from '@/lib/coins';
 import { imagesAPI } from '@/services/custom/images';
 import {
   CategoryEnum,
@@ -57,10 +56,6 @@ import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 're
 import { useNavigate, useParams } from 'react-router-dom';
 import { useFieldAutoSave } from '@/hooks/useFieldAutoSave';
 
-// `price_unit` is served by the backend but not in the generated SDK yet
-// (see the note at the top of services/custom/coins.ts).
-type PatchedItemWritableWithPriceUnit = PatchedItemWritable & { price_unit?: PriceUnit };
-
 export type EditItemFormData = {
   name: string;
   description: string;
@@ -70,8 +65,6 @@ export type EditItemFormData = {
   visibility: VisibilityEnum | '';
   sales_type: SalesTypeEnum | '';
   price: string;
-  /** What `price` is denominated in: the default currency, or community coins. */
-  price_unit: PriceUnit | '';
   rental_period: RentalPeriodEnum | '';
   rental_self_service: boolean;
   rental_open_end: boolean;
@@ -181,7 +174,6 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
     visibility: 1 as VisibilityEnum | '',
     sales_type: '' as SalesTypeEnum | '',
     price: '',
-    price_unit: 'money' as PriceUnit | '',
     rental_period: '' as RentalPeriodEnum | '',
     rental_self_service: false,
     rental_open_end: false,
@@ -284,9 +276,6 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
   // Load existing item data if editing
   useEffect(() => {
     if (item && editItemUuid) {
-      // `price_unit` is served by the backend but not in the generated SDK
-      // yet (see the note at the top of services/custom/coins.ts).
-      const itemPriceUnit = (item as unknown as { price_unit?: PriceUnit }).price_unit;
       const loadedData = {
         name: item.name || '',
         description: item.description || '',
@@ -296,7 +285,6 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
         visibility: item.visibility !== undefined && item.visibility !== null ? item.visibility : 1,
         sales_type: item.sales_type || '',
         price: item.price?.toString() || '',
-        price_unit: itemPriceUnit || ('money' as PriceUnit),
         rental_period: (item.rental_period as RentalPeriodEnum) || '',
         rental_self_service:
           item.rental_self_service !== undefined ? item.rental_self_service : false,
@@ -318,7 +306,6 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
         visibility: loadedData.visibility,
         sales_type: loadedData.sales_type,
         price: loadedData.price === '' ? null : loadedData.price,
-        price_unit: loadedData.price_unit,
         rental_period: loadedData.rental_period,
         rental_self_service: loadedData.rental_self_service,
         rental_open_end: loadedData.rental_open_end,
@@ -400,7 +387,6 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
             formData.visibility !== '' ? (formData.visibility as VisibilityEnum) : undefined,
           sales_type: formData.sales_type as SalesTypeEnum,
           price: formData.price === '' ? null : formData.price,
-          price_unit: formData.price_unit === '' ? undefined : formData.price_unit,
           rental_period: hasRentalOptions
             ? (formData.rental_period as RentalPeriodEnum | undefined)
             : undefined,
@@ -461,7 +447,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
         await onPublishOverride(formData, editItemUuid);
       } else {
         const hasRentalOptions = formData.sales_type === 'rent' || formData.sales_type === 'borrow';
-        const itemData: PatchedItemWritableWithPriceUnit = {
+        const itemData: PatchedItemWritable = {
           name: formData.name,
           description: formData.description,
           category: formData.category as CategoryEnum,
@@ -471,7 +457,6 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
             formData.visibility !== '' ? (formData.visibility as VisibilityEnum) : undefined,
           sales_type: formData.sales_type as SalesTypeEnum,
           price: formData.price === '' ? null : formData.price,
-          price_unit: formData.price_unit === '' ? undefined : formData.price_unit,
           rental_period: hasRentalOptions
             ? (formData.rental_period as RentalPeriodEnum | undefined)
             : undefined,

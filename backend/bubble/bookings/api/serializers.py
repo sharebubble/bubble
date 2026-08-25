@@ -4,10 +4,10 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from bubble.bookings.models import Booking, BookingStatus, Message
-from bubble.coins.api.serializers import CoinValuationSerializer
-from bubble.coins.models import is_valuable_booking
 from bubble.items.api.serializers import ItemMinimalSerializer
 from bubble.items.models import Item, SalesType
+from bubble.ledger.api.serializers import BookingPaymentSerializer
+from bubble.ledger.services import current_booking_payment, is_payable_booking
 from bubble.users.api.serializers import UserSerializer
 
 
@@ -27,8 +27,8 @@ class BookingSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     remote_booker_actor = RemoteActorMinimalSerializer(read_only=True)
     unread_messages_count = serializers.SerializerMethodField()
-    coin_valuation = serializers.SerializerMethodField()
-    coin_valuation_eligible = serializers.SerializerMethodField()
+    payment = serializers.SerializerMethodField()
+    payment_recordable = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -47,8 +47,8 @@ class BookingSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "unread_messages_count",
-            "coin_valuation",
-            "coin_valuation_eligible",
+            "payment",
+            "payment_recordable",
         ]
         read_only_fields = [
             "id",
@@ -62,23 +62,25 @@ class BookingSerializer(serializers.ModelSerializer):
         """Return unread_messages_count if it exists as an annotated field."""
         return getattr(obj, "unread_messages_count", None)
 
-    @extend_schema_field(CoinValuationSerializer(allow_null=True))
-    def get_coin_valuation(self, obj):
-        """Return the community-coin value recorded for this booking, if any."""
-        # The reverse one-to-one raises (an AttributeError subclass) when no
-        # valuation exists, so ``getattr`` with a default covers both cases.
-        valuation = getattr(obj, "coin_valuation", None)
-        if valuation is None:
-            return None
-        return CoinValuationSerializer(valuation, context=self.context).data
+    @extend_schema_field(BookingPaymentSerializer(allow_null=True))
+    def get_payment(self, obj):
+        """Return the payment standing against this booking, if any.
 
-    def get_coin_valuation_eligible(self, obj) -> bool:
-        """Whether this transaction can be valued in community coins.
-
-        Drives the prompt shown once a free (zero-price) transaction is
-        settled, asking the booker what it was worth to them.
+        Corrections reverse rather than edit, so this is the current figure
+        even when the booker has changed their mind more than once.
         """
-        return is_valuable_booking(obj)
+        payment = current_booking_payment(obj)
+        if payment is None:
+            return None
+        return BookingPaymentSerializer(payment, context=self.context).data
+
+    def get_payment_recordable(self, obj) -> bool:
+        """Whether the booker can record what they paid.
+
+        Drives the prompt shown once a booking has completed — asking what
+        was settled, or on a free item what it was worth.
+        """
+        return is_payable_booking(obj)
 
     def validate(self, attrs):
         """
@@ -234,8 +236,8 @@ class BookingListSerializer(BookingSerializer):
             "time_from",
             "time_to",
             "unread_messages_count",
-            "coin_valuation",
-            "coin_valuation_eligible",
+            "payment",
+            "payment_recordable",
         ]
 
 
@@ -289,7 +291,6 @@ class ItemBookingHistorySerializer(serializers.ModelSerializer):
     official_price_currency = serializers.SerializerMethodField()
     amount_paid = serializers.SerializerMethodField()
     amount_paid_currency = serializers.SerializerMethodField()
-    price_unit = serializers.SerializerMethodField()
     rental_price = serializers.SerializerMethodField()
     offer = serializers.SerializerMethodField()
     counter_offer = serializers.SerializerMethodField()
@@ -306,7 +307,6 @@ class ItemBookingHistorySerializer(serializers.ModelSerializer):
             "official_price_currency",
             "amount_paid",
             "amount_paid_currency",
-            "price_unit",
             "offer",
             "counter_offer",
             "rental_price",
@@ -356,15 +356,6 @@ class ItemBookingHistorySerializer(serializers.ModelSerializer):
 
     def get_amount_paid_currency(self, obj) -> str:
         return _money_currency(self._paid_money(obj))
-
-    def get_price_unit(self, obj) -> str:
-        """What the amounts in this row are denominated in (money or coins).
-
-        Both the listed price and what was paid follow the item's pricing
-        unit, so the history table can render coin-priced rentals in coins
-        rather than mislabelling them as currency.
-        """
-        return obj.item.price_unit
 
     def get_rental_price(self, obj) -> str | None:
         return _money_amount(obj.rental_price)

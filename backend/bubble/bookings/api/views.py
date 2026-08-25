@@ -54,8 +54,12 @@ class PublicBookingViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         """Return only confirmed bookings."""
-        return Booking.objects.filter(status=BookingStatus.CONFIRMED).select_related(
-            "item", "user", "accepted_by", "coin_valuation"
+        return (
+            Booking.objects.filter(status=BookingStatus.CONFIRMED)
+            .select_related("item", "user", "accepted_by")
+            # The payment fields walk each booking's transactions, so pull
+            # them (and their postings) in one go rather than per row.
+            .prefetch_related("ledger_transactions__postings")
         )
 
 
@@ -72,7 +76,8 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
     def get_queryset(self):
         return (
             Booking.objects.get_for_user(self.request.user)
-            .select_related("item", "user", "accepted_by", "coin_valuation")
+            .select_related("item", "user", "accepted_by")
+            .prefetch_related("ledger_transactions__postings")
             .annotate(
                 unread_messages_count=Count(
                     "messages",

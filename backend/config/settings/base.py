@@ -141,7 +141,7 @@ LOCAL_APPS = [
     "bubble.favorites.apps.FavoritesConfig",
     "bubble.books.apps.BooksConfig",
     "bubble.collections.apps.CollectionsConfig",
-    "bubble.coins.apps.CoinsConfig",
+    "bubble.ledger.apps.LedgerConfig",
     "bubble.comments.apps.CommentsConfig",
     "bubble.notifications.apps.NotificationsConfig",
     "bubble.federation.apps.FederationConfig",
@@ -543,28 +543,18 @@ CONSTANCE_CONFIG = {
         env("FEDERATION_DEFAULT_ITEM_VISIBILITY", default="local_only"),
         "Default federation visibility for new items: 'public_federated' or 'local_only'.",
     ),
-    "COIN_NAME": (
-        env("COIN_NAME", default="Sharebubble Coin"),
-        "Name of the community currency offered after a free (zero-price) "
-        "transaction, e.g. 'Sharebubble Coin'.",
-    ),
-    "COIN_SHORT_NAME": (
-        env("COIN_SHORT_NAME", default="SBC"),
-        "Short name of the community currency used next to amounts, e.g. 'SBC'.",
-    ),
-    "COIN_SLIDER_MAX": (
-        env.int("COIN_SLIDER_MAX", default=100),
-        "Upper end of the coin slider shown after a free transaction. One coin "
-        "is meant to be worth roughly one unit of DEFAULT_CURRENCY.",
+    "VOLUNTARY_PAYMENT_MAX": (
+        env.int("VOLUNTARY_PAYMENT_MAX", default=100),
+        "Upper end of the slider offered after a free booking completes, in "
+        "whole units of DEFAULT_CURRENCY. Only bounds the suggestion UI - "
+        "larger amounts can still be typed.",
     ),
 }
 
 CONSTANCE_CONFIG_PUBLIC = [
     "REQUIRE_LOGIN",
     "DEFAULT_ITEM_VISIBILITY",
-    "COIN_NAME",
-    "COIN_SHORT_NAME",
-    "COIN_SLIDER_MAX",
+    "VOLUNTARY_PAYMENT_MAX",
 ]
 
 ISBN_LOOKUP_BASE_URL = env("ISBN_LOOKUP_BASE_URL", default="http://isbn-search:8000")

@@ -7,9 +7,8 @@ interface AppConfig {
   NOTIFICATIONS_ENABLED?: Record<string, boolean>;
   /** VAPID application server key; empty when web push is not configured. */
   VAPID_PUBLIC_KEY?: string;
-  COIN_NAME?: string;
-  COIN_SHORT_NAME?: string;
-  COIN_SLIDER_MAX?: number;
+  /** Upper end of the slider offered after a free booking completes. */
+  VOLUNTARY_PAYMENT_MAX?: number;
 }
 
 interface UseAppConfigResult {
@@ -17,70 +16,45 @@ interface UseAppConfigResult {
   loading: boolean;
   /** Needed to subscribe a browser to push; empty means the feature is off. */
   vapidPublicKey: string;
+  /**
+   * Upper end of the voluntary-payment slider, in whole currency units. Only
+   * bounds the suggestion UI — larger amounts can still be typed.
+   */
+  voluntaryPaymentMax: number;
 }
 
-/** Name and scale of the community currency, as configured on the backend. */
-export interface CoinConfig {
-  /** Full name, e.g. "Sharebubble Coin". */
-  name: string;
-  /** Short name shown next to amounts, e.g. "SBC". */
-  shortName: string;
-  /** Upper end of the coin slider. */
-  sliderMax: number;
-}
-
-const COIN_FALLBACK: CoinConfig = {
-  name: 'Sharebubble Coin',
-  shortName: 'SBC',
-  sliderMax: 100,
-};
-
-const fetchAppConfig = async (): Promise<AppConfig> => {
-  const baseUrl = client.getConfig().baseUrl;
-  const res = await fetch(`${baseUrl}/api/config/`, { credentials: 'include' });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch app config: ${res.status}`);
-  }
-  return res.json();
-};
-
-const APP_CONFIG_QUERY = {
-  queryKey: ['appConfig'],
-  queryFn: fetchAppConfig,
-  // Config rarely changes — cache for 5 minutes, don't refetch on window focus
-  staleTime: 5 * 60 * 1000,
-  refetchOnWindowFocus: false,
-  retry: false,
-} as const;
+/** Used when the backend has not been configured, or has not answered yet. */
+const VOLUNTARY_PAYMENT_MAX_FALLBACK = 100;
 
 export const useAppConfig = (): UseAppConfigResult => {
-  const { data, isLoading } = useQuery<AppConfig>(APP_CONFIG_QUERY);
+  const { data, isLoading } = useQuery<AppConfig>({
+    queryKey: ['appConfig'],
+    queryFn: async () => {
+      const baseUrl = client.getConfig().baseUrl;
+      const res = await fetch(`${baseUrl}/api/config/`, { credentials: 'include' });
+      if (!res.ok) {
+        throw new Error(`Failed to fetch app config: ${res.status}`);
+      }
+      return res.json();
+    },
+    // Config rarely changes — cache for 5 minutes, don't refetch on window focus
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+
+  const configuredMax = data?.VOLUNTARY_PAYMENT_MAX;
 
   return {
     // Default to true (require login) while loading or on error — safe fallback
     requireLogin: data ? data.REQUIRE_LOGIN : true,
     loading: isLoading,
     vapidPublicKey: data?.VAPID_PUBLIC_KEY ?? '',
-  };
-};
-
-/**
- * The community currency users can value free transactions in. Falls back to
- * the backend's own defaults while the config is loading.
- */
-export const useCoinConfig = (): CoinConfig => {
-  const { data } = useQuery<AppConfig>(APP_CONFIG_QUERY);
-  const configuredMax = data?.COIN_SLIDER_MAX;
-
-  return {
-    // Blank names fall back too — an empty label would leave amounts bare.
-    name: data?.COIN_NAME || COIN_FALLBACK.name,
-    shortName: data?.COIN_SHORT_NAME || COIN_FALLBACK.shortName,
-    // A max of 0 (or below) would leave the slider no range to move in, so
-    // it is treated as unusable rather than honoured.
-    sliderMax:
+    // A max of zero (or a negative one) would leave the slider unusable, so
+    // fall back rather than pass it through.
+    voluntaryPaymentMax:
       typeof configuredMax === 'number' && configuredMax > 0
         ? configuredMax
-        : COIN_FALLBACK.sliderMax,
+        : VOLUNTARY_PAYMENT_MAX_FALLBACK,
   };
 };

@@ -7,13 +7,11 @@ import {
   getStatusMantineColor,
 } from '@/components/items/status';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useCoinConfig } from '@/hooks/useAppConfig';
 import { type ItemCategoryFilter } from '@/hooks/types';
 import { useFederatedItems } from '@/hooks/useFederatedItems';
 import { useItems } from '@/hooks/useItems';
 import { getCategoryIcon } from '@/lib/categoryIcons';
-import { formatItemPrice } from '@/lib/coins';
-import { getRentalPeriodSuffixKey } from '@/lib/currency';
+import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import { BROWSE_PATH } from '@/lib/routes';
 import {
@@ -83,7 +81,6 @@ const Index = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { t, language } = useLanguage();
-  const coin = useCoinConfig();
 
   // ---------------------------------------------------------------------------
   // URL param parsing
@@ -448,7 +445,7 @@ const Index = () => {
                       <Table.Td>
                         <Text size="sm" fw={500} className="whitespace-nowrap">
                           {item.price
-                            ? `${formatItemPrice(item, coin.shortName)}${
+                            ? `${formatPrice(item.price, item.price_currency)}${
                                 item.sales_type === 'rent'
                                   ? ` ${t(getRentalPeriodSuffixKey(item.rental_period))}`
                                   : ''
@@ -484,7 +481,6 @@ const Index = () => {
                 salesType={item.sales_type}
                 price={item.price ? parseFloat(item.price) : undefined}
                 priceCurrency={item.price_currency}
-                priceUnit={(item as unknown as { price_unit?: string }).price_unit}
                 rentalPeriod={item.rental_period}
                 location="Location not set"
                 imageUrl={item.first_image || undefined}

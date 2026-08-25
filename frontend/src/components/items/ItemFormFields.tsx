@@ -1,8 +1,6 @@
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useCoinConfig } from '@/hooks/useAppConfig';
 import { FieldStates } from '@/hooks/useFieldAutoSave';
 import { useLocations } from '@/hooks/useLocations';
-import type { PriceUnit } from '@/lib/coins';
 import {
   CategoryEnum,
   ConditionEnum,
@@ -11,15 +9,7 @@ import {
   Status7D3Enum,
   VisibilityEnum,
 } from '@/services/django';
-import {
-  Checkbox,
-  NumberInput,
-  Select,
-  SegmentedControl,
-  Text,
-  Textarea,
-  TextInput,
-} from '@mantine/core';
+import { Checkbox, NumberInput, Select, Text, Textarea, TextInput } from '@mantine/core';
 import { Check, Loader2 } from 'lucide-react';
 
 /** Right-section indicator for the field auto-save state (spinner while saving, check on success). */
@@ -199,7 +189,6 @@ interface PricingFieldsProps {
   formData: {
     sales_type: SalesTypeEnum | '';
     price: string;
-    price_unit: PriceUnit | '';
     rental_period: RentalPeriodEnum | '';
     rental_self_service: boolean;
     rental_open_end: boolean;
@@ -234,7 +223,6 @@ export const PricingFields = ({
   onFieldChange,
 }: PricingFieldsProps) => {
   const { t } = useLanguage();
-  const coin = useCoinConfig();
 
   const salesType = formData.sales_type as SalesTypeEnum | '';
   const showPrice = salesType !== '' && !PRICE_NULL_TYPES.includes(salesType as SalesTypeEnum);
@@ -244,11 +232,9 @@ export const PricingFields = ({
     const updates: any = { ...formData, sales_type: value };
 
     // Clear price locally for types that must have null price
-    // (backend also auto-clears price — and resets price_unit to money —
-    // when sales_type changes to donate/borrow)
+    // (backend also auto-clears price when sales_type changes to donate/borrow)
     if (PRICE_NULL_TYPES.includes(value)) {
       updates.price = '';
-      updates.price_unit = 'money';
     }
     // Clear rental options when switching away from rent/borrow
     if (value !== 'rent' && value !== 'borrow') {
@@ -286,40 +272,22 @@ export const PricingFields = ({
         />
 
         {showPrice && (
-          <div className="space-y-2">
-            <NumberInput
-              id="price"
-              label={salesType === 'rent' ? t('editItem.rentalPrice') : t('editItem.price')}
-              placeholder={t('editItem.enterPrice')}
-              value={formData.price}
-              onChange={value =>
-                setFormData({ ...formData, price: value === '' ? '' : String(value) })
-              }
-              onBlur={() => onFieldBlur?.('price', formData.price === '' ? null : formData.price)}
-              disabled={disabled}
-              required={PRICE_REQUIRED_TYPES.includes(salesType as SalesTypeEnum)}
-              step={1}
-              rightSection={getFieldRightSection('price', fieldStates)}
-              error={getFieldError('price', fieldStates)}
-              styles={getFieldStyles('price', fieldStates)}
-            />
-
-            <SegmentedControl
-              id="price_unit"
-              size="xs"
-              fullWidth
-              value={formData.price_unit || 'money'}
-              onChange={value => {
-                setFormData({ ...formData, price_unit: value as PriceUnit });
-                onFieldChange?.('price_unit', value);
-              }}
-              data={[
-                { value: 'money', label: t('editItem.priceUnitMoney') },
-                { value: 'coin', label: coin.shortName },
-              ]}
-              disabled={disabled}
-            />
-          </div>
+          <NumberInput
+            id="price"
+            label={salesType === 'rent' ? t('editItem.rentalPrice') : t('editItem.price')}
+            placeholder={t('editItem.enterPrice')}
+            value={formData.price}
+            onChange={value =>
+              setFormData({ ...formData, price: value === '' ? '' : String(value) })
+            }
+            onBlur={() => onFieldBlur?.('price', formData.price === '' ? null : formData.price)}
+            disabled={disabled}
+            required={PRICE_REQUIRED_TYPES.includes(salesType as SalesTypeEnum)}
+            step={1}
+            rightSection={getFieldRightSection('price', fieldStates)}
+            error={getFieldError('price', fieldStates)}
+            styles={getFieldStyles('price', fieldStates)}
+          />
         )}
       </div>
 

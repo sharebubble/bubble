@@ -215,7 +215,7 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
 
     def get_queryset(self):
         # The visibility rules themselves live on the manager so other apps
-        # (comments, the coin track record) scope their reads the same way.
+        # (comments, the payment record) scope their reads the same way.
         return annotate_comment_stats(
             Item.objects.visible_to(self.request.user)
             .select_related("user", "location")

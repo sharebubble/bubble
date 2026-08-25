@@ -2,12 +2,10 @@ import { AddToCollectionPopover } from '@/components/collections/AddToCollection
 import { BookingDialog } from '@/components/items/BookingDialog';
 import { getStatusLabel, getStatusMantineColor } from '@/components/items/status';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useCoinConfig } from '@/hooks/useAppConfig';
 import { useAuth } from '@/hooks/useAuth';
 import { getCategoryIcon } from '@/lib/categoryIcons';
-import { formatItemPrice, type PriceUnit } from '@/lib/coins';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
-import { getRentalPeriodSuffixKey, type RentalPeriod } from '@/lib/currency';
+import { formatPrice, getRentalPeriodSuffixKey, type RentalPeriod } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import { SalesTypeEnum, Status7D3Enum } from '@/services/django';
 import { Badge, Button, Card, Text, Tooltip } from '@mantine/core';
@@ -24,7 +22,6 @@ interface ItemCardProps {
   salesType?: SalesTypeEnum;
   price?: number;
   priceCurrency?: string | null;
-  priceUnit?: PriceUnit | string | null;
   rentalPeriod?: RentalPeriod;
   location: string;
   imageUrl?: string;
@@ -49,7 +46,6 @@ const ItemCardComponent = ({
   salesType,
   price,
   priceCurrency,
-  priceUnit,
   rentalPeriod,
   location,
   imageUrl,
@@ -65,7 +61,6 @@ const ItemCardComponent = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t, language } = useLanguage();
-  const coin = useCoinConfig();
 
   const isOwner = user && owner && user.id === owner;
   const isRentable = salesType === 'rent' || salesType === 'borrow';
@@ -192,10 +187,7 @@ const ItemCardComponent = ({
           <div className="absolute bottom-3 right-3">
             <div className="rounded-lg bg-background/95 px-3 py-1 shadow-medium">
               <div className="flex items-center gap-1 text-sm font-semibold">
-                {formatItemPrice(
-                  { price, price_currency: priceCurrency, price_unit: priceUnit },
-                  coin.shortName,
-                )}
+                {formatPrice(price, priceCurrency)}
                 {(salesType === 'rent' || salesType === 'borrow') && (
                   <span className="text-xs font-normal">
                     {t(getRentalPeriodSuffixKey(rentalPeriod))}

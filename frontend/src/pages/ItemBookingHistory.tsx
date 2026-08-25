@@ -1,10 +1,9 @@
 import { BookingStatsDialog } from '@/components/items/BookingStatsDialog';
 import { BackButton } from '@/components/layout/BackButton';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useCoinConfig } from '@/hooks/useAppConfig';
 import { useItem } from '@/hooks/useItem';
 import { useItemBookingHistory } from '@/hooks/useItemBookingHistory';
-import { formatItemPrice } from '@/lib/coins';
+import { formatPrice } from '@/lib/currency';
 import type { ItemBookingHistoryEntry } from '@/services/custom/itemBookings';
 import { Badge, Button, Group, Loader, Table, Text, Title } from '@mantine/core';
 import { format, formatDistanceStrict } from 'date-fns';
@@ -27,7 +26,6 @@ const StatusBadge = ({ status, label }: { status: number; label: string }) => {
 const ItemBookingHistory = () => {
   const { itemUuid } = useParams<{ itemUuid: string }>();
   const { t } = useLanguage();
-  const coin = useCoinConfig();
 
   const { data: item } = useItem(itemUuid);
   const { data: bookings, isLoading, error } = useItemBookingHistory(itemUuid);
@@ -100,24 +98,8 @@ const ItemBookingHistory = () => {
             </Table.Thead>
             <Table.Tbody>
               {bookings.map(entry => {
-                // Both amounts follow the item's pricing unit, so a
-                // coin-priced item reads in coins rather than currency.
-                const official = formatItemPrice(
-                  {
-                    price: entry.official_price,
-                    price_currency: entry.official_price_currency,
-                    price_unit: entry.price_unit,
-                  },
-                  coin.shortName,
-                );
-                const paid = formatItemPrice(
-                  {
-                    price: entry.amount_paid,
-                    price_currency: entry.amount_paid_currency,
-                    price_unit: entry.price_unit,
-                  },
-                  coin.shortName,
-                );
+                const official = formatPrice(entry.official_price, entry.official_price_currency);
+                const paid = formatPrice(entry.amount_paid, entry.amount_paid_currency);
                 return (
                   <Table.Tr key={entry.id}>
                     <Table.Td>{formatPeriod(entry)}</Table.Td>

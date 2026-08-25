@@ -66,33 +66,47 @@ The `<homeserver>` part of that prefill defaults to `DJANGO_ALLOWED_HOSTS[0]` (M
 APPRISE_MATRIX_HOSTNAME=example.com
 ```
 
-# Community coins
+# Payments
 
-Items offered for sale or for rent at a price of `0` (as well as donations and free loans) change hands without any money moving. Once such a transaction is settled — the owner confirmed the booking, or it has run its course — the person who got the item is asked whether they want to put a value on it in **community coins**.
+Bubble records what members settle between themselves. Nothing is charged, no money moves through the platform, and no balance is redeemable — the ledger is bookkeeping, so a bubble can see what its sharing has actually been worth without becoming a payment service.
 
-One coin can be considered equal in value to one unit of `DEFAULT_CURRENCY`, and the UI says so: the value is picked with a slider, which sets the **total** for a purchase and the **hourly/daily/weekly price** for a rental (the resulting total is shown alongside). The value someone picked for an item is remembered per user, so the slider opens where they left it the next time they get the same item.
+Everything is denominated in `DEFAULT_CURRENCY` (euros by default). There is no separate platform currency.
 
-Every recorded value is public to everyone who can see the item and is shown on the item page as its **track record**: who got it, when, and how many coins they valued it at, plus the running total and average.
+## Recording a payment
 
-## Pricing an item in coins
+Once a booking reaches **completed**, the person who received the item is asked what they paid. Two cases share the same prompt:
 
-That voluntary valuation is separate from — and only applies to — items with no price. An owner can instead give an item a real, binding price denominated directly in coins: when setting the price on a sell/rent listing, they choose between the default currency and community coins. A coin-priced item is not "free", so it does not get the post-transaction valuation prompt — its price was already fixed up front.
+- **A priced booking** — the amount agreed up front is offered for confirmation.
+- **A free booking** — items offered for sale or rent at a price of `0`, as well as donations and free loans, change hands without a price. Here the payment is entirely **voluntary**: the prompt asks what the item was worth to the borrower, with a slider bounded by `VOLUNTARY_PAYMENT_MAX`, and larger amounts can still be typed. The suggestion starts from whatever that member paid for the same item last time, so a repeat borrow needs no re-thinking.
+
+Deliberately after the fact, not up front: nothing was charged, so the question is what it turned out to be worth rather than what it should cost. Declining is a first-class outcome — "Not now" records nothing.
+
+## The record
+
+Every recorded payment is visible to everyone who can see the item, on the item page, as its **payment record**: who paid, when, how much, and whether it was voluntary — plus the running total and average. It survives the item being sold, which is exactly when the record matters most. An item's history is as public as the item itself, and never carries contact details.
+
+Each member also sees their own **balance** on the account page: what they have paid out, what they have received, and the net of the two.
+
+## How it is stored
+
+Payments are held in a double-entry ledger (`bubble.ledger`):
+
+- A `Transaction` carries two or more `Posting`s whose signed amounts sum to zero, so money is always moved from somewhere to somewhere.
+- History is append-only. Recording a payment again does not edit the old figure — it posts a reversing entry and then the new one, so the correction is visible and the standing amount is unambiguous.
+- Balances are **derived** by summing postings, never stored in a mutable column, so a balance cannot drift out of step with the history behind it.
+- Writes carry an idempotency key, so a retried request records once.
 
 ## Configuration
 
-| Setting           | Default            | Meaning                                |
-| ----------------- | ------------------ | -------------------------------------- |
-| `COIN_NAME`       | `Sharebubble Coin` | Name of the currency, shown in prompts |
-| `COIN_SHORT_NAME` | `SBC`              | Short name shown next to amounts       |
-| `COIN_SLIDER_MAX` | `100`              | Upper end of the slider                |
+| Setting                 | Default | Meaning                                                        |
+| ----------------------- | ------- | -------------------------------------------------------------- |
+| `VOLUNTARY_PAYMENT_MAX` | `100`   | Upper end of the slider offered after a free booking completes |
 
 ```env
-COIN_NAME=Sharebubble Coin
-COIN_SHORT_NAME=SBC
-COIN_SLIDER_MAX=100
+VOLUNTARY_PAYMENT_MAX=100
 ```
 
-As with the notification settings, these are read from the environment at first start and can be edited at runtime in the Django admin under **Constance → Config**.
+As with the notification settings, this is read from the environment at first start and can be edited at runtime in the Django admin under **Constance → Config**.
 
 # Federation (ActivityPub)
 
