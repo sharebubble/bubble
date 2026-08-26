@@ -1,5 +1,54 @@
 # Changelog
 
+## [0.5.3](https://github.com/sharebubble/bubble/compare/v0.5.2...v0.5.3) (2026-08-26)
+
+
+### Features
+
+* always show install-app entry on the mobile account hub ([215e5ab](https://github.com/sharebubble/bubble/commit/215e5ab71be580c7f91426678625394b2ac50065))
+* **bookings:** replace numbered pagination with scroll-triggered load-more ([26b986d](https://github.com/sharebubble/bubble/commit/26b986d4b57dfd5453b7ca8e8dd3a23c70bbabec))
+* **bookings:** show all bookings by default, ordered by last message ([045c0f8](https://github.com/sharebubble/bubble/commit/045c0f8c74173241b3061ba1056daa477d4c91bc))
+* **bookings:** show all bookings by default, ordered by last message ([3233bf3](https://github.com/sharebubble/bubble/commit/3233bf395c71bf23cf814cce519fe95ec547f0db))
+* **item-bookings:** add per-user booking time stats popup ([1d35630](https://github.com/sharebubble/bubble/commit/1d35630430675546c776a21957345ba36213e31b))
+* **item-detail:** color-code bookings by booker, hide owner email, move bookings below calendar ([0f6c11f](https://github.com/sharebubble/bubble/commit/0f6c11f83960d02f54a15ec122fc2024610cc731))
+* **item-detail:** color-code bookings by booker, hide owner email, move bookings below calendar ([c9de807](https://github.com/sharebubble/bubble/commit/c9de8073006662f87f411d4aa7c7cc33c817cedc))
+* **item-detail:** de-emphasize owner into listed-date line ([5d23fc8](https://github.com/sharebubble/bubble/commit/5d23fc885aa3f752ceedf8e1093ff2935f900c5f))
+* **item-detail:** de-emphasize owner, link name to their listings ([fdd8fee](https://github.com/sharebubble/bubble/commit/fdd8feef5c54ba1106f585155e7dc66f7b7b3e0c))
+* **mobile-nav:** hide header outside home/browse, defer search focus to second tap ([e46b6ea](https://github.com/sharebubble/bubble/commit/e46b6ea6f51cd6afb09f0fb72afa9e5847789936))
+* **mobile-nav:** hide header outside home/browse, defer search focus to second tap ([aeb5f66](https://github.com/sharebubble/bubble/commit/aeb5f665407dff531fac4380dc5060c6e185b4cf))
+* noon-to-noon check-in/out for daily rentals with monthly calendar default ([70d26f4](https://github.com/sharebubble/bubble/commit/70d26f4846cd04a943bf4587723b74dfae9ba800))
+* prompt mobile users to install Bubble as a PWA on Home ([13ef989](https://github.com/sharebubble/bubble/commit/13ef989d262e70be5dfa6c628c2cee7a0900761b))
+* prompt mobile users to install Bubble as a PWA on Home ([b9287cc](https://github.com/sharebubble/bubble/commit/b9287ccb3e83ac82d029884e67b9abf707bb6218))
+* **search:** fold accents and tolerate typos ([e2e1c12](https://github.com/sharebubble/bubble/commit/e2e1c1202afcf51f4f705d23c9e8cdba81c29d95))
+* **search:** rank title matches above description matches ([0e5b49b](https://github.com/sharebubble/bubble/commit/0e5b49b90b5eb5691503de67655d61b1ffbf9024))
+* **search:** rank title matches above description matches ([3077c4f](https://github.com/sharebubble/bubble/commit/3077c4f59b044bcfaa21e314ecb78eaec7a1ee1c))
+* **search:** restrict search bar to desktop and mobile home/browse, autofocus on tap ([a35034f](https://github.com/sharebubble/bubble/commit/a35034f5b6f2005ed7e25ee4f15f4051cadc1fec))
+* **search:** restrict search bar to desktop and mobile home/browse, autofocus on tap ([ac4ea2d](https://github.com/sharebubble/bubble/commit/ac4ea2d24974f8e4a636d3dc359e7330086fcd01))
+* show name and avatar on the account hub, import SSO avatars ([8c03820](https://github.com/sharebubble/bubble/commit/8c0382080684d8274339b926f897d44c0b6cbffe))
+
+
+### Bug Fixes
+
+* address PWA install banner review feedback ([8beee88](https://github.com/sharebubble/bubble/commit/8beee889ac9a00775fdf40063ada164b86309dd9))
+* **bookings:** address review feedback on past-cancel validation ([e9cd46c](https://github.com/sharebubble/bubble/commit/e9cd46c0655e8cd4929c3057444b213f962c93fe))
+* **bookings:** stop past confirmed bookings from being cancelled ([5e6aa50](https://github.com/sharebubble/bubble/commit/5e6aa50f6fbd2178ae3fed84b768bf62ddc8775f))
+* **bookings:** stop past confirmed bookings from being cancelled ([6c998c5](https://github.com/sharebubble/bubble/commit/6c998c5656b25aba17eadf881400440b66bcbf57))
+* **header:** stop top nav from forcing horizontal scroll on narrow screens ([fd0fcda](https://github.com/sharebubble/bubble/commit/fd0fcdac28f8a8bb1c790f58dd3883973bf5b5f5))
+* **header:** stop top nav from forcing horizontal scroll on narrow screens ([8b982f8](https://github.com/sharebubble/bubble/commit/8b982f8ed256fce2b5458c2ff7bbb0ad015b5160))
+* **header:** use real Mantine buttons for compact header nav ([d1d714e](https://github.com/sharebubble/bubble/commit/d1d714ee04b6461474ebadeae127f01b7d62f0bf))
+* **item-detail:** address review — gate owner lookup by auth, fix wording ([353f141](https://github.com/sharebubble/bubble/commit/353f141e83f6af4cf37f5366d7984d289a0e621e))
+* keep the mobile Profile tab clickable off the account hub ([cedc783](https://github.com/sharebubble/bubble/commit/cedc783181ee32fe2f623c7a784e3094a4c136a2))
+* match desktop profile menu label to the personal settings page ([16f0beb](https://github.com/sharebubble/bubble/commit/16f0beb366af6c65e8ad5b9b9c11676e06d97e3d))
+* **notifications:** default Matrix ID to a full [@user](https://github.com/user):hostname ([8533ade](https://github.com/sharebubble/bubble/commit/8533ade1e7acdb46f0e3b2fe8eda23dff83a6e13))
+* **notifications:** default Matrix ID to a full [@user](https://github.com/user):hostname ([5a48d7a](https://github.com/sharebubble/bubble/commit/5a48d7a82c286e98acf802924400df8795f85481))
+* **notifications:** log Apprise delivery failures at ERROR for Sentry ([1138615](https://github.com/sharebubble/bubble/commit/1138615c0957f2a9943dbd03b0d35619b33f62ac))
+* **notifications:** log Apprise delivery failures at ERROR so Sentry captures them ([36061b7](https://github.com/sharebubble/bubble/commit/36061b7f207024c4b531b13d925c7b4e101f0db8))
+* **notifications:** prefix RocketChat targets with @ for Apprise DM addressing ([660034a](https://github.com/sharebubble/bubble/commit/660034a2520c3e70c29fa2d98d341bfb981ebd7f))
+* **notifications:** stop duplicate Sentry issues for one delivery failure ([7e12c62](https://github.com/sharebubble/bubble/commit/7e12c629508c64e10fe0bf5b927627d164b53027))
+* **notifications:** strip whitespace and avoid double @ in Matrix ID default ([9834ed2](https://github.com/sharebubble/bubble/commit/9834ed29b9916f423aabdfc61f750647fec0e074))
+* **search:** keep a tie-breaker behind an explicit relevance ordering ([0985a6d](https://github.com/sharebubble/bubble/commit/0985a6d811d182c0879cd52186075db28f11971d))
+* **search:** preserve hash when clearing one-shot focus-search state ([e936c8f](https://github.com/sharebubble/bubble/commit/e936c8f3cb10311732f2ac79f6123916860e7c4a))
+
 ## [0.5.2](https://github.com/sharebubble/bubble/compare/v0.1.2...v0.5.2) (2026-08-18)
 
 
