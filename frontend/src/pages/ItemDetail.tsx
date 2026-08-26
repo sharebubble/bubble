@@ -1,6 +1,7 @@
 import { BookingDialog } from '@/components/items/BookingDialog';
 import { CalendarSubscribeButton } from '@/components/calendar/CalendarSubscribeButton';
 import { ItemComments } from '@/components/items/ItemComments';
+import { ItemPaymentRecord } from '@/components/payments/ItemPaymentRecord';
 import { PreviousRentals } from '@/components/items/PreviousRentals';
 import { ItemImageCarousel } from '@/components/items/ItemImageCarousel';
 import { RentalCalendar } from '@/components/items/RentalCalendar';
@@ -425,6 +426,12 @@ const ItemDetail = () => {
             </Button>
           </div>
         )}
+      </div>
+
+      {/* What this item has actually been paid — the record that gives a
+          free item a visible worth. Renders nothing until there is one. */}
+      <div className="mt-6">
+        <ItemPaymentRecord itemId={item.id} />
       </div>
     </div>
   );

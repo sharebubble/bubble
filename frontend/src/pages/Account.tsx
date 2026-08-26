@@ -1,3 +1,4 @@
+import { BalanceCard } from '@/components/payments/BalanceCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
@@ -99,6 +100,10 @@ const Account = () => {
             </div>
           </Group>
         </UnstyledButton>
+
+        {/* Balance — what this member has paid and received across bookings.
+            Renders nothing until something has been recorded. */}
+        <BalanceCard />
 
         {/* Destinations */}
         <Card withBorder padding={0}>

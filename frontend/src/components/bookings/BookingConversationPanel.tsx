@@ -1,6 +1,7 @@
 import BookingCounterOfferDialog from '@/components/bookings/BookingCounterOfferDialog';
 import BookingEditDialog from '@/components/bookings/BookingEditDialog';
 import { getBookingStatusBadge } from '@/components/bookings/status';
+import { RecordPaymentPrompt } from '@/components/payments/RecordPaymentPrompt';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -13,6 +14,7 @@ import { useItem } from '@/hooks/useItem';
 import { useCreateMessage, useMarkMessageAsRead, useMessages } from '@/hooks/useMessages';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
+import type { BookingWithPayment } from '@/services/custom/payments';
 import {
   ActionIcon,
   Badge,
@@ -63,6 +65,14 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
     );
   }, [messagesData]);
+
+  // The payment fields are served by the bookings endpoint but are not part
+  // of the generated Booking type yet — see services/custom/payments.ts.
+  const payableBooking = selectedBooking as unknown as BookingWithPayment | undefined;
+  // Only the person who received the item is asked what they paid.
+  const showPaymentPrompt = Boolean(
+    payableBooking?.payment_recordable && user?.username === selectedBooking?.user?.username,
+  );
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
@@ -275,6 +285,19 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
             </div>
           )}
         </Box>
+
+        {/* Payment — asked of the booker once the booking has completed, so
+            the question is what it was worth rather than what to charge. */}
+        {showPaymentPrompt && payableBooking && (
+          <Box mt="md">
+            <RecordPaymentPrompt
+              booking={{
+                ...payableBooking,
+                item_name: selectedBooking.item_details?.name,
+              }}
+            />
+          </Box>
+        )}
 
         {/* Action Buttons - For pending bookings */}
         {selectedBooking.status === 1 && (

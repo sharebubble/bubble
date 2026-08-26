@@ -1,10 +1,13 @@
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from bubble.bookings.models import Booking, BookingStatus, Message
 from bubble.items.api.serializers import ItemMinimalSerializer
 from bubble.items.models import Item, SalesType
+from bubble.ledger.api.serializers import BookingPaymentSerializer
+from bubble.ledger.services import current_booking_payment, is_payable_booking
 from bubble.users.api.serializers import UserSerializer
 
 
@@ -24,6 +27,8 @@ class BookingSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     remote_booker_actor = RemoteActorMinimalSerializer(read_only=True)
     unread_messages_count = serializers.SerializerMethodField()
+    payment = serializers.SerializerMethodField()
+    payment_recordable = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -42,6 +47,8 @@ class BookingSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "unread_messages_count",
+            "payment",
+            "payment_recordable",
         ]
         read_only_fields = [
             "id",
@@ -54,6 +61,26 @@ class BookingSerializer(serializers.ModelSerializer):
     def get_unread_messages_count(self, obj) -> int | None:
         """Return unread_messages_count if it exists as an annotated field."""
         return getattr(obj, "unread_messages_count", None)
+
+    @extend_schema_field(BookingPaymentSerializer(allow_null=True))
+    def get_payment(self, obj):
+        """Return the payment standing against this booking, if any.
+
+        Corrections reverse rather than edit, so this is the current figure
+        even when the booker has changed their mind more than once.
+        """
+        payment = current_booking_payment(obj)
+        if payment is None:
+            return None
+        return BookingPaymentSerializer(payment, context=self.context).data
+
+    def get_payment_recordable(self, obj) -> bool:
+        """Whether the booker can record what they paid.
+
+        Drives the prompt shown once a booking has completed — asking what
+        was settled, or on a free item what it was worth.
+        """
+        return is_payable_booking(obj)
 
     def validate(self, attrs):
         """
@@ -209,6 +236,8 @@ class BookingListSerializer(BookingSerializer):
             "time_from",
             "time_to",
             "unread_messages_count",
+            "payment",
+            "payment_recordable",
         ]
 
 

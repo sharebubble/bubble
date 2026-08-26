@@ -457,6 +457,36 @@ const translations = {
     'bookings.searchingAll': 'Searching all bookings — past, current & upcoming',
     'header.bookings': 'Bookings',
 
+    // Payments — what members record having paid each other for a booking.
+    // Recorded, never processed: no money moves through the platform.
+    'payments.dialogTitle': 'What did you pay?',
+    'payments.dialogDescriptionFree':
+      '“{itemName}” changed hands without a price. If you like, record what it was worth to you.',
+    'payments.dialogDescriptionAgreed': 'Confirm what you settled for “{itemName}”.',
+    'payments.voluntaryHint':
+      'Entirely voluntary — nothing is charged and no money moves through the platform. This is only a note of what you settled between yourselves.',
+    'payments.rememberedHint': 'Starting from what you paid for this item last time.',
+    'payments.amountLabel': 'Amount',
+    'payments.notNow': 'Not now',
+    'payments.save': 'Save',
+    'payments.saved': 'Payment recorded',
+    'payments.saveFailed': 'Could not record your payment',
+    'payments.promptTitle': 'Was this worth something to you?',
+    'payments.promptDescription':
+      'This booking has finished. You can record what you paid — everyone who can see the item can see it as part of its record.',
+    'payments.recordedTitle': 'You recorded',
+    'payments.recordedDescription': 'You recorded a payment of {amount}.',
+    'payments.change': 'Change',
+    'payments.setAmount': 'Record a payment',
+    'payments.setAmountShort': 'Record',
+    'payments.recordTitle': 'Payment record',
+    'payments.recordSummary': '{count} payments · {total}',
+    'payments.recordAverage': 'Ø {average} each',
+    'payments.voluntaryBadge': 'Voluntary',
+    'payments.balanceTitle': 'Your balance',
+    'payments.balancePaidOut': 'Paid out',
+    'payments.balanceReceived': 'Received',
+
     // Item Detail
     'itemDetail.backToItems': 'Back to Items',
     'itemDetail.editItem': 'Edit Item',
@@ -1187,6 +1217,36 @@ const translations = {
     'bookings.noSearchResults': 'Keine Buchungen entsprechen deiner Suche',
     'bookings.searchingAll': 'Alle Buchungen durchsuchen – vergangen, aktuell & bevorstehend',
     'header.bookings': 'Buchungen',
+
+    // Payments — was Mitglieder einander für eine Buchung gezahlt haben.
+    'payments.dialogTitle': 'Was hast du bezahlt?',
+    'payments.dialogDescriptionFree':
+      '„{itemName}“ hat ohne Preis den Besitzer gewechselt. Wenn du magst, halte fest, was es dir wert war.',
+    'payments.dialogDescriptionAgreed': 'Bestätige, was ihr für „{itemName}“ vereinbart habt.',
+    'payments.voluntaryHint':
+      'Völlig freiwillig — es wird nichts berechnet und es fließt kein Geld über die Plattform. Dies ist nur eine Notiz darüber, was ihr untereinander geregelt habt.',
+    'payments.rememberedHint':
+      'Beginnt bei dem Betrag, den du zuletzt für diesen Artikel gezahlt hast.',
+    'payments.amountLabel': 'Betrag',
+    'payments.notNow': 'Jetzt nicht',
+    'payments.save': 'Speichern',
+    'payments.saved': 'Zahlung erfasst',
+    'payments.saveFailed': 'Zahlung konnte nicht erfasst werden',
+    'payments.promptTitle': 'War es dir etwas wert?',
+    'payments.promptDescription':
+      'Diese Buchung ist abgeschlossen. Du kannst festhalten, was du gezahlt hast — sichtbar für alle, die den Artikel sehen können.',
+    'payments.recordedTitle': 'Du hast erfasst',
+    'payments.recordedDescription': 'Du hast eine Zahlung von {amount} erfasst.',
+    'payments.change': 'Ändern',
+    'payments.setAmount': 'Zahlung erfassen',
+    'payments.setAmountShort': 'Erfassen',
+    'payments.recordTitle': 'Zahlungshistorie',
+    'payments.recordSummary': '{count} Zahlungen · {total}',
+    'payments.recordAverage': 'Ø {average} pro Zahlung',
+    'payments.voluntaryBadge': 'Freiwillig',
+    'payments.balanceTitle': 'Dein Saldo',
+    'payments.balancePaidOut': 'Gezahlt',
+    'payments.balanceReceived': 'Erhalten',
 
     // Item Detail
     'itemDetail.backToItems': 'Zurück zu Artikeln',

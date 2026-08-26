@@ -141,6 +141,7 @@ LOCAL_APPS = [
     "bubble.favorites.apps.FavoritesConfig",
     "bubble.books.apps.BooksConfig",
     "bubble.collections.apps.CollectionsConfig",
+    "bubble.ledger.apps.LedgerConfig",
     "bubble.comments.apps.CommentsConfig",
     "bubble.notifications.apps.NotificationsConfig",
     "bubble.federation.apps.FederationConfig",
@@ -542,9 +543,19 @@ CONSTANCE_CONFIG = {
         env("FEDERATION_DEFAULT_ITEM_VISIBILITY", default="local_only"),
         "Default federation visibility for new items: 'public_federated' or 'local_only'.",
     ),
+    "VOLUNTARY_PAYMENT_MAX": (
+        env.int("VOLUNTARY_PAYMENT_MAX", default=100),
+        "Upper end of the slider offered after a free booking completes, in "
+        "whole units of DEFAULT_CURRENCY. Only bounds the suggestion UI - "
+        "larger amounts can still be typed.",
+    ),
 }
 
-CONSTANCE_CONFIG_PUBLIC = ["REQUIRE_LOGIN", "DEFAULT_ITEM_VISIBILITY"]
+CONSTANCE_CONFIG_PUBLIC = [
+    "REQUIRE_LOGIN",
+    "DEFAULT_ITEM_VISIBILITY",
+    "VOLUNTARY_PAYMENT_MAX",
+]
 
 ISBN_LOOKUP_BASE_URL = env("ISBN_LOOKUP_BASE_URL", default="http://isbn-search:8000")
 
