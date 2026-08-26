@@ -20,7 +20,7 @@ import CreateItem from './pages/CreateItem';
 import EditBook from './pages/EditBook';
 import EditItem from './pages/EditItem';
 import Home from './pages/Home';
-import Index from './pages/Index';
+import Browse from './pages/Browse';
 import ItemDetail from './pages/ItemDetail';
 import ItemBookingHistory from './pages/ItemBookingHistory';
 import MyItems from './pages/MyItems';
@@ -91,7 +91,7 @@ const ProtectedRoutes = () => {
       <Header />
       <Routes>
         <Route path="/" element={<RootRoute />} />
-        <Route path={BROWSE_PATH} element={<Index />} />
+        <Route path={BROWSE_PATH} element={<Browse />} />
         <Route path="/item/:itemUuid" element={<ItemDetail />} />
         <Route path="/item/:itemUuid/bookings" element={<ItemBookingHistory />} />
         <Route

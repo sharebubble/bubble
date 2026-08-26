@@ -1,48 +1,41 @@
-import { Button as MantineButton, Checkbox, Menu, Radio } from '@mantine/core';
+import {
+  Button as MantineButton,
+  Checkbox,
+  Group,
+  Menu,
+  Radio,
+  SegmentedControl,
+  Text,
+} from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { ArrowDown, ArrowUp, ArrowUpDown, Sparkles } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useBrowseParams } from '@/hooks/useBrowseParams';
+import { ArrowDown, ArrowUp, ArrowUpDown, Grid3X3, List, Sparkles } from 'lucide-react';
 import { ConditionEnum } from '@/services/django';
 
-type SortField = 'relevance' | 'name' | 'price' | 'date';
-type SortDir = 'asc' | 'desc';
-type Scope = 'local' | 'federated' | 'all';
-
 type BrowseNavProps = {
-  selectedConditions: ConditionEnum[];
-  onSelectedConditionsChange: (conditions: ConditionEnum[]) => void;
-  sortField: SortField;
-  sortDir: SortDir;
-  onSortChange: (field: SortField, dir: SortDir) => void;
-  /** Whether a search term is active — relevance can only be sorted on then. */
-  searchActive: boolean;
-  scope: Scope;
-  onScopeChange: (scope: Scope) => void;
+  totalCount: number;
   className?: string;
 };
 
 const CONDITIONS: ConditionEnum[] = [0, 1, 2];
 
-export const BrowseNav = ({
-  selectedConditions,
-  onSelectedConditionsChange,
-  sortField,
-  sortDir,
-  onSortChange,
-  searchActive,
-  scope,
-  onScopeChange,
-  className,
-}: BrowseNavProps) => {
+export const BrowseNav = ({ totalCount, className }: BrowseNavProps) => {
   const { t } = useLanguage();
-  const location = useLocation();
 
-  const params = new URLSearchParams(location.search);
-  // The "type" preset (set from the header search bar) gates the condition
-  // filter, which only applies to buy/sell items.
-  const activeType = params.get('type');
-
+  const {
+    typeParam,
+    searchQuery,
+    selectedConditions,
+    sortField,
+    sortDir,
+    scope,
+    viewMode,
+    setConditions,
+    setSort,
+    setScope,
+    setViewMode,
+  } = useBrowseParams();
   const getConditionName = (value: ConditionEnum): string => {
     switch (value) {
       case 0:
@@ -60,29 +53,27 @@ export const BrowseNav = ({
     const nextConditions = selectedConditions.includes(condition)
       ? selectedConditions.filter(value => value !== condition)
       : [...selectedConditions, condition];
-    onSelectedConditionsChange(nextConditions);
+    setConditions(nextConditions);
   };
 
   // Relevance has a single meaningful direction (best match first), so it is
   // not a toggle like the other two.
-  const handleRelevanceSortClick = (): void => onSortChange('relevance', 'desc');
+  const handleRelevanceSortClick = (): void => setSort('relevance', 'desc');
 
   const handleDateSortClick = (): void => {
     if (sortField === 'date') {
-      onSortChange('date', sortDir === 'desc' ? 'asc' : 'desc');
+      setSort('date', sortDir === 'desc' ? 'asc' : 'desc');
       return;
     }
-
-    onSortChange('date', 'desc');
+    setSort('date', 'desc');
   };
 
   const handlePriceSortClick = (): void => {
     if (sortField === 'price') {
-      onSortChange('price', sortDir === 'asc' ? 'desc' : 'asc');
+      setSort('price', sortDir === 'asc' ? 'desc' : 'asc');
       return;
     }
-
-    onSortChange('price', 'asc');
+    setSort('price', 'asc');
   };
 
   const activeSortIconClass = 'h-3.5 w-3.5 text-[var(--mantine-color-green-6)]';
@@ -107,126 +98,148 @@ export const BrowseNav = ({
     );
 
   return (
-    <Menu position="bottom-end" shadow="md" width={320} closeOnItemClick={false}>
-      <Menu.Target>
-        <MantineButton
-          type="button"
-          size="compact-sm"
-          variant="default"
-          className={cn('shrink-0', className)}
-          leftSection={
-            sortField === 'relevance' ? (
-              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-            ) : sortDir === 'asc' ? (
-              <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
-            ) : (
-              <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
-            )
-          }
-          aria-label={t('index.filterAndSort')}
-          title={t('index.filterAndSort')}
-        >
-          {sortField === 'relevance'
-            ? t('index.sortRelevance')
-            : sortField === 'price'
-              ? t('index.sortPrice')
-              : t('index.sortDate')}
-        </MantineButton>
-      </Menu.Target>
+    <Group justify="space-between" align="center">
+      <Text size="sm" c="dimmed">
+        {t('index.itemsFound').replace('{count}', String(totalCount))}
+      </Text>
+      <Group gap="xs" wrap="nowrap">
+        <SegmentedControl
+          value={viewMode}
+          onChange={value => setViewMode(value as 'list' | 'cards')}
+          data={[
+            { label: <List size={16} />, value: 'list' },
+            { label: <Grid3X3 size={16} />, value: 'cards' },
+          ]}
+          color="green"
+          styles={{
+            label: { padding: 8 },
+            indicator: { boxShadow: 'none' },
+          }}
+        />
+        <Menu position="bottom-end" shadow="md" width={320} closeOnItemClick={false}>
+          <Menu.Target>
+            <MantineButton
+              type="button"
+              size="compact-sm"
+              variant="default"
+              className={cn('shrink-0', className)}
+              leftSection={
+                sortField === 'relevance' ? (
+                  <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+                ) : sortDir === 'asc' ? (
+                  <ArrowUp className="h-3.5 w-3.5" aria-hidden="true" />
+                ) : (
+                  <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
+                )
+              }
+              aria-label={t('index.filterAndSort')}
+              title={t('index.filterAndSort')}
+            >
+              {sortField === 'relevance'
+                ? t('index.sortRelevance')
+                : sortField === 'price'
+                  ? t('index.sortPrice')
+                  : t('index.sortDate')}
+            </MantineButton>
+          </Menu.Target>
 
-      <Menu.Dropdown>
-        {activeType === 'buy' && (
-          <>
-            <Menu.Label>{t('index.condition')}</Menu.Label>
-            {CONDITIONS.map(condition => (
+          <Menu.Dropdown>
+            {typeParam === 'buy' && (
+              <>
+                <Menu.Label>{t('index.condition')}</Menu.Label>
+                {CONDITIONS.map(condition => (
+                  <Menu.Item
+                    key={condition}
+                    closeMenuOnClick={false}
+                    onClick={() => toggleCondition(condition)}
+                    leftSection={
+                      <Checkbox
+                        checked={selectedConditions.includes(condition)}
+                        readOnly
+                        variant="outline"
+                        tabIndex={-1}
+                        aria-hidden="true"
+                      />
+                    }
+                  >
+                    {getConditionName(condition)}
+                  </Menu.Item>
+                ))}
+                <Menu.Divider />
+              </>
+            )}
+
+            {/* Sort control */}
+            <Menu.Label>{t('index.sort')}</Menu.Label>
+            {!!searchQuery && (
               <Menu.Item
-                key={condition}
-                closeMenuOnClick={false}
-                onClick={() => toggleCondition(condition)}
+                onClick={handleRelevanceSortClick}
                 leftSection={
-                  <Checkbox
-                    checked={selectedConditions.includes(condition)}
-                    readOnly
-                    variant="outline"
-                    tabIndex={-1}
+                  <Sparkles
+                    className={
+                      sortField === 'relevance' ? activeSortIconClass : inactiveSortIconClass
+                    }
                     aria-hidden="true"
                   />
                 }
               >
-                {getConditionName(condition)}
+                {t('index.sortRelevance')}
               </Menu.Item>
-            ))}
+            )}
+            <Menu.Item onClick={handleDateSortClick} leftSection={dateSortIconColored}>
+              {t('index.sortDate')}
+            </Menu.Item>
+            <Menu.Item onClick={handlePriceSortClick} leftSection={priceSortIconColored}>
+              {t('index.sortPrice')}
+            </Menu.Item>
             <Menu.Divider />
-          </>
-        )}
 
-        {/* Sort control */}
-        <Menu.Label>{t('index.sort')}</Menu.Label>
-        {searchActive && (
-          <Menu.Item
-            onClick={handleRelevanceSortClick}
-            leftSection={
-              <Sparkles
-                className={sortField === 'relevance' ? activeSortIconClass : inactiveSortIconClass}
-                aria-hidden="true"
-              />
-            }
-          >
-            {t('index.sortRelevance')}
-          </Menu.Item>
-        )}
-        <Menu.Item onClick={handleDateSortClick} leftSection={dateSortIconColored}>
-          {t('index.sortDate')}
-        </Menu.Item>
-        <Menu.Item onClick={handlePriceSortClick} leftSection={priceSortIconColored}>
-          {t('index.sortPrice')}
-        </Menu.Item>
-        <Menu.Divider />
-
-        <Menu.Label>{t('index.scope')}</Menu.Label>
-        <Menu.Item
-          leftSection={
-            <Radio
-              checked={scope === 'local'}
-              readOnly
-              tabIndex={-1}
-              aria-hidden="true"
-              variant="outline"
-            />
-          }
-          onClick={() => onScopeChange('local')}
-        >
-          {t('index.scopeLocal')}
-        </Menu.Item>
-        <Menu.Item
-          leftSection={
-            <Radio
-              checked={scope === 'all'}
-              readOnly
-              tabIndex={-1}
-              aria-hidden="true"
-              variant="outline"
-            />
-          }
-          onClick={() => onScopeChange('all')}
-        >
-          {t('index.scopeAll')}
-        </Menu.Item>
-        <Menu.Item
-          leftSection={
-            <Radio
-              checked={scope === 'federated'}
-              readOnly
-              tabIndex={-1}
-              aria-hidden="true"
-              variant="outline"
-            />
-          }
-          onClick={() => onScopeChange('federated')}
-        >
-          {t('index.scopeFederated')}
-        </Menu.Item>
-      </Menu.Dropdown>
-    </Menu>
+            <Menu.Label>{t('index.scope')}</Menu.Label>
+            <Menu.Item
+              leftSection={
+                <Radio
+                  checked={scope === 'local'}
+                  readOnly
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  variant="outline"
+                />
+              }
+              onClick={() => setScope('local')}
+            >
+              {t('index.scopeLocal')}
+            </Menu.Item>
+            <Menu.Item
+              leftSection={
+                <Radio
+                  checked={scope === 'all'}
+                  readOnly
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  variant="outline"
+                />
+              }
+              onClick={() => setScope('all')}
+            >
+              {t('index.scopeAll')}
+            </Menu.Item>
+            <Menu.Item
+              leftSection={
+                <Radio
+                  checked={scope === 'federated'}
+                  readOnly
+                  tabIndex={-1}
+                  aria-hidden="true"
+                  variant="outline"
+                />
+              }
+              onClick={() => setScope('federated')}
+            >
+              {t('index.scopeFederated')}
+            </Menu.Item>
+          </Menu.Dropdown>
+        </Menu>
+      </Group>
+    </Group>
   );
 };
