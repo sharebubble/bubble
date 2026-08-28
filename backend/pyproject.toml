@@ -30,7 +30,7 @@ dependencies = [
     "drf-orjson-renderer>=1.8.0",
     "drf-spectacular",
     "fido2",
-    "google-genai>=2.19.0",
+    "google-genai>=2.20.0",
     "gunicorn",
     "hiredis",
     "httpx>=0.28.1",
@@ -44,7 +44,7 @@ dependencies = [
     "whitenoise",
     "pyld>=3.2.0",
     "http-message-signatures>=2.0.1",
-    "cryptography>=50.0.0",
+    "cryptography>=50.0.1",
     "apprise>=1.13.0",
     "pywebpush>=2.4.0",
 ]
