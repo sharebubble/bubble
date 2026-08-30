@@ -209,6 +209,9 @@ ignore = [
   "S106",     # hardcoded passwords in test fixtures are intentional
   "FBT002",   # boolean default args in test helpers are fine
 ]
+"*/books/data/build_biblio.py" = [
+  "PLR2004",  # numeric thresholds in the one-off bibliography parser are clearer inline
+]
 
 [tool.ruff.lint.isort]
 force-single-line = false
