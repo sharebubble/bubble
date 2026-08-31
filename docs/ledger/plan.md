@@ -54,10 +54,18 @@ Entries carry one **signed** amount. The convention is **debit-positive**:
 
 Member accounts are **liabilities** of the community towards the member, so a member
 who is owed money has a *negative raw* balance. Nobody wants to read that in a UI, so
-each account carries a `normal_side` and the API exposes:
+every account has a **normal side**, derived from its type, and the API exposes a
+display balance flipped accordingly:
 
-```
-display_balance = raw_balance * account.sign      # sign = -1 for liability/equity/income
+```python
+class NormalSide(models.IntegerChoices):
+    DEBIT = 1    # ASSET, EXPENSE   — raw balance is already the readable one
+    CREDIT = -1  # MEMBER, INCOME, EQUITY, SUSPENSE — raw balance needs flipping
+
+# on Account, derived from `type`, stored so exports and SQL can use it directly:
+normal_side = IntegerField(choices=NormalSide)
+
+display_balance = raw_balance * account.normal_side
 ```
 
 A member's display balance is therefore **positive when the community owes them** and
@@ -141,6 +149,7 @@ class AccountType(IntegerChoices):
 
 class Account(models.Model):
     id, book(FK), type, code, name, is_active
+    normal_side = IntegerField(choices=NormalSide)   # derived from type, section 3
     owner = FK(User, null=True, on_delete=PROTECT)   # only for MEMBER accounts
     # unique_together: (book, code); code is stable and export-safe
     # code examples: member:<user-uuid>, asset:bank, income:rental, expense:tools
@@ -150,16 +159,29 @@ class TransactionKind(IntegerChoices):
     MEMBERSHIP_FEE, ADJUSTMENT, REVERSAL, OPENING_BALANCE
 
 class Transaction(models.Model):
-    id, book(FK), seq = BigAutoField(unique)      # stable global ordering
+    id = UUIDField(primary_key=True)
+    book = FK(Book, on_delete=PROTECT)
+    # Stable global ordering, independent of created_at collisions. A plain
+    # BigIntegerField fed by a Postgres sequence created in the migration
+    # (db_default=Func("ledger_transaction_seq", function="nextval")) — not a
+    # BigAutoField, which Django only allows as the primary key.
+    seq = BigIntegerField(editable=False)
     kind, occurred_on = DateField()               # business date
     created_at, created_by = FK(User, on_delete=PROTECT)
     description = TextField()
     category = FK(Category, on_delete=PROTECT, null=True)   # D7
     project  = FK(Project,  on_delete=PROTECT, null=True)   # D7
     source_type, source_id                        # 'booking' + Booking.id, 'statement_line' + id
-    idempotency_key = CharField(unique per book)  # e.g. "booking:<uuid>:charge"
+    idempotency_key = CharField()                 # e.g. "booking:<uuid>:charge"
     reverses = FK("self", null=True, related_name="reversed_by")
     prev_hash, hash = CharField(64, blank=True)   # phase 6, section 11
+
+    class Meta:
+        constraints = [
+            UniqueConstraint(fields=["book", "idempotency_key"],
+                             name="ledger_transaction_idempotency_key_per_book"),
+            UniqueConstraint(fields=["book", "seq"], name="ledger_transaction_seq_per_book"),
+        ]
 
 class Entry(models.Model):
     id, transaction(FK, related_name="entries"), account(FK, on_delete=PROTECT)
@@ -221,8 +243,8 @@ one exists, otherwise `OWNER` everywhere. Editable by the item owner and by admi
 | I1 | Entries of a transaction sum to zero | Postgres `CONSTRAINT TRIGGER ... DEFERRABLE INITIALLY DEFERRED` added via `RunSQL`, checked at commit — the service layer can build a transaction incrementally, but the database refuses an unbalanced commit. Mirrored by a service-level assertion for a clear error message. |
 | I2 | ≥ 2 entries per transaction | same trigger |
 | I3 | All entries use the book's currency | denormalised `currency` on `Entry` + trigger comparing to `book.currency` |
-| I4 | Rows are append-only | `Transaction.save()`/`Entry.save()` raise on update; `delete()` raises. In production the app DB role is granted only `INSERT`/`SELECT` on these tables (migrations run as a separate role) — documented in `docs/ledger/operating.md`. |
-| I5 | No double posting from the same source | `idempotency_key` unique per book |
+| I4 | Rows are append-only | `Transaction.save()`/`Entry.save()` raise on update; `delete()` raises. In production the app DB role is granted only `INSERT`/`SELECT` on these tables (migrations run as a separate role) — to be documented in `docs/ledger/operating.md`, written alongside phase 1. |
+| I5 | No double posting from the same source | `UniqueConstraint(book, idempotency_key)` |
 | I6 | No posting into a closed period | service check against `LedgerPeriod` |
 | I7 | Trial balance: sum of all account balances = 0 | nightly Celery `verify_ledger` task; result exposed at `/api/ledger/health/` and shown in the UI (section 11) |
 | I8 | Cached balance = recomputed sum | same nightly task, per account |
@@ -315,7 +337,7 @@ a ledger that silently disagrees with itself is worse than one that says so.
 
 Indexes: `Entry(account, transaction)`, `Entry(item)`, `Transaction(book, occurred_on)`,
 `Transaction(category)`, `Transaction(project)`, `Transaction(kind)`, plus the unique
-`Transaction(book, idempotency_key)`.
+constraints on `(book, idempotency_key)` and `(book, seq)`.
 
 For statistics at scale, a `LedgerMonthlyRollup(book, account, category, project, month,
 amount, entry_count)` table maintained by a Celery task. Because the ledger is
