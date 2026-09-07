@@ -4,11 +4,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppConfig } from '@/hooks/useAppConfig';
 import { authAPI, LoginCredentials } from '@/services/custom/auth';
-import { redirectToSocialProvider } from '@/lib/utils';
+import { getSsoReturn, getSsoSuppression, redirectToSocialProvider } from '@/lib/sso';
 import { client } from '@/services/django/client.gen';
 import { Alert, Button, Card, Divider, PasswordInput, Text, TextInput, Title } from '@mantine/core';
 import { Eye, EyeOff, Loader } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface AuthConfig {
@@ -22,6 +22,13 @@ interface AuthConfig {
   };
 }
 
+/**
+ * Reasons not to forward to the provider on our own. All but `signout` are
+ * failures that used to end in the same silent bounce between app and provider,
+ * and are reported to the user; `signout` is the user's own choice.
+ */
+type BlockedReason = 'signout' | 'error' | 'pending' | 'unreachable' | 'returned';
+
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -30,14 +37,47 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t } = useLanguage();
-  const { refreshAuth } = useAuth();
+  const { refreshAuth, sessionError, pendingFlows } = useAuth();
   const { requireLogin } = useAppConfig();
 
-  // Guards the auto-redirect so it only fires once.
-  const autoRedirectedRef = useRef(false);
+  // Guards the automatic forward against firing twice within one mount. The
+  // cross-page guards live in lib/sso: this screen is remounted by the round
+  // trip itself, so a ref alone can never see the previous attempt.
+  const autoForwardedRef = useRef(false);
 
   const [authConfig, setAuthConfig] = useState<AuthConfig | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(true);
+
+  // Read once: the markers are stripped from the URL as the module loads.
+  const ssoReturn = getSsoReturn();
+  const [ssoError, setSsoError] = useState<string | null>(ssoReturn.error);
+
+  // Read once at mount: the marker describes *earlier* page loads. Re-reading it
+  // per render would flip the screen back to the button the moment this screen
+  // records its own forward, while the browser is already navigating away.
+  const [suppression] = useState(getSsoSuppression);
+
+  /**
+   * Why the automatic forward is held back, or null when it may go ahead.
+   *
+   * The forward is a full page navigation, so a failed round trip comes back to
+   * a freshly mounted screen with no memory of having tried. Without these
+   * checks it forwards again immediately, and keeps doing so — the provider
+   * signs the user straight back in, allauth fails or parks the login the same
+   * way as before, and the browser bounces until the user gives up.
+   */
+  const blockedReason: BlockedReason | null =
+    suppression === 'signout'
+      ? 'signout'
+      : ssoError
+        ? 'error'
+        : pendingFlows.some(flow => flow.is_pending)
+          ? 'pending'
+          : sessionError
+            ? 'unreachable'
+            : ssoReturn.returned || suppression === 'attempt'
+              ? 'returned'
+              : null;
 
   const [loginData, setLoginData] = useState<LoginCredentials>({
     username: '',
@@ -61,21 +101,45 @@ const Auth = () => {
     initializeCSRF();
   }, []);
 
+  const startSocialLogin = useCallback(async (provider: { id: string; name: string }) => {
+    setRedirectingTo(provider.name);
+    try {
+      await redirectToSocialProvider(provider.id);
+    } catch (err) {
+      // Usually a missing CSRF token, i.e. the backend never answered. Posting
+      // the form anyway would land the user on a bare 403 page.
+      console.error('Failed to start social login:', err);
+      setRedirectingTo(null);
+      setSsoError('redirect_failed');
+      // Rethrown so the button drops out of its busy state; the alert above
+      // carries the explanation.
+      throw err;
+    }
+  }, []);
+
   // When anonymous access is disabled and exactly one social provider is
   // configured with no username/password login, skip the login screen and
   // forward straight to the provider. Otherwise users would only ever see a
   // single "Login with X" button that does the same thing.
-  const maybeAutoRedirect = (config: AuthConfig | null) => {
-    if (!requireLogin || autoRedirectedRef.current) return;
-    const providers = config?.data?.socialaccount?.providers ?? [];
-    const loginMethods = config?.data?.account?.login_methods ?? [];
+  const providers = authConfig?.data?.socialaccount?.providers ?? [];
+  const loginMethods = authConfig?.data?.account?.login_methods ?? [];
+  const singleProvider = providers.length === 1 && loginMethods.length === 0 ? providers[0] : null;
+  const autoForwardTo =
+    requireLogin && !loadingConfig && !blockedReason && singleProvider ? singleProvider : null;
 
-    if (providers.length === 1 && loginMethods.length === 0) {
-      autoRedirectedRef.current = true;
-      setRedirectingTo(providers[0].name);
-      redirectToSocialProvider(providers[0].id);
-    }
-  };
+  useEffect(() => {
+    if (!autoForwardTo || autoForwardedRef.current) return;
+    autoForwardedRef.current = true;
+    redirectToSocialProvider(autoForwardTo.id).catch(err => {
+      console.error('Failed to start social login:', err);
+      autoForwardedRef.current = false;
+      setSsoError('redirect_failed');
+    });
+  }, [autoForwardTo]);
+
+  // A forward under way means the page is on its way out; anything else this
+  // screen could render would only flash by.
+  const forwardingTo = redirectingTo ?? autoForwardTo?.name ?? null;
 
   // Fetch auth config to determine which login methods and social providers are available
   useEffect(() => {
@@ -88,7 +152,6 @@ const Auth = () => {
         }
         const json = await res.json();
         setAuthConfig(json);
-        maybeAutoRedirect(json);
       } catch (err) {
         console.error('Failed to fetch auth config:', err);
         setAuthConfig(null);
@@ -98,8 +161,6 @@ const Auth = () => {
     };
 
     fetchConfig();
-    // requireLogin is resolved by the time this screen renders (App gates on it)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -153,11 +214,24 @@ const Auth = () => {
           </div>
 
           <div className="space-y-6 mt-6">
+            {/* Why the automatic forward was held back, so the user is not left
+                staring at a screen that silently bounced them around. */}
+            {blockedReason && blockedReason !== 'signout' && singleProvider && (
+              <Alert color="yellow" variant="light" title={t('auth.ssoBlockedTitle')}>
+                <Text size="sm">{t(`auth.ssoBlocked.${blockedReason}`)}</Text>
+                {ssoError && (
+                  <Text size="xs" c="dimmed" className="mt-1">
+                    {t('auth.ssoErrorCode', { code: ssoError })}
+                  </Text>
+                )}
+              </Alert>
+            )}
+
             {/* Social Login Button */}
             <div className="text-center">
-              {redirectingTo ? (
+              {forwardingTo ? (
                 <Text size="sm" c="dimmed">
-                  {t('auth.redirectingToProvider', { provider: redirectingTo })}
+                  {t('auth.redirectingToProvider', { provider: forwardingTo })}
                 </Text>
               ) : loadingConfig ? (
                 <Text size="sm" c="dimmed">
@@ -165,9 +239,17 @@ const Auth = () => {
                 </Text>
               ) : (
                 // render one button per provider if available
-                (authConfig?.data?.socialaccount?.providers ?? []).map(p => (
+                providers.map(p => (
                   <div key={p.id} className="mb-2">
-                    <LoginWithSocialButton name={p.name} id={p.id} />
+                    <LoginWithSocialButton
+                      name={p.name}
+                      label={
+                        blockedReason && blockedReason !== 'signout'
+                          ? t('auth.retrySignIn', { provider: p.name })
+                          : undefined
+                      }
+                      onLogin={() => startSocialLogin(p)}
+                    />
                   </div>
                 ))
               )}
@@ -186,7 +268,7 @@ const Auth = () => {
               )}
 
               {/* show username/password login only when backend indicates methods are available */}
-              {!loadingConfig && (authConfig?.data?.account?.login_methods ?? []).length > 0 && (
+              {!loadingConfig && loginMethods.length > 0 && (
                 <>
                   <TextInput
                     label={t('auth.usernameOrEmail')}
