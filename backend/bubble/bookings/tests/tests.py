@@ -1836,6 +1836,45 @@ class BookingFulfillmentTestCase(APITestCase):
         booking.refresh_from_db()
         assert booking.status == BookingStatus.CONFIRMED
 
+    def test_owner_cannot_confirm_overlapping_booking(self):
+        """Confirming a booking that overlaps an existing confirmed one returns
+        a friendly 400 instead of an unhandled IntegrityError (500)."""
+        item = ItemFactory(
+            user=self.item_owner,
+            sales_type=SalesType.RENT,
+            price="10.00",
+            status=ItemStatus.RESERVED,
+        )
+        now = timezone.now()
+        BookingFactory(
+            user=self.booking_user,
+            item=item,
+            status=BookingStatus.CONFIRMED,
+            time_from=now,
+            time_to=now + timedelta(hours=2),
+        )
+        pending = BookingFactory(
+            user=self.booking_user,
+            item=item,
+            status=BookingStatus.PENDING,
+            time_from=now + timedelta(hours=1),
+            time_to=now + timedelta(hours=3),
+        )
+
+        self.client.force_authenticate(user=self.item_owner)
+        response = self.client.patch(
+            f"/api/bookings/{pending.id}/",
+            {"status": BookingStatus.CONFIRMED},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "non_field_errors" in response.data
+        assert "already rented out" in response.data["non_field_errors"][0]
+        pending.refresh_from_db()
+        assert pending.status == BookingStatus.PENDING
+        assert not Message.objects.filter(booking=pending).exists()
+
 
 class BookingPastCancelValidationTestCase(APITestCase):
     """A booking whose rental period has already ended can no longer be
