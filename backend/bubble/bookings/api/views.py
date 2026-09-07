@@ -31,7 +31,17 @@ def _overlapping_booking_error(exc: IntegrityError) -> ValidationError | None:
     Returns None when the IntegrityError is unrelated to overlapping bookings so
     callers can re-raise the original exception.
     """
-    if "exclude_overlapping_confirmed_bookings" not in str(exc):
+    # Prefer the structured constraint name from the underlying driver error;
+    # fall back to the message text when diagnostics are unavailable.
+    diag = getattr(exc.__cause__, "diag", None)
+    constraint_name = getattr(diag, "constraint_name", None) if diag else None
+    if constraint_name is not None:
+        is_overlap = constraint_name.startswith(
+            "exclude_overlapping_confirmed_bookings"
+        )
+    else:
+        is_overlap = "exclude_overlapping_confirmed_bookings" in str(exc)
+    if not is_overlap:
         return None
     return ValidationError(
         {
