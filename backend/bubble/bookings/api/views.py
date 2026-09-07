@@ -119,11 +119,14 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
 
     def perform_create(self, serializer):
         """
-        Create a booking and auto-confirm if the item has rental_self_service enabled
-        and the offered price matches the item's listed price exactly.
+        Create a booking and auto-confirm if the item has rental_self_service enabled.
 
-        If the offer deviates from the item price the booking stays PENDING so the
-        owner can review the custom offer, even on self-service items.
+        Auto-confirmation happens when a rental price can be calculated and the
+        offered amount is at least that price (larger offers are accepted too), or
+        when no rental price can be calculated — e.g. open-ended rentals, borrows
+        or sales — regardless of whether an offer was given. Offers below the
+        calculated rental price stay PENDING so the owner can review the custom
+        offer, even on self-service items.
         """
         item = serializer.validated_data.get("item")
         offer = serializer.validated_data.get("offer")
@@ -139,10 +142,7 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
         self_service_at_listed_price = (
             item
             and item.rental_self_service
-            and (
-                (rental_price and offer and offer >= rental_price)
-                or (not rental_price and not offer)
-            )
+            and (rental_price is None or (offer is not None and offer >= rental_price))
         )
 
         if is_owner or self_service_at_listed_price:
