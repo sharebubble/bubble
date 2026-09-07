@@ -90,23 +90,27 @@ export interface SsoReturn {
  * module load, before the router ever looks at the location.
  */
 function readAndStripReturnParams(): SsoReturn {
-  if (typeof window === 'undefined') return { returned: false, error: null };
+  const none: SsoReturn = { returned: false, error: null };
+  if (typeof window === 'undefined') return none;
 
   const url = new URL(window.location.href);
-  const returned = url.searchParams.has(RETURN_PARAM);
   const error = url.searchParams.get(ERROR_PARAM);
-  // An `error` that belongs to another process (e.g. connecting an account) is
-  // not this screen's business, but it still marks a completed round trip.
-  const isLoginError = error !== null && url.searchParams.get(ERROR_PROCESS_PARAM) !== 'connect';
+  // allauth always pairs `error` with `error_process`, and only the login
+  // process concerns this screen. Requiring both keeps an unrelated `?error=`
+  // on some other link — or a failed "connect an account" flow — from being
+  // read as a returning sign-in and suppressing the forward for that load.
+  const loginError =
+    error !== null && url.searchParams.get(ERROR_PROCESS_PARAM) === 'login' ? error : null;
+  const hasReturnMarker = url.searchParams.has(RETURN_PARAM);
 
-  if (!returned && error === null) return { returned: false, error: null };
+  if (!hasReturnMarker && loginError === null) return none;
 
   for (const param of [RETURN_PARAM, ERROR_PARAM, ERROR_PROCESS_PARAM]) {
     url.searchParams.delete(param);
   }
   window.history.replaceState(window.history.state, '', url.toString());
 
-  return { returned: true, error: isLoginError ? error : null };
+  return { returned: true, error: loginError };
 }
 
 const ssoReturn = readAndStripReturnParams();

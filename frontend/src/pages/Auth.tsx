@@ -111,6 +111,9 @@ const Auth = () => {
       console.error('Failed to start social login:', err);
       setRedirectingTo(null);
       setSsoError('redirect_failed');
+      // Rethrown so the button drops out of its busy state; the alert above
+      // carries the explanation.
+      throw err;
     }
   }, []);
 
