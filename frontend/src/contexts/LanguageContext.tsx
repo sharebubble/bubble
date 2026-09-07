@@ -123,6 +123,17 @@ const translations = {
     'auth.loginFailed': 'Login failed. Please check your credentials.',
     'auth.unexpectedError': 'An unexpected error occurred. Please try again.',
     'auth.redirectingToProvider': 'Redirecting to {{provider}}...',
+    'auth.ssoBlockedTitle': 'Sign-in did not complete',
+    'auth.ssoBlocked.error':
+      'Your identity provider sent you back without signing you in. Try again, and contact your administrator if it keeps happening.',
+    'auth.ssoBlocked.pending':
+      'Your sign-in still needs a step that cannot be completed here. Please contact your administrator.',
+    'auth.ssoBlocked.unreachable':
+      'Bubble could not reach the server, so your sign-in status is unknown. Check your connection and try again.',
+    'auth.ssoBlocked.returned':
+      'You came back from the login provider without an active session. This often means cookies are blocked for this site.',
+    'auth.ssoErrorCode': 'Error code: {{code}}',
+    'auth.retrySignIn': 'Try {{provider}} again',
 
     // Index Page
     'index.itemsFound': '{count} items found',
@@ -843,6 +854,17 @@ const translations = {
     'auth.loginFailed': 'Anmeldung fehlgeschlagen. Bitte überprüfe deine Zugangsdaten.',
     'auth.unexpectedError': 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.',
     'auth.redirectingToProvider': 'Weiterleitung zu {{provider}}...',
+    'auth.ssoBlockedTitle': 'Anmeldung nicht abgeschlossen',
+    'auth.ssoBlocked.error':
+      'Dein Anmeldedienst hat dich zurückgeschickt, ohne dich anzumelden. Versuche es erneut und wende dich an deine Administration, wenn es weiterhin passiert.',
+    'auth.ssoBlocked.pending':
+      'Deiner Anmeldung fehlt noch ein Schritt, der hier nicht abgeschlossen werden kann. Bitte wende dich an deine Administration.',
+    'auth.ssoBlocked.unreachable':
+      'Bubble konnte den Server nicht erreichen, dein Anmeldestatus ist deshalb unbekannt. Prüfe deine Verbindung und versuche es erneut.',
+    'auth.ssoBlocked.returned':
+      'Du kommst ohne aktive Sitzung vom Anmeldedienst zurück. Häufig sind Cookies für diese Seite blockiert.',
+    'auth.ssoErrorCode': 'Fehlercode: {{code}}',
+    'auth.retrySignIn': 'Erneut mit {{provider}} anmelden',
 
     // Index Page
     'index.itemsFound': '{count} Artikel gefunden',
