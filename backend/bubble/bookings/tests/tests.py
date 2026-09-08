@@ -172,7 +172,8 @@ class BookingAutoConfirmTestCase(APITestCase):
         """
         A self-service item with no price (e.g. borrow) has rental_price == None.
         When no offer is submitted the booking should auto-confirm because
-        offer (None) == rental_price (None).
+        offer (None) == rental_price (None). A definite return date is provided
+        so the booking is not open-ended.
         """
         borrow_item = SelfServiceItemFactory(
             user=self.item_owner,
@@ -184,7 +185,11 @@ class BookingAutoConfirmTestCase(APITestCase):
 
         response = self.client.post(
             "/api/bookings/",
-            {"item": str(borrow_item.id)},
+            {
+                "item": str(borrow_item.id),
+                "time_from": timezone.now(),
+                "time_to": timezone.now() + timedelta(days=1),
+            },
             format="json",
         )
 
@@ -906,11 +911,12 @@ class BookingAutoConfirmPriceCheckTestCase(APITestCase):
         assert booking.status == BookingStatus.CONFIRMED
         assert str(booking.offer.amount) == "999.99"
 
-    def test_open_end_rental_with_offer_auto_confirms(self):
+    def test_open_end_rental_with_offer_stays_pending(self):
         """
-        An open-ended self-service rental has no time_to, so rental_price is
-        None. An offered amount is still auto-accepted instead of waiting for
-        owner review.
+        An open-ended self-service rental has no time_to. Because it is an
+        indefinite hold (the open-end exclusion constraint allows only one such
+        booking per item and would permanently block re-booking), it is never
+        auto-confirmed — the offered amount waits for owner review.
         """
         open_end_item = SelfServiceItemFactory(
             user=self.item_owner,
@@ -927,15 +933,16 @@ class BookingAutoConfirmPriceCheckTestCase(APITestCase):
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["status"] == BookingStatus.CONFIRMED
+        assert response.data["status"] == BookingStatus.PENDING
         booking = Booking.objects.get(id=response.data["id"])
-        assert booking.status == BookingStatus.CONFIRMED
+        assert booking.status == BookingStatus.PENDING
         assert str(booking.offer.amount) == "15.00"
 
-    def test_borrow_self_service_with_offer_auto_confirms(self):
+    def test_borrow_self_service_with_offer_stays_pending(self):
         """
         A self-service borrow item has no price, so rental_price is None. An
-        offered amount (e.g. a donation) is still auto-accepted.
+        open-ended borrow (no time_to) is an indefinite hold and stays PENDING
+        for owner review rather than auto-confirming.
         """
         borrow_item = SelfServiceItemFactory(
             user=self.item_owner,
@@ -952,9 +959,9 @@ class BookingAutoConfirmPriceCheckTestCase(APITestCase):
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["status"] == BookingStatus.CONFIRMED
+        assert response.data["status"] == BookingStatus.PENDING
         booking = Booking.objects.get(id=response.data["id"])
-        assert booking.status == BookingStatus.CONFIRMED
+        assert booking.status == BookingStatus.PENDING
         assert str(booking.offer.amount) == "5.00"
 
     def test_non_self_service_exact_price_stays_pending(self):
@@ -989,6 +996,74 @@ class BookingAutoConfirmPriceCheckTestCase(APITestCase):
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["status"] == BookingStatus.CONFIRMED
+
+    def test_rented_out_item_can_still_be_booked_for_future_slot(self):
+        """
+        An item that is currently rented out (active confirmed booking, item
+        status RENTED) can still be booked for a future slot that has no
+        confirmed booking for that time range.
+        """
+        now = timezone.now()
+        active = SelfServiceItemFactory(user=self.item_owner, price=None)
+        self.client.force_authenticate(user=self.booking_user)
+        active_booking = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(active.id),
+                "time_from": now - timedelta(days=1),
+                "time_to": now + timedelta(days=1),
+            },
+            format="json",
+        )
+        assert active_booking.status_code == status.HTTP_201_CREATED, (
+            active_booking.content
+        )
+        assert active_booking.data["status"] == BookingStatus.CONFIRMED
+        active.refresh_from_db()
+        assert active.status == ItemStatus.RENTED
+
+        other_user = UserFactory()
+        other_user.groups.add(self.default_group)
+        self.client.force_authenticate(user=other_user)
+        future = now + timedelta(days=30)
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(active.id),
+                "time_from": future,
+                "time_to": future + timedelta(days=2),
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED, response.content
+        assert response.data["status"] == BookingStatus.CONFIRMED
+
+    def test_open_end_no_price_booking_stays_pending_and_does_not_block(self):
+        """
+        A self-service booking without a return date (open-ended) is not
+        auto-confirmed, so the item is not permanently blocked: a second
+        open-ended booking by another user is accepted without the overlap
+        error.
+        """
+        open_end_item = SelfServiceItemFactory(
+            user=self.item_owner, price=None, rental_open_end=True
+        )
+        self.client.force_authenticate(user=self.booking_user)
+        first = self.client.post(
+            "/api/bookings/", {"item": str(open_end_item.id)}, format="json"
+        )
+        assert first.status_code == status.HTTP_201_CREATED, first.content
+        assert first.data["status"] == BookingStatus.PENDING
+
+        other_user = UserFactory()
+        other_user.groups.add(self.default_group)
+        self.client.force_authenticate(user=other_user)
+        second = self.client.post(
+            "/api/bookings/", {"item": str(open_end_item.id)}, format="json"
+        )
+        assert second.status_code == status.HTTP_201_CREATED, second.content
+        assert second.data["status"] == BookingStatus.PENDING
 
 
 class BookingOpenEndRentalTestCase(APITestCase):

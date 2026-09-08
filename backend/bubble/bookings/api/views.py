@@ -123,10 +123,16 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
 
         Auto-confirmation happens when a rental price can be calculated and the
         offered amount is at least that price (larger offers are accepted too), or
-        when no rental price can be calculated — e.g. open-ended rentals, borrows
-        or sales — regardless of whether an offer was given. Offers below the
-        calculated rental price stay PENDING so the owner can review the custom
-        offer, even on self-service items.
+        when no rental price can be calculated — e.g. borrows or sales — regardless
+        of whether an offer was given. Offers below the calculated rental price
+        stay PENDING so the owner can review the custom offer, even on self-service
+        items.
+
+        Open-ended bookings (no return date, ``time_to`` is None) are never
+        auto-confirmed: they represent an indefinite hold on the item, and the
+        open-end exclusion constraint allows only one such booking per item, so
+        auto-confirming one would permanently block the item from being booked
+        again. They stay PENDING for owner review.
         """
         item = serializer.validated_data.get("item")
         offer = serializer.validated_data.get("offer")
@@ -142,6 +148,7 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
         self_service_auto_confirm = (
             item
             and item.rental_self_service
+            and booking.time_to is not None
             and (rental_price is None or (offer is not None and offer >= rental_price))
         )
 
