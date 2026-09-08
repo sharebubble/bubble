@@ -19,6 +19,7 @@ import {
   addMonths,
   addWeeks,
   eachDayOfInterval,
+  endOfDay,
   endOfMonth,
   endOfWeek,
   format,
@@ -37,6 +38,11 @@ import { useMemo, useState } from 'react';
 // day, so the same calendar day can host a morning checkout and an
 // afternoon check-in without the two bookings overlapping.
 const NOON_HOUR = 12;
+
+// Bookings are fetched page by page (page_size caps at 100 server-side);
+// CALENDAR_MAX_PAGES bounds the follow-next loop as a safety net.
+const CALENDAR_PAGE_SIZE = 100;
+const CALENDAR_MAX_PAGES = 20;
 
 // Fixed palette (not the "selected" green or a semantic red) so each
 // booker gets a consistent, distinguishable color. Class names are kept
@@ -124,18 +130,61 @@ export const RentalCalendar = ({
     isDailyRental ? 'monthly' : 'weekly',
   );
 
-  // Fetch existing bookings for this item
+  // All dates use the browser's local timezone
+  // JavaScript Date objects automatically work in the user's timezone
+  const [currentDate, setCurrentDate] = useState(new Date());
+  // First click of a range selection (a datetime in weekly view, a day in monthly).
+  const [selectingStart, setSelectingStart] = useState<Date | null>(null);
+  // Tile currently under the pointer while a start is pending — drives the live preview.
+  const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
+
+  // Time range the calendar currently displays — the monthly grid shows the
+  // leading/trailing days of the adjacent weeks, so the window follows the
+  // rendered grid, not just the month.
+  const visibleWindow = useMemo(() => {
+    if (viewMode === 'weekly') {
+      return {
+        start: startOfDay(currentDate),
+        end: endOfDay(addDays(currentDate, 6)),
+      };
+    }
+    return {
+      start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }),
+      end: endOfWeek(endOfMonth(currentDate), { weekStartsOn: 1 }),
+    };
+  }, [currentDate, viewMode]);
+
+  // Fetch the bookings for the displayed time range. The window is part of
+  // the query key, so navigating to another week/month re-fetches the
+  // entries that belong to that range.
   const { data: bookingsData } = useQuery({
-    queryKey: ['publicBookings', itemUuid],
+    queryKey: [
+      'publicBookings',
+      itemUuid,
+      visibleWindow.start.toISOString(),
+      visibleWindow.end.toISOString(),
+    ],
     queryFn: async () => {
       if (!itemUuid) return null;
-      const response = await publicBookingsList({
-        query: {
-          item: itemUuid,
-          status: [1, 3], // Pending (1) and Confirmed (3) bookings
-        },
-      });
-      return response.data;
+      const baseQuery = {
+        item: itemUuid,
+        status: [1, 3] as [1, 3], // Pending (1) and Confirmed (3) bookings
+        page_size: CALENDAR_PAGE_SIZE,
+        visible_from: visibleWindow.start.toISOString(),
+        visible_to: visibleWindow.end.toISOString(),
+      };
+      const first = await publicBookingsList({ query: { ...baseQuery, page: 1 } });
+      const results = [...(first.data?.results ?? [])];
+      // Follow next pages so a busy time range is never shown partially.
+      let next = first.data?.next;
+      let page = 1;
+      while (next && page < CALENDAR_MAX_PAGES) {
+        page += 1;
+        const response = await publicBookingsList({ query: { ...baseQuery, page } });
+        results.push(...(response.data?.results ?? []));
+        next = response.data?.next;
+      }
+      return { results };
     },
     enabled: !!itemUuid,
   });
@@ -175,14 +224,6 @@ export const RentalCalendar = ({
         userFullName: booking.user.name || booking.user.username,
       }));
   }, [bookingsData]);
-
-  // All dates use the browser's local timezone
-  // JavaScript Date objects automatically work in the user's timezone
-  const [currentDate, setCurrentDate] = useState(new Date());
-  // First click of a range selection (a datetime in weekly view, a day in monthly).
-  const [selectingStart, setSelectingStart] = useState<Date | null>(null);
-  // Tile currently under the pointer while a start is pending — drives the live preview.
-  const [hoveredDate, setHoveredDate] = useState<Date | null>(null);
 
   const currentWeekStart = useMemo(() => startOfDay(currentDate), [currentDate]);
 

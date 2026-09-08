@@ -1,6 +1,7 @@
 import django_filters
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from guardian.shortcuts import get_objects_for_user
 
 from bubble.bookings.models import Booking, BookingStatus, Message
@@ -35,6 +36,11 @@ class BookingFilter(django_filters.FilterSet):
     time_to_isnull = django_filters.BooleanFilter(
         field_name="time_to", lookup_expr="isnull"
     )
+    # Calendar window: ``visible_from``/``visible_to`` together describe the
+    # time range the calendar currently displays. Both must be provided; they
+    # return every booking that overlaps that range (see filter_visible_window).
+    visible_from = django_filters.IsoDateTimeFilter(method="filter_visible_window")
+    visible_to = django_filters.IsoDateTimeFilter(method="filter_visible_window")
     # role=owner  → only bookings on items the current user owns (has change_item perm)
     # role=renter → only bookings where the current user is the requester
     role = django_filters.CharFilter(
@@ -69,6 +75,28 @@ class BookingFilter(django_filters.FilterSet):
             "role",
             "temporal",
         ]
+
+    def filter_visible_window(self, queryset, name, value):
+        """Only bookings that overlap the calendar's visible time range.
+
+        ``visible_from``/``visible_to`` describe the displayed window as
+        ``[start, end)``. A dated booking overlaps it when it starts before the
+        window ends and ends after the window starts; an open-ended booking
+        (``time_to`` null) overlaps as soon as it started before the window
+        ends. Both parameters must be given, otherwise the filter is a no-op.
+        Bookings without a start time cannot be placed on a calendar and are
+        never returned.
+        """
+        raw_from = self.data.get("visible_from")
+        raw_to = self.data.get("visible_to")
+        window_start = parse_datetime(raw_from) if raw_from else None
+        window_end = parse_datetime(raw_to) if raw_to else None
+        if window_start is None or window_end is None:
+            return queryset
+        return queryset.filter(
+            Q(time_from__lt=window_end)
+            & (Q(time_to__gt=window_start) | Q(time_to__isnull=True))
+        )
 
     def filter_role(self, queryset, name, value):
         request = self.request
