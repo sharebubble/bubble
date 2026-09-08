@@ -829,8 +829,10 @@ class BookingItemStatusSignalTestCase(APITestCase):
 
 
 class BookingAutoConfirmPriceCheckTestCase(APITestCase):
-    """Auto-approval on self-service items must only trigger when the offered
-    price exactly matches the calculated rental_price (item.price * hours)."""
+    """Auto-approval on self-service items triggers when the offered price is at
+    least the calculated rental_price (item.price * hours) — equal and higher
+    offers auto-confirm. When no rental_price can be calculated (open-ended
+    rentals, borrows, sales) any offered amount is auto-confirmed too."""
 
     def setUp(self):
         self.client = APIClient()
@@ -884,10 +886,11 @@ class BookingAutoConfirmPriceCheckTestCase(APITestCase):
         booking = Booking.objects.get(id=response.data["id"])
         assert booking.status == BookingStatus.PENDING
 
-    def test_higher_offer_stays_pending(self):
+    def test_higher_offer_auto_confirms(self):
         """
-        Booking with offer > rental_price stays PENDING
-        even on a self-service item.
+        A self-service booking is auto-confirmed even when the offer exceeds
+        the calculated rental_price. The owner's requested amount acts as a
+        floor, not a cap, so paying more never needs manual review.
         """
         self.client.force_authenticate(user=self.booking_user)
 
@@ -899,6 +902,60 @@ class BookingAutoConfirmPriceCheckTestCase(APITestCase):
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["status"] == BookingStatus.CONFIRMED
+        booking = Booking.objects.get(id=response.data["id"])
+        assert booking.status == BookingStatus.CONFIRMED
+        assert str(booking.offer.amount) == "999.99"
+
+    def test_open_end_rental_with_offer_auto_confirms(self):
+        """
+        An open-ended self-service rental has no time_to, so rental_price is
+        None. An offered amount is still auto-accepted instead of waiting for
+        owner review.
+        """
+        open_end_item = SelfServiceItemFactory(
+            user=self.item_owner,
+            sales_type=SalesType.RENT,
+            price="10.00",
+            rental_open_end=True,
+        )
+        self.client.force_authenticate(user=self.booking_user)
+
+        response = self.client.post(
+            "/api/bookings/",
+            {"item": str(open_end_item.id), "offer": "15.00"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["status"] == BookingStatus.CONFIRMED
+        booking = Booking.objects.get(id=response.data["id"])
+        assert booking.status == BookingStatus.CONFIRMED
+        assert str(booking.offer.amount) == "15.00"
+
+    def test_borrow_self_service_with_offer_auto_confirms(self):
+        """
+        A self-service borrow item has no price, so rental_price is None. An
+        offered amount (e.g. a donation) is still auto-accepted.
+        """
+        borrow_item = SelfServiceItemFactory(
+            user=self.item_owner,
+            sales_type=SalesType.BORROW,
+            price=None,
+            rental_open_end=True,
+        )
+        self.client.force_authenticate(user=self.booking_user)
+
+        response = self.client.post(
+            "/api/bookings/",
+            {"item": str(borrow_item.id), "offer": "5.00"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["status"] == BookingStatus.CONFIRMED
+        booking = Booking.objects.get(id=response.data["id"])
+        assert booking.status == BookingStatus.CONFIRMED
+        assert str(booking.offer.amount) == "5.00"
 
     def test_non_self_service_exact_price_stays_pending(self):
         """
