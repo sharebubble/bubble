@@ -396,6 +396,7 @@ const translations = {
     'calendar.duration': 'Duration',
     'calendar.hours': 'hours',
     'calendar.days': 'days',
+    'calendar.untilReturned': 'until returned',
     'calendar.selectingPeriod': 'Selecting period',
     'calendar.clickToSetEnd': 'Click an end tile to confirm, or hover to preview',
     'calendar.clearSelection': 'Clear',
@@ -1140,6 +1141,7 @@ const translations = {
     'calendar.duration': 'Dauer',
     'calendar.hours': 'Stunden',
     'calendar.days': 'Tage',
+    'calendar.untilReturned': 'bis zurückgegeben',
     'calendar.selectingPeriod': 'Zeitraum wählen',
     'calendar.clickToSetEnd':
       'Klicke ein End-Feld zum Bestätigen oder bewege die Maus für eine Vorschau',

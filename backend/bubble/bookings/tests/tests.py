@@ -2225,6 +2225,7 @@ class BookingTimeFromValidationTestCase(APITestCase):
         booking.refresh_from_db()
         assert booking.status == BookingStatus.CONFIRMED
 
+
 class BookingVisibleWindowFilterTestCase(APITestCase):
     """The rental calendar fetches bookings with ``visible_from``/``visible_to``
     for the time range it displays. A booking must be returned when it overlaps
@@ -2392,3 +2393,41 @@ class BookingVisibleWindowFilterTestCase(APITestCase):
         )
         assert second.status_code == status.HTTP_200_OK, second.content
         assert len(second.data["results"]) == booking_count - page_size
+
+    def test_naive_window_parameters_are_interpreted_locally(self):
+        """Window parameters without a timezone offset must not be silently
+        misinterpreted: they are resolved against the project timezone."""
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        booking = self._make_booking(
+            booker, self.window_from + timedelta(days=1), self.window_to
+        )
+
+        response = self.client.get(
+            "/api/public-bookings/",
+            {
+                "item": str(self.item.id),
+                "visible_from": self.window_from.replace(tzinfo=None).isoformat(),
+                "visible_to": self.window_to.replace(tzinfo=None).isoformat(),
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK, response.content
+        ids = [str(b["id"]) for b in response.data["results"]]
+        assert str(booking.id) in ids
+
+    def test_inverted_window_returns_nothing(self):
+        """A window whose start is not before its end cannot overlap anything."""
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        self._make_booking(booker, self.window_from + timedelta(days=1), self.window_to)
+
+        response = self.client.get(
+            "/api/public-bookings/",
+            {
+                "item": str(self.item.id),
+                "visible_from": self.window_to.isoformat(),
+                "visible_to": self.window_from.isoformat(),
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK, response.content
+        assert response.data["results"] == []

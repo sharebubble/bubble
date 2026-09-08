@@ -44,6 +44,75 @@ const NOON_HOUR = 12;
 const CALENDAR_PAGE_SIZE = 100;
 const CALENDAR_MAX_PAGES = 20;
 
+// Module-level helpers for the monthly-view default start. They are pure so
+// they can be used inside memoized values without breaking memoization.
+
+/** True when any booking overlaps the half-open range [rangeStart, rangeEnd). */
+const anyBookingOverlaps = (
+  bookings: { start: Date; end: Date }[],
+  rangeStart: Date,
+  rangeEnd: Date,
+): boolean => bookings.some(booking => rangeStart < booking.end && booking.start < rangeEnd);
+
+/** True when the hour slot [day+hour, day+hour+1) is free and not in the past. */
+const hourSlotIsBookable = (
+  bookings: { start: Date; end: Date }[],
+  day: Date,
+  hour: number,
+): boolean => {
+  const slotStart = new Date(day);
+  slotStart.setHours(hour, 0, 0, 0);
+  if (isBefore(slotStart, new Date())) return false;
+  const slotEnd = new Date(slotStart);
+  slotEnd.setHours(hour + 1, 0, 0, 0);
+  return !anyBookingOverlaps(bookings, slotStart, slotEnd);
+};
+
+/** A day is partially booked when part of it is taken but bookable time remains. */
+const dayIsPartiallyBooked = (
+  bookings: { start: Date; end: Date }[],
+  day: Date,
+  isDaily: boolean,
+): boolean => {
+  const dayStart = startOfDay(day);
+  if (isDaily) {
+    const noon = addHours(dayStart, NOON_HOUR);
+    const morningBooked = anyBookingOverlaps(bookings, dayStart, noon);
+    const afternoonBooked = anyBookingOverlaps(bookings, noon, addDays(dayStart, 1));
+    return morningBooked !== afternoonBooked;
+  }
+  if (!anyBookingOverlaps(bookings, dayStart, addHours(dayStart, 24))) return false;
+  for (let hour = 0; hour < 24; hour += 1) {
+    if (hourSlotIsBookable(bookings, day, hour)) return true;
+  }
+  return false;
+};
+
+/**
+ * The datetime a monthly-view selection starts at: noon-based for daily
+ * rentals, midnight for hour-based ones — shifted to the first free hour of
+ * the day when that day is already partially booked. The first free hour is
+ * never earlier than the noon turnover (12:00); earlier hours are only used
+ * when the whole afternoon is taken.
+ */
+const monthStartFor = (
+  bookings: { start: Date; end: Date }[],
+  day: Date,
+  isDaily: boolean,
+): Date => {
+  const dayStart = startOfDay(day);
+  if (!dayIsPartiallyBooked(bookings, day, isDaily)) {
+    return addHours(dayStart, isDaily ? NOON_HOUR : 0);
+  }
+  for (let hour = NOON_HOUR; hour < 24; hour += 1) {
+    if (hourSlotIsBookable(bookings, day, hour)) return addHours(dayStart, hour);
+  }
+  for (let hour = 0; hour < NOON_HOUR; hour += 1) {
+    if (hourSlotIsBookable(bookings, day, hour)) return addHours(dayStart, hour);
+  }
+  return addHours(dayStart, isDaily ? NOON_HOUR : 0);
+};
+
 // Fixed palette (not the "selected" green or a semantic red) so each
 // booker gets a consistent, distinguishable color. Class names are kept
 // literal so Tailwind's static scanner can pick them up.
@@ -196,15 +265,24 @@ export const RentalCalendar = ({
       time_from?: string | null;
       time_to?: string | null;
     };
+    const now = new Date();
     return (bookingsData.results as BookingWithTime[])
-      .filter(booking => booking.time_from && booking.time_to)
-      .map(booking => ({
-        start: new Date(booking.time_from!),
-        end: new Date(booking.time_to!),
-        userId: booking.user.id,
-        userName: booking.user.username,
-        userFullName: booking.user.name || booking.user.username,
-      }));
+      .filter(booking => booking.time_from)
+      .map(booking => {
+        // An open-ended rental (no return date) occupies the item until it
+        // is returned, so it is drawn up to "now"; later slots stay bookable
+        // with a return date. A rental that has not started yet draws
+        // nothing (its range is inverted until it begins).
+        const openEnded = !booking.time_to;
+        return {
+          start: new Date(booking.time_from!),
+          end: openEnded ? now : new Date(booking.time_to!),
+          openEnded,
+          userId: booking.user.id,
+          userName: booking.user.username,
+          userFullName: booking.user.name || booking.user.username,
+        };
+      });
   }, [bookingsData]);
 
   // Open-ended rentals (no return date) don't occupy calendar tiles — dated
@@ -272,16 +350,18 @@ export const RentalCalendar = ({
       let rangeStart: Date;
       let rangeEnd: Date;
       if (isDailyRental) {
-        // Check in at noon on the start day; check out at noon on the end
-        // day itself (that day's morning is still the departing guest's, so
-        // its afternoon is free for someone else). The same tile clicked
-        // twice means a single night, so the checkout rolls to the next day.
-        rangeStart = addHours(start, NOON_HOUR);
+        // Check in at the start day's default hour (noon on a free day; the
+        // first free hour on a partially booked day) and check out at noon
+        // on the end day itself (that day's morning is still the departing
+        // guest's, so its afternoon is free for someone else). The same tile
+        // clicked twice means a single night, so the checkout rolls to the
+        // next day.
+        rangeStart = monthStartFor(existingBookings, start, isDailyRental);
         rangeEnd = isSameDay(start, end)
           ? addHours(addDays(end, 1), NOON_HOUR)
           : addHours(end, NOON_HOUR);
       } else {
-        rangeStart = start;
+        rangeStart = monthStartFor(existingBookings, start, isDailyRental);
         rangeEnd = addDays(end, 1); // Next day at 00:00:00 for full 24h
       }
 
@@ -511,7 +591,8 @@ export const RentalCalendar = ({
 
   // Live range while a start is pending: ordered start/end plus the unit padding
   // (a full hour in weekly view, a full day — or noon-to-noon for daily
-  // rentals — in monthly) used for the final booking.
+  // rentals — in monthly) used for the final booking. The start day uses its
+  // default check-in hour (first free hour on a partially booked day).
   const previewRange = useMemo(() => {
     if (!selectingStart || !hoveredDate) return null;
     const [start, last] = isBefore(hoveredDate, selectingStart)
@@ -522,14 +603,15 @@ export const RentalCalendar = ({
       return { start, end: new Date(last.getTime() + 60 * 60 * 1000) };
     }
     if (isDailyRental) {
-      const rangeStart = addHours(start, NOON_HOUR);
-      const rangeEnd = isSameDay(start, last)
-        ? addHours(addDays(last, 1), NOON_HOUR)
-        : addHours(last, NOON_HOUR);
-      return { start: rangeStart, end: rangeEnd };
+      return {
+        start: monthStartFor(existingBookings, start, isDailyRental),
+        end: isSameDay(start, last)
+          ? addHours(addDays(last, 1), NOON_HOUR)
+          : addHours(last, NOON_HOUR),
+      };
     }
-    return { start, end: addDays(last, 1) };
-  }, [selectingStart, hoveredDate, viewMode, isDailyRental]);
+    return { start: monthStartFor(existingBookings, start, isDailyRental), end: addDays(last, 1) };
+  }, [selectingStart, hoveredDate, viewMode, isDailyRental, existingBookings]);
 
   const renderWeeklyView = () => (
     <div className="overflow-x-auto" onMouseLeave={() => selectingStart && setHoveredDate(null)}>
@@ -584,9 +666,11 @@ export const RentalCalendar = ({
                     disabled={isPast && !isBooked}
                     className={cn(
                       'h-8 rounded transition-colors w-full',
-                      isPast && 'bg-[var(--mantine-color-gray-2)] cursor-not-allowed opacity-50',
-                      isBooked && !isPast && bookerColor && [bookerColor.bg, bookerColor.border],
-                      isBooked && !isPast && 'cursor-pointer opacity-70 border',
+                      isPast &&
+                        !isBooked &&
+                        'bg-[var(--mantine-color-gray-2)] cursor-not-allowed opacity-50',
+                      isBooked && bookerColor && [bookerColor.bg, bookerColor.border],
+                      isBooked && 'cursor-pointer opacity-70 border',
                       !isClickDisabled &&
                         !isHighlighted &&
                         !isPreview &&
@@ -617,7 +701,9 @@ export const RentalCalendar = ({
                           </div>
                           <Text size="xs" c="dimmed">
                             {format(booking.start, 'MMM d, HH:mm')} -{' '}
-                            {format(booking.end, 'MMM d, HH:mm')}
+                            {booking.openEnded
+                              ? t('calendar.untilReturned')
+                              : format(booking.end, 'MMM d, HH:mm')}
                           </Text>
                         </div>
                       </Popover.Dropdown>
@@ -673,10 +759,8 @@ export const RentalCalendar = ({
             const halfBookerColor = halfBooking ? getBookerColor(halfBooking.userId) : null;
             return cn(
               'flex-1 w-full',
-              isPast && 'bg-[var(--mantine-color-gray-2)]',
-              !isPast &&
-                halfBooked &&
-                halfBookerColor && [halfBookerColor.bg, halfBookerColor.border],
+              isPast && !halfBooked && 'bg-[var(--mantine-color-gray-2)]',
+              halfBooked && halfBookerColor && [halfBookerColor.bg, halfBookerColor.border],
               !isPast && halfBooked && half === 'morning' && 'border-b',
               !isPast && halfBooked && half === 'afternoon' && 'border-t',
               !isPast && !halfBooked && isHighlighted && 'bg-[var(--mantine-color-green-6)]',
@@ -727,14 +811,15 @@ export const RentalCalendar = ({
               className={cn(
                 'h-16 rounded transition-colors flex flex-col items-center justify-center p-1 w-full',
                 !isCurrentMonth && 'text-[var(--mantine-color-dimmed)]',
-                isPast && 'bg-[var(--mantine-color-gray-2)] cursor-not-allowed opacity-50',
+                isPast &&
+                  !isBooked &&
+                  'bg-[var(--mantine-color-gray-2)] cursor-not-allowed opacity-50',
                 isBooked &&
-                  !isPast &&
                   bookings[0] && [
                     getBookerColor(bookings[0].userId).bg,
                     getBookerColor(bookings[0].userId).border,
                   ],
-                isBooked && !isPast && 'cursor-pointer opacity-70 border',
+                isBooked && 'cursor-pointer opacity-70 border',
                 !isClickDisabled &&
                   !isHighlighted &&
                   !isPreview &&
@@ -772,7 +857,10 @@ export const RentalCalendar = ({
                           <span className="font-medium">{booking.userFullName}</span>
                         </div>
                         <Text size="xs" c="dimmed" className="ml-5">
-                          {format(booking.start, 'HH:mm')} - {format(booking.end, 'HH:mm')}
+                          {format(booking.start, 'HH:mm')} -{' '}
+                          {booking.openEnded
+                            ? t('calendar.untilReturned')
+                            : format(booking.end, 'HH:mm')}
                         </Text>
                       </div>
                     ))}

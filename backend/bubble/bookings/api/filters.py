@@ -93,6 +93,15 @@ class BookingFilter(django_filters.FilterSet):
         window_end = parse_datetime(raw_to) if raw_to else None
         if window_start is None or window_end is None:
             return queryset
+        # Clients may omit the timezone offset; interpret naive values in the
+        # project timezone instead of letting the database guess.
+        if timezone.is_naive(window_start):
+            window_start = timezone.make_aware(window_start)
+        if timezone.is_naive(window_end):
+            window_end = timezone.make_aware(window_end)
+        if window_start >= window_end:
+            # An empty or inverted window cannot overlap anything.
+            return queryset.none()
         return queryset.filter(
             Q(time_from__lt=window_end)
             & (Q(time_to__gt=window_start) | Q(time_to__isnull=True))
