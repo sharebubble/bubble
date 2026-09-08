@@ -139,13 +139,13 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
         booking = serializer.instance
 
         rental_price = booking.rental_price
-        self_service_at_listed_price = (
+        self_service_auto_confirm = (
             item
             and item.rental_self_service
             and (rental_price is None or (offer is not None and offer >= rental_price))
         )
 
-        if is_owner or self_service_at_listed_price:
+        if is_owner or self_service_auto_confirm:
             booking.status = BookingStatus.CONFIRMED
             try:
                 booking.save(update_fields=["status"])
