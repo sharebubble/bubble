@@ -141,7 +141,7 @@ class BookingAutoConfirmTestCase(APITestCase):
         response = self.client.get("/api/public-bookings/")
         assert response.status_code == status.HTTP_200_OK
 
-        booking_ids = [b["id"] for b in response.data["results"]]
+        booking_ids = [str(b["id"]) for b in response.data["results"]]
         assert booking_id in booking_ids
 
     def test_pending_booking_not_visible_in_public_endpoint(self):
@@ -165,7 +165,7 @@ class BookingAutoConfirmTestCase(APITestCase):
         response = self.client.get("/api/public-bookings/")
         assert response.status_code == status.HTTP_200_OK
 
-        booking_ids = [b["id"] for b in response.data["results"]]
+        booking_ids = [str(b["id"]) for b in response.data["results"]]
         assert booking_id not in booking_ids
 
     def test_self_service_no_price_item_auto_confirms_without_offer(self):
@@ -2224,3 +2224,210 @@ class BookingTimeFromValidationTestCase(APITestCase):
         assert response.status_code == status.HTTP_200_OK, response.content
         booking.refresh_from_db()
         assert booking.status == BookingStatus.CONFIRMED
+
+
+class BookingVisibleWindowFilterTestCase(APITestCase):
+    """The rental calendar fetches bookings with ``visible_from``/``visible_to``
+    for the time range it displays. A booking must be returned when it overlaps
+    that range — not when it merely exists for the item."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.default_group, _ = Group.objects.get_or_create(name=DefaultGroup.DEFAULT)
+
+        self.item_owner = UserFactory()
+        self.item_owner.groups.add(self.default_group)
+
+        self.item = ItemFactory(
+            user=self.item_owner, sales_type=SalesType.RENT, price="10.00"
+        )
+        now = timezone.now()
+        # Window: 30 to 40 days out — the range the calendar would display.
+        self.window_from = now + timedelta(days=30)
+        self.window_to = now + timedelta(days=40)
+
+    def _get_visible(self):
+        response = self.client.get(
+            "/api/public-bookings/",
+            {
+                "item": str(self.item.id),
+                "visible_from": self.window_from.isoformat(),
+                "visible_to": self.window_to.isoformat(),
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK, response.content
+        return response
+
+    def _make_booking(self, user, time_from, time_to, offer="10.00"):
+        return BookingFactory(
+            user=user,
+            item=self.item,
+            status=BookingStatus.CONFIRMED,
+            time_from=time_from,
+            time_to=time_to,
+            offer=offer,
+        )
+
+    def test_only_overlapping_bookings_are_returned(self):
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        inside = self._make_booking(
+            booker, self.window_from + timedelta(days=1), self.window_to
+        )
+        # Entirely before the window.
+        self._make_booking(
+            booker,
+            self.window_from - timedelta(days=5),
+            self.window_from - timedelta(days=1),
+        )
+        # Entirely after the window.
+        self._make_booking(
+            booker,
+            self.window_to + timedelta(days=1),
+            self.window_to + timedelta(days=5),
+        )
+
+        results = self._get_visible().data["results"]
+        ids = [str(b["id"]) for b in results]
+        assert str(inside.id) in ids
+        assert len(ids) == 1
+
+    def test_partially_overlapping_bookings_are_returned(self):
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        # Started before the window, ends inside it.
+        leading = self._make_booking(
+            booker,
+            self.window_from - timedelta(days=2),
+            self.window_from + timedelta(days=1),
+        )
+        # Starts inside the window, ends after it.
+        trailing = self._make_booking(
+            booker,
+            self.window_to - timedelta(days=1),
+            self.window_to + timedelta(days=2),
+        )
+
+        results = self._get_visible().data["results"]
+        ids = [str(b["id"]) for b in results]
+        assert set(ids) == {str(leading.id), str(trailing.id)}
+
+    def test_open_ended_booking_is_returned(self):
+        """An open-ended booking (time_to null) occupies the item until it is
+        returned, so it overlaps any window that starts after it began."""
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        open_ended = self._make_booking(
+            booker, self.window_from - timedelta(days=1), None
+        )
+
+        results = self._get_visible().data["results"]
+        ids = [str(b["id"]) for b in results]
+        assert str(open_ended.id) in ids
+
+    def test_boundaries_exclude_touching_bookings(self):
+        """A booking that ends exactly at the window start does not occupy any
+        displayed slot, and one starting exactly at the window end belongs to
+        the next view — neither is returned."""
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        self._make_booking(
+            booker, self.window_from - timedelta(days=1), self.window_from
+        )
+        self._make_booking(booker, self.window_to, self.window_to + timedelta(days=1))
+
+        results = self._get_visible().data["results"]
+        assert results == []
+
+    def test_missing_window_parameter_is_a_noop(self):
+        """Without both parameters the filter must not silently drop bookings."""
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        booking = self._make_booking(
+            booker, self.window_from + timedelta(days=1), self.window_to
+        )
+
+        response = self.client.get("/api/public-bookings/", {"item": str(self.item.id)})
+        assert response.status_code == status.HTTP_200_OK, response.content
+        ids = [str(b["id"]) for b in response.data["results"]]
+        assert str(booking.id) in ids
+
+    def test_pagination_pages_are_browsable(self):
+        """page/page_size work together with the window filter so the calendar
+        can follow next pages."""
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        booking_count = 3
+        page_size = 2
+        for offset in range(booking_count):
+            self._make_booking(
+                booker,
+                self.window_from + timedelta(days=offset + 1),
+                self.window_from + timedelta(days=offset + 2),
+            )
+
+        first = self.client.get(
+            "/api/public-bookings/",
+            {
+                "item": str(self.item.id),
+                "visible_from": self.window_from.isoformat(),
+                "visible_to": self.window_to.isoformat(),
+                "page": 1,
+                "page_size": page_size,
+            },
+        )
+        assert first.status_code == status.HTTP_200_OK, first.content
+        assert first.data["count"] == booking_count
+        assert len(first.data["results"]) == page_size
+        assert first.data["next"] is not None
+
+        second = self.client.get(
+            "/api/public-bookings/",
+            {
+                "item": str(self.item.id),
+                "visible_from": self.window_from.isoformat(),
+                "visible_to": self.window_to.isoformat(),
+                "page": 2,
+                "page_size": page_size,
+            },
+        )
+        assert second.status_code == status.HTTP_200_OK, second.content
+        assert len(second.data["results"]) == booking_count - page_size
+
+    def test_naive_window_parameters_are_interpreted_locally(self):
+        """Window parameters without a timezone offset must not be silently
+        misinterpreted: they are resolved against the project timezone."""
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        booking = self._make_booking(
+            booker, self.window_from + timedelta(days=1), self.window_to
+        )
+
+        response = self.client.get(
+            "/api/public-bookings/",
+            {
+                "item": str(self.item.id),
+                "visible_from": self.window_from.replace(tzinfo=None).isoformat(),
+                "visible_to": self.window_to.replace(tzinfo=None).isoformat(),
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK, response.content
+        ids = [str(b["id"]) for b in response.data["results"]]
+        assert str(booking.id) in ids
+
+    def test_inverted_window_returns_nothing(self):
+        """A window whose start is not before its end cannot overlap anything."""
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        self._make_booking(booker, self.window_from + timedelta(days=1), self.window_to)
+
+        response = self.client.get(
+            "/api/public-bookings/",
+            {
+                "item": str(self.item.id),
+                "visible_from": self.window_to.isoformat(),
+                "visible_to": self.window_from.isoformat(),
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK, response.content
+        assert response.data["results"] == []
