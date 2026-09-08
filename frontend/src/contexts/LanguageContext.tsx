@@ -389,6 +389,10 @@ const translations = {
     'calendar.selectedPeriod': 'Selected Period',
     'calendar.from': 'From',
     'calendar.to': 'To',
+    'calendar.openEndedRentals': 'Open-ended rentals',
+    'calendar.openEndedSince': 'since {date}',
+    'calendar.openEndedNote':
+      'These rentals run until the item is returned. Only one open-ended rental can be confirmed at a time.',
     'calendar.duration': 'Duration',
     'calendar.hours': 'hours',
     'calendar.days': 'days',
@@ -1129,6 +1133,10 @@ const translations = {
     'calendar.selectedPeriod': 'Ausgewählter Zeitraum',
     'calendar.from': 'Von',
     'calendar.to': 'Bis',
+    'calendar.openEndedRentals': 'Unbefristete Mieten',
+    'calendar.openEndedSince': 'seit {date}',
+    'calendar.openEndedNote':
+      'Diese Mieten laufen, bis der Artikel zurückgegeben wird. Es kann immer nur eine unbefristete Miete gleichzeitig bestätigt sein.',
     'calendar.duration': 'Dauer',
     'calendar.hours': 'Stunden',
     'calendar.days': 'Tage',

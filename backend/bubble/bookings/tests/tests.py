@@ -990,6 +990,81 @@ class BookingAutoConfirmPriceCheckTestCase(APITestCase):
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["status"] == BookingStatus.CONFIRMED
 
+    def test_rented_out_item_can_still_be_booked_for_future_slot(self):
+        """
+        An item that is currently rented out (active confirmed booking, item
+        status RENTED) can still be booked for a future slot that has no
+        confirmed booking for that time range.
+        """
+        now = timezone.now()
+        active = SelfServiceItemFactory(user=self.item_owner, price=None)
+        self.client.force_authenticate(user=self.booking_user)
+        active_booking = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(active.id),
+                "time_from": now - timedelta(days=1),
+                "time_to": now + timedelta(days=1),
+            },
+            format="json",
+        )
+        assert active_booking.status_code == status.HTTP_201_CREATED, (
+            active_booking.content
+        )
+        assert active_booking.data["status"] == BookingStatus.CONFIRMED
+        active.refresh_from_db()
+        assert active.status == ItemStatus.RENTED
+
+        other_user = UserFactory()
+        other_user.groups.add(self.default_group)
+        self.client.force_authenticate(user=other_user)
+        future = now + timedelta(days=30)
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(active.id),
+                "time_from": future,
+                "time_to": future + timedelta(days=2),
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED, response.content
+        assert response.data["status"] == BookingStatus.CONFIRMED
+
+    def test_open_end_self_service_auto_confirms_and_second_is_rejected(self):
+        """
+        On a self-service item that allows open-ended rentals, a booking
+        without a return date is self-approved. The open-end exclusion
+        constraint allows only one confirmed open rental per item, so a second
+        open-ended request gets the friendly overlap error instead of a 500.
+        """
+        open_end_item = SelfServiceItemFactory(
+            user=self.item_owner, price=None, rental_open_end=True
+        )
+        self.client.force_authenticate(user=self.booking_user)
+        first = self.client.post(
+            "/api/bookings/", {"item": str(open_end_item.id)}, format="json"
+        )
+        assert first.status_code == status.HTTP_201_CREATED, first.content
+        assert first.data["status"] == BookingStatus.CONFIRMED
+
+        other_user = UserFactory()
+        other_user.groups.add(self.default_group)
+        self.client.force_authenticate(user=other_user)
+        second = self.client.post(
+            "/api/bookings/", {"item": str(open_end_item.id)}, format="json"
+        )
+        assert second.status_code == status.HTTP_400_BAD_REQUEST, second.content
+        assert "already rented out" in second.data["non_field_errors"][0]
+        # The rejected request must not linger as a confirmed duplicate.
+        assert (
+            Booking.objects.filter(
+                item=open_end_item, status=BookingStatus.CONFIRMED
+            ).count()
+            == 1
+        )
+
 
 class BookingOpenEndRentalTestCase(APITestCase):
     """
@@ -2042,3 +2117,110 @@ class BookingPastCancelValidationTestCase(APITestCase):
         assert response.status_code == status.HTTP_200_OK, response.content
         booking.refresh_from_db()
         assert booking.status == BookingStatus.CANCELLED
+
+
+class BookingTimeFromValidationTestCase(APITestCase):
+    """A booking always needs a start time: without one it cannot be shown on
+    any calendar and its overlap range becomes unbounded below, silently
+    blocking every other booking up to ``time_to``."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.default_group, _ = Group.objects.get_or_create(name=DefaultGroup.DEFAULT)
+
+        self.item_owner = UserFactory()
+        self.item_owner.groups.add(self.default_group)
+
+        self.booking_user = UserFactory()
+        self.booking_user.groups.add(self.default_group)
+
+        self.item = ItemFactory(
+            user=self.item_owner, sales_type=SalesType.RENT, price="10.00"
+        )
+
+    def test_explicit_null_time_from_rejected(self):
+        """Posting ``time_from: null`` is a validation error, not a booking
+        with a mystery start."""
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(self.item.id),
+                "time_from": None,
+                "time_to": timezone.now() + timedelta(days=1),
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST, response.content
+        assert "time_from" in response.data
+
+    def test_omitted_time_from_defaults_to_now(self):
+        """Omitting ``time_from`` entirely keeps the model default (now)."""
+        self.client.force_authenticate(user=self.booking_user)
+        before = timezone.now()
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(self.item.id),
+                "time_to": timezone.now() + timedelta(days=1),
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED, response.content
+        booking = Booking.objects.get(id=response.data["id"])
+        assert booking.time_from is not None
+        assert before <= booking.time_from <= timezone.now()
+
+    def test_patching_time_from_to_null_rejected(self):
+        """An existing booking cannot be updated to lose its start time."""
+        self.client.force_authenticate(user=self.booking_user)
+        booking = BookingFactory(
+            user=self.booking_user,
+            item=self.item,
+            time_from=timezone.now(),
+            time_to=timezone.now() + timedelta(days=1),
+        )
+        response = self.client.patch(
+            f"/api/bookings/{booking.id}/",
+            {"time_from": None},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST, response.content
+        assert "time_from" in response.data
+        booking.refresh_from_db()
+        assert booking.time_from is not None
+
+    def test_is_active_false_without_time_from(self):
+        """A booking without a start time is never 'active' (and comparing it
+        to now would raise a TypeError)."""
+        booking = BookingFactory(
+            user=self.booking_user,
+            item=self.item,
+            time_from=None,
+            time_to=timezone.now() + timedelta(days=1),
+        )
+        assert booking.is_active is False
+
+    def test_confirming_legacy_booking_without_time_from_does_not_crash(self):
+        """Regression: confirming a legacy/federated booking whose ``time_from``
+        is NULL used to raise a TypeError in the item-status signal (HTTP 500).
+        It must confirm cleanly instead."""
+        booking = BookingFactory(
+            user=self.booking_user,
+            item=self.item,
+            time_from=None,
+            time_to=timezone.now() + timedelta(days=1),
+        )
+        self.client.force_authenticate(user=self.item_owner)
+        response = self.client.patch(
+            f"/api/bookings/{booking.id}/",
+            {"status": BookingStatus.CONFIRMED},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.content
+        booking.refresh_from_db()
+        assert booking.status == BookingStatus.CONFIRMED
