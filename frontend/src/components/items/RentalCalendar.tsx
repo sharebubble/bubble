@@ -158,6 +158,24 @@ export const RentalCalendar = ({
       }));
   }, [bookingsData]);
 
+  // Open-ended rentals (no return date) don't occupy calendar tiles — dated
+  // bookings remain possible — but they must stay visible: only one of them
+  // can be confirmed at a time, and they hold the item until it is returned.
+  const openEndedBookings = useMemo(() => {
+    if (!bookingsData?.results) return [];
+    type BookingWithTime = (typeof bookingsData.results)[0] & {
+      time_from?: string | null;
+      time_to?: string | null;
+    };
+    return (bookingsData.results as BookingWithTime[])
+      .filter(booking => booking.time_from && !booking.time_to)
+      .map(booking => ({
+        start: new Date(booking.time_from!),
+        userId: booking.user.id,
+        userFullName: booking.user.name || booking.user.username,
+      }));
+  }, [bookingsData]);
+
   // All dates use the browser's local timezone
   // JavaScript Date objects automatically work in the user's timezone
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -765,6 +783,42 @@ export const RentalCalendar = ({
           </ActionIcon>
         </div>
       </div>
+
+      {/* Open-ended rentals: no return date, so they never occupy calendar
+          tiles — list them explicitly so they don't stay invisible. */}
+      {openEndedBookings.length > 0 && (
+        <Paper mt="md" p="md" radius="lg" withBorder className="w-full">
+          <div className="flex flex-col gap-2">
+            <Text size="sm" fw={500}>
+              {t('calendar.openEndedRentals')}
+            </Text>
+            {openEndedBookings.map(booking => (
+              <div
+                key={`${booking.userId}-${booking.start.getTime()}`}
+                className="flex items-center gap-2 text-sm"
+              >
+                <span
+                  className={cn(
+                    'inline-block h-2.5 w-2.5 rounded-full shrink-0',
+                    getBookerColor(booking.userId).dot,
+                  )}
+                />
+                <User size={14} className="shrink-0" />
+                <span className="font-medium">{booking.userFullName}</span>
+                <Text size="xs" c="dimmed">
+                  {t('calendar.openEndedSince').replace(
+                    '{date}',
+                    format(booking.start, 'EEE, MMM d, yyyy HH:mm'),
+                  )}
+                </Text>
+              </div>
+            ))}
+            <Text size="xs" c="dimmed">
+              {t('calendar.openEndedNote')}
+            </Text>
+          </div>
+        </Paper>
+      )}
 
       {viewMode === 'weekly' ? renderWeeklyView() : renderMonthlyView()}
 
