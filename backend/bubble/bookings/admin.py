@@ -32,9 +32,17 @@ class BookingAdmin(SimpleHistoryAdmin):
         """The effective price agreed for this booking.
 
         Prefers an agreed counter-offer, then the booker's offer, then the
-        computed rental total, falling back to the item's listed price.
+        computed rental total, falling back to the item's listed price. Uses
+        explicit None checks so a zero-valued offer is honoured.
         """
-        price = obj.counter_offer or obj.offer or obj.rental_price or obj.item.price
+        if obj.counter_offer is not None:
+            price = obj.counter_offer
+        elif obj.offer is not None:
+            price = obj.offer
+        elif obj.rental_price is not None:
+            price = obj.rental_price
+        else:
+            price = obj.item.price
         if price is None:
             return None
         return f"{price.amount} {price.currency}"
