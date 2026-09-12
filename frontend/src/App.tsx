@@ -19,6 +19,7 @@ import CollectionDetail from './pages/CollectionDetail';
 import CreateItem from './pages/CreateItem';
 import EditBook from './pages/EditBook';
 import EditItem from './pages/EditItem';
+import Favorites from './pages/Favorites';
 import Home from './pages/Home';
 import Browse from './pages/Browse';
 import ItemDetail from './pages/ItemDetail';
@@ -31,7 +32,7 @@ import { AppUpdatePrompt } from './components/layout/AppUpdatePrompt';
 import { Header } from './components/layout/Header';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { OfflineIndicator } from './components/layout/OfflineIndicator';
-import { ACCOUNT_PATH, BROWSE_PATH } from './lib/routes';
+import { ACCOUNT_PATH, BROWSE_PATH, FAVORITES_PATH } from './lib/routes';
 import { localStorageColorSchemeManager, MantineProvider } from '@mantine/core';
 import { mantineTheme } from './theme/mantine';
 
@@ -123,6 +124,14 @@ const ProtectedRoutes = () => {
           element={
             <AuthRequired>
               <EditBook />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={FAVORITES_PATH}
+          element={
+            <AuthRequired>
+              <Favorites />
             </AuthRequired>
           }
         />

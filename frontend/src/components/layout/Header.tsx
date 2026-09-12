@@ -6,7 +6,7 @@ import { useUnreadMessages } from '@/hooks/useMessages';
 import { useProfile } from '@/hooks/useProfile';
 import { SearchBar } from '@/components/layout/SearchBar';
 
-import { BROWSE_PATH } from '@/lib/routes';
+import { BROWSE_PATH, FAVORITES_PATH } from '@/lib/routes';
 import { cn } from '@/lib/utils';
 import {
   Bell,
@@ -15,6 +15,7 @@ import {
   CalendarCheck,
   Compass,
   Download,
+  Heart,
   Library,
   LogIn,
   LogOut,
@@ -287,6 +288,13 @@ export const Header = () => {
                   leftSection={<User size={16} aria-hidden="true" />}
                 >
                   {t('account.settings')}
+                </Menu.Item>
+                <Menu.Item
+                  component={NavLink}
+                  to={FAVORITES_PATH}
+                  leftSection={<Heart size={16} aria-hidden="true" />}
+                >
+                  {t('favorites.title')}
                 </Menu.Item>
                 <Menu.Item
                   component={NavLink}

@@ -527,6 +527,27 @@ export type CommentAuthor = {
 export type ConditionEnum = 0 | 1 | 2;
 
 /**
+ * A favorite, with the marked item inlined for list rendering.
+ *
+ * ``item`` is the writable side (an item id); ``item_detail`` carries the
+ * fields the item cards need, so the favorites list renders without a second
+ * round trip per entry.
+ */
+export type FavoriteItem = {
+    readonly id: string;
+    item: string;
+    item_detail: ItemList;
+    readonly created_at: string;
+};
+
+/**
+ * The ids of every item the current user has marked as favorite.
+ */
+export type FavoriteItemIds = {
+    item_ids: Array<string>;
+};
+
+/**
  * * `public_federated` - Public (federated)
  * * `local_only` - Local only
  */
@@ -1052,6 +1073,13 @@ export type PaginatedCommentList = {
     next?: string | null;
     previous?: string | null;
     results: Array<Comment>;
+};
+
+export type PaginatedFavoriteItemList = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<FavoriteItem>;
 };
 
 export type PaginatedGroupList = {
@@ -2400,6 +2428,17 @@ export type CommentWritable = {
 };
 
 /**
+ * A favorite, with the marked item inlined for list rendering.
+ *
+ * ``item`` is the writable side (an item id); ``item_detail`` carries the
+ * fields the item cards need, so the favorites list renders without a second
+ * round trip per entry.
+ */
+export type FavoriteItemWritable = {
+    item: string;
+};
+
+/**
  * Serializer for auth Group model.
  */
 export type GroupWritable = {
@@ -2769,6 +2808,13 @@ export type PaginatedCommentListWritable = {
     next?: string | null;
     previous?: string | null;
     results: Array<CommentWritable>;
+};
+
+export type PaginatedFavoriteItemListWritable = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<FavoriteItemWritable>;
 };
 
 export type PaginatedGroupListWritable = {
@@ -4106,6 +4152,68 @@ export type ConfigRetrieveResponses = {
      */
     200: unknown;
 };
+
+export type FavoritesListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
+         */
+        page?: number;
+    };
+    url: '/api/favorites/';
+};
+
+export type FavoritesListResponses = {
+    200: PaginatedFavoriteItemList;
+};
+
+export type FavoritesListResponse = FavoritesListResponses[keyof FavoritesListResponses];
+
+export type FavoritesCreateData = {
+    body: FavoriteItemWritable;
+    path?: never;
+    query?: never;
+    url: '/api/favorites/';
+};
+
+export type FavoritesCreateResponses = {
+    201: FavoriteItem;
+};
+
+export type FavoritesCreateResponse = FavoritesCreateResponses[keyof FavoritesCreateResponses];
+
+export type FavoritesDestroyData = {
+    body?: never;
+    path: {
+        item_id: string;
+    };
+    query?: never;
+    url: '/api/favorites/{item_id}/';
+};
+
+export type FavoritesDestroyResponses = {
+    /**
+     * No response body
+     */
+    204: void;
+};
+
+export type FavoritesDestroyResponse = FavoritesDestroyResponses[keyof FavoritesDestroyResponses];
+
+export type FavoritesItemIdsRetrieveData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/favorites/item-ids/';
+};
+
+export type FavoritesItemIdsRetrieveResponses = {
+    200: FavoriteItemIds;
+};
+
+export type FavoritesItemIdsRetrieveResponse = FavoritesItemIdsRetrieveResponses[keyof FavoritesItemIdsRetrieveResponses];
 
 export type FederatedItemsRetrieveData = {
     body?: never;
