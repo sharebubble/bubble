@@ -2,7 +2,7 @@
 
 import type { Client, ClientMeta, Options as Options2, RequestResult, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthTokenCreateData, AuthTokenCreateResponses, BookingsConfirmReceivedCreateData, BookingsConfirmReceivedCreateResponses, BookingsConfirmReturnedCreateData, BookingsConfirmReturnedCreateResponses, BookingsCreateData, BookingsCreateResponses, BookingsDestroyData, BookingsDestroyResponses, BookingsListData, BookingsListResponses, BookingsPartialUpdateData, BookingsPartialUpdateResponses, BookingsRetrieveData, BookingsRetrieveResponses, BookingsUpdateData, BookingsUpdateResponses, BooksCreateData, BooksCreateResponses, BooksDestroyData, BooksDestroyResponses, BooksIsbnUpdateUpdateData, BooksIsbnUpdateUpdateResponses, BooksListData, BooksListResponses, BooksPartialUpdateData, BooksPartialUpdateResponses, BooksRetrieveData, BooksRetrieveResponses, BooksUpdateData, BooksUpdateResponses, CollectionItemsCreateData, CollectionItemsCreateResponses, CollectionItemsDestroyData, CollectionItemsDestroyResponses, CollectionItemsListData, CollectionItemsListResponses, CollectionItemsPartialUpdateData, CollectionItemsPartialUpdateResponses, CollectionItemsRetrieveData, CollectionItemsRetrieveResponses, CollectionItemsUpdateData, CollectionItemsUpdateResponses, CollectionsAddItemCreateData, CollectionsAddItemCreateResponses, CollectionsBulkAddItemsCreateData, CollectionsBulkAddItemsCreateResponses, CollectionsBulkRemoveItemsCreateData, CollectionsBulkRemoveItemsCreateResponses, CollectionsCalendarLinkCreateData, CollectionsCalendarLinkCreateResponses, CollectionsCalendarLinkDestroyData, CollectionsCalendarLinkDestroyResponses, CollectionsCalendarLinkRetrieveData, CollectionsCalendarLinkRetrieveResponses, CollectionsCreateData, CollectionsCreateResponses, CollectionsDestroyData, CollectionsDestroyResponses, CollectionsForItemListData, CollectionsForItemListResponses, CollectionsHistoryListData, CollectionsHistoryListResponses, CollectionsListData, CollectionsListResponses, CollectionsManagePermissionsCreateData, CollectionsManagePermissionsCreateResponses, CollectionsMyCollectionsListData, CollectionsMyCollectionsListResponses, CollectionsPartialUpdateData, CollectionsPartialUpdateResponses, CollectionsPermissionsListData, CollectionsPermissionsListResponses, CollectionsRemoveItemCreateData, CollectionsRemoveItemCreateResponses, CollectionsRetrieveData, CollectionsRetrieveResponses, CollectionsUpdateData, CollectionsUpdateResponses, CommentsCreateData, CommentsCreateResponses, CommentsDestroyData, CommentsDestroyResponses, CommentsListData, CommentsListResponses, CommentsPartialUpdateData, CommentsPartialUpdateResponses, CommentsRetrieveData, CommentsRetrieveResponses, CommentsUpdateData, CommentsUpdateResponses, ConfigRetrieveData, ConfigRetrieveResponses, FederatedItemsRetrieveData, FederatedItemsRetrieveResponses, GroupsListData, GroupsListResponses, GroupsRetrieveData, GroupsRetrieveResponses, ImagesCreateData, ImagesCreateResponses, ImagesDestroyData, ImagesDestroyResponses, ImagesListData, ImagesListResponses, ImagesPartialUpdateData, ImagesPartialUpdateResponses, ImagesRetrieveData, ImagesRetrieveResponses, ImagesRotateUpdateData, ImagesRotateUpdateResponses, ImagesUpdateData, ImagesUpdateResponses, ItemsAiDescribeUpdateData, ItemsAiDescribeUpdateResponses, ItemsAiImageUpdateData, ItemsAiImageUpdateResponses, ItemsCalendarLinkCreateData, ItemsCalendarLinkCreateResponses, ItemsCalendarLinkDestroyData, ItemsCalendarLinkDestroyResponses, ItemsCalendarLinkRetrieveData, ItemsCalendarLinkRetrieveResponses, ItemsCoOwnersCreateData, ItemsCoOwnersCreateResponses, ItemsCoOwnersDestroyData, ItemsCoOwnersDestroyResponses, ItemsCoOwnersRetrieveData, ItemsCoOwnersRetrieveResponses, ItemsCreateData, ItemsCreateResponses, ItemsDestroyData, ItemsDestroyResponses, ItemsListData, ItemsListResponses, ItemsPartialUpdateData, ItemsPartialUpdateResponses, ItemsReorderImagesUpdateData, ItemsReorderImagesUpdateResponses, ItemsRetrieveData, ItemsRetrieveResponses, ItemsUpdateData, ItemsUpdateResponses, ItemsViewersCreateData, ItemsViewersCreateResponses, ItemsViewersDestroyData, ItemsViewersDestroyResponses, ItemsViewersRetrieveData, ItemsViewersRetrieveResponses, LocationsListData, LocationsListResponses, LocationsRetrieveData, LocationsRetrieveResponses, MessagesCreateData, MessagesCreateResponses, MessagesDestroyData, MessagesDestroyResponses, MessagesListData, MessagesListResponses, MessagesPartialUpdateData, MessagesPartialUpdateResponses, MessagesRetrieveData, MessagesRetrieveResponses, MessagesUpdateData, MessagesUpdateResponses, MyCalendarCreateData, MyCalendarCreateResponses, MyCalendarDestroyData, MyCalendarDestroyResponses, MyCalendarRetrieveData, MyCalendarRetrieveResponses, NotificationPreferencesMePartialUpdateData, NotificationPreferencesMePartialUpdateResponses, NotificationPreferencesMeRetrieveData, NotificationPreferencesMeRetrieveResponses, ProfilesListData, ProfilesListResponses, ProfilesMePartialUpdateData, ProfilesMePartialUpdateResponses, ProfilesMeRetrieveData, ProfilesMeRetrieveResponses, ProfilesRetrieveData, ProfilesRetrieveResponses, PublicBookingsListData, PublicBookingsListResponses, PublicBookingsRetrieveData, PublicBookingsRetrieveResponses, PublicItemsBookingHistoryRetrieveData, PublicItemsBookingHistoryRetrieveResponses, PublicItemsFacetsRetrieveData, PublicItemsFacetsRetrieveResponses, PublicItemsListData, PublicItemsListResponses, PublicItemsRetrieveData, PublicItemsRetrieveResponses, PushSubscriptionsStatusRetrieveData, PushSubscriptionsStatusRetrieveResponses, PushSubscriptionsSubscribeCreateData, PushSubscriptionsSubscribeCreateResponses, PushSubscriptionsTestCreateData, PushSubscriptionsTestCreateResponses, PushSubscriptionsUnsubscribeCreateData, PushSubscriptionsUnsubscribeCreateResponses, SchemaRetrieveData, SchemaRetrieveResponses, UsersListData, UsersListResponses, UsersMeRetrieveData, UsersMeRetrieveResponses, UsersPartialUpdateData, UsersPartialUpdateResponses, UsersRetrieveData, UsersRetrieveResponses, UsersUpdateData, UsersUpdateResponses, VersionRetrieveData, VersionRetrieveResponses } from './types.gen';
+import type { AuthTokenCreateData, AuthTokenCreateResponses, BookingsConfirmReceivedCreateData, BookingsConfirmReceivedCreateResponses, BookingsConfirmReturnedCreateData, BookingsConfirmReturnedCreateResponses, BookingsCreateData, BookingsCreateResponses, BookingsDestroyData, BookingsDestroyResponses, BookingsListData, BookingsListResponses, BookingsPartialUpdateData, BookingsPartialUpdateResponses, BookingsRetrieveData, BookingsRetrieveResponses, BookingsUpdateData, BookingsUpdateResponses, BooksCreateData, BooksCreateResponses, BooksDestroyData, BooksDestroyResponses, BooksIsbnUpdateUpdateData, BooksIsbnUpdateUpdateResponses, BooksListData, BooksListResponses, BooksPartialUpdateData, BooksPartialUpdateResponses, BooksRetrieveData, BooksRetrieveResponses, BooksUpdateData, BooksUpdateResponses, CollectionItemsCreateData, CollectionItemsCreateResponses, CollectionItemsDestroyData, CollectionItemsDestroyResponses, CollectionItemsListData, CollectionItemsListResponses, CollectionItemsPartialUpdateData, CollectionItemsPartialUpdateResponses, CollectionItemsRetrieveData, CollectionItemsRetrieveResponses, CollectionItemsUpdateData, CollectionItemsUpdateResponses, CollectionsAddItemCreateData, CollectionsAddItemCreateResponses, CollectionsBulkAddItemsCreateData, CollectionsBulkAddItemsCreateResponses, CollectionsBulkRemoveItemsCreateData, CollectionsBulkRemoveItemsCreateResponses, CollectionsCalendarLinkCreateData, CollectionsCalendarLinkCreateResponses, CollectionsCalendarLinkDestroyData, CollectionsCalendarLinkDestroyResponses, CollectionsCalendarLinkRetrieveData, CollectionsCalendarLinkRetrieveResponses, CollectionsCreateData, CollectionsCreateResponses, CollectionsDestroyData, CollectionsDestroyResponses, CollectionsForItemListData, CollectionsForItemListResponses, CollectionsHistoryListData, CollectionsHistoryListResponses, CollectionsListData, CollectionsListResponses, CollectionsManagePermissionsCreateData, CollectionsManagePermissionsCreateResponses, CollectionsMyCollectionsListData, CollectionsMyCollectionsListResponses, CollectionsPartialUpdateData, CollectionsPartialUpdateResponses, CollectionsPermissionsListData, CollectionsPermissionsListResponses, CollectionsRemoveItemCreateData, CollectionsRemoveItemCreateResponses, CollectionsRetrieveData, CollectionsRetrieveResponses, CollectionsUpdateData, CollectionsUpdateResponses, CommentsCreateData, CommentsCreateResponses, CommentsDestroyData, CommentsDestroyResponses, CommentsListData, CommentsListResponses, CommentsPartialUpdateData, CommentsPartialUpdateResponses, CommentsRetrieveData, CommentsRetrieveResponses, CommentsUpdateData, CommentsUpdateResponses, ConfigRetrieveData, ConfigRetrieveResponses, FavoritesCreateData, FavoritesCreateResponses, FavoritesDestroyData, FavoritesDestroyResponses, FavoritesItemIdsRetrieveData, FavoritesItemIdsRetrieveResponses, FavoritesListData, FavoritesListResponses, FederatedItemsRetrieveData, FederatedItemsRetrieveResponses, GroupsListData, GroupsListResponses, GroupsRetrieveData, GroupsRetrieveResponses, ImagesCreateData, ImagesCreateResponses, ImagesDestroyData, ImagesDestroyResponses, ImagesListData, ImagesListResponses, ImagesPartialUpdateData, ImagesPartialUpdateResponses, ImagesRetrieveData, ImagesRetrieveResponses, ImagesRotateUpdateData, ImagesRotateUpdateResponses, ImagesUpdateData, ImagesUpdateResponses, ItemsAiDescribeUpdateData, ItemsAiDescribeUpdateResponses, ItemsAiImageUpdateData, ItemsAiImageUpdateResponses, ItemsCalendarLinkCreateData, ItemsCalendarLinkCreateResponses, ItemsCalendarLinkDestroyData, ItemsCalendarLinkDestroyResponses, ItemsCalendarLinkRetrieveData, ItemsCalendarLinkRetrieveResponses, ItemsCoOwnersCreateData, ItemsCoOwnersCreateResponses, ItemsCoOwnersDestroyData, ItemsCoOwnersDestroyResponses, ItemsCoOwnersRetrieveData, ItemsCoOwnersRetrieveResponses, ItemsCreateData, ItemsCreateResponses, ItemsDestroyData, ItemsDestroyResponses, ItemsListData, ItemsListResponses, ItemsPartialUpdateData, ItemsPartialUpdateResponses, ItemsReorderImagesUpdateData, ItemsReorderImagesUpdateResponses, ItemsRetrieveData, ItemsRetrieveResponses, ItemsUpdateData, ItemsUpdateResponses, ItemsViewersCreateData, ItemsViewersCreateResponses, ItemsViewersDestroyData, ItemsViewersDestroyResponses, ItemsViewersRetrieveData, ItemsViewersRetrieveResponses, LocationsListData, LocationsListResponses, LocationsRetrieveData, LocationsRetrieveResponses, MessagesCreateData, MessagesCreateResponses, MessagesDestroyData, MessagesDestroyResponses, MessagesListData, MessagesListResponses, MessagesPartialUpdateData, MessagesPartialUpdateResponses, MessagesRetrieveData, MessagesRetrieveResponses, MessagesUpdateData, MessagesUpdateResponses, MyCalendarCreateData, MyCalendarCreateResponses, MyCalendarDestroyData, MyCalendarDestroyResponses, MyCalendarRetrieveData, MyCalendarRetrieveResponses, NotificationPreferencesMePartialUpdateData, NotificationPreferencesMePartialUpdateResponses, NotificationPreferencesMeRetrieveData, NotificationPreferencesMeRetrieveResponses, ProfilesListData, ProfilesListResponses, ProfilesMePartialUpdateData, ProfilesMePartialUpdateResponses, ProfilesMeRetrieveData, ProfilesMeRetrieveResponses, ProfilesRetrieveData, ProfilesRetrieveResponses, PublicBookingsListData, PublicBookingsListResponses, PublicBookingsRetrieveData, PublicBookingsRetrieveResponses, PublicItemsBookingHistoryRetrieveData, PublicItemsBookingHistoryRetrieveResponses, PublicItemsFacetsRetrieveData, PublicItemsFacetsRetrieveResponses, PublicItemsListData, PublicItemsListResponses, PublicItemsRetrieveData, PublicItemsRetrieveResponses, PushSubscriptionsStatusRetrieveData, PushSubscriptionsStatusRetrieveResponses, PushSubscriptionsSubscribeCreateData, PushSubscriptionsSubscribeCreateResponses, PushSubscriptionsTestCreateData, PushSubscriptionsTestCreateResponses, PushSubscriptionsUnsubscribeCreateData, PushSubscriptionsUnsubscribeCreateResponses, SchemaRetrieveData, SchemaRetrieveResponses, UsersListData, UsersListResponses, UsersMeRetrieveData, UsersMeRetrieveResponses, UsersPartialUpdateData, UsersPartialUpdateResponses, UsersRetrieveData, UsersRetrieveResponses, UsersUpdateData, UsersUpdateResponses, VersionRetrieveData, VersionRetrieveResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -1028,6 +1028,94 @@ export const configRetrieve = <ThrowOnError extends boolean = true>(options?: Op
         { name: 'X-Session-Token', type: 'apiKey' }
     ],
     url: '/api/config/',
+    ...options
+});
+
+/**
+ * The current user's favorite items, newest mark first.
+ *
+ * Favorites are addressed by the *item* they point at rather than by their own
+ * id, so a client that knows the item it is showing can toggle the mark
+ * without first looking the favorite up.
+ */
+export const favoritesList = <ThrowOnError extends boolean = true>(options?: Options<FavoritesListData, ThrowOnError>): RequestResult<FavoritesListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<FavoritesListResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/favorites/',
+    ...options
+});
+
+/**
+ * Mark an item as favorite, tolerating a repeat of the same mark.
+ *
+ * Marking is driven by a toggle, so the same request can arrive twice (a
+ * double tap, a retried request). The second one returns the existing
+ * favorite instead of failing on the uniqueness constraint.
+ */
+export const favoritesCreate = <ThrowOnError extends boolean = true>(options: Options<FavoritesCreateData, ThrowOnError>): RequestResult<FavoritesCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<FavoritesCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/favorites/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The current user's favorite items, newest mark first.
+ *
+ * Favorites are addressed by the *item* they point at rather than by their own
+ * id, so a client that knows the item it is showing can toggle the mark
+ * without first looking the favorite up.
+ */
+export const favoritesDestroy = <ThrowOnError extends boolean = true>(options: Options<FavoritesDestroyData, ThrowOnError>): RequestResult<FavoritesDestroyResponses, unknown, ThrowOnError> => (options.client ?? client).delete<FavoritesDestroyResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/favorites/{item_id}/',
+    ...options
+});
+
+/**
+ * Return just the favorited item ids.
+ *
+ * The heart on an item page only needs to know whether that item is in the
+ * set; fetching the ids keeps that check to one small, cacheable request
+ * instead of paging through the full favorites list.
+ */
+export const favoritesItemIdsRetrieve = <ThrowOnError extends boolean = true>(options?: Options<FavoritesItemIdsRetrieveData, ThrowOnError>): RequestResult<FavoritesItemIdsRetrieveResponses, unknown, ThrowOnError> => (options?.client ?? client).get<FavoritesItemIdsRetrieveResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/favorites/item-ids/',
     ...options
 });
 

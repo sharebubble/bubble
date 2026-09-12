@@ -9,3 +9,6 @@ export const BROWSE_PATH = '/browse';
 
 /** Account hub: the mobile entry point to the user-owned areas of the app. */
 export const ACCOUNT_PATH = '/account';
+
+/** The viewer's favorite items, reachable from the profile menu. */
+export const FAVORITES_PATH = '/favorites';
