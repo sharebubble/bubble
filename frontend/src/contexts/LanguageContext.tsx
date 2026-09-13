@@ -75,6 +75,8 @@ const translations = {
     'header.browse': 'Browse',
     'home.newestItems': 'Newest items',
     'home.viewAll': 'View all',
+    'home.loadMore': 'Load more',
+    'home.browseAllItems': 'Browse all items',
 
     // Search bar / facets
     'search.filterBy': 'Filter by',
@@ -820,6 +822,8 @@ const translations = {
     'header.browse': 'Entdecken',
     'home.newestItems': 'Neueste Artikel',
     'home.viewAll': 'Alle ansehen',
+    'home.loadMore': 'Mehr laden',
+    'home.browseAllItems': 'Alle Artikel durchsuchen',
 
     // Search bar / facets
     'search.filterBy': 'Filtern nach',

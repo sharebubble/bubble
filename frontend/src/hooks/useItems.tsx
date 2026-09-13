@@ -8,20 +8,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { type ItemCategory } from './types';
 
-export const useItems = ({
-  category,
-  search,
-  page,
-  status,
-  minPrice,
-  maxPrice,
-  free,
-  salesTypes,
-  conditions,
-  ordering,
-  owner,
-  collection,
-}: {
+export type UseItemsParams = {
   category?: ItemCategory;
   search?: string;
   page?: number;
@@ -37,7 +24,27 @@ export const useItems = ({
   owner?: string;
   /** Restrict to items contained in this collection id. */
   collection?: string;
-} = {}) => {
+};
+
+/**
+ * Query key + fetcher for a page of published items, shared between
+ * {@link useItems} (a single page) and callers that need several pages at
+ * once via `useQueries` (e.g. the start page's "load more").
+ */
+export const itemsQueryOptions = ({
+  category,
+  search,
+  page,
+  status,
+  minPrice,
+  maxPrice,
+  free,
+  salesTypes,
+  conditions,
+  ordering,
+  owner,
+  collection,
+}: UseItemsParams = {}) => {
   const normalizedStatus =
     status === undefined ? undefined : Array.isArray(status) ? status : [status];
   const statusKey = normalizedStatus?.join(',');
@@ -45,7 +52,7 @@ export const useItems = ({
   const conditionsSorted = conditions && [...conditions].sort();
   const salesTypesSorted = salesTypes && [...salesTypes].sort();
 
-  return useQuery({
+  return {
     queryKey: [
       'items',
       {
@@ -94,5 +101,9 @@ export const useItems = ({
         },
       };
     },
-  });
+  };
+};
+
+export const useItems = (params: UseItemsParams = {}) => {
+  return useQuery(itemsQueryOptions(params));
 };
