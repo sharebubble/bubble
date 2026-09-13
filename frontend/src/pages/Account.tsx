@@ -3,6 +3,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
 import { useProfile } from '@/hooks/useProfile';
+import { FAVORITES_PATH } from '@/lib/routes';
 import {
   Avatar,
   Button,
@@ -21,6 +22,7 @@ import {
   Calendar,
   ChevronRight,
   Download,
+  Heart,
   Library,
   LogOut,
   Settings,
@@ -40,6 +42,7 @@ interface HubEntry {
 const ENTRIES: HubEntry[] = [
   { labelKey: 'header.items', icon: Library, to: '/my-items' },
   { labelKey: 'collections.title', icon: BookMarked, to: '/collections' },
+  { labelKey: 'favorites.title', icon: Heart, to: FAVORITES_PATH },
   { labelKey: 'account.settings', icon: Settings, to: '/profile' },
   { labelKey: 'header.notificationSettings', icon: Bell, to: '/profile/notifications' },
   { labelKey: 'header.calendarSettings', icon: Calendar, to: '/profile/calendar' },

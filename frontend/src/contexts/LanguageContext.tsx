@@ -651,6 +651,15 @@ const translations = {
     'scanner.initializingCamera': 'Initializing camera...',
     'scanner.detected': 'Detected',
 
+    // Favorites
+    'favorites.title': 'Favorites',
+    'favorites.add': 'Add to favorites',
+    'favorites.remove': 'Remove from favorites',
+    'favorites.added': 'Added to favorites',
+    'favorites.removed': 'Removed from favorites',
+    'favorites.empty': "You haven't marked any items as favorite yet.",
+    'favorites.error': 'Could not update your favorites. Please try again.',
+
     // Collections
     'collections.title': 'My Collections',
     'collections.myCollections': 'My Collections',
@@ -1398,6 +1407,15 @@ const translations = {
     'scanner.usingPolyfill': 'Verwendet barcode-detector Polyfill',
     'scanner.initializingCamera': 'Kamera wird initialisiert...',
     'scanner.detected': 'Erkannt',
+
+    // Favorites
+    'favorites.title': 'Favoriten',
+    'favorites.add': 'Zu Favoriten hinzufügen',
+    'favorites.remove': 'Aus Favoriten entfernen',
+    'favorites.added': 'Zu Favoriten hinzugefügt',
+    'favorites.removed': 'Aus Favoriten entfernt',
+    'favorites.empty': 'Du hast noch keine Artikel als Favorit markiert.',
+    'favorites.error': 'Favoriten konnten nicht aktualisiert werden. Bitte versuche es erneut.',
 
     // Collections
     'collections.title': 'Meine Sammlungen',
