@@ -315,6 +315,9 @@ LOGGING = {
         "cancelled_error_filter": {
             "()": "bubble.core.logging_filters.CancelledErrorFilter",
         },
+        "session_unauthorized_filter": {
+            "()": "bubble.core.logging_filters.SessionUnauthorizedFilter",
+        },
     },
     "handlers": {
         "console": {
@@ -326,6 +329,12 @@ LOGGING = {
     },
     "root": {"level": LOG_LEVEL, "handlers": ["console"]},
     "loggers": {
+        "django.request": {
+            "level": "WARNING",
+            "handlers": ["console"],
+            "filters": ["session_unauthorized_filter"],
+            "propagate": False,
+        },
         "django.db.backends": {
             "level": "ERROR",
             "handlers": ["console"],

@@ -23,3 +23,16 @@ class CancelledErrorFilter(logging.Filter):
         # 2. Drop if the log message itself is about a shielded CancelledError.
         message = record.getMessage()
         return not ("CancelledError" in message and "shielded future" in message)
+
+
+class SessionUnauthorizedFilter(logging.Filter):
+    """Drop Django's routine 401 warnings for the allauth session endpoint.
+
+    allauth answers 401 when a user is not authenticated, which is the normal
+    state before login and after logout. The frontend handles this as a valid
+    response, so the Django request warning is just noise.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        message = record.getMessage()
+        return "Unauthorized: /api/_allauth/browser/v1/auth/session" not in message
