@@ -311,11 +311,17 @@ LOGGING = {
             "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
         },
     },
+    "filters": {
+        "cancelled_error_filter": {
+            "()": "bubble.core.logging_filters.CancelledErrorFilter",
+        },
+    },
     "handlers": {
         "console": {
             "level": LOG_LEVEL,
             "class": "logging.StreamHandler",
             "formatter": "verbose",
+            "filters": ["cancelled_error_filter"],
         },
     },
     "root": {"level": LOG_LEVEL, "handlers": ["console"]},
