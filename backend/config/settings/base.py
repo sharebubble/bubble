@@ -203,6 +203,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
+    "bubble.core.middleware.SocialLoginErrorLoggingMiddleware",
 ]
 
 # STATIC
@@ -326,6 +327,23 @@ LOGGING = {
         },
         "django.security.DisallowedHost": {
             "level": "ERROR",
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        # OIDC/OAuth2 flow logging. Set DJANGO_LOG_LEVEL=DEBUG to see full
+        # token requests/responses from oauthlib/requests-oauthlib.
+        "allauth": {
+            "level": LOG_LEVEL,
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "oauthlib": {
+            "level": LOG_LEVEL,
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "requests_oauthlib": {
+            "level": LOG_LEVEL,
             "handlers": ["console"],
             "propagate": False,
         },

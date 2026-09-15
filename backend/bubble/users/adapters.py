@@ -5,6 +5,7 @@ import mimetypes
 import typing
 
 import requests
+import sentry_sdk
 from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.conf import settings
@@ -34,6 +35,72 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         sociallogin: SocialLogin,
     ) -> bool:
         return getattr(settings, "SOCIALACCOUNT_ALLOW_REGISTRATION", True)
+
+    def on_authentication_error(
+        self,
+        request: HttpRequest,
+        provider,
+        error=None,
+        exception=None,
+        extra_context=None,
+    ) -> None:
+        """Log and report social login failures so `error=unknown` can be diagnosed.
+
+        allauth reports many failures by redirecting the browser back to the SPA
+        with only an error code. This hook captures the underlying exception and
+        request context before the redirect happens.
+        """
+        super().on_authentication_error(
+            request,
+            provider,
+            error=error,
+            exception=exception,
+            extra_context=extra_context,
+        )
+
+        error_code = error.value if hasattr(error, "value") else error
+        provider_id = getattr(provider, "id", None)
+        provider_name = getattr(provider, "name", None)
+
+        # Avoid double-reporting the same exception if allauth already handed it
+        # to Sentry via its own error handling.
+        exception_info = (
+            {"type": type(exception).__name__, "message": str(exception)}
+            if exception
+            else None
+        )
+
+        context = {
+            "provider_id": provider_id,
+            "provider_name": provider_name,
+            "error_code": error_code,
+            "error_enum": str(error),
+            "extra_context": extra_context,
+            "user_agent": request.headers.get("user-agent"),
+            "remote_addr": request.META.get("REMOTE_ADDR"),
+            "referer": request.headers.get("referer"),
+            "session_key": request.session.session_key,
+        }
+
+        logger.warning(
+            "Social login failed: provider=%s error=%s exception=%s",
+            provider_id,
+            error_code,
+            exception_info,
+            extra={"social_auth_context": context},
+        )
+
+        with sentry_sdk.new_scope() as scope:
+            scope.set_context("social_auth", context)
+            scope.set_tag("provider", provider_id)
+            scope.set_tag("auth_error_code", error_code)
+            sentry_sdk.capture_message(
+                (
+                    f"Social login failed: {provider_name or provider_id}"
+                    f" returned {error_code}"
+                ),
+                level="warning",
+            )
 
     def update_groups(self, user, sociallogin):
         # add to default group

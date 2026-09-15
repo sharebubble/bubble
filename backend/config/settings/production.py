@@ -162,7 +162,17 @@ if SENTRY_DSN:
         RedisIntegration(),
     ]
 
+    # These exceptions are usually noise: they happen when a client/browser
+    # disconnects before the response is finished (e.g. closing the tab during
+    # an OIDC redirect). By default they are dropped so Sentry is not flooded.
+    # Set SENTRY_FILTER_CANCELLED_ERRORS=False to surface them for debugging.
+    SENTRY_FILTER_CANCELLED_ERRORS = env.bool(
+        "SENTRY_FILTER_CANCELLED_ERRORS", default=True
+    )
+
     def _before_send(event, hint):
+        if not SENTRY_FILTER_CANCELLED_ERRORS:
+            return event
         exc_info = hint.get("exc_info")
         if exc_info and exc_info[0]:
             exc_name = getattr(exc_info[0], "__name__", "")

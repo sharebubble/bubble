@@ -1,3 +1,5 @@
+import * as Sentry from '@sentry/react';
+
 import LoginWithSocialButton from '@/components/auth/LoginWithSocialButton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
@@ -109,6 +111,10 @@ const Auth = () => {
       // Usually a missing CSRF token, i.e. the backend never answered. Posting
       // the form anyway would land the user on a bare 403 page.
       console.error('Failed to start social login:', err);
+      Sentry.captureException(err, {
+        tags: { provider: provider.id, phase: 'redirect_start' },
+        contexts: { sso: { provider_id: provider.id, provider_name: provider.name } },
+      });
       setRedirectingTo(null);
       setSsoError('redirect_failed');
       // Rethrown so the button drops out of its busy state; the alert above
@@ -127,11 +133,43 @@ const Auth = () => {
   const autoForwardTo =
     requireLogin && !loadingConfig && !blockedReason && singleProvider ? singleProvider : null;
 
+  // Report SSO failures to Sentry so support can correlate user reports with
+  // backend logs. This runs once per page load that actually shows the alert.
+  useEffect(() => {
+    if (!blockedReason || blockedReason === 'signout') return;
+
+    Sentry.captureMessage('SSO login blocked on return', {
+      level: 'warning',
+      tags: {
+        blocked_reason: blockedReason,
+        sso_error_code: ssoError ?? 'none',
+        provider: singleProvider?.id ?? 'unknown',
+      },
+      contexts: {
+        sso: {
+          blocked_reason: blockedReason,
+          sso_error_code: ssoError,
+          provider_id: singleProvider?.id,
+          provider_name: singleProvider?.name,
+          has_return_marker: ssoReturn.returned,
+          has_session_error: sessionError,
+          pending_flows: pendingFlows.map(flow => flow.id),
+        },
+      },
+    });
+    // The intent is to report the state that produced this alert exactly once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!autoForwardTo || autoForwardedRef.current) return;
     autoForwardedRef.current = true;
     redirectToSocialProvider(autoForwardTo.id).catch(err => {
       console.error('Failed to start social login:', err);
+      Sentry.captureException(err, {
+        tags: { provider: autoForwardTo.id, phase: 'auto_redirect' },
+        contexts: { sso: { provider_id: autoForwardTo.id, provider_name: autoForwardTo.name } },
+      });
       autoForwardedRef.current = false;
       setSsoError('redirect_failed');
     });
