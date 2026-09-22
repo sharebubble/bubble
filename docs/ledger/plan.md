@@ -14,7 +14,7 @@ These were settled up front; the rest of the document follows from them.
 | # | Decision | Choice |
 |---|----------|--------|
 | D1 | What a balance means | Real euros. Members may go negative. Top-ups are transactions (manual first, bank-detected later). |
-| D2 | Who may post manual transactions | Any member, posted immediately, disputable by anyone. |
+| D2 | Who may post manual transactions | Any member, posted immediately, disputable by anyone — **as long as the only member account charged is their own**. Charging anyone else goes through D13. |
 | D3 | Ledger core | Double-entry, append-only. No edits, no deletes; corrections are reversals. |
 | D4 | Rental counterparty | Per item: earnings go to the item owner or to the community, declared on the item. |
 | D5 | Book scope | One implicit book in the UI, but `book` FK on accounts/transactions from migration 0001. |
@@ -25,6 +25,10 @@ These were settled up front; the rest of the document follows from them.
 | D10 | Negative balances | Soft threshold with warnings and reminders. Nothing is blocked. |
 | D11 | Bank top-up detection | Interface decision deferred. Build the import pipeline as a port with a pluggable adapter. |
 | D12 | Reporting | Per-member yearly statement, treasurer's annual report, DATEV/CSV bookkeeping export. |
+| D13 | Charging other members (shared costs) | Participants are notified and can accept or object; silence counts as acceptance after N days (default 3), then it posts. Only then does it touch the ledger (section 7a). |
+| D14 | Which bookings create charges | Only items with the existing `Item.payment_enabled = True`. Nothing changes for existing items on rollout day. |
+| D15 | Sales | Completed sales post too: buyer → seller (or → community for community-owned items), same rules as rentals. |
+| D16 | Community-owned items | The lister stays the steward (`Item.user`); `ledger_beneficiary = COMMUNITY` marks community ownership and routes income. No system user. |
 
 Deferred, on purpose: which bank interface (CAMT.053/MT940 upload, PSD2 aggregator,
 FinTS/EBICS, CSV). Section 12 defines the seam so the choice stays a plug-in.
@@ -119,6 +123,28 @@ No community involvement; member-to-member claim, netted through the same ledger
 A **reversal** transaction with the mirrored entries and `reverses = <original>`.
 Both rows stay visible forever, linked in both directions.
 
+**(g) Alice cooks for four and splits the 60 € shopping bill** (shared expense, D13)
+
+Alice, Bob, Carla and Dan eat; equal split, 15 € each. Alice's own share is simply not
+charged — the community accounts are not involved at all:
+
+| Account | Raw amount |
+|---|---:|
+| `member:bob` | +15.00 |
+| `member:carla` | +15.00 |
+| `member:dan` | +15.00 |
+| `member:alice` | −45.00 |
+
+Alice's display balance: **+45 €**; Bob, Carla, Dan: **−15 €** each. If instead the
+dinner is a community event paid from the pot, it is plain example (a) with an
+`expense:food` category and a project.
+
+**(h) Dan disputes only his share after it posted**
+
+A **correction** mirrors a *subset* of the original legs, still balanced:
+`member:dan` −15.00 / `member:alice` +15.00, with `reverses = <original>` and
+`kind = CORRECTION`. Bob's and Carla's shares stand.
+
 ---
 
 ## 4. Data model
@@ -137,7 +163,7 @@ class Book(models.Model):
     id, slug, name
     currency = CharField(3, default=settings.DEFAULT_CURRENCY)
     opened_on = DateField()
-    negative_balance_soft_limit = MoneyField(default=Money(-100, "EUR"))   # D10
+    negative_balance_soft_limit = DecimalField(default=-100)   # D10, in the book's currency
 
 class AccountType(IntegerChoices):
     MEMBER = 1      # liability towards a member
@@ -155,8 +181,11 @@ class Account(models.Model):
     # code examples: member:<user-uuid>, asset:bank, income:rental, expense:tools
 
 class TransactionKind(IntegerChoices):
-    BOOKING_CHARGE, MEMBER_EXPENSE, TOP_UP, PAYOUT,
-    MEMBERSHIP_FEE, ADJUSTMENT, REVERSAL, OPENING_BALANCE
+    BOOKING_CHARGE,    # rental or sale, see section 6
+    MEMBER_EXPENSE, SHARED_EXPENSE, TOP_UP, PAYOUT,
+    MEMBERSHIP_FEE, ADJUSTMENT, OPENING_BALANCE,
+    REVERSAL,          # mirrors every leg of the original
+    CORRECTION,        # mirrors a subset of legs (e.g. one participant's share)
 
 class Transaction(models.Model):
     id = UUIDField(primary_key=True)
@@ -173,7 +202,7 @@ class Transaction(models.Model):
     project  = FK(Project,  on_delete=PROTECT, null=True)   # D7
     source_type, source_id                        # 'booking' + Booking.id, 'statement_line' + id
     idempotency_key = CharField()                 # e.g. "booking:<uuid>:charge"
-    reverses = FK("self", null=True, related_name="reversed_by")
+    reverses = FK("self", null=True, related_name="reversed_by")  # REVERSAL or CORRECTION
     prev_hash, hash = CharField(64, blank=True)   # phase 6, section 11
 
     class Meta:
@@ -219,20 +248,28 @@ class LedgerPeriod(models.Model):           # period close, needed once exports 
     book, starts_on, ends_on, closed_at, closed_by, export_hash
 ```
 
-### Item change
+### Item changes
 
-`Item` gains one field (D4):
+`Item` already has an unused `payment_enabled` boolean ("Enable payment via internal
+payment system"). It becomes the **opt-in for ledger charges** (D14): bookings of items
+with `payment_enabled = False` never post, whatever their price. It gains one field
+(D4, D16):
 
 ```python
 class LedgerBeneficiary(TextChoices):
-    OWNER = "owner"          # rental income credits the lister
-    COMMUNITY = "community"  # rental income credits the community pot
+    OWNER = "owner"          # income credits the steward (Item.user)
+    COMMUNITY = "community"  # the community owns the item; income credits the pot
 
 ledger_beneficiary = CharField(choices=LedgerBeneficiary, default=OWNER)
 ```
 
-A data migration sets `COMMUNITY` for items owned by the community account holder if
-one exists, otherwise `OWNER` everywhere. Editable by the item owner and by admins.
+`Item.user` keeps its meaning of *steward* — the person who looks after the item and
+handles bookings. `COMMUNITY` means the community owns it (D16); the UI shows "owned by
+the community, looked after by Alice". No system user is created. The migration sets
+`OWNER` everywhere; switching to `COMMUNITY` is done by admins (it hands an asset to
+the community, so not something a steward toggles alone). Co-owners with guardian
+`change_item` permission do not share income; the credit leg is always `Item.user` or
+the community.
 
 ---
 
@@ -268,14 +305,23 @@ def post_transaction(*, book, kind, occurred_on, description, legs,
 
 ---
 
-## 6. Booking integration (D6)
+## 6. Booking integration (D6, D14, D15)
 
 Posting happens **when a booking transitions to `COMPLETED`**, in the same
 `transaction.atomic()` block as the status change, through an explicit service call —
 not a `post_save` signal, so the posting cannot fire on unrelated saves and is easy to
-follow when reading the booking code.
+follow when reading the booking code. On `main` those transitions live in
+`BookingViewSet.confirm_returned` (rentals) and `BookingViewSet.confirm_received`
+(sales).
 
-**Amount precedence:** accepted `counter_offer` → `offer` → `Booking.rental_price`.
+**Sales need care:** `confirm_received` calls `item.transfer_ownership(booking.user)`
+in the same block. The seller and the beneficiary must be read **before** that call,
+otherwise the buyer is credited for their own purchase. After a sale of a
+community-owned item, `ledger_beneficiary` resets to `OWNER` — the buyer now owns it
+privately.
+
+**Amount precedence:** accepted `counter_offer` → `offer` → `Booking.rental_price`
+(rentals) or `Item.price` (sales).
 The chosen amount and its source are written into the transaction description and a
 structured `meta` field, so the charge stays explainable even if the item's price
 changes later. Price is *never* recomputed from the item after posting.
@@ -284,12 +330,13 @@ changes later. Price is *never* recomputed from the item after posting.
 `member:<owner>` or `income:rental` (community).
 
 **Skip rules — no transaction at all when:**
+- the item has `payment_enabled = False` (D14),
 - the amount is zero or null (borrow / donate / free items),
 - the booker is a remote federated actor (`booking.user is None`) — remote actors have
   no local account. These bookings are listed in an "unbilled" view with a note. Cross
   instance settlement is explicitly out of scope for v1 and needs its own design.
 
-**Idempotency key:** `booking:<booking-id>:charge`. Two concurrent completions produce
+**Idempotency key:** `booking:<booking-id>:charge` (rentals and sales alike). Two concurrent completions produce
 one posting; the second call returns the existing transaction.
 
 **Reconciliation job:** a daily Celery task lists `COMPLETED` bookings with a chargeable
@@ -310,8 +357,14 @@ unrepresentable from the outside:
 | `expense_for_community` (the drill) | `expense:<category>` +X / `member:<me>` −X |
 | `top_up` | `asset:bank` or `asset:cash` +X / `member:<me>` −X |
 | `payout` (admin) | `member:<target>` +X / `asset:bank` −X |
-| `member_to_member` | `member:<from>` +X / `member:<to>` −X |
+| `member_to_member` (I owe someone) | `member:<me>` +X / `member:<to>` −X |
+| `shared_expense` (section 7a) | one +share leg per participant / `member:<payer>` −sum |
 | `income` (donation, fee) | `asset:*` +X / `income:*` −X |
+
+**Rule (D2/D13): a direct post may only charge the poster's own member account.**
+Anything that puts a charge on someone else's account — a split dinner, "Bob owes me
+for the tickets" — is a `shared_expense` and goes through the confirmation flow in 7a.
+Admin payouts and adjustments are the exception.
 
 Every intent requires a category and allows an optional project. Receipt upload is
 optional but strongly nudged in the UI for `expense_for_community` — the transaction
@@ -322,6 +375,67 @@ by `GET /api/ledger/receipts/{id}/file` for authenticated members, with
 `Content-Disposition: attachment`, a hashed unpredictable storage path, and an
 `ReceiptAccess` row per download. The SHA-256 of the file is displayed on the
 transaction, so a receipt cannot be silently swapped.
+
+---
+
+## 7a. Shared expenses: charging other members (D13)
+
+The ledger is append-only, so a split that waits for people to confirm cannot live in
+it. It lives in a mutable **`CostShare`** until it is final, then posts one
+`SHARED_EXPENSE` transaction — the same pattern as bank `MatchProposal`s (section 12).
+
+```python
+class CostShareState(IntegerChoices):
+    OPEN, POSTED, CANCELLED
+
+class CostShare(models.Model):
+    id, book, payer = FK(User), created_by = FK(User)
+    total = MoneyField(), description, occurred_on, category, project (nullable)
+    split = CharField(choices=["equal", "weights", "amounts"])
+    payer_participates = BooleanField(default=True)
+    auto_accept_at = DateTimeField()           # created_at + N days (Constance, default 3)
+    state, posted_transaction = FK(Transaction, null=True)
+    receipts                                   # same Receipt model, attached before posting
+    history = HistoricalRecords()
+
+class CostShareParticipant(models.Model):
+    cost_share = FK(CostShare), user = FK(User)
+    weight = DecimalField(default=1)           # "weights" split, e.g. 0.5 for a child
+    amount = MoneyField(null=True)             # "amounts" split
+    guests = PositiveSmallIntegerField(default=0)   # non-members this person brought
+    response = IntegerChoices(PENDING, ACCEPTED, OBJECTED)
+    responded_at, objection_reason
+```
+
+**Lifecycle**
+
+1. The payer creates it; every participant is notified with their exact share.
+2. Each participant accepts or objects. An objection removes that person's share and
+   notifies the payer, who can edit the split (re-notifying the affected people) or
+   cancel it. Nobody else's share changes without them being told.
+3. When everyone has answered, or `auto_accept_at` passes (Celery beat job), all
+   still-pending participants count as accepted and the split posts **one**
+   transaction, idempotency key `cost_share:<id>`. From then on it is ordinary ledger
+   data: visible to all, disputable, correctable.
+4. After posting, a participant disputing their share gets a **partial correction**
+   (example h) — only their legs are mirrored. The service refuses a correction that
+   would reverse more than the original leg.
+
+**Guests** (no account) are charged to the member who brought them: `guests = 2`
+means that participant carries three shares. **The payer** normally eats too
+(`payer_participates`); their own share is computed but never posted.
+
+**Rounding.** Shares are computed exactly, floored to the cent, and the leftover cents
+go to the largest fractional remainders, ties broken by stable participant order
+(largest-remainder method), so the shares always add up to exactly the total. The
+payer is credited exactly the sum of the shares actually posted (their own excluded),
+so the transaction balances by construction. The same helper rounds rental prices, so
+there is one rounding rule in the codebase.
+
+**Why not just `Project`?** Projects are cost centres ("Thursday dinners", "summer
+festival") for grouping and budgets. A `CostShare` is one concrete event with
+participants. A CostShare can belong to a project, which is how "what did the Thursday
+dinners cost this year" works.
 
 ---
 
@@ -368,6 +482,13 @@ GET    /api/ledger/accounts/                chart of accounts
 GET    /api/ledger/accounts/me/             my account + balance + soft-limit state
 GET    /api/ledger/balances/                every member's balance (transparent)
 
+POST   /api/ledger/cost-shares/             create a shared expense (section 7a)
+GET    /api/ledger/cost-shares/?mine=1      open splits I paid for or take part in
+PATCH  /api/ledger/cost-shares/{id}/        payer edits while OPEN (re-notifies)
+POST   /api/ledger/cost-shares/{id}/accept/     participant
+POST   /api/ledger/cost-shares/{id}/object/     participant, with reason
+POST   /api/ledger/cost-shares/{id}/cancel/     payer or admin, while OPEN
+
 GET    /api/ledger/stats/?group_by=category|project|member|item|month&from=&to=
 GET    /api/ledger/projects/                CRUD for admins, read for all
 
@@ -380,7 +501,8 @@ GET    /api/ledger/health/                      trial balance + last verificatio
 ```
 
 **Permissions.** Read: any authenticated user, everything (D8). Write: members may post
-their own manual transactions, dispute anything, and reverse transactions **they
+manual transactions that charge only their own account, create cost shares, answer
+the ones they take part in, dispute anything, and reverse transactions **they
 authored**. A `ledger_admin` group (treasurer) may post payouts and adjustments, reverse
 anyone's transaction, manage categories/projects, close periods and run exports. Nothing
 is deletable by anyone, including admins and the Django admin — the admin registers the
@@ -405,14 +527,19 @@ Pages (Mantine, per house rules — no shadcn, styling in `src/theme/mantine.ts`
   by member, by item, by month. Charts kept minimal and readable.
 - **New transaction** — modal with intent selector, amount, date, category, project,
   description, receipt dropzone.
+- **Split a cost** — pick participants (member search), split mode, guests per person,
+  live preview of each share, receipt. Open splits and "waiting for your answer" sit at
+  the top of `/ledger/me` with one-tap accept/object.
 
 Hooks: `useLedgerTransactions`, `useLedgerTransaction`, `useMyLedgerAccount`,
-`useLedgerBalances`, `useLedgerStats`, `usePostTransaction`, `useDisputeTransaction`.
+`useLedgerBalances`, `useLedgerStats`, `usePostTransaction`, `useDisputeTransaction`,
+`useCostShares`, `useRespondToCostShare`.
 All through the generated SDK.
 
 Notifications (existing Apprise stack): a member is notified when a transaction credits
-or debits **their** account, when their transaction is disputed, and when their balance
-stays below the soft limit (D10).
+or debits **their** account, when they are added to a cost share (with the auto-accept
+deadline), one day before that deadline, when their transaction is disputed, and when
+their balance stays below the soft limit (D10).
 
 ---
 
@@ -504,6 +631,11 @@ A user who leaves must not take the community's books with them.
   its balance is zero. Ledger rows are untouched.
 - A member with a non-zero balance cannot be anonymised until it is settled — the UI
   says so, with the amount.
+- **This must ship in phase 1**, not later: every user gets a member account, and
+  `PROTECT` (on `Account.owner` and `Transaction.created_by`) makes plain user deletion
+  in the Django admin fail from the first migration on. Phase 1 therefore replaces
+  admin deletion with the anonymise action. An open `CostShare` involving the user is
+  cancelled or re-split before anonymisation.
 - Receipts are the sensitive artefact (addresses, card digits, unrelated purchases). They
   are access-logged (D8) and the uploader can request replacement of a receipt image
   through a documented admin procedure that records the replacement — never a silent
@@ -515,7 +647,11 @@ A user who leaves must not take the community's books with them.
 
 - **Invariant tests**: every posting path asserts I1/I3; direct attempts to write an
   unbalanced transaction must raise at the DB level (test the trigger, not just the
-  service).
+  service). **Gotcha:** I1 is a deferred trigger that fires at `COMMIT`, and
+  pytest-django's default `@pytest.mark.django_db` rolls each test back without ever
+  committing — an unbalanced posting would pass silently. Trigger tests use
+  `django_db(transaction=True)`, and the shared ledger fixture runs
+  `SET CONSTRAINTS ALL IMMEDIATE` so ordinary tests hit the trigger too.
 - **Property tests** (hypothesis): generate random sequences of postings, reversals and
   disputes; assert trial balance = 0, cached balances = recomputed sums, and that no
   sequence produces an edited or deleted row.
@@ -526,8 +662,14 @@ A user who leaves must not take the community's books with them.
   asserted in an ops check.
 - **Architecture test**: no module outside `ledger/services.py` imports `Entry`.
 - **Booking integration**: completion posts once, cancellation posts nothing, remote
-  booker posts nothing, price precedence honoured, price change after posting does not
-  alter the charge.
+  booker posts nothing, `payment_enabled = False` posts nothing, price precedence
+  honoured, price change after posting does not alter the charge, a sale credits the
+  seller captured *before* `transfer_ownership`.
+- **Shared expenses**: property test that the rounding helper always sums exactly to
+  the charged amount for random totals, weights and guest counts; a split posts only
+  once (idempotency) even if the last acceptance and the auto-accept job race; an
+  objection removes exactly one share; a correction cannot exceed the original leg;
+  nobody can charge another member's account through any intent except a cost share.
 - **Permissions**: a member cannot reverse someone else's transaction, cannot post a
   payout, cannot read a receipt unauthenticated; every member can read every amount.
 - **E2E (Playwright)**: Alice posts the drill expense with a receipt → Bob sees it in the
@@ -539,10 +681,10 @@ A user who leaves must not take the community's books with them.
 
 | Phase | Content | Ships |
 |---|---|---|
-| 1 | `ledger` app: models, migrations incl. the balance trigger, `post_transaction`, chart-of-accounts seed, read-only Django admin, invariant + property tests | nothing user-visible |
+| 1 | `ledger` app: models, migrations incl. the balance trigger, `post_transaction`, rounding helper, chart-of-accounts seed, read-only Django admin, user anonymisation (replaces admin delete), invariant + property tests | nothing user-visible |
 | 2 | Manual transactions + receipts + `/api/ledger/` read & write + feed, detail, my-account pages | the drill scenario works end to end |
-| 3 | Booking integration: `Item.ledger_beneficiary`, posting on `COMPLETED`, reconciliation job, unbilled view | rentals hit the ledger |
-| 4 | Disputes, comment threads, reversals in the UI, notifications, soft-limit warnings and reminders | the trust layer |
+| 3 | Booking integration: `payment_enabled` gate, `Item.ledger_beneficiary` + community ownership in the UI, posting rentals and sales on `COMPLETED`, reconciliation job, unbilled view | rentals and sales hit the ledger |
+| 4 | Disputes, comment threads, reversals and partial corrections in the UI, notifications, soft-limit warnings and reminders; shared expenses (`CostShare`, confirmation flow, auto-accept job) | the trust layer; group cooking works |
 | 5 | Categories/projects UI, statistics endpoints and page, per-member statement, treasurer's report | analytics and D12 part 1 |
 | 6 | DATEV export + period close; bank import pipeline behind the port; hash chain and daily digest | D11/D12 completion |
 
@@ -562,6 +704,10 @@ because the core is append-only.
    the intents in section 7 would need tax-aware variants.
 4. **Multi-currency**: one currency per book, validated on every entry. Multi-currency
    would need per-entry FX rate and a revaluation account; not planned.
-5. **Membership fees / recurring postings**: no scheduler in this design. If the
+5. **Tax view of cost sharing**: shared expenses are private cost sharing between
+   members and never touch the association's income accounts, which keeps them out
+   of its books by construction. Worth confirming with the tax advisor anyway if
+   settlements for them run through the association's bank account.
+6. **Membership fees / recurring postings**: no scheduler in this design. If the
    community charges dues, add a `RecurringPosting` model in phase 5+ that calls
    `post_transaction` from a Celery beat job with a date-derived idempotency key.
