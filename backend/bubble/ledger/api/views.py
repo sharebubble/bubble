@@ -57,9 +57,10 @@ from bubble.ledger.services import get_member_account, verify_ledger
 
 
 def _intent_error(exc: IntentError) -> APIException:
+    message = exc.user_message
     if isinstance(exc, IntentForbiddenError):
-        return PermissionDenied(str(exc))
-    return ValidationError({exc.field or "non_field_errors": [str(exc)]})
+        return PermissionDenied(message)
+    return ValidationError({exc.field or "non_field_errors": [message]})
 
 
 class TransactionFilter(filters.FilterSet):

@@ -56,6 +56,9 @@ class IntentError(LedgerError):
 
     def __init__(self, message, field: str | None = None):
         super().__init__(message)
+        # Kept apart from the exception's own text so the API returns exactly
+        # this translated sentence, never anything derived from the exception.
+        self.user_message = message
         self.field = field
 
 
