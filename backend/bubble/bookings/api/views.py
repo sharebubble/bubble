@@ -25,6 +25,37 @@ from bubble.core.api.pagination import SelectablePageSizePagination
 from bubble.items.models import ItemStatus, SalesType
 
 
+def _overlapping_booking_error(exc: IntegrityError) -> ValidationError | None:
+    """Build a friendly error when the overlap exclusion constraint fires.
+
+    Returns None when the IntegrityError is unrelated to overlapping bookings so
+    callers can re-raise the original exception.
+    """
+    # Prefer the structured constraint name from the underlying driver error;
+    # fall back to the message text when diagnostics are unavailable.
+    diag = getattr(exc.__cause__, "diag", None)
+    constraint_name = getattr(diag, "constraint_name", None) if diag else None
+    if constraint_name is not None:
+        is_overlap = constraint_name.startswith(
+            "exclude_overlapping_confirmed_bookings"
+        )
+    else:
+        is_overlap = "exclude_overlapping_confirmed_bookings" in str(exc)
+    if not is_overlap:
+        return None
+    return ValidationError(
+        {
+            "non_field_errors": [
+                _(
+                    "This item is already rented out or has an open"
+                    " rental for the requested period."
+                    " Please choose a different time."
+                )
+            ]
+        }
+    )
+
+
 class PublicBookingViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Public read-only ViewSet for confirmed bookings.
@@ -88,11 +119,14 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
 
     def perform_create(self, serializer):
         """
-        Create a booking and auto-confirm if the item has rental_self_service enabled
-        and the offered price matches the item's listed price exactly.
+        Create a booking and auto-confirm if the item has rental_self_service enabled.
 
-        If the offer deviates from the item price the booking stays PENDING so the
-        owner can review the custom offer, even on self-service items.
+        Auto-confirmation happens when a rental price can be calculated and the
+        offered amount is at least that price (larger offers are accepted too), or
+        when no rental price can be calculated — e.g. open-ended rentals, borrows
+        or sales — regardless of whether an offer was given. Offers below the
+        calculated rental price stay PENDING so the owner can review the custom
+        offer, even on self-service items.
         """
         item = serializer.validated_data.get("item")
         offer = serializer.validated_data.get("offer")
@@ -105,33 +139,20 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
         booking = serializer.instance
 
         rental_price = booking.rental_price
-        self_service_at_listed_price = (
+        self_service_auto_confirm = (
             item
             and item.rental_self_service
-            and (
-                (rental_price and offer and offer >= rental_price)
-                or (not rental_price and not offer)
-            )
+            and (rental_price is None or (offer is not None and offer >= rental_price))
         )
 
-        if is_owner or self_service_at_listed_price:
+        if is_owner or self_service_auto_confirm:
             booking.status = BookingStatus.CONFIRMED
             try:
                 booking.save(update_fields=["status"])
             except IntegrityError as exc:
-                exc_str = str(exc)
-                if "exclude_overlapping_confirmed_bookings" in exc_str:
-                    raise ValidationError(
-                        {
-                            "non_field_errors": [
-                                _(
-                                    "This item is already rented out or has an open"
-                                    " rental for the requested period."
-                                    " Please choose a different time."
-                                )
-                            ]
-                        }
-                    ) from exc
+                error = _overlapping_booking_error(exc)
+                if error is not None:
+                    raise error from exc
                 raise
 
         message = _("Booking request created for {offer}").format(offer=booking.offer)
@@ -140,7 +161,13 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
         )
 
     def perform_update(self, serializer):
-        super().perform_update(serializer)
+        try:
+            super().perform_update(serializer)
+        except IntegrityError as exc:
+            error = _overlapping_booking_error(exc)
+            if error is not None:
+                raise error from exc
+            raise
 
         booking = serializer.instance
 

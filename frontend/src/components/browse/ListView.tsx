@@ -78,20 +78,14 @@ export const ListView = ({ items }: ListViewProps) => {
                 </Table.Td>
                 <Table.Td>
                   {item.sales_type && (
-                    <Badge
-                      {...getSalesTypeBadgeProps(item.sales_type as SalesTypeEnum)}
-                      size="sm"
-                    >
+                    <Badge {...getSalesTypeBadgeProps(item.sales_type as SalesTypeEnum)} size="sm">
                       {t(`item.salesType.badge.${item.sales_type}`)}
                     </Badge>
                   )}
                 </Table.Td>
                 <Table.Td>
                   {typeof item.status !== 'undefined' && item.status !== null && (
-                    <Badge
-                      color={getStatusMantineColor(item.status as Status7D3Enum)}
-                      size="sm"
-                    >
+                    <Badge color={getStatusMantineColor(item.status as Status7D3Enum)} size="sm">
                       {getStatusLabel(item.status as Status7D3Enum)
                         ? t(`status.${getStatusLabel(item.status as Status7D3Enum)}`)
                         : ''}

@@ -56,15 +56,32 @@ export interface LoginResponse {
   };
 }
 
+/** A step allauth is waiting on, e.g. `provider_signup` or `verify_email`. */
+export interface AuthFlow {
+  id: string;
+  is_pending?: boolean;
+}
+
 export interface SessionResponse {
   meta: {
     is_authenticated: boolean;
   };
-  data: Session;
+  /** Carries the user when authenticated, the open flows when not. */
+  data: Session & { flows?: AuthFlow[] };
 }
 
 class AuthAPI {
-  private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  /**
+   * @param acceptStatuses Error statuses whose JSON body is a valid answer
+   *   rather than a failure. allauth replies 401 with the session state (and,
+   *   during a half-finished login, the pending flows) — information the caller
+   *   needs, and which must not be confused with the backend being unreachable.
+   */
+  private async request<T>(
+    endpoint: string,
+    options?: RequestInit,
+    acceptStatuses: number[] = [],
+  ): Promise<T> {
     const baseURL = client.getConfig().baseUrl;
 
     const headers: HeadersInit = {
@@ -87,6 +104,9 @@ class AuthAPI {
     });
 
     if (!response.ok) {
+      if (acceptStatuses.includes(response.status)) {
+        return (await response.json().catch(() => undefined)) as T;
+      }
       if (response.status === 401) {
         console.debug('[API] 401 Unauthorized – ignoring silently');
         return Promise.resolve(undefined as T);
@@ -123,10 +143,12 @@ class AuthAPI {
       let token = this.getCSRFToken();
       if (!token) {
         // Fetch CSRF token from Django by calling session endpoint
-        await this.request('/api/_allauth/browser/v1/auth/session', {
-          method: 'GET',
-          credentials: 'include',
-        });
+        await this.request(
+          '/api/_allauth/browser/v1/auth/session',
+          { method: 'GET', credentials: 'include' },
+          // Anonymous is the normal case here — the cookie comes with the 401.
+          [401, 410],
+        );
         token = this.getCSRFToken();
       }
       return token;
@@ -151,13 +173,21 @@ class AuthAPI {
     }
   }
 
-  // Get current session
-  async getSession(): Promise<SessionResponse> {
-    try {
-      return await this.request<SessionResponse>('/api/_allauth/browser/v1/auth/session');
-    } catch (error) {
-      throw error;
-    }
+  /**
+   * Get the current session.
+   *
+   * allauth answers 401 for an anonymous *and* for a half-finished session (a
+   * social login parked in a pending signup or email verification), with the
+   * flows in the body. Both are valid answers, so they are returned rather than
+   * thrown; only a network failure or a server error rejects, which is what
+   * lets the caller tell "signed out" apart from "backend did not answer".
+   */
+  async getSession(): Promise<SessionResponse | undefined> {
+    return await this.request<SessionResponse | undefined>(
+      '/api/_allauth/browser/v1/auth/session',
+      undefined,
+      [401, 410],
+    );
   }
 
   // Logout current user

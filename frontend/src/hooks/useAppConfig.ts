@@ -30,7 +30,10 @@ export const useAppConfig = (): UseAppConfigResult => {
     // Config rarely changes — cache for 5 minutes, don't refetch on window focus
     staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
-    retry: false,
+    // A failure here falls back to "login required", which on an SSO-only
+    // deployment forwards the browser to the provider — too drastic a
+    // consequence for a single failed request, so give it a couple of tries.
+    retry: 2,
   });
 
   return {

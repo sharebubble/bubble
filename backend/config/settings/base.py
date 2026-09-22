@@ -203,6 +203,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "simple_history.middleware.HistoryRequestMiddleware",
+    "bubble.core.middleware.SocialLoginErrorLoggingMiddleware",
 ]
 
 # STATIC
@@ -310,15 +311,30 @@ LOGGING = {
             "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
         },
     },
+    "filters": {
+        "cancelled_error_filter": {
+            "()": "bubble.core.logging_filters.CancelledErrorFilter",
+        },
+        "session_unauthorized_filter": {
+            "()": "bubble.core.logging_filters.SessionUnauthorizedFilter",
+        },
+    },
     "handlers": {
         "console": {
             "level": LOG_LEVEL,
             "class": "logging.StreamHandler",
             "formatter": "verbose",
+            "filters": ["cancelled_error_filter"],
         },
     },
     "root": {"level": LOG_LEVEL, "handlers": ["console"]},
     "loggers": {
+        "django.request": {
+            "level": "WARNING",
+            "handlers": ["console"],
+            "filters": ["session_unauthorized_filter"],
+            "propagate": False,
+        },
         "django.db.backends": {
             "level": "ERROR",
             "handlers": ["console"],
@@ -326,6 +342,23 @@ LOGGING = {
         },
         "django.security.DisallowedHost": {
             "level": "ERROR",
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        # OIDC/OAuth2 flow logging. Set DJANGO_LOG_LEVEL=DEBUG to see full
+        # token requests/responses from oauthlib/requests-oauthlib.
+        "allauth": {
+            "level": LOG_LEVEL,
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "oauthlib": {
+            "level": LOG_LEVEL,
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "requests_oauthlib": {
+            "level": LOG_LEVEL,
             "handlers": ["console"],
             "propagate": False,
         },

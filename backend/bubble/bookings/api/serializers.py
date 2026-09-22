@@ -128,6 +128,19 @@ class BookingSerializer(serializers.ModelSerializer):
 
         return super().validate(attrs)
 
+    def validate_time_from(self, value):
+        """Require a start time when one is explicitly submitted.
+
+        A booking without ``time_from`` cannot be placed on any calendar and —
+        worse — turns into an unbounded ``tstzrange(NULL, time_to)`` in the
+        overlap exclusion constraint, blocking every other booking up to
+        ``time_to``. Omitting the field entirely is still allowed and falls
+        back to the model default ("now").
+        """
+        if value is None:
+            raise serializers.ValidationError(_("A booking requires a start time."))
+        return value
+
     def validate_status(self, value):
         """Ensure that status is a valid BookingStatus.
 

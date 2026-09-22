@@ -1,5 +1,6 @@
 import { BookingDialog } from '@/components/items/BookingDialog';
 import { CalendarSubscribeButton } from '@/components/calendar/CalendarSubscribeButton';
+import { FavoriteButton } from '@/components/items/FavoriteButton';
 import { ItemComments } from '@/components/items/ItemComments';
 import { PreviousRentals } from '@/components/items/PreviousRentals';
 import { ItemImageCarousel } from '@/components/items/ItemImageCarousel';
@@ -212,6 +213,8 @@ const ItemDetail = () => {
       <div className="mb-4 flex items-center justify-between gap-2">
         <BackButton />
         <div className="flex items-center gap-2">
+          {/* Favorites are per user, so the heart is only offered once signed in. */}
+          {user && itemUuid && <FavoriteButton itemId={itemUuid} />}
           <ShareButton url={shareUrl} title={name} text={description || undefined} />
           {/* Calendar subscription — any logged-in user, bookable items only */}
           {user && isRental && itemUuid && <CalendarSubscribeButton kind="item" id={itemUuid} />}

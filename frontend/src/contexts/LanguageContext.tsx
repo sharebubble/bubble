@@ -75,6 +75,8 @@ const translations = {
     'header.browse': 'Browse',
     'home.newestItems': 'Newest items',
     'home.viewAll': 'View all',
+    'home.loadMore': 'Load more',
+    'home.browseAllItems': 'Browse all items',
 
     // Search bar / facets
     'search.filterBy': 'Filter by',
@@ -123,6 +125,17 @@ const translations = {
     'auth.loginFailed': 'Login failed. Please check your credentials.',
     'auth.unexpectedError': 'An unexpected error occurred. Please try again.',
     'auth.redirectingToProvider': 'Redirecting to {{provider}}...',
+    'auth.ssoBlockedTitle': 'Sign-in did not complete',
+    'auth.ssoBlocked.error':
+      'Your identity provider sent you back without signing you in. Try again, and contact your administrator if it keeps happening.',
+    'auth.ssoBlocked.pending':
+      'Your sign-in still needs a step that cannot be completed here. Please contact your administrator.',
+    'auth.ssoBlocked.unreachable':
+      'Bubble could not reach the server, so your sign-in status is unknown. Check your connection and try again.',
+    'auth.ssoBlocked.returned':
+      'You came back from the login provider without an active session. This often means cookies are blocked for this site.',
+    'auth.ssoErrorCode': 'Error code: {{code}}',
+    'auth.retrySignIn': 'Try {{provider}} again',
 
     // Index Page
     'index.itemsFound': '{count} items found',
@@ -378,9 +391,14 @@ const translations = {
     'calendar.selectedPeriod': 'Selected Period',
     'calendar.from': 'From',
     'calendar.to': 'To',
+    'calendar.openEndedRentals': 'Open-ended rentals',
+    'calendar.openEndedSince': 'since {date}',
+    'calendar.openEndedNote':
+      'These rentals run until the item is returned. Only one open-ended rental can be confirmed at a time.',
     'calendar.duration': 'Duration',
     'calendar.hours': 'hours',
     'calendar.days': 'days',
+    'calendar.untilReturned': 'until returned',
     'calendar.selectingPeriod': 'Selecting period',
     'calendar.clickToSetEnd': 'Click an end tile to confirm, or hover to preview',
     'calendar.clearSelection': 'Clear',
@@ -635,6 +653,15 @@ const translations = {
     'scanner.initializingCamera': 'Initializing camera...',
     'scanner.detected': 'Detected',
 
+    // Favorites
+    'favorites.title': 'Favorites',
+    'favorites.add': 'Add to favorites',
+    'favorites.remove': 'Remove from favorites',
+    'favorites.added': 'Added to favorites',
+    'favorites.removed': 'Removed from favorites',
+    'favorites.empty': "You haven't marked any items as favorite yet.",
+    'favorites.error': 'Could not update your favorites. Please try again.',
+
     // Collections
     'collections.title': 'My Collections',
     'collections.myCollections': 'My Collections',
@@ -795,6 +822,8 @@ const translations = {
     'header.browse': 'Entdecken',
     'home.newestItems': 'Neueste Artikel',
     'home.viewAll': 'Alle ansehen',
+    'home.loadMore': 'Mehr laden',
+    'home.browseAllItems': 'Alle Artikel durchsuchen',
 
     // Search bar / facets
     'search.filterBy': 'Filtern nach',
@@ -843,6 +872,17 @@ const translations = {
     'auth.loginFailed': 'Anmeldung fehlgeschlagen. Bitte überprüfe deine Zugangsdaten.',
     'auth.unexpectedError': 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.',
     'auth.redirectingToProvider': 'Weiterleitung zu {{provider}}...',
+    'auth.ssoBlockedTitle': 'Anmeldung nicht abgeschlossen',
+    'auth.ssoBlocked.error':
+      'Dein Anmeldedienst hat dich zurückgeschickt, ohne dich anzumelden. Versuche es erneut und wende dich an deine Administration, wenn es weiterhin passiert.',
+    'auth.ssoBlocked.pending':
+      'Deiner Anmeldung fehlt noch ein Schritt, der hier nicht abgeschlossen werden kann. Bitte wende dich an deine Administration.',
+    'auth.ssoBlocked.unreachable':
+      'Bubble konnte den Server nicht erreichen, dein Anmeldestatus ist deshalb unbekannt. Prüfe deine Verbindung und versuche es erneut.',
+    'auth.ssoBlocked.returned':
+      'Du kommst ohne aktive Sitzung vom Anmeldedienst zurück. Häufig sind Cookies für diese Seite blockiert.',
+    'auth.ssoErrorCode': 'Fehlercode: {{code}}',
+    'auth.retrySignIn': 'Erneut mit {{provider}} anmelden',
 
     // Index Page
     'index.itemsFound': '{count} Artikel gefunden',
@@ -1107,9 +1147,14 @@ const translations = {
     'calendar.selectedPeriod': 'Ausgewählter Zeitraum',
     'calendar.from': 'Von',
     'calendar.to': 'Bis',
+    'calendar.openEndedRentals': 'Unbefristete Mieten',
+    'calendar.openEndedSince': 'seit {date}',
+    'calendar.openEndedNote':
+      'Diese Mieten laufen, bis der Artikel zurückgegeben wird. Es kann immer nur eine unbefristete Miete gleichzeitig bestätigt sein.',
     'calendar.duration': 'Dauer',
     'calendar.hours': 'Stunden',
     'calendar.days': 'Tage',
+    'calendar.untilReturned': 'bis zurückgegeben',
     'calendar.selectingPeriod': 'Zeitraum wählen',
     'calendar.clickToSetEnd':
       'Klicke ein End-Feld zum Bestätigen oder bewege die Maus für eine Vorschau',
@@ -1366,6 +1411,15 @@ const translations = {
     'scanner.usingPolyfill': 'Verwendet barcode-detector Polyfill',
     'scanner.initializingCamera': 'Kamera wird initialisiert...',
     'scanner.detected': 'Erkannt',
+
+    // Favorites
+    'favorites.title': 'Favoriten',
+    'favorites.add': 'Zu Favoriten hinzufügen',
+    'favorites.remove': 'Aus Favoriten entfernen',
+    'favorites.added': 'Zu Favoriten hinzugefügt',
+    'favorites.removed': 'Aus Favoriten entfernt',
+    'favorites.empty': 'Du hast noch keine Artikel als Favorit markiert.',
+    'favorites.error': 'Favoriten konnten nicht aktualisiert werden. Bitte versuche es erneut.',
 
     // Collections
     'collections.title': 'Meine Sammlungen',

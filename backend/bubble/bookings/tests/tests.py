@@ -141,7 +141,7 @@ class BookingAutoConfirmTestCase(APITestCase):
         response = self.client.get("/api/public-bookings/")
         assert response.status_code == status.HTTP_200_OK
 
-        booking_ids = [b["id"] for b in response.data["results"]]
+        booking_ids = [str(b["id"]) for b in response.data["results"]]
         assert booking_id in booking_ids
 
     def test_pending_booking_not_visible_in_public_endpoint(self):
@@ -165,7 +165,7 @@ class BookingAutoConfirmTestCase(APITestCase):
         response = self.client.get("/api/public-bookings/")
         assert response.status_code == status.HTTP_200_OK
 
-        booking_ids = [b["id"] for b in response.data["results"]]
+        booking_ids = [str(b["id"]) for b in response.data["results"]]
         assert booking_id not in booking_ids
 
     def test_self_service_no_price_item_auto_confirms_without_offer(self):
@@ -829,8 +829,10 @@ class BookingItemStatusSignalTestCase(APITestCase):
 
 
 class BookingAutoConfirmPriceCheckTestCase(APITestCase):
-    """Auto-approval on self-service items must only trigger when the offered
-    price exactly matches the calculated rental_price (item.price * hours)."""
+    """Auto-approval on self-service items triggers when the offered price is at
+    least the calculated rental_price (item.price * hours) — equal and higher
+    offers auto-confirm. When no rental_price can be calculated (open-ended
+    rentals, borrows, sales) any offered amount is auto-confirmed too."""
 
     def setUp(self):
         self.client = APIClient()
@@ -884,10 +886,11 @@ class BookingAutoConfirmPriceCheckTestCase(APITestCase):
         booking = Booking.objects.get(id=response.data["id"])
         assert booking.status == BookingStatus.PENDING
 
-    def test_higher_offer_stays_pending(self):
+    def test_higher_offer_auto_confirms(self):
         """
-        Booking with offer > rental_price stays PENDING
-        even on a self-service item.
+        A self-service booking is auto-confirmed even when the offer exceeds
+        the calculated rental_price. The owner's requested amount acts as a
+        floor, not a cap, so paying more never needs manual review.
         """
         self.client.force_authenticate(user=self.booking_user)
 
@@ -899,6 +902,60 @@ class BookingAutoConfirmPriceCheckTestCase(APITestCase):
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["status"] == BookingStatus.CONFIRMED
+        booking = Booking.objects.get(id=response.data["id"])
+        assert booking.status == BookingStatus.CONFIRMED
+        assert str(booking.offer.amount) == "999.99"
+
+    def test_open_end_rental_with_offer_auto_confirms(self):
+        """
+        An open-ended self-service rental has no time_to, so rental_price is
+        None. An offered amount is still auto-accepted instead of waiting for
+        owner review.
+        """
+        open_end_item = SelfServiceItemFactory(
+            user=self.item_owner,
+            sales_type=SalesType.RENT,
+            price="10.00",
+            rental_open_end=True,
+        )
+        self.client.force_authenticate(user=self.booking_user)
+
+        response = self.client.post(
+            "/api/bookings/",
+            {"item": str(open_end_item.id), "offer": "15.00"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["status"] == BookingStatus.CONFIRMED
+        booking = Booking.objects.get(id=response.data["id"])
+        assert booking.status == BookingStatus.CONFIRMED
+        assert str(booking.offer.amount) == "15.00"
+
+    def test_borrow_self_service_with_offer_auto_confirms(self):
+        """
+        A self-service borrow item has no price, so rental_price is None. An
+        offered amount (e.g. a donation) is still auto-accepted.
+        """
+        borrow_item = SelfServiceItemFactory(
+            user=self.item_owner,
+            sales_type=SalesType.BORROW,
+            price=None,
+            rental_open_end=True,
+        )
+        self.client.force_authenticate(user=self.booking_user)
+
+        response = self.client.post(
+            "/api/bookings/",
+            {"item": str(borrow_item.id), "offer": "5.00"},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["status"] == BookingStatus.CONFIRMED
+        booking = Booking.objects.get(id=response.data["id"])
+        assert booking.status == BookingStatus.CONFIRMED
+        assert str(booking.offer.amount) == "5.00"
 
     def test_non_self_service_exact_price_stays_pending(self):
         """
@@ -932,6 +989,81 @@ class BookingAutoConfirmPriceCheckTestCase(APITestCase):
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["status"] == BookingStatus.CONFIRMED
+
+    def test_rented_out_item_can_still_be_booked_for_future_slot(self):
+        """
+        An item that is currently rented out (active confirmed booking, item
+        status RENTED) can still be booked for a future slot that has no
+        confirmed booking for that time range.
+        """
+        now = timezone.now()
+        active = SelfServiceItemFactory(user=self.item_owner, price=None)
+        self.client.force_authenticate(user=self.booking_user)
+        active_booking = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(active.id),
+                "time_from": now - timedelta(days=1),
+                "time_to": now + timedelta(days=1),
+            },
+            format="json",
+        )
+        assert active_booking.status_code == status.HTTP_201_CREATED, (
+            active_booking.content
+        )
+        assert active_booking.data["status"] == BookingStatus.CONFIRMED
+        active.refresh_from_db()
+        assert active.status == ItemStatus.RENTED
+
+        other_user = UserFactory()
+        other_user.groups.add(self.default_group)
+        self.client.force_authenticate(user=other_user)
+        future = now + timedelta(days=30)
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(active.id),
+                "time_from": future,
+                "time_to": future + timedelta(days=2),
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED, response.content
+        assert response.data["status"] == BookingStatus.CONFIRMED
+
+    def test_open_end_self_service_auto_confirms_and_second_is_rejected(self):
+        """
+        On a self-service item that allows open-ended rentals, a booking
+        without a return date is self-approved. The open-end exclusion
+        constraint allows only one confirmed open rental per item, so a second
+        open-ended request gets the friendly overlap error instead of a 500.
+        """
+        open_end_item = SelfServiceItemFactory(
+            user=self.item_owner, price=None, rental_open_end=True
+        )
+        self.client.force_authenticate(user=self.booking_user)
+        first = self.client.post(
+            "/api/bookings/", {"item": str(open_end_item.id)}, format="json"
+        )
+        assert first.status_code == status.HTTP_201_CREATED, first.content
+        assert first.data["status"] == BookingStatus.CONFIRMED
+
+        other_user = UserFactory()
+        other_user.groups.add(self.default_group)
+        self.client.force_authenticate(user=other_user)
+        second = self.client.post(
+            "/api/bookings/", {"item": str(open_end_item.id)}, format="json"
+        )
+        assert second.status_code == status.HTTP_400_BAD_REQUEST, second.content
+        assert "already rented out" in second.data["non_field_errors"][0]
+        # The rejected request must not linger as a confirmed duplicate.
+        assert (
+            Booking.objects.filter(
+                item=open_end_item, status=BookingStatus.CONFIRMED
+            ).count()
+            == 1
+        )
 
 
 class BookingOpenEndRentalTestCase(APITestCase):
@@ -1836,6 +1968,45 @@ class BookingFulfillmentTestCase(APITestCase):
         booking.refresh_from_db()
         assert booking.status == BookingStatus.CONFIRMED
 
+    def test_owner_cannot_confirm_overlapping_booking(self):
+        """Confirming a booking that overlaps an existing confirmed one returns
+        a friendly 400 instead of an unhandled IntegrityError (500)."""
+        item = ItemFactory(
+            user=self.item_owner,
+            sales_type=SalesType.RENT,
+            price="10.00",
+            status=ItemStatus.RESERVED,
+        )
+        now = timezone.now()
+        BookingFactory(
+            user=self.booking_user,
+            item=item,
+            status=BookingStatus.CONFIRMED,
+            time_from=now,
+            time_to=now + timedelta(hours=2),
+        )
+        pending = BookingFactory(
+            user=self.booking_user,
+            item=item,
+            status=BookingStatus.PENDING,
+            time_from=now + timedelta(hours=1),
+            time_to=now + timedelta(hours=3),
+        )
+
+        self.client.force_authenticate(user=self.item_owner)
+        response = self.client.patch(
+            f"/api/bookings/{pending.id}/",
+            {"status": BookingStatus.CONFIRMED},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "non_field_errors" in response.data
+        assert "already rented out" in response.data["non_field_errors"][0]
+        pending.refresh_from_db()
+        assert pending.status == BookingStatus.PENDING
+        assert not Message.objects.filter(booking=pending).exists()
+
 
 class BookingPastCancelValidationTestCase(APITestCase):
     """A booking whose rental period has already ended can no longer be
@@ -1946,3 +2117,317 @@ class BookingPastCancelValidationTestCase(APITestCase):
         assert response.status_code == status.HTTP_200_OK, response.content
         booking.refresh_from_db()
         assert booking.status == BookingStatus.CANCELLED
+
+
+class BookingTimeFromValidationTestCase(APITestCase):
+    """A booking always needs a start time: without one it cannot be shown on
+    any calendar and its overlap range becomes unbounded below, silently
+    blocking every other booking up to ``time_to``."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.default_group, _ = Group.objects.get_or_create(name=DefaultGroup.DEFAULT)
+
+        self.item_owner = UserFactory()
+        self.item_owner.groups.add(self.default_group)
+
+        self.booking_user = UserFactory()
+        self.booking_user.groups.add(self.default_group)
+
+        self.item = ItemFactory(
+            user=self.item_owner, sales_type=SalesType.RENT, price="10.00"
+        )
+
+    def test_explicit_null_time_from_rejected(self):
+        """Posting ``time_from: null`` is a validation error, not a booking
+        with a mystery start."""
+        self.client.force_authenticate(user=self.booking_user)
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(self.item.id),
+                "time_from": None,
+                "time_to": timezone.now() + timedelta(days=1),
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST, response.content
+        assert "time_from" in response.data
+
+    def test_omitted_time_from_defaults_to_now(self):
+        """Omitting ``time_from`` entirely keeps the model default (now)."""
+        self.client.force_authenticate(user=self.booking_user)
+        before = timezone.now()
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "item": str(self.item.id),
+                "time_to": timezone.now() + timedelta(days=1),
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED, response.content
+        booking = Booking.objects.get(id=response.data["id"])
+        assert booking.time_from is not None
+        assert before <= booking.time_from <= timezone.now()
+
+    def test_patching_time_from_to_null_rejected(self):
+        """An existing booking cannot be updated to lose its start time."""
+        self.client.force_authenticate(user=self.booking_user)
+        booking = BookingFactory(
+            user=self.booking_user,
+            item=self.item,
+            time_from=timezone.now(),
+            time_to=timezone.now() + timedelta(days=1),
+        )
+        response = self.client.patch(
+            f"/api/bookings/{booking.id}/",
+            {"time_from": None},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST, response.content
+        assert "time_from" in response.data
+        booking.refresh_from_db()
+        assert booking.time_from is not None
+
+    def test_is_active_false_without_time_from(self):
+        """A booking without a start time is never 'active' (and comparing it
+        to now would raise a TypeError)."""
+        booking = BookingFactory(
+            user=self.booking_user,
+            item=self.item,
+            time_from=None,
+            time_to=timezone.now() + timedelta(days=1),
+        )
+        assert booking.is_active is False
+
+    def test_confirming_legacy_booking_without_time_from_does_not_crash(self):
+        """Regression: confirming a legacy/federated booking whose ``time_from``
+        is NULL used to raise a TypeError in the item-status signal (HTTP 500).
+        It must confirm cleanly instead."""
+        booking = BookingFactory(
+            user=self.booking_user,
+            item=self.item,
+            time_from=None,
+            time_to=timezone.now() + timedelta(days=1),
+        )
+        self.client.force_authenticate(user=self.item_owner)
+        response = self.client.patch(
+            f"/api/bookings/{booking.id}/",
+            {"status": BookingStatus.CONFIRMED},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK, response.content
+        booking.refresh_from_db()
+        assert booking.status == BookingStatus.CONFIRMED
+
+
+class BookingVisibleWindowFilterTestCase(APITestCase):
+    """The rental calendar fetches bookings with ``visible_from``/``visible_to``
+    for the time range it displays. A booking must be returned when it overlaps
+    that range — not when it merely exists for the item."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.default_group, _ = Group.objects.get_or_create(name=DefaultGroup.DEFAULT)
+
+        self.item_owner = UserFactory()
+        self.item_owner.groups.add(self.default_group)
+
+        self.item = ItemFactory(
+            user=self.item_owner, sales_type=SalesType.RENT, price="10.00"
+        )
+        now = timezone.now()
+        # Window: 30 to 40 days out — the range the calendar would display.
+        self.window_from = now + timedelta(days=30)
+        self.window_to = now + timedelta(days=40)
+
+    def _get_visible(self):
+        response = self.client.get(
+            "/api/public-bookings/",
+            {
+                "item": str(self.item.id),
+                "visible_from": self.window_from.isoformat(),
+                "visible_to": self.window_to.isoformat(),
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK, response.content
+        return response
+
+    def _make_booking(self, user, time_from, time_to, offer="10.00"):
+        return BookingFactory(
+            user=user,
+            item=self.item,
+            status=BookingStatus.CONFIRMED,
+            time_from=time_from,
+            time_to=time_to,
+            offer=offer,
+        )
+
+    def test_only_overlapping_bookings_are_returned(self):
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        inside = self._make_booking(
+            booker, self.window_from + timedelta(days=1), self.window_to
+        )
+        # Entirely before the window.
+        self._make_booking(
+            booker,
+            self.window_from - timedelta(days=5),
+            self.window_from - timedelta(days=1),
+        )
+        # Entirely after the window.
+        self._make_booking(
+            booker,
+            self.window_to + timedelta(days=1),
+            self.window_to + timedelta(days=5),
+        )
+
+        results = self._get_visible().data["results"]
+        ids = [str(b["id"]) for b in results]
+        assert str(inside.id) in ids
+        assert len(ids) == 1
+
+    def test_partially_overlapping_bookings_are_returned(self):
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        # Started before the window, ends inside it.
+        leading = self._make_booking(
+            booker,
+            self.window_from - timedelta(days=2),
+            self.window_from + timedelta(days=1),
+        )
+        # Starts inside the window, ends after it.
+        trailing = self._make_booking(
+            booker,
+            self.window_to - timedelta(days=1),
+            self.window_to + timedelta(days=2),
+        )
+
+        results = self._get_visible().data["results"]
+        ids = [str(b["id"]) for b in results]
+        assert set(ids) == {str(leading.id), str(trailing.id)}
+
+    def test_open_ended_booking_is_returned(self):
+        """An open-ended booking (time_to null) occupies the item until it is
+        returned, so it overlaps any window that starts after it began."""
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        open_ended = self._make_booking(
+            booker, self.window_from - timedelta(days=1), None
+        )
+
+        results = self._get_visible().data["results"]
+        ids = [str(b["id"]) for b in results]
+        assert str(open_ended.id) in ids
+
+    def test_boundaries_exclude_touching_bookings(self):
+        """A booking that ends exactly at the window start does not occupy any
+        displayed slot, and one starting exactly at the window end belongs to
+        the next view — neither is returned."""
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        self._make_booking(
+            booker, self.window_from - timedelta(days=1), self.window_from
+        )
+        self._make_booking(booker, self.window_to, self.window_to + timedelta(days=1))
+
+        results = self._get_visible().data["results"]
+        assert results == []
+
+    def test_missing_window_parameter_is_a_noop(self):
+        """Without both parameters the filter must not silently drop bookings."""
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        booking = self._make_booking(
+            booker, self.window_from + timedelta(days=1), self.window_to
+        )
+
+        response = self.client.get("/api/public-bookings/", {"item": str(self.item.id)})
+        assert response.status_code == status.HTTP_200_OK, response.content
+        ids = [str(b["id"]) for b in response.data["results"]]
+        assert str(booking.id) in ids
+
+    def test_pagination_pages_are_browsable(self):
+        """page/page_size work together with the window filter so the calendar
+        can follow next pages."""
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        booking_count = 3
+        page_size = 2
+        for offset in range(booking_count):
+            self._make_booking(
+                booker,
+                self.window_from + timedelta(days=offset + 1),
+                self.window_from + timedelta(days=offset + 2),
+            )
+
+        first = self.client.get(
+            "/api/public-bookings/",
+            {
+                "item": str(self.item.id),
+                "visible_from": self.window_from.isoformat(),
+                "visible_to": self.window_to.isoformat(),
+                "page": 1,
+                "page_size": page_size,
+            },
+        )
+        assert first.status_code == status.HTTP_200_OK, first.content
+        assert first.data["count"] == booking_count
+        assert len(first.data["results"]) == page_size
+        assert first.data["next"] is not None
+
+        second = self.client.get(
+            "/api/public-bookings/",
+            {
+                "item": str(self.item.id),
+                "visible_from": self.window_from.isoformat(),
+                "visible_to": self.window_to.isoformat(),
+                "page": 2,
+                "page_size": page_size,
+            },
+        )
+        assert second.status_code == status.HTTP_200_OK, second.content
+        assert len(second.data["results"]) == booking_count - page_size
+
+    def test_naive_window_parameters_are_interpreted_locally(self):
+        """Window parameters without a timezone offset must not be silently
+        misinterpreted: they are resolved against the project timezone."""
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        booking = self._make_booking(
+            booker, self.window_from + timedelta(days=1), self.window_to
+        )
+
+        response = self.client.get(
+            "/api/public-bookings/",
+            {
+                "item": str(self.item.id),
+                "visible_from": self.window_from.replace(tzinfo=None).isoformat(),
+                "visible_to": self.window_to.replace(tzinfo=None).isoformat(),
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK, response.content
+        ids = [str(b["id"]) for b in response.data["results"]]
+        assert str(booking.id) in ids
+
+    def test_inverted_window_returns_nothing(self):
+        """A window whose start is not before its end cannot overlap anything."""
+        booker = UserFactory()
+        booker.groups.add(self.default_group)
+        self._make_booking(booker, self.window_from + timedelta(days=1), self.window_to)
+
+        response = self.client.get(
+            "/api/public-bookings/",
+            {
+                "item": str(self.item.id),
+                "visible_from": self.window_to.isoformat(),
+                "visible_to": self.window_from.isoformat(),
+            },
+        )
+        assert response.status_code == status.HTTP_200_OK, response.content
+        assert response.data["results"] == []

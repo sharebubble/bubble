@@ -527,6 +527,27 @@ export type CommentAuthor = {
 export type ConditionEnum = 0 | 1 | 2;
 
 /**
+ * A favorite, with the marked item inlined for list rendering.
+ *
+ * ``item`` is the writable side (an item id); ``item_detail`` carries the
+ * fields the item cards need, so the favorites list renders without a second
+ * round trip per entry.
+ */
+export type FavoriteItem = {
+    readonly id: string;
+    item: string;
+    item_detail: ItemList;
+    readonly created_at: string;
+};
+
+/**
+ * The ids of every item the current user has marked as favorite.
+ */
+export type FavoriteItemIds = {
+    item_ids: Array<string>;
+};
+
+/**
  * * `public_federated` - Public (federated)
  * * `local_only` - Local only
  */
@@ -938,8 +959,15 @@ export type Message = {
 /**
  * Flat serializer for GET/PATCH /api/notification-preferences/me/.
  *
- * For every provider (RocketChat, Signal, Email) it exposes:
+ * For every provider (webpush, RocketChat, Signal, Matrix, email) it
+ * exposes:
  *
+ * * ``<provider>_configured`` (read-only): the channel is set up on the
+ * backend, independent of whether this particular user is reachable on
+ * it yet. For the Apprise-backed channels (RocketChat, Signal, Matrix,
+ * email) that means an Apprise URL template is configured (Constance/env);
+ * for ``webpush`` it means a VAPID keypair is configured. The frontend
+ * uses this to decide whether to prefill a user's address for a channel.
  * * ``<provider>_available`` (read-only): the channel is configured on the
  * backend *and* the user has filled in the field it needs to reach them.
  * For ``webpush`` there is no such field — availability means at least one
@@ -949,6 +977,13 @@ export type Message = {
  * * ``<provider>_<group>`` (read/write): per event-group opt-in toggles.
  * ``messages`` covers new messages and bookings; ``new_item`` covers newly
  * created items.
+ *
+ * Additionally exposes ``matrix_default_id`` (read-only): the Matrix ID the
+ * frontend should prefill for this user (their bubble username on this
+ * deployment's own homeserver — see ``APPRISE_MATRIX_HOSTNAME``), or "" when
+ * that can't be determined. Every other channel's target is derived
+ * automatically (bubble username/email), so only Matrix needs a suggested
+ * default for the user to accept or edit.
  */
 export type NotificationPreferenceMe = {
     readonly matrix_default_id: string;
@@ -1038,6 +1073,13 @@ export type PaginatedCommentList = {
     next?: string | null;
     previous?: string | null;
     results: Array<Comment>;
+};
+
+export type PaginatedFavoriteItemList = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<FavoriteItem>;
 };
 
 export type PaginatedGroupList = {
@@ -1494,8 +1536,15 @@ export type PatchedMessage = {
 /**
  * Flat serializer for GET/PATCH /api/notification-preferences/me/.
  *
- * For every provider (RocketChat, Signal, Email) it exposes:
+ * For every provider (webpush, RocketChat, Signal, Matrix, email) it
+ * exposes:
  *
+ * * ``<provider>_configured`` (read-only): the channel is set up on the
+ * backend, independent of whether this particular user is reachable on
+ * it yet. For the Apprise-backed channels (RocketChat, Signal, Matrix,
+ * email) that means an Apprise URL template is configured (Constance/env);
+ * for ``webpush`` it means a VAPID keypair is configured. The frontend
+ * uses this to decide whether to prefill a user's address for a channel.
  * * ``<provider>_available`` (read-only): the channel is configured on the
  * backend *and* the user has filled in the field it needs to reach them.
  * For ``webpush`` there is no such field — availability means at least one
@@ -1505,6 +1554,13 @@ export type PatchedMessage = {
  * * ``<provider>_<group>`` (read/write): per event-group opt-in toggles.
  * ``messages`` covers new messages and bookings; ``new_item`` covers newly
  * created items.
+ *
+ * Additionally exposes ``matrix_default_id`` (read-only): the Matrix ID the
+ * frontend should prefill for this user (their bubble username on this
+ * deployment's own homeserver — see ``APPRISE_MATRIX_HOSTNAME``), or "" when
+ * that can't be determined. Every other channel's target is derived
+ * automatically (bubble username/email), so only Matrix needs a suggested
+ * default for the user to accept or edit.
  */
 export type PatchedNotificationPreferenceMe = {
     readonly matrix_default_id?: string;
@@ -2372,6 +2428,17 @@ export type CommentWritable = {
 };
 
 /**
+ * A favorite, with the marked item inlined for list rendering.
+ *
+ * ``item`` is the writable side (an item id); ``item_detail`` carries the
+ * fields the item cards need, so the favorites list renders without a second
+ * round trip per entry.
+ */
+export type FavoriteItemWritable = {
+    item: string;
+};
+
+/**
  * Serializer for auth Group model.
  */
 export type GroupWritable = {
@@ -2662,8 +2729,15 @@ export type MessageWritable = {
 /**
  * Flat serializer for GET/PATCH /api/notification-preferences/me/.
  *
- * For every provider (RocketChat, Signal, Email) it exposes:
+ * For every provider (webpush, RocketChat, Signal, Matrix, email) it
+ * exposes:
  *
+ * * ``<provider>_configured`` (read-only): the channel is set up on the
+ * backend, independent of whether this particular user is reachable on
+ * it yet. For the Apprise-backed channels (RocketChat, Signal, Matrix,
+ * email) that means an Apprise URL template is configured (Constance/env);
+ * for ``webpush`` it means a VAPID keypair is configured. The frontend
+ * uses this to decide whether to prefill a user's address for a channel.
  * * ``<provider>_available`` (read-only): the channel is configured on the
  * backend *and* the user has filled in the field it needs to reach them.
  * For ``webpush`` there is no such field — availability means at least one
@@ -2673,6 +2747,13 @@ export type MessageWritable = {
  * * ``<provider>_<group>`` (read/write): per event-group opt-in toggles.
  * ``messages`` covers new messages and bookings; ``new_item`` covers newly
  * created items.
+ *
+ * Additionally exposes ``matrix_default_id`` (read-only): the Matrix ID the
+ * frontend should prefill for this user (their bubble username on this
+ * deployment's own homeserver — see ``APPRISE_MATRIX_HOSTNAME``), or "" when
+ * that can't be determined. Every other channel's target is derived
+ * automatically (bubble username/email), so only Matrix needs a suggested
+ * default for the user to accept or edit.
  */
 export type NotificationPreferenceMeWritable = {
     webpush_messages?: boolean;
@@ -2727,6 +2808,13 @@ export type PaginatedCommentListWritable = {
     next?: string | null;
     previous?: string | null;
     results: Array<CommentWritable>;
+};
+
+export type PaginatedFavoriteItemListWritable = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<FavoriteItemWritable>;
 };
 
 export type PaginatedGroupListWritable = {
@@ -3082,8 +3170,15 @@ export type PatchedMessageWritable = {
 /**
  * Flat serializer for GET/PATCH /api/notification-preferences/me/.
  *
- * For every provider (RocketChat, Signal, Email) it exposes:
+ * For every provider (webpush, RocketChat, Signal, Matrix, email) it
+ * exposes:
  *
+ * * ``<provider>_configured`` (read-only): the channel is set up on the
+ * backend, independent of whether this particular user is reachable on
+ * it yet. For the Apprise-backed channels (RocketChat, Signal, Matrix,
+ * email) that means an Apprise URL template is configured (Constance/env);
+ * for ``webpush`` it means a VAPID keypair is configured. The frontend
+ * uses this to decide whether to prefill a user's address for a channel.
  * * ``<provider>_available`` (read-only): the channel is configured on the
  * backend *and* the user has filled in the field it needs to reach them.
  * For ``webpush`` there is no such field — availability means at least one
@@ -3093,6 +3188,13 @@ export type PatchedMessageWritable = {
  * * ``<provider>_<group>`` (read/write): per event-group opt-in toggles.
  * ``messages`` covers new messages and bookings; ``new_item`` covers newly
  * created items.
+ *
+ * Additionally exposes ``matrix_default_id`` (read-only): the Matrix ID the
+ * frontend should prefill for this user (their bubble username on this
+ * deployment's own homeserver — see ``APPRISE_MATRIX_HOSTNAME``), or "" when
+ * that can't be determined. Every other channel's target is derived
+ * automatically (bubble username/email), so only Matrix needs a suggested
+ * default for the user to accept or edit.
  */
 export type PatchedNotificationPreferenceMeWritable = {
     webpush_messages?: boolean;
@@ -3360,7 +3462,7 @@ export type BooksListData = {
         page?: number;
         publisher_name?: string;
         /**
-         * Ein Suchbegriff.
+         * Free-text search over title, description, author, publisher, topic and ISBN. All terms must match; use "quotes" to search for a phrase. Accents are ignored and misspelled terms still match similar titles. Results are ranked with title matches first and approximate matches last.
          */
         search?: string;
         shelf_name?: string;
@@ -4051,6 +4153,68 @@ export type ConfigRetrieveResponses = {
     200: unknown;
 };
 
+export type FavoritesListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
+         */
+        page?: number;
+    };
+    url: '/api/favorites/';
+};
+
+export type FavoritesListResponses = {
+    200: PaginatedFavoriteItemList;
+};
+
+export type FavoritesListResponse = FavoritesListResponses[keyof FavoritesListResponses];
+
+export type FavoritesCreateData = {
+    body: FavoriteItemWritable;
+    path?: never;
+    query?: never;
+    url: '/api/favorites/';
+};
+
+export type FavoritesCreateResponses = {
+    201: FavoriteItem;
+};
+
+export type FavoritesCreateResponse = FavoritesCreateResponses[keyof FavoritesCreateResponses];
+
+export type FavoritesDestroyData = {
+    body?: never;
+    path: {
+        item_id: string;
+    };
+    query?: never;
+    url: '/api/favorites/{item_id}/';
+};
+
+export type FavoritesDestroyResponses = {
+    /**
+     * No response body
+     */
+    204: void;
+};
+
+export type FavoritesDestroyResponse = FavoritesDestroyResponses[keyof FavoritesDestroyResponses];
+
+export type FavoritesItemIdsRetrieveData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/favorites/item-ids/';
+};
+
+export type FavoritesItemIdsRetrieveResponses = {
+    200: FavoriteItemIds;
+};
+
+export type FavoritesItemIdsRetrieveResponse = FavoritesItemIdsRetrieveResponses[keyof FavoritesItemIdsRetrieveResponses];
+
 export type FederatedItemsRetrieveData = {
     body?: never;
     path?: never;
@@ -4281,7 +4445,7 @@ export type ItemsListData = {
          */
         sales_type?: Array<'borrow' | 'donate' | 'rent' | 'sell' | 'want_buy' | 'want_rent'>;
         /**
-         * Ein Suchbegriff.
+         * Free-text search over title and description. All terms must match; use "quotes" to search for a phrase. Accents are ignored and misspelled terms still match similar titles. Results are ranked with title matches first and approximate matches last.
          */
         search?: string;
         /**
@@ -4940,6 +5104,8 @@ export type PublicBookingsListData = {
         time_to_before?: string;
         time_to_isnull?: boolean;
         user?: string;
+        visible_from?: string;
+        visible_to?: string;
     };
     url: '/api/public-bookings/';
 };
@@ -5024,7 +5190,7 @@ export type PublicItemsListData = {
          */
         sales_type?: Array<'borrow' | 'donate' | 'rent' | 'sell' | 'want_buy' | 'want_rent'>;
         /**
-         * Ein Suchbegriff.
+         * Free-text search over title and description. All terms must match; use "quotes" to search for a phrase. Accents are ignored and misspelled terms still match similar titles. Results are ranked with title matches first and approximate matches last.
          */
         search?: string;
         /**

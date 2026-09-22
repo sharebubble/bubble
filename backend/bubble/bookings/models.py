@@ -162,6 +162,11 @@ class Booking(models.Model):
     @property
     def is_active(self):
         """Check if the booking is currently active."""
+        if self.time_from is None:
+            # A booking without a start time is malformed (legacy/federated
+            # rows); it can never be "currently active" — and comparing it to
+            # now would raise a TypeError, so guard instead of comparing.
+            return False
         now = timezone.now()
         return self.status == BookingStatus.CONFIRMED and self.time_from <= now <= (
             self.time_to or now
