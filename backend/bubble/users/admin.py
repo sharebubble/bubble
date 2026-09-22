@@ -4,6 +4,8 @@ from django.contrib import admin
 from django.contrib.auth import admin as auth_admin
 from django.utils.translation import gettext_lazy as _
 
+from bubble.ledger.models import AccountBalance
+
 from .forms import UserAdminChangeForm, UserAdminCreationForm
 from .models import User
 
@@ -37,3 +39,23 @@ class UserAdmin(auth_admin.UserAdmin):
     )
     list_display = ["username", "name", "is_superuser"]
     search_fields = ["name"]
+
+    def get_deleted_objects(self, objs, request):
+        """Refuse to delete members whose ledger account is not settled.
+
+        Deleting a user releases their member account (it stays, anonymised),
+        which is only allowed at a zero balance. Listing them as protected
+        makes the admin show why, instead of failing mid-delete.
+        """
+        deleted, model_count, perms_needed, protected = super().get_deleted_objects(
+            objs, request
+        )
+        unsettled = AccountBalance.objects.filter(
+            account__owner__in=list(objs)
+        ).exclude(balance=0)
+        protected = list(protected) + [
+            _("%(account)s: balance %(balance)s must be settled first")
+            % {"account": b.account.name, "balance": b.display_balance}
+            for b in unsettled.select_related("account")
+        ]
+        return deleted, model_count, perms_needed, protected
