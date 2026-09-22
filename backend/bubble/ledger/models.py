@@ -148,7 +148,8 @@ class Account(models.Model):
 
     def display(self, raw: Decimal) -> Decimal:
         """Flip a raw, debit-positive amount into this account's readable sign."""
-        return raw * self.normal_side
+        # abs() only matters for zero: -0.00 would otherwise leak into the UI.
+        return (raw * self.normal_side) or abs(raw)
 
 
 class CategoryKind(models.TextChoices):
@@ -225,6 +226,8 @@ class TransactionKind(models.IntegerChoices):
     OPENING_BALANCE = 8, _("Opening balance")
     REVERSAL = 9, _("Reversal")
     CORRECTION = 10, _("Correction")
+    MEMBER_TRANSFER = 11, _("Between members")
+    INCOME = 12, _("Income")
 
 
 TRANSACTION_SEQUENCE = "ledger_transaction_seq"
@@ -426,3 +429,68 @@ class LedgerPeriod(models.Model):
 
     def __str__(self):
         return f"{self.starts_on} to {self.ends_on}"
+
+
+RECEIPT_MAX_BYTES = 10 * 1024 * 1024
+
+
+class ReceiptQuerySet(ImmutableQuerySet):
+    def without_content(self):
+        return self.defer("content")
+
+
+class Receipt(ImmutableModel):
+    """A scanned receipt attached to a transaction (plan section 7, D8).
+
+    The file lives in the database rather than on media storage: it is
+    private on every deployment without extra configuration (media is served
+    publicly), it is backed up together with the books it documents, and the
+    append-only trigger protects it like the rows it belongs to. Receipts are
+    only ever added, never replaced; the SHA-256 is shown next to them.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    transaction = models.ForeignKey(
+        Transaction, on_delete=models.PROTECT, related_name="receipts"
+    )
+    uploaded_by = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="uploaded_receipts",
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    file_name = models.CharField(max_length=255)
+    content_type = models.CharField(max_length=100)
+    size = models.PositiveIntegerField()
+    sha256 = models.CharField(max_length=64)
+    content = models.BinaryField()
+
+    objects = ReceiptQuerySet.as_manager()
+
+    class Meta:
+        ordering = ["uploaded_at"]
+
+    def __str__(self):
+        return f"{self.file_name} ({self.sha256[:12]})"
+
+
+class ReceiptAccess(ImmutableModel):
+    """One row per receipt download: who looked at which receipt, and when."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    receipt = models.ForeignKey(
+        Receipt, on_delete=models.PROTECT, related_name="accesses"
+    )
+    accessed_by = models.ForeignKey(
+        Account, on_delete=models.PROTECT, related_name="receipt_accesses"
+    )
+    accessed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = _("receipt accesses")
+        ordering = ["-accessed_at"]
+
+    def __str__(self):
+        return f"{self.accessed_by} read {self.receipt} at {self.accessed_at}"

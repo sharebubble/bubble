@@ -21,6 +21,9 @@ import EditBook from './pages/EditBook';
 import EditItem from './pages/EditItem';
 import Favorites from './pages/Favorites';
 import Home from './pages/Home';
+import Ledger from './pages/Ledger';
+import LedgerAccount from './pages/LedgerAccount';
+import LedgerTransaction from './pages/LedgerTransaction';
 import Browse from './pages/Browse';
 import ItemDetail from './pages/ItemDetail';
 import ItemBookingHistory from './pages/ItemBookingHistory';
@@ -32,7 +35,13 @@ import { AppUpdatePrompt } from './components/layout/AppUpdatePrompt';
 import { Header } from './components/layout/Header';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { OfflineIndicator } from './components/layout/OfflineIndicator';
-import { ACCOUNT_PATH, BROWSE_PATH, FAVORITES_PATH } from './lib/routes';
+import {
+  ACCOUNT_PATH,
+  BROWSE_PATH,
+  FAVORITES_PATH,
+  LEDGER_PATH,
+  MY_LEDGER_PATH,
+} from './lib/routes';
 import { localStorageColorSchemeManager, MantineProvider } from '@mantine/core';
 import { mantineTheme } from './theme/mantine';
 
@@ -188,6 +197,38 @@ const ProtectedRoutes = () => {
           element={
             <AuthRequired>
               <CollectionDetail />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={LEDGER_PATH}
+          element={
+            <AuthRequired>
+              <Ledger />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={MY_LEDGER_PATH}
+          element={
+            <AuthRequired>
+              <LedgerAccount />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/a/:accountId`}
+          element={
+            <AuthRequired>
+              <LedgerAccount />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/t/:transactionId`}
+          element={
+            <AuthRequired>
+              <LedgerTransaction />
             </AuthRequired>
           }
         />

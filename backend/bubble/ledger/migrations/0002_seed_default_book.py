@@ -6,6 +6,7 @@ of this migration. Later additions go into new data migrations.
 
 from django.conf import settings
 from django.db import migrations
+from guardian.conf import settings as guardian_settings
 from django.utils import timezone
 
 ASSET, INCOME, EXPENSE, EQUITY, SUSPENSE, MEMBER = 2, 3, 4, 5, 6, 1
@@ -99,7 +100,9 @@ def seed(apps, schema_editor):
                 "sort_order": order,
             },
         )
-    for user in User.objects.all().iterator():
+    # django-guardian's AnonymousUser is a technical row, not a member.
+    members = User.objects.exclude(username=guardian_settings.ANONYMOUS_USER_NAME)
+    for user in members.iterator():
         open_account(f"member:{user.pk}", user.name or user.username, MEMBER, user)
 
 

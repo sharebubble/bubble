@@ -17,11 +17,13 @@ from django.db import IntegrityError, connection
 from django.db import transaction as db_transaction
 from django.db.models import Count, Max, Sum
 from django.utils import timezone
+from guardian.conf import settings as guardian_settings
 from moneyed import Money
 
 from bubble.ledger.exceptions import (
     ClosedPeriodError,
     CurrencyMismatchError,
+    LedgerError,
     NonZeroBalanceError,
     OverReversalError,
     UnbalancedTransactionError,
@@ -86,8 +88,16 @@ def get_system_account(code: str, book: Book | None = None) -> Account:
     return Account.objects.get(book=book, code=code)
 
 
+def is_technical_user(user: User) -> bool:
+    """django-guardian's AnonymousUser row: a user in the database, not a member."""
+    return user.username == guardian_settings.ANONYMOUS_USER_NAME
+
+
 def get_member_account(user: User, book: Book | None = None) -> Account:
     """Return the user's member account, opening it on first use."""
+    if is_technical_user(user):
+        msg = f"{user.username} is not a member and has no ledger account."
+        raise LedgerError(msg)
     book = book or Book.objects.default()
     account = Account.objects.filter(book=book, owner=user).first()
     if account is not None:

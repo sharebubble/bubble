@@ -905,6 +905,254 @@ export type ItemMinimal = {
  */
 export type LanguageEnum = 'en' | 'de';
 
+export type LedgerAccount = {
+    readonly id: string;
+    /**
+     * Stable, export-safe identifier, e.g. member:<uuid>, asset:bank, income:rental. Never changes once used.
+     */
+    readonly code: string;
+    readonly name: string;
+    type: LedgerAccountTypeEnum;
+    /**
+     * Only for member accounts. Cleared when the member leaves; the account and every entry on it stay.
+     */
+    readonly owner: string | null;
+    readonly owner_username: string | null;
+    readonly is_active: boolean;
+    readonly balance: string;
+    readonly entry_count: number;
+    readonly currency: string;
+};
+
+/**
+ * One line of an account statement, with the balance right after it.
+ */
+export type LedgerAccountEntry = {
+    readonly id: string;
+    readonly transaction: string;
+    readonly seq: number;
+    readonly occurred_on: string;
+    readonly description: string;
+    readonly amount: string;
+    readonly balance_after: string;
+    readonly memo: string;
+};
+
+export type LedgerAccountRef = {
+    readonly id: string;
+    /**
+     * Stable, export-safe identifier, e.g. member:<uuid>, asset:bank, income:rental. Never changes once used.
+     */
+    readonly code: string;
+    readonly name: string;
+    type: LedgerAccountTypeEnum;
+    /**
+     * Only for member accounts. Cleared when the member leaves; the account and every entry on it stay.
+     */
+    readonly owner: string | null;
+    readonly owner_username: string | null;
+    readonly is_active: boolean;
+};
+
+/**
+ * * `member` - member
+ * * `asset` - asset
+ * * `income` - income
+ * * `expense` - expense
+ * * `equity` - equity
+ * * `suspense` - suspense
+ */
+export type LedgerAccountTypeEnum = 'member' | 'asset' | 'income' | 'expense' | 'equity' | 'suspense';
+
+export type LedgerCategory = {
+    readonly id: string;
+    readonly code: string;
+    readonly name: string;
+    kind: LedgerCategoryKindEnum;
+};
+
+/**
+ * * `income` - Income
+ * * `expense` - Expense
+ * * `transfer` - Transfer
+ */
+export type LedgerCategoryKindEnum = 'income' | 'expense' | 'transfer';
+
+export type LedgerEntry = {
+    readonly id: string;
+    account: LedgerAccountRef;
+    readonly amount: string;
+    readonly display_amount: string;
+    readonly item: string | null;
+    readonly memo: string;
+    /**
+     * For reversal legs: the original entry this undoes.
+     */
+    readonly reverses_entry: string | null;
+};
+
+export type LedgerHealth = {
+    ok: boolean;
+    trial_balance: string;
+    mismatched_accounts: number;
+};
+
+/**
+ * A manual posting. The server turns it into balanced legs (plan section 7).
+ */
+export type LedgerIntent = {
+    intent: LedgerIntentEnum;
+    amount: string;
+    occurred_on: string;
+    description: string;
+    /**
+     * Expense category for expense_for_community, income category for income. Ignored for the other intents.
+     */
+    category?: string | null;
+    project?: string | null;
+    /**
+     * Member account: whom I owe (member_to_member) or who is paid out (payout).
+     */
+    counterparty?: string | null;
+    via?: LedgerViaEnum;
+    /**
+     * Random key per form; resubmitting it posts nothing new.
+     */
+    client_key?: string;
+    receipts?: Array<string>;
+};
+
+/**
+ * * `expense_for_community` - I paid for the community
+ * * `top_up` - I paid money in
+ * * `member_to_member` - I owe another member
+ * * `payout` - Pay a member out
+ * * `income` - Community income
+ */
+export type LedgerIntentEnum = 'expense_for_community' | 'top_up' | 'member_to_member' | 'payout' | 'income';
+
+export type LedgerMyAccount = {
+    readonly id: string;
+    /**
+     * Stable, export-safe identifier, e.g. member:<uuid>, asset:bank, income:rental. Never changes once used.
+     */
+    readonly code: string;
+    readonly name: string;
+    type: LedgerAccountTypeEnum;
+    /**
+     * Only for member accounts. Cleared when the member leaves; the account and every entry on it stay.
+     */
+    readonly owner: string | null;
+    readonly owner_username: string | null;
+    readonly is_active: boolean;
+    readonly balance: string;
+    readonly entry_count: number;
+    readonly currency: string;
+    readonly soft_limit: string;
+    readonly below_soft_limit: boolean;
+    readonly is_ledger_admin: boolean;
+};
+
+export type LedgerProject = {
+    readonly id: string;
+    readonly name: string;
+    readonly slug: string;
+    readonly budget: string | null;
+    readonly starts_on: string | null;
+    readonly ends_on: string | null;
+    readonly is_archived: boolean;
+};
+
+export type LedgerReceipt = {
+    readonly id: string;
+    readonly file_name: string;
+    readonly content_type: string;
+    readonly size: number;
+    readonly sha256: string;
+    readonly uploaded_at: string;
+    uploaded_by: LedgerAccountRef | null;
+};
+
+export type LedgerReceiptUpload = {
+    file: string;
+};
+
+export type LedgerTransaction = {
+    readonly id: string;
+    readonly seq: number;
+    kind: LedgerTransactionKindEnum;
+    /**
+     * Business date of the transaction.
+     */
+    readonly occurred_on: string;
+    readonly created_at: string;
+    readonly description: string;
+    category: LedgerCategory | null;
+    project: LedgerProject | null;
+    created_by: LedgerAccountRef | null;
+    readonly source_type: string;
+    readonly source_id: string;
+    readonly amount: string;
+    readonly currency: string;
+    readonly entries: Array<LedgerEntry>;
+    readonly receipt_count: number;
+    /**
+     * Set on REVERSAL and CORRECTION transactions.
+     */
+    readonly reverses: string | null;
+    readonly reversed_by: Array<string>;
+};
+
+export type LedgerTransactionDetail = {
+    readonly id: string;
+    readonly seq: number;
+    kind: LedgerTransactionKindEnum;
+    /**
+     * Business date of the transaction.
+     */
+    readonly occurred_on: string;
+    readonly created_at: string;
+    readonly description: string;
+    category: LedgerCategory | null;
+    project: LedgerProject | null;
+    created_by: LedgerAccountRef | null;
+    readonly source_type: string;
+    readonly source_id: string;
+    readonly amount: string;
+    readonly currency: string;
+    readonly entries: Array<LedgerEntry>;
+    readonly receipt_count: number;
+    /**
+     * Set on REVERSAL and CORRECTION transactions.
+     */
+    readonly reverses: string | null;
+    readonly reversed_by: Array<string>;
+    readonly receipts: Array<LedgerReceipt>;
+    readonly meta: unknown;
+};
+
+/**
+ * * `booking_charge` - booking_charge
+ * * `member_expense` - member_expense
+ * * `shared_expense` - shared_expense
+ * * `top_up` - top_up
+ * * `payout` - payout
+ * * `membership_fee` - membership_fee
+ * * `adjustment` - adjustment
+ * * `opening_balance` - opening_balance
+ * * `reversal` - reversal
+ * * `correction` - correction
+ * * `member_transfer` - member_transfer
+ * * `income` - income
+ */
+export type LedgerTransactionKindEnum = 'booking_charge' | 'member_expense' | 'shared_expense' | 'top_up' | 'payout' | 'membership_fee' | 'adjustment' | 'opening_balance' | 'reversal' | 'correction' | 'member_transfer' | 'income';
+
+/**
+ * * `bank` - Bank transfer
+ * * `cash` - Cash
+ */
+export type LedgerViaEnum = 'bank' | 'cash';
+
 /**
  * Serializer for the Location model (item placements).
  */
@@ -1101,6 +1349,27 @@ export type PaginatedItemListList = {
     next?: string | null;
     previous?: string | null;
     results: Array<ItemList>;
+};
+
+export type PaginatedLedgerAccountEntryList = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<LedgerAccountEntry>;
+};
+
+export type PaginatedLedgerAccountList = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<LedgerAccount>;
+};
+
+export type PaginatedLedgerTransactionList = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<LedgerTransaction>;
 };
 
 export type PaginatedLocationList = {
@@ -2836,6 +3105,27 @@ export type PaginatedItemListListWritable = {
     next?: string | null;
     previous?: string | null;
     results: Array<ItemListWritable>;
+};
+
+export type PaginatedLedgerAccountEntryListWritable = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<unknown>;
+};
+
+export type PaginatedLedgerAccountListWritable = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<unknown>;
+};
+
+export type PaginatedLedgerTransactionListWritable = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<unknown>;
 };
 
 export type PaginatedLocationListWritable = {
@@ -4771,6 +5061,300 @@ export type ItemsCalendarLinkCreateResponses = {
 };
 
 export type ItemsCalendarLinkCreateResponse = ItemsCalendarLinkCreateResponses[keyof ItemsCalendarLinkCreateResponses];
+
+export type LedgerAccountsListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        is_active?: boolean;
+        /**
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
+         */
+        page?: number;
+        q?: string;
+        /**
+         * * `member` - member
+         * * `asset` - asset
+         * * `income` - income
+         * * `expense` - expense
+         * * `equity` - equity
+         * * `suspense` - suspense
+         */
+        type?: 'asset' | 'equity' | 'expense' | 'income' | 'member' | 'suspense';
+    };
+    url: '/api/ledger/accounts/';
+};
+
+export type LedgerAccountsListResponses = {
+    200: PaginatedLedgerAccountList;
+};
+
+export type LedgerAccountsListResponse = LedgerAccountsListResponses[keyof LedgerAccountsListResponses];
+
+export type LedgerAccountsRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der account identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/accounts/{id}/';
+};
+
+export type LedgerAccountsRetrieveResponses = {
+    200: LedgerAccount;
+};
+
+export type LedgerAccountsRetrieveResponse = LedgerAccountsRetrieveResponses[keyof LedgerAccountsRetrieveResponses];
+
+export type LedgerAccountsEntriesListData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der account identifiziert.
+         */
+        id: string;
+    };
+    query?: {
+        is_active?: boolean;
+        /**
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
+         */
+        page?: number;
+        q?: string;
+        /**
+         * * `member` - member
+         * * `asset` - asset
+         * * `income` - income
+         * * `expense` - expense
+         * * `equity` - equity
+         * * `suspense` - suspense
+         */
+        type?: 'asset' | 'equity' | 'expense' | 'income' | 'member' | 'suspense';
+    };
+    url: '/api/ledger/accounts/{id}/entries/';
+};
+
+export type LedgerAccountsEntriesListResponses = {
+    200: PaginatedLedgerAccountEntryList;
+};
+
+export type LedgerAccountsEntriesListResponse = LedgerAccountsEntriesListResponses[keyof LedgerAccountsEntriesListResponses];
+
+export type LedgerAccountsMeRetrieveData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/ledger/accounts/me/';
+};
+
+export type LedgerAccountsMeRetrieveResponses = {
+    200: LedgerMyAccount;
+};
+
+export type LedgerAccountsMeRetrieveResponse = LedgerAccountsMeRetrieveResponses[keyof LedgerAccountsMeRetrieveResponses];
+
+export type LedgerCategoriesListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * * `income` - Income
+         * * `expense` - Expense
+         * * `transfer` - Transfer
+         */
+        kind?: 'expense' | 'income' | 'transfer';
+    };
+    url: '/api/ledger/categories/';
+};
+
+export type LedgerCategoriesListResponses = {
+    200: Array<LedgerCategory>;
+};
+
+export type LedgerCategoriesListResponse = LedgerCategoriesListResponses[keyof LedgerCategoriesListResponses];
+
+export type LedgerCategoriesRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der category identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/categories/{id}/';
+};
+
+export type LedgerCategoriesRetrieveResponses = {
+    200: LedgerCategory;
+};
+
+export type LedgerCategoriesRetrieveResponse = LedgerCategoriesRetrieveResponses[keyof LedgerCategoriesRetrieveResponses];
+
+export type LedgerHealthRetrieveData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/ledger/health/';
+};
+
+export type LedgerHealthRetrieveResponses = {
+    200: LedgerHealth;
+};
+
+export type LedgerHealthRetrieveResponse = LedgerHealthRetrieveResponses[keyof LedgerHealthRetrieveResponses];
+
+export type LedgerProjectsListData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/ledger/projects/';
+};
+
+export type LedgerProjectsListResponses = {
+    200: Array<LedgerProject>;
+};
+
+export type LedgerProjectsListResponse = LedgerProjectsListResponses[keyof LedgerProjectsListResponses];
+
+export type LedgerProjectsRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der project identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/projects/{id}/';
+};
+
+export type LedgerProjectsRetrieveResponses = {
+    200: LedgerProject;
+};
+
+export type LedgerProjectsRetrieveResponse = LedgerProjectsRetrieveResponses[keyof LedgerProjectsRetrieveResponses];
+
+export type LedgerReceiptsFileRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der receipt identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/receipts/{id}/file/';
+};
+
+export type LedgerReceiptsFileRetrieveResponses = {
+    200: Blob | File;
+};
+
+export type LedgerReceiptsFileRetrieveResponse = LedgerReceiptsFileRetrieveResponses[keyof LedgerReceiptsFileRetrieveResponses];
+
+export type LedgerTransactionsListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Account id
+         */
+        account?: string;
+        category?: string;
+        date_from?: string;
+        date_to?: string;
+        has_receipt?: boolean;
+        /**
+         * Item id
+         */
+        item?: string;
+        /**
+         * * `booking_charge` - booking_charge
+         * * `member_expense` - member_expense
+         * * `shared_expense` - shared_expense
+         * * `top_up` - top_up
+         * * `payout` - payout
+         * * `membership_fee` - membership_fee
+         * * `adjustment` - adjustment
+         * * `opening_balance` - opening_balance
+         * * `reversal` - reversal
+         * * `correction` - correction
+         * * `member_transfer` - member_transfer
+         * * `income` - income
+         */
+        kind?: Array<'adjustment' | 'booking_charge' | 'correction' | 'income' | 'member_expense' | 'member_transfer' | 'membership_fee' | 'opening_balance' | 'payout' | 'reversal' | 'shared_expense' | 'top_up'>;
+        /**
+         * User id
+         */
+        member?: string;
+        /**
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
+         */
+        page?: number;
+        project?: string;
+        q?: string;
+    };
+    url: '/api/ledger/transactions/';
+};
+
+export type LedgerTransactionsListResponses = {
+    200: PaginatedLedgerTransactionList;
+};
+
+export type LedgerTransactionsListResponse = LedgerTransactionsListResponses[keyof LedgerTransactionsListResponses];
+
+export type LedgerTransactionsCreateData = {
+    body: LedgerIntent;
+    path?: never;
+    query?: never;
+    url: '/api/ledger/transactions/';
+};
+
+export type LedgerTransactionsCreateResponses = {
+    201: LedgerTransactionDetail;
+};
+
+export type LedgerTransactionsCreateResponse = LedgerTransactionsCreateResponses[keyof LedgerTransactionsCreateResponses];
+
+export type LedgerTransactionsRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der transaction identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/transactions/{id}/';
+};
+
+export type LedgerTransactionsRetrieveResponses = {
+    200: LedgerTransactionDetail;
+};
+
+export type LedgerTransactionsRetrieveResponse = LedgerTransactionsRetrieveResponses[keyof LedgerTransactionsRetrieveResponses];
+
+export type LedgerTransactionsReceiptsCreateData = {
+    body: LedgerReceiptUpload;
+    path: {
+        /**
+         * Ein UUID-String, der transaction identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/transactions/{id}/receipts/';
+};
+
+export type LedgerTransactionsReceiptsCreateResponses = {
+    201: LedgerReceipt;
+};
+
+export type LedgerTransactionsReceiptsCreateResponse = LedgerTransactionsReceiptsCreateResponses[keyof LedgerTransactionsReceiptsCreateResponses];
 
 export type LocationsListData = {
     body?: never;

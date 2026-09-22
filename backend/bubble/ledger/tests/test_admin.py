@@ -1,6 +1,11 @@
+from decimal import Decimal
+
 import pytest
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
+from bubble.ledger.intents import Intent, ManualPosting, post_intent
+from bubble.ledger.tests.helpers import TODAY
 from bubble.users.tests.factories import UserFactory
 
 LEDGER_MODELS = [
@@ -11,6 +16,8 @@ LEDGER_MODELS = [
     "category",
     "project",
     "ledgerperiod",
+    "receipt",
+    "receiptaccess",
 ]
 
 
@@ -51,3 +58,25 @@ def test_user_delete_page_explains_an_unsettled_balance(admin_client, members, p
 
     assert response.status_code == 200  # noqa: PLR2004
     assert b"must be settled first" in response.content
+
+
+def test_receipt_detail_never_shows_the_file(admin_client, members):
+    tx = post_intent(
+        ManualPosting(
+            intent=Intent.TOP_UP,
+            amount=Decimal("5.00"),
+            occurred_on=TODAY,
+            description="top-up with receipt",
+        ),
+        user=members["bob"].owner,
+        receipts=[SimpleUploadedFile("r.pdf", b"%PDF-1.4 secret-content")],
+    )
+    receipt = tx.receipts.get()
+
+    response = admin_client.get(
+        reverse("admin:ledger_receipt_change", args=[receipt.pk])
+    )
+
+    assert response.status_code == 200  # noqa: PLR2004
+    assert b"secret-content" not in response.content
+    assert receipt.sha256.encode() in response.content

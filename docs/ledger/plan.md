@@ -1,6 +1,6 @@
 # Ledger — bookkeeping and accounting for Bubble
 
-Status: **phase 1 implemented** (`backend/bubble/ledger/`); phases 2–6 are design.
+Status: **phases 1–2 implemented** (`backend/bubble/ledger/`, `frontend/src/pages/Ledger*.tsx`); phases 3–6 are design.
 Scope: a transparent, append-only double-entry ledger for one community, covering
 booking charges, member-entered expenses with receipts, top-ups, disputes,
 grouping and statistics.
@@ -27,8 +27,9 @@ These were settled up front; the rest of the document follows from them.
 | D12 | Reporting | Per-member yearly statement, treasurer's annual report, DATEV/CSV bookkeeping export. |
 | D13 | Charging other members (shared costs) | Participants are notified and can accept or object; silence counts as acceptance after N days (default 3), then it posts. Only then does it touch the ledger (section 7a). |
 | D14 | Which bookings create charges | Only items with the existing `Item.payment_enabled = True`. Nothing changes for existing items on rollout day. |
-| D15 | Sales | Completed sales post too: buyer → seller (or → community for community-owned items), same rules as rentals. |
+| D15 | Sales | Sales post too: buyer → seller (or → community for community-owned items), same rules as rentals — at acceptance, see D17. |
 | D16 | Community-owned items | The lister stays the steward (`Item.user`); `ledger_beneficiary = COMMUNITY` marks community ownership and routes income. No system user. |
+| D17 | When a sold item changes hands | Ownership moves to the buyer **when the seller accepts the amount** (the sale booking becomes `CONFIRMED`), not at the physical hand-over. The item becomes a `DRAFT` owned by the buyer, who reviews and republishes it. The sale charge posts in the same DB transaction. Supersedes the "on `COMPLETED`" part of D6/D15 for sales (section 6). |
 
 Deferred, on purpose: which bank interface (CAMT.053/MT940 upload, PSD2 aggregator,
 FinTS/EBICS, CSV). Section 12 defines the seam so the choice stays a plug-in.
@@ -225,12 +226,12 @@ class Entry(models.Model):
     # the service refuses to undo more of an entry than is left (section 7a, example h)
     memo = CharField(blank=True)
 
-class Receipt(models.Model):
-    id, transaction(FK), file (private storage), uploaded_by
-    content_sha256, original_filename, byte_size, mime_type
+class Receipt(ImmutableModel):             # append-only, bytes in the DB (section 7)
+    id, transaction(FK), uploaded_by(FK Account), uploaded_at
+    file_name, content_type (sniffed), size, sha256, content = BinaryField()
 
-class ReceiptAccess(models.Model):          # D8 — who opened which receipt, when
-    receipt(FK), user(FK), accessed_at, ip_hash
+class ReceiptAccess(ImmutableModel):       # D8 — who opened which receipt, when
+    receipt(FK), accessed_by(FK Account), accessed_at
 
 class DisputeState(IntegerChoices):
     OPEN, WITHDRAWN, RESOLVED_REVERSED, RESOLVED_UPHELD
@@ -312,20 +313,53 @@ def post_transaction(*, book, kind, occurred_on, description, legs,
 
 ---
 
-## 6. Booking integration (D6, D14, D15)
+## 6. Booking integration (D6, D14, D15, D17)
 
 Posting happens **when a booking transitions to `COMPLETED`**, in the same
 `transaction.atomic()` block as the status change, through an explicit service call —
 not a `post_save` signal, so the posting cannot fire on unrelated saves and is easy to
-follow when reading the booking code. On `main` those transitions live in
-`BookingViewSet.confirm_returned` (rentals) and `BookingViewSet.confirm_received`
-(sales).
+follow when reading the booking code. For rentals that transition lives in
+`BookingViewSet.confirm_returned`. Sales post earlier, at acceptance (D17, below).
 
-**Sales need care:** `confirm_received` calls `item.transfer_ownership(booking.user)`
-in the same block. The seller and the beneficiary must be read **before** that call,
-otherwise the buyer is credited for their own purchase. After a sale of a
-community-owned item, `ledger_beneficiary` resets to `OWNER` — the buyer now owns it
-privately.
+**Sales follow D17, not D6.** A sale is final when the seller accepts the amount, so
+ownership and money move at that moment:
+
+- **Trigger:** a booking of a `SELL` item enters `CONFIRMED` — the owner accepts the
+  request (PATCH `status`), or `perform_create` auto-confirms it (owner booking,
+  self-service at or above the price). Both paths call one service,
+  `bookings.services.accept_sale(booking)`, inside the same `transaction.atomic()`.
+  Accepting a counter-offer is the booker agreeing to it; the sale is accepted when the
+  owner then confirms, so the amount is always known and agreed by both sides.
+- **Ownership:** `item.transfer_ownership(booking.user)` — the item becomes a `DRAFT`
+  owned by the buyer, with fresh permissions, `local_only` federation visibility and
+  no publish notification. The buyer sees it under "my items", can edit it, and
+  publishes it again (or keeps it private). The seller loses edit rights at acceptance.
+- **Charge:** posted in the same block, buyer → seller (or → `income:sales` for a
+  community item), idempotency key `booking:<id>:charge`, with the same skip rules as
+  rentals. Seller and beneficiary are read **before** `transfer_ownership`, otherwise
+  the buyer is credited for their own purchase. After a sale of a community-owned item,
+  `ledger_beneficiary` resets to `OWNER` — the buyer now owns it privately.
+- **Booking state:** the booking stays `CONFIRMED` until the hand-over.
+  `confirm_received` for sales then only records the hand-over (message + `COMPLETED`)
+  and no longer transfers ownership. Donations (`DONATE`) take the same path with a
+  zero amount: ownership moves at acceptance, nothing posts.
+- **Visibility:** today `Booking.objects.get_for_user` finds the seller's bookings
+  through their `change_item` permission, which moves to the buyer at acceptance. So
+  acceptance stores the seller on the booking (a new nullable `Booking.seller` FK,
+  alongside the existing `accepted_by`), and `get_for_user` also matches on it — the
+  conversation and the hand-over keep working after the transfer.
+- **Remote buyers** (`booking.user is None`): there is no local account to own the
+  item, so ownership stays with the seller until a cross-instance transfer is designed
+  (section 17, question 2); acceptance just confirms the booking, as today.
+- **Cancellation after acceptance** (the deal falls through before the hand-over): the
+  owner-at-acceptance or an admin cancels; one service call reverses the charge
+  (`reverse_transaction`, key `booking:<id>:charge:reversal`) and transfers the item
+  back to the seller (again as a `DRAFT`, so the seller republishes it deliberately).
+  The buyer cannot cancel alone once accepted — the seller has to agree, as with any
+  sale. Once `COMPLETED`, a refund is an ordinary correction by the seller, and the
+  item stays with the buyer unless they sell or give it back.
+- **Overlap:** a second pending request for the same sold item is rejected
+  automatically at acceptance (the item is no longer the seller's to sell).
 
 **Amount precedence:** accepted `counter_offer` → `offer` → `Booking.rental_price`
 (rentals) or `Item.price` (sales).
@@ -373,15 +407,36 @@ Anything that puts a charge on someone else's account — a split dinner, "Bob o
 for the tickets" — is a `shared_expense` and goes through the confirmation flow in 7a.
 Admin payouts and adjustments are the exception.
 
-Every intent requires a category and allows an optional project. Receipt upload is
-optional but strongly nudged in the UI for `expense_for_community` — the transaction
-list shows a "no receipt" marker, which is a social signal, not a block.
+Every transaction carries a category and allows an optional project. Members pick
+the category for `expense_for_community` (an expense category) and the treasurer for
+`income` (an income category); the other intents use a fixed category (`top-up`,
+`payout`, `member-transfer`). Receipt upload is optional but strongly nudged in the UI
+for `expense_for_community` — the transaction list shows a "no receipt" marker, which
+is a social signal, not a block.
 
-**Receipts** are stored on private storage (never under a public media URL) and served
-by `GET /api/ledger/receipts/{id}/file` for authenticated members, with
-`Content-Disposition: attachment`, a hashed unpredictable storage path, and an
-`ReceiptAccess` row per download. The SHA-256 of the file is displayed on the
-transaction, so a receipt cannot be silently swapped.
+As implemented in phase 2 (`bubble/ledger/intents.py`): `member_to_member` posts as the
+new kind `MEMBER_TRANSFER`, `income` as `INCOME`; `top_up`, `payout` and `income` take
+`via = bank | cash`. Amounts are positive, whole cents, at most 100 000; the date may
+not lie in the future. The form sends a random `client_key`, stored as the
+idempotency key `manual:<author account>:<key>`, so a double submit posts once. The
+`ledger_admin` group (the treasurer, seeded by migration 0003; superusers count too)
+may post `payout` and `income`; for everyone else those are a 403.
+
+**Receipts** are stored **in the database** (`Receipt.content`), not on media storage.
+Media is served publicly by nginx on every deployment (compose and Helm) and may sit
+in a public S3 bucket, so "private storage" would have needed a new volume or bucket
+per deployment. In the database, receipts are private by construction, backed up with
+the books they document, and protected by the same append-only trigger as the ledger
+rows. Limits: 10 MB and 5 receipts per transaction; the content type is sniffed from
+the file (PDF, JPEG, PNG, WebP, HEIC), never taken from the client. They are served
+by `GET /api/ledger/receipts/{id}/file/` for authenticated members only, with
+`Content-Disposition: attachment`, `nosniff`, `no-store` and a sandbox CSP, and every
+download writes an append-only `ReceiptAccess` row (visible in the admin). The
+SHA-256 of each file is shown on the transaction, so a receipt cannot be silently
+swapped. The author (or the treasurer) may add receipts later
+(`POST /api/ledger/transactions/{id}/receipts/`); nobody can replace or remove one.
+If receipt volume ever makes the database uncomfortable, a data migration can move
+the bytes to a private bucket behind the same endpoint; the API does not change.
 
 ---
 
@@ -402,7 +457,10 @@ class CostShare(models.Model):
     payer_participates = BooleanField(default=True)
     auto_accept_at = DateTimeField()           # created_at + N days (Constance, default 3)
     state, posted_transaction = FK(Transaction, null=True)
-    receipts                                   # same Receipt model, attached before posting
+    receipts                                   # same Receipt model: phase 4 adds a nullable
+                                               # Receipt.cost_share FK (exactly one of
+                                               # transaction/cost_share), since receipts are
+                                               # append-only and cannot be re-pointed later
     history = HistoricalRecords()
 
 class CostShareParticipant(models.Model):
@@ -485,9 +543,11 @@ POST   /api/ledger/transactions/{id}/dispute/     any member (D9)
 POST   /api/ledger/transactions/{id}/dispute/withdraw/
 POST   /api/ledger/transactions/{id}/comments/    discussion thread
 
-GET    /api/ledger/accounts/                chart of accounts
+GET    /api/ledger/accounts/                chart of accounts; ?type=member lists every
+                                            member's balance (transparent, D8)
 GET    /api/ledger/accounts/me/             my account + balance + soft-limit state
-GET    /api/ledger/balances/                every member's balance (transparent)
+GET    /api/ledger/accounts/{id}/entries/   statement with the balance after each entry
+POST   /api/ledger/transactions/{id}/receipts/    add a receipt (author or treasurer)
 
 POST   /api/ledger/cost-shares/             create a shared expense (section 7a)
 GET    /api/ledger/cost-shares/?mine=1      open splits I paid for or take part in
@@ -499,13 +559,18 @@ POST   /api/ledger/cost-shares/{id}/cancel/     payer or admin, while OPEN
 GET    /api/ledger/stats/?group_by=category|project|member|item|month&from=&to=
 GET    /api/ledger/projects/                CRUD for admins, read for all
 
-GET    /api/ledger/receipts/{id}/file       authenticated, logged (D8)
+GET    /api/ledger/receipts/{id}/file/      authenticated, logged (D8)
 
 GET    /api/ledger/statements/me/?year=2026     per-member statement, CSV/PDF (D12)
 GET    /api/ledger/reports/annual/?year=2026    treasurer's report, CSV/PDF (D12)
 GET    /api/ledger/exports/datev/?from=&to=     bookkeeping export, admin only (D12)
-GET    /api/ledger/health/                      trial balance + last verification
+GET    /api/ledger/health/                      trial balance + cache check (ok flag)
 ```
+
+Phase 2 ships the transactions list/detail/create, receipts, accounts (with `me` and
+`entries`), categories, projects (read-only) and health. Amounts are decimal strings;
+entries carry both the raw debit-positive `amount` and `display_amount`, the effect
+on that account's readable balance.
 
 **Permissions.** Read: any authenticated user, everything (D8). Write: members may post
 manual transactions that charge only their own account, create cost shares, answer
@@ -529,7 +594,11 @@ Pages (Mantine, per house rules — no shadcn, styling in `src/theme/mantine.ts`
   and reverse actions, and links to the reversal or the reversed original.
 - **`/ledger/me`** — my account: current balance in plain language ("the community owes
   you 50 €"), soft-limit warning when applicable, running-balance list, statement
-  download.
+  download. `/ledger/a/{id}` shows any other account the same way, and a "Balances"
+  tab on `/ledger` lists every member's balance.
+- **My balance everywhere** — the balance card (with the plain-language sentence) sits at
+  the top of the account hub (`/account`, the mobile entry point), and the avatar
+  menu in the header shows "My balance" with the signed amount.
 - **`/ledger/stats`** — grouped views: by category, by project (with budget progress),
   by member, by item, by month. Charts kept minimal and readable.
 - **New transaction** — modal with intent selector, amount, date, category, project,
@@ -675,7 +744,10 @@ A user who leaves must not take the community's books with them.
 - **Booking integration**: completion posts once, cancellation posts nothing, remote
   booker posts nothing, `payment_enabled = False` posts nothing, price precedence
   honoured, price change after posting does not alter the charge, a sale credits the
-  seller captured *before* `transfer_ownership`.
+  seller captured *before* `transfer_ownership`; accepting a sale makes the item a
+  `DRAFT` of the buyer and posts once; cancelling an accepted sale reverses the charge
+  and returns the item to the seller as a `DRAFT`; the seller can still open the
+  booking after the transfer.
 - **Shared expenses**: property test that the rounding helper always sums exactly to
   the charged amount for random totals, weights and guest counts; a split posts only
   once (idempotency) even if the last acceptance and the auto-accept job race; an
@@ -693,8 +765,8 @@ A user who leaves must not take the community's books with them.
 | Phase | Content | Ships |
 |---|---|---|
 | 1 ✅ | `ledger` app: models, migrations incl. the balance and append-only triggers, `post_transaction` + `reverse_transaction` (full and partial), rounding helper, chart-of-accounts seed, member accounts for every user, read-only Django admin, account release on user deletion, nightly verification, invariant + property + concurrency tests | nothing user-visible |
-| 2 | Manual transactions + receipts + `/api/ledger/` read & write + feed, detail, my-account pages | the drill scenario works end to end |
-| 3 | Booking integration: `payment_enabled` gate, `Item.ledger_beneficiary` + community ownership in the UI, posting rentals and sales on `COMPLETED`, reconciliation job, unbilled view | rentals and sales hit the ledger |
+| 2 ✅ | Manual transactions (intents) + receipts in the database with access log + `/api/ledger/` read & write + feed, detail, my-account and member-balance pages, balance in the account hub and header menu | the drill scenario works end to end |
+| 3 | Booking integration: `payment_enabled` gate, `Item.ledger_beneficiary` + community ownership in the UI, posting rentals on `COMPLETED`, sales at acceptance with ownership transfer to the buyer as a `DRAFT` (D17), cancellation of accepted sales, reconciliation job, unbilled view | rentals and sales hit the ledger |
 | 4 | Disputes, comment threads, reversals and partial corrections in the UI, notifications, soft-limit warnings and reminders; shared expenses (`CostShare`, confirmation flow, auto-accept job) | the trust layer; group cooking works |
 | 5 | Categories/projects UI, statistics endpoints and page, per-member statement, treasurer's report | analytics and D12 part 1 |
 | 6 | DATEV export + period close; bank import pipeline behind the port; hash chain and daily digest | D11/D12 completion |

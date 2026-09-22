@@ -515,6 +515,12 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
     "SCHEMA_PATH_PREFIX": "/api/",
+    "ENUM_NAME_OVERRIDES": {
+        "LedgerTransactionKindEnum": "bubble.ledger.api.serializers.TRANSACTION_KINDS",
+        "LedgerAccountTypeEnum": "bubble.ledger.api.serializers.ACCOUNT_TYPES",
+        "LedgerIntentEnum": "bubble.ledger.intents.Intent",
+        "LedgerViaEnum": "bubble.ledger.intents.Via",
+    },
 }
 
 # Your stuff...

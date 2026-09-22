@@ -12,3 +12,13 @@ export const ACCOUNT_PATH = '/account';
 
 /** The viewer's favorite items, reachable from the profile menu. */
 export const FAVORITES_PATH = '/favorites';
+
+/** The community ledger: every transaction, visible to every member. */
+export const LEDGER_PATH = '/ledger';
+
+/** The signed-in member's own ledger account and statement. */
+export const MY_LEDGER_PATH = '/ledger/me';
+
+export const ledgerTransactionPath = (id: string) => `${LEDGER_PATH}/t/${id}`;
+
+export const ledgerAccountPath = (id: string) => `${LEDGER_PATH}/a/${id}`;

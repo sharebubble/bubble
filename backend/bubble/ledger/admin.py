@@ -15,6 +15,8 @@ from bubble.ledger.models import (
     Entry,
     LedgerPeriod,
     Project,
+    Receipt,
+    ReceiptAccess,
     Transaction,
 )
 
@@ -108,3 +110,22 @@ class ProjectAdmin(NoDeleteAdminMixin, SimpleHistoryAdmin):
 @admin.register(LedgerPeriod)
 class LedgerPeriodAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
     list_display = ["starts_on", "ends_on", "closed_at", "closed_by"]
+
+
+@admin.register(Receipt)
+class ReceiptAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
+    list_display = ["file_name", "transaction", "uploaded_by", "uploaded_at", "size"]
+    # The file itself is downloaded through the logged API endpoint only.
+    exclude = ["content"]
+    readonly_fields = ["sha256"]
+    search_fields = ["file_name", "sha256"]
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).without_content()
+
+
+@admin.register(ReceiptAccess)
+class ReceiptAccessAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
+    list_display = ["receipt", "accessed_by", "accessed_at"]
+    list_select_related = ["receipt", "accessed_by"]
+    date_hierarchy = "accessed_at"

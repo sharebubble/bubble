@@ -6,8 +6,9 @@ import pytest
 from django.contrib.admin.sites import AdminSite
 from django.db import transaction
 from django.test import RequestFactory
+from guardian.utils import get_anonymous_user
 
-from bubble.ledger.exceptions import NonZeroBalanceError
+from bubble.ledger.exceptions import LedgerError, NonZeroBalanceError
 from bubble.ledger.models import Account, AccountType, NormalSide
 from bubble.ledger.services import get_member_account, verify_ledger
 from bubble.ledger.tests.helpers import raw_balance
@@ -26,6 +27,19 @@ def test_new_user_gets_a_member_account(book):
     assert account.name == "Erin"
     assert raw_balance(account) == 0
     assert get_member_account(user) == account
+
+
+def test_guardians_anonymous_user_is_not_a_member(book):
+    anonymous = get_anonymous_user()
+
+    assert not Account.objects.filter(owner=anonymous).exists()
+    with pytest.raises(LedgerError):
+        get_member_account(anonymous)
+
+
+def test_a_zero_balance_never_reads_as_minus_zero(book):
+    account = get_member_account(UserFactory())
+    assert str(account.display(Decimal("0.00"))) == "0.00"
 
 
 def test_get_member_account_is_idempotent(book):

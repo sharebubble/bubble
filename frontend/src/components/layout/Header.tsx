@@ -1,12 +1,14 @@
-import { ActionIcon, Avatar, Button, Indicator, Menu } from '@mantine/core';
+import { ActionIcon, Avatar, Button, Indicator, Menu, Text } from '@mantine/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
+import { useMyLedgerAccount } from '@/hooks/useLedger';
 import { useUnreadMessages } from '@/hooks/useMessages';
 import { useProfile } from '@/hooks/useProfile';
 import { SearchBar } from '@/components/layout/SearchBar';
 
-import { BROWSE_PATH, FAVORITES_PATH } from '@/lib/routes';
+import { formatMoney } from '@/lib/currency';
+import { BROWSE_PATH, FAVORITES_PATH, MY_LEDGER_PATH } from '@/lib/routes';
 import { cn } from '@/lib/utils';
 import {
   Bell,
@@ -20,6 +22,7 @@ import {
   LogIn,
   LogOut,
   Plus,
+  Receipt,
   User,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -150,8 +153,9 @@ export const Header = () => {
   const { data: unreadMessages } = useUnreadMessages();
   const { data: profile } = useProfile();
   const { canInstall, promptInstall } = useInstallPrompt();
+  const { data: ledgerAccount } = useMyLedgerAccount();
 
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const unreadCount = unreadMessages?.count || 0;
 
@@ -288,6 +292,27 @@ export const Header = () => {
                   leftSection={<User size={16} aria-hidden="true" />}
                 >
                   {t('account.settings')}
+                </Menu.Item>
+                <Menu.Item
+                  component={NavLink}
+                  to={MY_LEDGER_PATH}
+                  leftSection={<Receipt size={16} aria-hidden="true" />}
+                  rightSection={
+                    ledgerAccount && (
+                      <Text
+                        size="xs"
+                        fw={600}
+                        c={Number(ledgerAccount.balance) < 0 ? 'red' : undefined}
+                        data-testid="header-ledger-balance"
+                      >
+                        {formatMoney(ledgerAccount.balance, ledgerAccount.currency, language, {
+                          signed: true,
+                        })}
+                      </Text>
+                    )
+                  }
+                >
+                  {t('ledger.myBalance')}
                 </Menu.Item>
                 <Menu.Item
                   component={NavLink}
