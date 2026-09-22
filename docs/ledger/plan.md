@@ -1,6 +1,6 @@
 # Ledger — bookkeeping and accounting for Bubble
 
-Status: design proposal, not yet implemented.
+Status: **phase 1 implemented** (`backend/bubble/ledger/`); phases 2–6 are design.
 Scope: a transparent, append-only double-entry ledger for one community, covering
 booking charges, member-entered expenses with receipts, top-ups, disputes,
 grouping and statistics.
@@ -176,7 +176,7 @@ class AccountType(IntegerChoices):
 class Account(models.Model):
     id, book(FK), type, code, name, is_active
     normal_side = IntegerField(choices=NormalSide)   # derived from type, section 3
-    owner = FK(User, null=True, on_delete=PROTECT)   # only for MEMBER accounts
+    owner = FK(User, null=True, on_delete=SET_NULL)  # only for MEMBER accounts; see section 14
     # unique_together: (book, code); code is stable and export-safe
     # code examples: member:<user-uuid>, asset:bank, income:rental, expense:tools
 
@@ -196,18 +196,21 @@ class Transaction(models.Model):
     # BigAutoField, which Django only allows as the primary key.
     seq = BigIntegerField(editable=False)
     kind, occurred_on = DateField()               # business date
-    created_at, created_by = FK(User, on_delete=PROTECT)
+    created_at, created_by = FK(Account, null=True, on_delete=PROTECT)  # author's member
+    # account, not the user: a member leaving never has to touch an immutable row.
+    # Null = posted by the system (e.g. a booking completing).
     description = TextField()
     category = FK(Category, on_delete=PROTECT, null=True)   # D7
     project  = FK(Project,  on_delete=PROTECT, null=True)   # D7
     source_type, source_id                        # 'booking' + Booking.id, 'statement_line' + id
-    idempotency_key = CharField()                 # e.g. "booking:<uuid>:charge"
+    idempotency_key = CharField(blank=True)       # e.g. "booking:<uuid>:charge"
     reverses = FK("self", null=True, related_name="reversed_by")  # REVERSAL or CORRECTION
     prev_hash, hash = CharField(64, blank=True)   # phase 6, section 11
 
     class Meta:
         constraints = [
             UniqueConstraint(fields=["book", "idempotency_key"],
+                             condition=~Q(idempotency_key=""),
                              name="ledger_transaction_idempotency_key_per_book"),
             UniqueConstraint(fields=["book", "seq"], name="ledger_transaction_seq_per_book"),
         ]
@@ -215,7 +218,11 @@ class Transaction(models.Model):
 class Entry(models.Model):
     id, transaction(FK, related_name="entries"), account(FK, on_delete=PROTECT)
     amount = MoneyField(max_digits=12, decimal_places=2)   # signed, debit-positive
-    item = FK(Item, null=True, on_delete=SET_NULL)         # per-item analytics (D7)
+    item = FK(Item, null=True, on_delete=DO_NOTHING, db_constraint=False)
+    # per-item analytics (D7); no DB constraint, so deleting an item never rewrites
+    # an immutable entry. The id stays for analytics after the item is gone.
+    reverses_entry = FK("self", null=True)   # reversal legs point at what they undo;
+    # the service refuses to undo more of an entry than is left (section 7a, example h)
     memo = CharField(blank=True)
 
 class Receipt(models.Model):
@@ -280,10 +287,10 @@ the community.
 | I1 | Entries of a transaction sum to zero | Postgres `CONSTRAINT TRIGGER ... DEFERRABLE INITIALLY DEFERRED` added via `RunSQL`, checked at commit — the service layer can build a transaction incrementally, but the database refuses an unbalanced commit. Mirrored by a service-level assertion for a clear error message. |
 | I2 | ≥ 2 entries per transaction | same trigger |
 | I3 | All entries use the book's currency | denormalised `currency` on `Entry` + trigger comparing to `book.currency` |
-| I4 | Rows are append-only | `Transaction.save()`/`Entry.save()` raise on update; `delete()` raises. In production the app DB role is granted only `INSERT`/`SELECT` on these tables (migrations run as a separate role) — to be documented in `docs/ledger/operating.md`, written alongside phase 1. |
+| I4 | Rows are append-only | `Transaction.save()`/`Entry.save()` raise on update; `delete()` and queryset `update()`/`delete()` raise; a `BEFORE UPDATE OR DELETE` trigger refuses raw SQL too (TRUNCATE, used to flush test databases, fires no row triggers). In production the app DB role is granted only `INSERT`/`SELECT` on these tables (migrations run as a separate role) — to be documented in `docs/ledger/operating.md`, written alongside phase 1. |
 | I5 | No double posting from the same source | `UniqueConstraint(book, idempotency_key)` |
 | I6 | No posting into a closed period | service check against `LedgerPeriod` |
-| I7 | Trial balance: sum of all account balances = 0 | nightly Celery `verify_ledger` task; result exposed at `/api/ledger/health/` and shown in the UI (section 11) |
+| I7 | Trial balance: sum of all account balances = 0 | nightly huey task `verify_ledger_nightly` (03:30, logs an error on failure so it reaches Glitchtip); result exposed at `/api/ledger/health/` and shown in the UI (section 11) |
 | I8 | Cached balance = recomputed sum | same nightly task, per account |
 
 The **only** way to write to the ledger is `bubble.ledger.services.post_transaction()`.
@@ -339,7 +346,7 @@ changes later. Price is *never* recomputed from the item after posting.
 **Idempotency key:** `booking:<booking-id>:charge` (rentals and sales alike). Two concurrent completions produce
 one posting; the second call returns the existing transaction.
 
-**Reconciliation job:** a daily Celery task lists `COMPLETED` bookings with a chargeable
+**Reconciliation job:** a daily huey periodic task lists `COMPLETED` bookings with a chargeable
 amount and no posting, and reports them. Belt and braces against a missed transition.
 
 **Late cancellation of a completed booking** is a reversal, like any other correction.
@@ -413,7 +420,7 @@ class CostShareParticipant(models.Model):
 2. Each participant accepts or objects. An objection removes that person's share and
    notifies the payer, who can edit the split (re-notifying the affected people) or
    cancel it. Nobody else's share changes without them being told.
-3. When everyone has answered, or `auto_accept_at` passes (Celery beat job), all
+3. When everyone has answered, or `auto_accept_at` passes (huey periodic task), all
    still-pending participants count as accepted and the split posts **one**
    transaction, idempotency key `cost_share:<id>`. From then on it is ordinary ledger
    data: visible to all, disputable, correctable.
@@ -454,7 +461,7 @@ Indexes: `Entry(account, transaction)`, `Entry(item)`, `Transaction(book, occurr
 constraints on `(book, idempotency_key)` and `(book, seq)`.
 
 For statistics at scale, a `LedgerMonthlyRollup(book, account, category, project, month,
-amount, entry_count)` table maintained by a Celery task. Because the ledger is
+amount, entry_count)` table maintained by a huey periodic task. Because the ledger is
 append-only, rollups only ever need rows added for months that received new postings —
 no invalidation logic. Ship rollups only when live aggregates get slow; the plain
 aggregate query is fine for a few tens of thousands of entries.
@@ -625,17 +632,18 @@ association should confirm its own obligations with its tax advisor.
 
 A user who leaves must not take the community's books with them.
 
-- `Account.owner` uses `on_delete=PROTECT`; the account keeps a stored display name.
-- User deletion becomes **anonymisation**: the account is renamed to
-  "Former member #1234", the `owner` FK is cleared, and the account is deactivated once
-  its balance is zero. Ledger rows are untouched.
-- A member with a non-zero balance cannot be anonymised until it is settled — the UI
-  says so, with the amount.
-- **This must ship in phase 1**, not later: every user gets a member account, and
-  `PROTECT` (on `Account.owner` and `Transaction.created_by`) makes plain user deletion
-  in the Django admin fail from the first migration on. Phase 1 therefore replaces
-  admin deletion with the anonymise action. An open `CostShare` involving the user is
-  cancelled or re-split before anonymisation.
+- Ledger rows never reference a user directly: `Transaction.created_by` is the
+  author's member *account*, and only `Account.owner` points at the user
+  (`on_delete=SET_NULL`).
+- Deleting a user **releases** their account (implemented in phase 1): a `pre_delete`
+  hook renames it to "Former member #1a2b3c4d", clears `owner` and deactivates it.
+  The account and every entry on it stay, so the books still add up. Everything else
+  about deleting a user (their items, bookings…) is unchanged.
+- A member with a non-zero balance cannot leave until it is settled: the hook raises
+  `NonZeroBalanceError`, and the Django admin's delete page lists such members as
+  protected objects with their balance, instead of failing mid-delete.
+- An open `CostShare` involving the user is cancelled or re-split before release
+  (phase 4).
 - Receipts are the sensitive artefact (addresses, card digits, unrelated purchases). They
   are access-logged (D8) and the uploader can request replacement of a receipt image
   through a documented admin procedure that records the replacement — never a silent
@@ -649,10 +657,13 @@ A user who leaves must not take the community's books with them.
   unbalanced transaction must raise at the DB level (test the trigger, not just the
   service). **Gotcha:** I1 is a deferred trigger that fires at `COMMIT`, and
   pytest-django's default `@pytest.mark.django_db` rolls each test back without ever
-  committing — an unbalanced posting would pass silently. Trigger tests use
-  `django_db(transaction=True)`, and the shared ledger fixture runs
-  `SET CONSTRAINTS ALL IMMEDIATE` so ordinary tests hit the trigger too.
-- **Property tests** (hypothesis): generate random sequences of postings, reversals and
+  committing — an unbalanced posting would pass silently. So `post_transaction()`
+  itself runs `SET CONSTRAINTS … IMMEDIATE` right after writing (then defers again),
+  which makes every ordinary test exercise the trigger; one `transaction=True` test
+  proves the commit-time check without it. A global `SET CONSTRAINTS ALL IMMEDIATE`
+  fixture would not work: the trigger on the transaction row would fire before its
+  entries are inserted.
+- **Property tests** (seeded `random`, no extra dependency): generate random sequences of postings, reversals and
   disputes; assert trial balance = 0, cached balances = recomputed sums, and that no
   sequence produces an edited or deleted row.
 - **Concurrency**: two threads completing the same booking → exactly one transaction
@@ -681,7 +692,7 @@ A user who leaves must not take the community's books with them.
 
 | Phase | Content | Ships |
 |---|---|---|
-| 1 | `ledger` app: models, migrations incl. the balance trigger, `post_transaction`, rounding helper, chart-of-accounts seed, read-only Django admin, user anonymisation (replaces admin delete), invariant + property tests | nothing user-visible |
+| 1 ✅ | `ledger` app: models, migrations incl. the balance and append-only triggers, `post_transaction` + `reverse_transaction` (full and partial), rounding helper, chart-of-accounts seed, member accounts for every user, read-only Django admin, account release on user deletion, nightly verification, invariant + property + concurrency tests | nothing user-visible |
 | 2 | Manual transactions + receipts + `/api/ledger/` read & write + feed, detail, my-account pages | the drill scenario works end to end |
 | 3 | Booking integration: `payment_enabled` gate, `Item.ledger_beneficiary` + community ownership in the UI, posting rentals and sales on `COMPLETED`, reconciliation job, unbilled view | rentals and sales hit the ledger |
 | 4 | Disputes, comment threads, reversals and partial corrections in the UI, notifications, soft-limit warnings and reminders; shared expenses (`CostShare`, confirmation flow, auto-accept job) | the trust layer; group cooking works |
@@ -710,4 +721,4 @@ because the core is append-only.
    settlements for them run through the association's bank account.
 6. **Membership fees / recurring postings**: no scheduler in this design. If the
    community charges dues, add a `RecurringPosting` model in phase 5+ that calls
-   `post_transaction` from a Celery beat job with a date-derived idempotency key.
+   `post_transaction` from a huey periodic task with a date-derived idempotency key.
