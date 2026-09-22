@@ -2,6 +2,10 @@ import BookingConversationPanel from '@/components/bookings/BookingConversationP
 import { BOOKING_STATUS, TERMINAL_BOOKING_STATUSES } from '@/components/bookings/status';
 import { BackButton } from '@/components/layout/BackButton';
 import {
+  RecordPaymentDialog,
+  type PayableBooking,
+} from '@/components/payments/RecordPaymentDialog';
+import {
   Badge,
   Button,
   Card,
@@ -25,9 +29,10 @@ import {
 } from '@/hooks/useBookings';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
+import type { BookingWithPayment } from '@/services/custom/payments';
 import type { BookingList } from '@/services/django';
 import { format, formatDuration, intervalToDuration, isAfter, isBefore, parseISO } from 'date-fns';
-import { Calendar, Clock, Package, Search, Square, User } from 'lucide-react';
+import { Calendar, Clock, HandCoins, Package, Search, Square, User } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
@@ -90,6 +95,7 @@ interface BookingRowProps {
   selected: boolean;
   onClick: (id: string) => void;
   onEnd: (id: string) => void;
+  onRecordPayment: (booking: PayableBooking) => void;
   isEnding: boolean;
 }
 
@@ -101,6 +107,7 @@ const BookingRow = ({
   selected,
   onClick,
   onEnd,
+  onRecordPayment,
   isEnding,
 }: BookingRowProps) => {
   const isOwner = booking.user?.username !== currentUsername;
@@ -111,6 +118,13 @@ const BookingRow = ({
   const price = booking.item_details?.price;
   const currency = booking.item_details?.price_currency;
   const unreadCount = booking.unread_messages_count;
+
+  // The payment fields are served by the bookings endpoint but are not part
+  // of the generated BookingList type yet — see services/custom/payments.ts.
+  const payableBooking = booking as unknown as BookingWithPayment;
+  // Only the person who received the item is asked what they paid.
+  const canRecordPayment = !isOwner && Boolean(payableBooking.payment_recordable);
+  const recordedPayment = payableBooking.payment;
 
   const stateBadge =
     state === 'active' ? (
@@ -223,6 +237,25 @@ const BookingRow = ({
             <span className="hidden sm:inline">{t('bookings.endBooking')}</span>
           </Button>
         )}
+
+        {/* Payment — offered to the booker once the booking has completed */}
+        {canRecordPayment && (
+          <Button
+            size="xs"
+            variant={recordedPayment ? 'light' : 'outline'}
+            color="teal"
+            className="shrink-0"
+            leftSection={<HandCoins size={12} />}
+            onClick={e => {
+              e.stopPropagation();
+              onRecordPayment({ ...payableBooking, item_name: itemTitle });
+            }}
+          >
+            {recordedPayment
+              ? formatPrice(recordedPayment.amount, recordedPayment.currency)
+              : t('payments.setAmountShort')}
+          </Button>
+        )}
       </div>
     </Card>
   );
@@ -241,6 +274,7 @@ const MyBookingsPage = () => {
   const { bookingId: bookingIdParam } = useParams<{ bookingId?: string }>();
   const updateBookingMutation = useUpdateBooking();
   const [endingId, setEndingId] = useState<string | null>(null);
+  const [payingBooking, setPayingBooking] = useState<PayableBooking | null>(null);
 
   // ── selection (right-hand conversation panel) ─────────────────────────────
   // The URL is the single source of truth for which booking is selected, so
@@ -520,6 +554,7 @@ const MyBookingsPage = () => {
                           selected={selectedBookingId === booking.id}
                           onClick={handleSelectBooking}
                           onEnd={handleEndBooking}
+                          onRecordPayment={setPayingBooking}
                           isEnding={endingId === booking.id}
                           currentUsername={user?.username}
                         />
@@ -550,6 +585,12 @@ const MyBookingsPage = () => {
           </Card>
         </div>
       </div>
+
+      <RecordPaymentDialog
+        booking={payingBooking}
+        opened={payingBooking !== null}
+        onClose={() => setPayingBooking(null)}
+      />
     </div>
   );
 };

@@ -66,6 +66,48 @@ The `<homeserver>` part of that prefill defaults to `DJANGO_ALLOWED_HOSTS[0]` (M
 APPRISE_MATRIX_HOSTNAME=example.com
 ```
 
+# Payments
+
+Bubble records what members settle between themselves. Nothing is charged, no money moves through the platform, and no balance is redeemable — the ledger is bookkeeping, so a bubble can see what its sharing has actually been worth without becoming a payment service.
+
+Everything is denominated in `DEFAULT_CURRENCY` (euros by default). There is no separate platform currency.
+
+## Recording a payment
+
+Once a booking reaches **completed**, the person who received the item is asked what they paid. Two cases share the same prompt:
+
+- **A priced booking** — the amount agreed up front is offered for confirmation.
+- **A free booking** — items offered for sale or rent at a price of `0`, as well as donations and free loans, change hands without a price. Here the payment is entirely **voluntary**: the prompt asks what the item was worth to the borrower, with a slider bounded by `VOLUNTARY_PAYMENT_MAX`, and larger amounts can still be typed. The suggestion starts from whatever that member paid for the same item last time, so a repeat borrow needs no re-thinking.
+
+Deliberately after the fact, not up front: nothing was charged, so the question is what it turned out to be worth rather than what it should cost. Declining is a first-class outcome — "Not now" records nothing.
+
+## The record
+
+Every recorded payment is visible to everyone who can see the item, on the item page, as its **payment record**: who paid, when, how much, and whether it was voluntary — plus the running total and average. It survives the item being sold, which is exactly when the record matters most. An item's history is as public as the item itself, and never carries contact details.
+
+Each member also sees their own **balance** on the account page: what they have paid out, what they have received, and the net of the two.
+
+## How it is stored
+
+Payments are held in a double-entry ledger (`bubble.ledger`):
+
+- A `Transaction` carries two or more `Posting`s whose signed amounts sum to zero, so money is always moved from somewhere to somewhere.
+- History is append-only. Recording a payment again does not edit the old figure — it posts a reversing entry and then the new one, so the correction is visible and the standing amount is unambiguous.
+- Balances are **derived** by summing postings, never stored in a mutable column, so a balance cannot drift out of step with the history behind it.
+- Writes carry an idempotency key, so a retried request records once.
+
+## Configuration
+
+| Setting                 | Default | Meaning                                                        |
+| ----------------------- | ------- | -------------------------------------------------------------- |
+| `VOLUNTARY_PAYMENT_MAX` | `100`   | Upper end of the slider offered after a free booking completes |
+
+```env
+VOLUNTARY_PAYMENT_MAX=100
+```
+
+As with the notification settings, this is read from the environment at first start and can be edited at runtime in the Django admin under **Constance → Config**.
+
 # Federation (ActivityPub)
 
 Bubble supports ActivityPub federation, allowing items, bookings, and messages to flow between Bubble instances and interact with the broader fediverse (Mastodon, etc.).

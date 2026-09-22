@@ -184,17 +184,26 @@ class ItemManager(models.Manager):
         """Return a queryset of published items."""
         return self.filter(status__in=ItemStatus.published())
 
-    def visible_to(self, user) -> models.QuerySet:
+    def visible_to(self, user, *, include_archived: bool = False) -> models.QuerySet:
         """Return published items the given user is allowed to view.
 
         Mirrors the visibility rules of the public items endpoint:
         - PUBLIC: visible to everyone (incl. anonymous).
         - AUTHENTICATED: visible to any logged-in user.
         - SPECIFIC / PRIVATE: only when the user holds explicit view_item.
+
+        Pass ``include_archived`` to also return items that have left
+        circulation (sold or retired). Browsing surfaces leave them out, but
+        anything reading an item's history — such as its payment record —
+        still needs to reach them: being sold is precisely the moment that
+        history becomes final.
         """
         from constance import config  # noqa: PLC0415
 
-        base_qs = self.published()
+        statuses = ItemStatus.published()
+        if include_archived:
+            statuses = (*statuses, *ItemStatus.archived())
+        base_qs = self.filter(status__in=statuses)
 
         if not user or not user.is_authenticated:
             if config.REQUIRE_LOGIN:
@@ -269,7 +278,6 @@ class Item(models.Model):
             "Rental price per rental_period (when sales type is rent)."
         ),
     )
-
     rental_period = models.CharField(
         max_length=1,
         blank=True,
