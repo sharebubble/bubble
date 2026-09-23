@@ -1,6 +1,6 @@
 # Ledger — bookkeeping and accounting for Bubble
 
-Status: **phases 1–2 implemented** (`backend/bubble/ledger/`, `frontend/src/pages/Ledger*.tsx`); phases 3–6 are design.
+Status: **phases 1–3 implemented** (`backend/bubble/ledger/`, `backend/bubble/bookings/services.py`, `frontend/src/pages/Ledger*.tsx`); phases 4–6 are design.
 Scope: a transparent, append-only double-entry ledger for one community, covering
 booking charges, member-entered expenses with receipts, top-ups, disputes,
 grouping and statistics.
@@ -785,7 +785,7 @@ A user who leaves must not take the community's books with them.
 |---|---|---|
 | 1 ✅ | `ledger` app: models, migrations incl. the balance and append-only triggers, `post_transaction` + `reverse_transaction` (full and partial), rounding helper, chart-of-accounts seed, member accounts for every user, read-only Django admin, account release on user deletion, nightly verification, invariant + property + concurrency tests | nothing user-visible |
 | 2 ✅ | Manual transactions (intents) + receipts in the database with access log + `/api/ledger/` read & write + feed, detail, my-account and member-balance pages, balance in the account hub and header menu | the drill scenario works end to end |
-| 3 | Booking integration: `payment_enabled` gate, `Item.ledger_beneficiary` + community ownership in the UI, posting rentals on `COMPLETED`, sales accepted with ownership transfer to the buyer as a `DRAFT` (D17) and charged when the buyer approves the hand-over, or cancelled free of charge when the buyer rejects it (D18), reconciliation job, unbilled view | rentals and sales hit the ledger |
+| 3 ✅ | Booking integration: `payment_enabled` gate, `Item.ledger_beneficiary` + community ownership in the UI, posting rentals on `COMPLETED`, sales accepted with ownership transfer to the buyer as a `DRAFT` (D17) and charged when the buyer approves the hand-over, or cancelled free of charge when the buyer rejects it (D18), reconciliation job, unbilled view | rentals and sales hit the ledger |
 | 4 | Disputes, comment threads, reversals and partial corrections in the UI, notifications, soft-limit warnings and reminders; shared expenses (`CostShare`, confirmation flow, auto-accept job) | the trust layer; group cooking works |
 | 5 | Categories/projects UI, statistics endpoints and page, per-member statement, treasurer's report | analytics and D12 part 1 |
 | 6 | DATEV export + period close; bank import pipeline behind the port; hash chain and daily digest | D11/D12 completion |

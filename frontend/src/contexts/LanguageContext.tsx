@@ -888,6 +888,38 @@ const translations = {
     'ledger.categoryName.member-transfer': 'Between members',
     'ledger.categoryName.shared-expense': 'Shared expense',
     'ledger.categoryName.correction': 'Correction',
+
+    // Ledger: bookings
+    'booking.saleAcceptedBuyer':
+      'The seller accepted your offer. The item is already yours: you find it as a draft under My Items. Confirm receipt once you have it.',
+    'booking.saleAcceptedSeller':
+      'You accepted this sale, and the item now belongs to {{name}}. A sale cannot be cancelled once accepted: the buyer confirms receipt or reports a problem.',
+    'booking.saleChargeOnReceipt':
+      '{{amount}} will be charged to your ledger account when you confirm receipt.',
+    'booking.saleCreditOnReceipt': '{{amount}} will be credited when the buyer confirms receipt.',
+    'booking.saleProblemHint':
+      'Not handed over, or not as described? Report a problem: the sale is cancelled, nothing is charged and the item goes back to the seller.',
+    'booking.agreedPrice': 'Agreed price',
+    'booking.charged': 'Charged via the ledger',
+    'booking.viewInLedger': 'View in the ledger',
+    'booking.successProblemReported': 'The sale was cancelled. Nothing was charged.',
+    'requests.reportProblem': 'Report a problem',
+    'requests.reportProblemTitle': 'Report a problem with this sale',
+    'requests.reportProblemBody':
+      'If the item was not handed over or is not as described, the sale is cancelled, nothing is charged and the item goes back to the seller.',
+    'requests.reportProblemReason': 'What went wrong?',
+    'requests.reportProblemPlaceholder': 'e.g. The item was never handed over',
+    'requests.reportProblemConfirm': 'Cancel the sale',
+    'editItem.paymentEnabled': 'Charge bookings through the community ledger',
+    'editItem.paymentEnabledHint':
+      'Rentals are charged when they end, sales when the buyer confirms receipt.',
+    'item.communityOwned': 'Community item',
+    'item.communityOwnedTooltip':
+      'Owned by the community and looked after by its owner. Booking charges go to the community.',
+    'ledger.unbilled': 'Unbilled',
+    'ledger.unbilledEmpty': 'Every booking that should be charged was charged.',
+    'ledger.unbilledHelp':
+      'Bookings that should have been charged, but could not be, for example because the booker is on another instance.',
   },
   de: {
     // Header
@@ -1776,6 +1808,39 @@ const translations = {
     'ledger.categoryName.member-transfer': 'Zwischen Mitgliedern',
     'ledger.categoryName.shared-expense': 'Geteilte Ausgabe',
     'ledger.categoryName.correction': 'Korrektur',
+
+    // Ledger: bookings
+    'booking.saleAcceptedBuyer':
+      'Der Verkäufer hat dein Angebot angenommen. Der Artikel gehört schon dir: Du findest ihn als Entwurf unter Meine Artikel. Bestätige den Erhalt, sobald du ihn hast.',
+    'booking.saleAcceptedSeller':
+      'Du hast diesen Verkauf angenommen, der Artikel gehört jetzt {{name}}. Ein angenommener Verkauf kann nicht mehr storniert werden: Der Käufer bestätigt den Erhalt oder meldet ein Problem.',
+    'booking.saleChargeOnReceipt':
+      '{{amount}} werden deinem Konto belastet, sobald du den Erhalt bestätigst.',
+    'booking.saleCreditOnReceipt':
+      '{{amount}} werden gutgeschrieben, sobald der Käufer den Erhalt bestätigt.',
+    'booking.saleProblemHint':
+      'Nicht übergeben oder nicht wie beschrieben? Melde ein Problem: Der Verkauf wird storniert, nichts wird belastet und der Artikel geht zurück an den Verkäufer.',
+    'booking.agreedPrice': 'Vereinbarter Preis',
+    'booking.charged': 'Über die Kasse belastet',
+    'booking.viewInLedger': 'In der Kasse ansehen',
+    'booking.successProblemReported': 'Der Verkauf wurde storniert. Es wurde nichts belastet.',
+    'requests.reportProblem': 'Problem melden',
+    'requests.reportProblemTitle': 'Problem mit diesem Verkauf melden',
+    'requests.reportProblemBody':
+      'Wenn der Artikel nicht übergeben wurde oder nicht wie beschrieben ist, wird der Verkauf storniert, nichts wird belastet und der Artikel geht zurück an den Verkäufer.',
+    'requests.reportProblemReason': 'Was ist schiefgelaufen?',
+    'requests.reportProblemPlaceholder': 'z. B. Der Artikel wurde nie übergeben',
+    'requests.reportProblemConfirm': 'Verkauf stornieren',
+    'editItem.paymentEnabled': 'Buchungen über die Gemeinschaftskasse abrechnen',
+    'editItem.paymentEnabledHint':
+      'Vermietungen werden bei Rückgabe abgerechnet, Verkäufe, sobald der Käufer den Erhalt bestätigt.',
+    'item.communityOwned': 'Gemeinschaftsartikel',
+    'item.communityOwnedTooltip':
+      'Gehört der Gemeinschaft und wird von seinem Besitzer betreut. Buchungen werden der Gemeinschaft gutgeschrieben.',
+    'ledger.unbilled': 'Nicht abgerechnet',
+    'ledger.unbilledEmpty': 'Alle Buchungen, die abgerechnet werden sollten, wurden abgerechnet.',
+    'ledger.unbilledHelp':
+      'Buchungen, die hätten abgerechnet werden sollen, aber nicht konnten, z. B. weil der Bucher auf einer anderen Instanz ist.',
   },
 };
 

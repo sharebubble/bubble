@@ -8,9 +8,11 @@ import {
   useLedgerBalances,
   useLedgerHealth,
   useLedgerTransactions,
+  useLedgerUnbilled,
   useMyLedgerAccount,
 } from '@/hooks/useLedger';
 import { formatMoney } from '@/lib/currency';
+import { formatDate } from '@/lib/date';
 import { MY_LEDGER_PATH, ledgerAccountPath } from '@/lib/routes';
 import type { LedgerTransactionKindEnum } from '@/services/django';
 import {
@@ -187,6 +189,57 @@ const MemberBalances = () => {
   );
 };
 
+/** Bookings the ledger could not charge, with the reason (treasurer only). */
+const UnbilledBookings = () => {
+  const { t, language } = useLanguage();
+  const { data, isLoading } = useLedgerUnbilled(true);
+
+  if (isLoading) {
+    return (
+      <Text c="dimmed" className="py-8 text-center">
+        {t('common.loading')}
+      </Text>
+    );
+  }
+  if (!data?.length) {
+    return (
+      <Text c="dimmed" className="py-8 text-center">
+        {t('ledger.unbilledEmpty')}
+      </Text>
+    );
+  }
+
+  return (
+    <Stack gap="xs">
+      <Text size="sm" c="dimmed">
+        {t('ledger.unbilledHelp')}
+      </Text>
+      <Card withBorder padding={0}>
+        {data.map((row, index) => (
+          <Fragment key={row.id}>
+            {index > 0 && <Divider />}
+            <Group justify="space-between" wrap="nowrap" className="px-4 py-3">
+              <div className="min-w-0">
+                <Text size="sm" fw={500} truncate>
+                  {row.item_name} · {row.booker}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  {formatDate(row.updated_at, language)} · {row.note}
+                </Text>
+              </div>
+              {row.amount && (
+                <Text size="sm" fw={600} className="shrink-0">
+                  {formatMoney(row.amount, row.currency || 'EUR', language)}
+                </Text>
+              )}
+            </Group>
+          </Fragment>
+        ))}
+      </Card>
+    </Stack>
+  );
+};
+
 /**
  * The community ledger: every transaction and every balance, visible to all
  * members (plan D8). Posting happens through the "new entry" dialog.
@@ -198,7 +251,11 @@ const Ledger = () => {
   const { data: me } = useMyLedgerAccount();
   const { data: health } = useLedgerHealth();
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
-  const view = params.get('view') === 'balances' ? 'balances' : 'transactions';
+  const requested = params.get('view');
+  const view =
+    requested === 'balances' || (requested === 'unbilled' && me?.is_ledger_admin)
+      ? requested
+      : 'transactions';
 
   return (
     <main className="container mx-auto max-w-3xl px-4 py-4">
@@ -234,7 +291,7 @@ const Ledger = () => {
           value={view}
           onChange={value => {
             const next = new URLSearchParams(params);
-            if (value === 'balances') next.set('view', 'balances');
+            if (value && value !== 'transactions') next.set('view', value);
             else next.delete('view');
             setParams(next, { replace: true });
           }}
@@ -242,6 +299,7 @@ const Ledger = () => {
           <Tabs.List>
             <Tabs.Tab value="transactions">{t('ledger.transactions')}</Tabs.Tab>
             <Tabs.Tab value="balances">{t('ledger.balances')}</Tabs.Tab>
+            {me?.is_ledger_admin && <Tabs.Tab value="unbilled">{t('ledger.unbilled')}</Tabs.Tab>}
           </Tabs.List>
           <Tabs.Panel value="transactions" pt="md">
             <TransactionFeed ownerId={me?.owner} />
@@ -249,6 +307,11 @@ const Ledger = () => {
           <Tabs.Panel value="balances" pt="md">
             <MemberBalances />
           </Tabs.Panel>
+          {me?.is_ledger_admin && (
+            <Tabs.Panel value="unbilled" pt="md">
+              <UnbilledBookings />
+            </Tabs.Panel>
+          )}
         </Tabs>
       </Stack>
 

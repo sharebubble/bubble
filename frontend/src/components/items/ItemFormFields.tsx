@@ -192,6 +192,8 @@ interface PricingFieldsProps {
     rental_period: RentalPeriodEnum | '';
     rental_self_service: boolean;
     rental_open_end: boolean;
+    /** Charge bookings through the community ledger; omitted where unsupported. */
+    payment_enabled?: boolean;
   };
   setFormData: (data: any) => void;
   disabled?: boolean;
@@ -290,6 +292,21 @@ export const PricingFields = ({
           />
         )}
       </div>
+
+      {formData.payment_enabled !== undefined &&
+        PRICE_REQUIRED_TYPES.includes(salesType as SalesTypeEnum) && (
+          <Checkbox
+            label={t('editItem.paymentEnabled')}
+            description={t('editItem.paymentEnabledHint')}
+            checked={formData.payment_enabled}
+            onChange={e => {
+              const checked = e.currentTarget.checked;
+              setFormData({ ...formData, payment_enabled: checked });
+              onFieldChange?.('payment_enabled', checked);
+            }}
+            disabled={disabled}
+          />
+        )}
 
       {showRentalOptions && (
         <div className="space-y-4">

@@ -12,6 +12,7 @@ import {
   ledgerTransactionsCreate,
   ledgerTransactionsList,
   ledgerTransactionsRetrieve,
+  ledgerUnbilledList,
   type LedgerAccount,
   type LedgerIntent,
   type LedgerTransactionsListData,
@@ -116,6 +117,14 @@ export const useLedgerHealth = () =>
     queryKey: [...LEDGER_KEY, 'health'],
     queryFn: async () => (await ledgerHealthRetrieve()).data,
     staleTime: 5 * 60 * 1000,
+  });
+
+/** Bookings that should have been charged but could not be (treasurer only). */
+export const useLedgerUnbilled = (enabled: boolean) =>
+  useQuery({
+    queryKey: [...LEDGER_KEY, 'unbilled'],
+    enabled,
+    queryFn: async () => (await ledgerUnbilledList()).data,
   });
 
 export type NewLedgerTransaction = Omit<LedgerIntent, 'receipts'> & { receipts?: File[] };

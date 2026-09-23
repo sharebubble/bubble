@@ -1,4 +1,4 @@
-import type { LedgerCategory, LedgerTransaction } from '@/services/django';
+import type { Booking, LedgerCategory, LedgerTransaction } from '@/services/django';
 
 /**
  * Transfer categories (top-up, payout, between members) only repeat the kind,
@@ -16,3 +16,6 @@ export const categoryLabel = (category: LedgerCategory, t: (key: string) => stri
   const translated = t(key);
   return translated === key ? category.name : translated;
 };
+
+/** An accepted sale under the ledger rules (D17/D18): the item already changed hands. */
+export const isAcceptedSale = (booking: Booking) => !!booking.seller && !!booking.sale_accepted_at;
