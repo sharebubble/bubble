@@ -5,12 +5,20 @@ import {
   ledgerAccountsList,
   ledgerAccountsMeRetrieve,
   ledgerAccountsRetrieve,
+  ledgerAccountsStatementCsvRetrieve,
+  ledgerAccountsStatementRetrieve,
+  ledgerCategoriesCreate,
   ledgerCategoriesList,
+  ledgerCategoriesPartialUpdate,
   ledgerDisputesUpholdCreate,
   ledgerDisputesWithdrawCreate,
   ledgerHealthRetrieve,
+  ledgerProjectsCreate,
   ledgerProjectsList,
+  ledgerProjectsPartialUpdate,
   ledgerReceiptsFileRetrieve,
+  ledgerReportsAnnualCsvRetrieve,
+  ledgerReportsAnnualRetrieve,
   ledgerSplitsAcceptCreate,
   ledgerSplitsCancelCreate,
   ledgerSplitsCreate,
@@ -19,6 +27,7 @@ import {
   ledgerSplitsReceiptsCreate,
   ledgerSplitsRetrieve,
   ledgerSplitsUpdate,
+  ledgerStatsRetrieve,
   ledgerTransactionsCommentsCreate,
   ledgerTransactionsCorrectCreate,
   ledgerTransactionsCreate,
@@ -28,6 +37,9 @@ import {
   ledgerTransactionsReverseCreate,
   ledgerUnbilledList,
   type LedgerAccount,
+  type LedgerCategoryWrite,
+  type LedgerProjectWrite,
+  type LedgerStatsRetrieveData,
   type LedgerCorrectionLine,
   type LedgerCostShareWrite,
   type LedgerIntent,
@@ -355,5 +367,117 @@ export const useAddCostShareReceipt = () => {
         })
       ).data,
     onSuccess: () => void invalidate(),
+  });
+};
+
+// --- Statistics, statements, report, categories and projects (phase 5) ------
+
+/** Save a server-generated file (CSV) under `fileName`. */
+const saveBlob = (blob: Blob, fileName: string) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
+export type LedgerStatsQuery = NonNullable<LedgerStatsRetrieveData['query']>;
+
+/** Totals for a period, grouped by category, project, month, member or item. */
+export const useLedgerStats = (query: LedgerStatsQuery) =>
+  useQuery({
+    queryKey: [...LEDGER_KEY, 'stats', query],
+    queryFn: async () => (await ledgerStatsRetrieve({ query })).data,
+    placeholderData: previous => previous,
+  });
+
+export interface LedgerPeriod {
+  date_from: string;
+  date_to: string;
+}
+
+/** An account statement for a period, with opening and closing balance. */
+export const useLedgerStatement = (accountId: string | undefined, period: LedgerPeriod) =>
+  useQuery({
+    queryKey: [...LEDGER_KEY, 'accounts', accountId, 'statement', period],
+    enabled: !!accountId,
+    queryFn: async () =>
+      (await ledgerAccountsStatementRetrieve({ path: { id: accountId! }, query: period })).data,
+  });
+
+export const useDownloadStatementCsv = () => {
+  const { t } = useLanguage();
+  return useMutation({
+    mutationFn: async ({ accountId, period }: { accountId: string; period: LedgerPeriod }) => {
+      const response = await ledgerAccountsStatementCsvRetrieve({
+        path: { id: accountId },
+        query: period,
+        parseAs: 'blob',
+      });
+      saveBlob(response.data as Blob, `statement-${period.date_from}-${period.date_to}.csv`);
+    },
+    onError: () => notifications.show({ message: t('ledger.downloadFailed'), color: 'red' }),
+  });
+};
+
+/** The treasurer's yearly overview; readable by every member. */
+export const useLedgerAnnualReport = (year: number) =>
+  useQuery({
+    queryKey: [...LEDGER_KEY, 'report', year],
+    queryFn: async () => (await ledgerReportsAnnualRetrieve({ query: { year } })).data,
+  });
+
+export const useDownloadAnnualReportCsv = () => {
+  const { t } = useLanguage();
+  return useMutation({
+    mutationFn: async (year: number) => {
+      const response = await ledgerReportsAnnualCsvRetrieve({
+        query: { year },
+        parseAs: 'blob',
+      });
+      saveBlob(response.data as Blob, `annual-report-${year}.csv`);
+    },
+    onError: () => notifications.show({ message: t('ledger.downloadFailed'), color: 'red' }),
+  });
+};
+
+/** Every category, retired ones included (treasurer's manage page). */
+export const useAllLedgerCategories = (enabled: boolean) =>
+  useQuery({
+    queryKey: [...LEDGER_KEY, 'categories', 'all'],
+    enabled,
+    queryFn: async () => (await ledgerCategoriesList({ query: { include_hidden: true } })).data,
+  });
+
+/** Every project, archived ones included (treasurer's manage page). */
+export const useAllLedgerProjects = (enabled: boolean) =>
+  useQuery({
+    queryKey: [...LEDGER_KEY, 'projects', 'all'],
+    enabled,
+    queryFn: async () => (await ledgerProjectsList({ query: { include_hidden: true } })).data,
+  });
+
+/** Create a category, or change one (with `id`). Treasurer only. */
+export const useSaveLedgerCategory = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: Partial<LedgerCategoryWrite> & { id?: string }) =>
+      id
+        ? (await ledgerCategoriesPartialUpdate({ path: { id }, body })).data
+        : (await ledgerCategoriesCreate({ body: body as LedgerCategoryWrite })).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [...LEDGER_KEY, 'categories'] }),
+  });
+};
+
+/** Create a project, or change one (with `id`). Treasurer only. */
+export const useSaveLedgerProject = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: Partial<LedgerProjectWrite> & { id?: string }) =>
+      id
+        ? (await ledgerProjectsPartialUpdate({ path: { id }, body })).data
+        : (await ledgerProjectsCreate({ body: body as LedgerProjectWrite })).data,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: [...LEDGER_KEY, 'projects'] }),
   });
 };

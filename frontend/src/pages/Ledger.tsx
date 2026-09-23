@@ -8,22 +8,35 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import {
   type LedgerTransactionFilters,
   useLedgerBalances,
+  useLedgerCategories,
   useLedgerCostShares,
   useLedgerHealth,
+  useLedgerProjects,
   useLedgerTransactions,
   useLedgerUnbilled,
   useMyLedgerAccount,
 } from '@/hooks/useLedger';
 import { formatMoney } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
-import { MY_LEDGER_PATH, ledgerAccountPath } from '@/lib/routes';
+import { categoryLabel } from '@/lib/ledger';
+import {
+  LEDGER_MANAGE_PATH,
+  LEDGER_REPORT_PATH,
+  LEDGER_STATS_PATH,
+  MY_LEDGER_PATH,
+  MY_STATEMENT_PATH,
+  ledgerAccountPath,
+} from '@/lib/routes';
 import type { LedgerMyAccount, LedgerTransactionKindEnum } from '@/services/django';
 import {
+  ActionIcon,
   Alert,
+  Badge,
   Button,
   Card,
   Divider,
   Group,
+  Menu,
   NavLink,
   Select,
   Stack,
@@ -34,7 +47,17 @@ import {
   Title,
 } from '@mantine/core';
 import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
-import { AlertTriangle, Plus, Search, Split } from 'lucide-react';
+import {
+  AlertTriangle,
+  BarChart3,
+  FileText,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Settings,
+  Split,
+  X,
+} from 'lucide-react';
 import { Fragment, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -61,6 +84,19 @@ const TransactionFeed = ({ ownerId }: { ownerId?: string | null }) => {
   const kind = params.get('kind') as LedgerTransactionKindEnum | null;
   const onlyMine = params.get('mine') === '1';
   const onlyDisputed = params.get('disputed') === '1';
+  // Set by drilling down from the statistics page.
+  const categoryId = params.get('category');
+  const projectId = params.get('project');
+  const { data: categories } = useLedgerCategories();
+  const { data: projects } = useLedgerProjects();
+  const drillDown = categoryId
+    ? (() => {
+        const category = categories?.find(c => c.id === categoryId);
+        return { key: 'category', label: category ? categoryLabel(category, t) : '…' };
+      })()
+    : projectId
+      ? { key: 'project', label: projects?.find(p => p.id === projectId)?.name ?? '…' }
+      : null;
 
   const filters = useMemo<LedgerTransactionFilters>(
     () => ({
@@ -68,8 +104,10 @@ const TransactionFeed = ({ ownerId }: { ownerId?: string | null }) => {
       kind: kind ? [kind] : undefined,
       member: onlyMine && ownerId ? ownerId : undefined,
       disputed: onlyDisputed || undefined,
+      category: categoryId ?? undefined,
+      project: projectId ?? undefined,
     }),
-    [debouncedSearch, kind, onlyMine, ownerId, onlyDisputed],
+    [debouncedSearch, kind, onlyMine, ownerId, onlyDisputed, categoryId, projectId],
   );
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useLedgerTransactions(filters);
@@ -119,6 +157,26 @@ const TransactionFeed = ({ ownerId }: { ownerId?: string | null }) => {
           className="pb-2"
         />
       </Group>
+      {drillDown && (
+        <Group gap="xs">
+          <Badge
+            variant="light"
+            size="lg"
+            rightSection={
+              <ActionIcon
+                size="xs"
+                variant="transparent"
+                aria-label={t('ledger.clearFilter')}
+                onClick={() => setParam(drillDown.key, null)}
+              >
+                <X size={12} />
+              </ActionIcon>
+            }
+          >
+            {t(`ledger.filteredBy.${drillDown.key}`, { name: drillDown.label })}
+          </Badge>
+        </Group>
+      )}
 
       {isLoading ? (
         <Text c="dimmed" className="py-8 text-center">
@@ -335,6 +393,41 @@ const Ledger = () => {
               <Button leftSection={<Plus size={16} aria-hidden="true" />} onClick={openModal}>
                 {t('ledger.newTransaction')}
               </Button>
+              <Menu position="bottom-end">
+                <Menu.Target>
+                  <ActionIcon variant="default" size="lg" aria-label={t('ledger.more')}>
+                    <MoreHorizontal size={18} />
+                  </ActionIcon>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={<BarChart3 size={16} />}
+                    onClick={() => navigate(LEDGER_STATS_PATH)}
+                  >
+                    {t('ledger.stats.title')}
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<FileText size={16} />}
+                    onClick={() => navigate(LEDGER_REPORT_PATH)}
+                  >
+                    {t('ledger.report.title')}
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<FileText size={16} />}
+                    onClick={() => navigate(MY_STATEMENT_PATH)}
+                  >
+                    {t('ledger.statementPage.mine')}
+                  </Menu.Item>
+                  {me.is_ledger_admin && (
+                    <Menu.Item
+                      leftSection={<Settings size={16} />}
+                      onClick={() => navigate(LEDGER_MANAGE_PATH)}
+                    >
+                      {t('ledger.manage.title')}
+                    </Menu.Item>
+                  )}
+                </Menu.Dropdown>
+              </Menu>
             </Group>
           )}
         </Group>

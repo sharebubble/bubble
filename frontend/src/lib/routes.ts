@@ -24,3 +24,13 @@ export const ledgerTransactionPath = (id: string) => `${LEDGER_PATH}/t/${id}`;
 export const ledgerAccountPath = (id: string) => `${LEDGER_PATH}/a/${id}`;
 
 export const ledgerCostSharePath = (id: string) => `${LEDGER_PATH}/splits/${id}`;
+
+export const LEDGER_STATS_PATH = `${LEDGER_PATH}/stats`;
+
+export const LEDGER_REPORT_PATH = `${LEDGER_PATH}/report`;
+
+export const LEDGER_MANAGE_PATH = `${LEDGER_PATH}/manage`;
+
+export const MY_STATEMENT_PATH = `${MY_LEDGER_PATH}/statement`;
+
+export const ledgerStatementPath = (accountId: string) => `${LEDGER_PATH}/a/${accountId}/statement`;

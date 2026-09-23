@@ -11,7 +11,12 @@ import {
 } from '@/hooks/useLedger';
 import { formatMoney } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
-import { LEDGER_PATH, ledgerTransactionPath } from '@/lib/routes';
+import {
+  LEDGER_PATH,
+  MY_STATEMENT_PATH,
+  ledgerStatementPath,
+  ledgerTransactionPath,
+} from '@/lib/routes';
 import {
   Anchor,
   Button,
@@ -101,9 +106,20 @@ const LedgerAccount = () => {
           <Title order={2} size="h5">
             {t('ledger.statement')}
           </Title>
-          <Anchor component={Link} to={LEDGER_PATH} size="sm">
-            {t('ledger.allTransactions')}
-          </Anchor>
+          <Group gap="md">
+            {account && (
+              <Anchor
+                component={Link}
+                to={isMe ? MY_STATEMENT_PATH : ledgerStatementPath(account.id)}
+                size="sm"
+              >
+                {t('ledger.statementPage.yearly')}
+              </Anchor>
+            )}
+            <Anchor component={Link} to={LEDGER_PATH} size="sm">
+              {t('ledger.allTransactions')}
+            </Anchor>
+          </Group>
         </Group>
 
         {isLoading ? (

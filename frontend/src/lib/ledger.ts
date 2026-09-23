@@ -17,9 +17,13 @@ export const hasOwnCategory = (transaction: LedgerTransaction) =>
 
 /**
  * The seeded categories carry English names; show the translated name for
- * those, and the stored name for categories the treasurer added.
+ * those, and the stored name for categories the treasurer added or renamed.
  */
-export const categoryLabel = (category: LedgerCategory, t: (key: string) => string) => {
+export const categoryLabel = (
+  category: Pick<LedgerCategory, 'code' | 'name'> & { has_default_name?: boolean },
+  t: (key: string) => string,
+) => {
+  if (category.has_default_name === false) return category.name;
   const key = `ledger.categoryName.${category.code}`;
   const translated = t(key);
   return translated === key ? category.name : translated;
@@ -90,3 +94,43 @@ export const myShare = (costShare: LedgerCostShare, me?: LedgerMyAccount) =>
   costShare.is_payer
     ? costShare.payer_share
     : costShare.participants.find(p => p.account.id === me?.id)?.share;
+
+export type PeriodPreset = 'this-year' | 'last-year' | 'last-12-months' | 'all';
+
+const isoDate = (date: Date) => date.toLocaleDateString('en-CA');
+
+/** Date bounds of a period preset, in local time; `all` has none. */
+export const periodRange = (
+  preset: PeriodPreset,
+  now = new Date(),
+): { date_from?: string; date_to?: string } => {
+  const year = now.getFullYear();
+  switch (preset) {
+    case 'this-year':
+      return { date_from: `${year}-01-01`, date_to: `${year}-12-31` };
+    case 'last-year':
+      return { date_from: `${year - 1}-01-01`, date_to: `${year - 1}-12-31` };
+    case 'last-12-months': {
+      const start = new Date(year, now.getMonth() - 11, 1);
+      return { date_from: isoDate(start), date_to: isoDate(now) };
+    }
+    default:
+      return {};
+  }
+};
+
+/** The label of a statistics row: seeded names are translated by code. */
+export const statsRowLabel = (
+  row: { code: string; label: string; translatable: boolean },
+  groupBy: string,
+  t: (key: string) => string,
+) => {
+  if (!row.translatable) return row.label;
+  const key = groupBy === 'kind' ? `ledger.kind.${row.code}` : `ledger.categoryName.${row.code}`;
+  const translated = t(key);
+  return translated === key ? row.label : translated;
+};
+
+/** Years to offer in statement and report pickers, newest first. */
+export const recentYears = (count = 6, now = new Date()) =>
+  Array.from({ length: count }, (_, index) => now.getFullYear() - index);

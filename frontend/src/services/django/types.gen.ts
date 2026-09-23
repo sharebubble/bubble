@@ -1294,6 +1294,13 @@ export type LedgerAccountEntry = {
     readonly memo: string;
 };
 
+export type LedgerAccountPosition = {
+    account: LedgerAccountRef;
+    opening: string;
+    closing: string;
+    change: string;
+};
+
 export type LedgerAccountRef = {
     readonly id: string;
     /**
@@ -1321,6 +1328,32 @@ export type LedgerAccountRef = {
 export type LedgerAccountTypeEnum = 'member' | 'asset' | 'income' | 'expense' | 'equity' | 'suspense';
 
 /**
+ * The treasurer's yearly overview (plan section 13).
+ */
+export type LedgerAnnualReport = {
+    year: number;
+    currency: string;
+    date_from: string;
+    date_to: string;
+    income: Array<LedgerStatsRow>;
+    expense: Array<LedgerStatsRow>;
+    total_income: string;
+    total_expense: string;
+    result: string;
+    projects: Array<LedgerStatsRow>;
+    members: Array<LedgerAccountPosition>;
+    owed_to_members: string;
+    owed_by_members: string;
+    money: Array<LedgerAccountPosition>;
+    money_change: string;
+    other: Array<LedgerAccountPosition>;
+    explained_money_change: string;
+    transactions: number;
+    trial_balance: string;
+    reconciles: boolean;
+};
+
+/**
  * * `owner` - Owner
  * * `community` - Community
  */
@@ -1331,6 +1364,16 @@ export type LedgerCategory = {
     readonly code: string;
     readonly name: string;
     kind: LedgerCategoryKindEnum;
+    /**
+     * Income or expense account the category posts to.
+     */
+    readonly account: string | null;
+    readonly sort_order: number;
+    readonly is_active: boolean;
+    /**
+     * Seeded and not renamed: the app may show its own translation.
+     */
+    readonly has_default_name: boolean;
 };
 
 /**
@@ -1339,6 +1382,28 @@ export type LedgerCategory = {
  * * `transfer` - Transfer
  */
 export type LedgerCategoryKindEnum = 'income' | 'expense' | 'transfer';
+
+/**
+ * Treasurer: a new income or expense category, or a change to one.
+ *
+ * The kind is fixed once created; transfer categories belong to the system.
+ */
+export type LedgerCategoryWrite = {
+    name: string;
+    kind?: LedgerCategoryWriteKindEnum;
+    /**
+     * An existing income/expense account; a new one when empty.
+     */
+    account?: string | null;
+    sort_order?: number;
+    is_active?: boolean;
+};
+
+/**
+ * * `income` - income
+ * * `expense` - expense
+ */
+export type LedgerCategoryWriteKindEnum = 'income' | 'expense';
 
 export type LedgerComment = {
     readonly id: string;
@@ -1566,6 +1631,18 @@ export type LedgerProject = {
     readonly is_archived: boolean;
 };
 
+/**
+ * Treasurer: create or change a project (cost centre). Never deleted;
+ * archive it instead.
+ */
+export type LedgerProjectWrite = {
+    name: string;
+    budget?: string | null;
+    starts_on?: string | null;
+    ends_on?: string | null;
+    is_archived?: boolean;
+};
+
 export type LedgerReceipt = {
     readonly id: string;
     readonly file_name: string;
@@ -1592,6 +1669,73 @@ export type LedgerReverse = {
  * * `unbilled` - Unbilled
  */
 export type LedgerStateEnum = 'pending' | 'posted' | 'not_charged' | 'unbilled';
+
+/**
+ * An account statement (plan D12): display amounts, like the balance.
+ */
+export type LedgerStatement = {
+    account: LedgerAccountRef;
+    currency: string;
+    date_from: string;
+    date_to: string;
+    opening_balance: string;
+    closing_balance: string;
+    credited: string;
+    charged: string;
+    lines: Array<LedgerStatementLine>;
+};
+
+export type LedgerStatementLine = {
+    entry: string;
+    transaction: string;
+    seq: number;
+    occurred_on: string;
+    kind: LedgerTransactionKindEnum;
+    description: string;
+    memo: string;
+    amount: string;
+    balance_after: string;
+};
+
+export type LedgerStats = {
+    group_by: LedgerStatsGroupEnum;
+    currency: string;
+    date_from: string | null;
+    date_to: string | null;
+    totals: LedgerStatsRow;
+    rows: Array<LedgerStatsRow>;
+};
+
+/**
+ * * `category` - category
+ * * `project` - project
+ * * `month` - month
+ * * `member` - member
+ * * `item` - item
+ * * `kind` - kind
+ */
+export type LedgerStatsGroupEnum = 'category' | 'project' | 'month' | 'member' | 'item' | 'kind';
+
+/**
+ * One group of a statistics view. Unused figures are zero: members carry
+ * ``credited``/``charged``, the other groupings ``income``/``expense``/``amount``.
+ */
+export type LedgerStatsRow = {
+    key: string | null;
+    code: string;
+    label: string;
+    income: string;
+    expense: string;
+    amount: string;
+    credited: string;
+    charged: string;
+    count: number;
+    budget: string | null;
+    /**
+     * The label is a seeded default the app may translate by code.
+     */
+    translatable: boolean;
+};
 
 export type LedgerTransaction = {
     readonly id: string;
@@ -2367,6 +2511,22 @@ export type PatchedItem = {
 };
 
 /**
+ * Treasurer: a new income or expense category, or a change to one.
+ *
+ * The kind is fixed once created; transfer categories belong to the system.
+ */
+export type PatchedLedgerCategoryWrite = {
+    name?: string;
+    kind?: LedgerCategoryWriteKindEnum;
+    /**
+     * An existing income/expense account; a new one when empty.
+     */
+    account?: string | null;
+    sort_order?: number;
+    is_active?: boolean;
+};
+
+/**
  * Create or change a shared expense (the payer is the requesting member).
  */
 export type PatchedLedgerCostShareWrite = {
@@ -2380,6 +2540,18 @@ export type PatchedLedgerCostShareWrite = {
     payer_weight?: string;
     payer_guests?: number;
     participants?: Array<LedgerCostShareParticipantInput>;
+};
+
+/**
+ * Treasurer: create or change a project (cost centre). Never deleted;
+ * archive it instead.
+ */
+export type PatchedLedgerProjectWrite = {
+    name?: string;
+    budget?: string | null;
+    starts_on?: string | null;
+    ends_on?: string | null;
+    is_archived?: boolean;
 };
 
 /**
@@ -3548,6 +3720,63 @@ export type ItemMinimalWritable = {
      * * `w` - Wöchentlich
      */
     rental_period?: RentalPeriodEnum | BlankEnum;
+};
+
+export type LedgerAccountPositionWritable = {
+    opening: string;
+    closing: string;
+    change: string;
+};
+
+/**
+ * The treasurer's yearly overview (plan section 13).
+ */
+export type LedgerAnnualReportWritable = {
+    year: number;
+    currency: string;
+    date_from: string;
+    date_to: string;
+    income: Array<LedgerStatsRow>;
+    expense: Array<LedgerStatsRow>;
+    total_income: string;
+    total_expense: string;
+    result: string;
+    projects: Array<LedgerStatsRow>;
+    members: Array<LedgerAccountPositionWritable>;
+    owed_to_members: string;
+    owed_by_members: string;
+    money: Array<LedgerAccountPositionWritable>;
+    money_change: string;
+    other: Array<LedgerAccountPositionWritable>;
+    explained_money_change: string;
+    transactions: number;
+    trial_balance: string;
+    reconciles: boolean;
+};
+
+/**
+ * An account statement (plan D12): display amounts, like the balance.
+ */
+export type LedgerStatementWritable = {
+    currency: string;
+    date_from: string;
+    date_to: string;
+    opening_balance: string;
+    closing_balance: string;
+    credited: string;
+    charged: string;
+    lines: Array<LedgerStatementLineWritable>;
+};
+
+export type LedgerStatementLineWritable = {
+    entry: string;
+    transaction: string;
+    seq: number;
+    occurred_on: string;
+    description: string;
+    memo: string;
+    amount: string;
+    balance_after: string;
 };
 
 /**
@@ -5777,6 +6006,48 @@ export type LedgerAccountsEntriesListResponses = {
 
 export type LedgerAccountsEntriesListResponse = LedgerAccountsEntriesListResponses[keyof LedgerAccountsEntriesListResponses];
 
+export type LedgerAccountsStatementRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der account identifiziert.
+         */
+        id: string;
+    };
+    query?: {
+        date_from?: string;
+        date_to?: string;
+    };
+    url: '/api/ledger/accounts/{id}/statement/';
+};
+
+export type LedgerAccountsStatementRetrieveResponses = {
+    200: LedgerStatement;
+};
+
+export type LedgerAccountsStatementRetrieveResponse = LedgerAccountsStatementRetrieveResponses[keyof LedgerAccountsStatementRetrieveResponses];
+
+export type LedgerAccountsStatementCsvRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der account identifiziert.
+         */
+        id: string;
+    };
+    query?: {
+        date_from?: string;
+        date_to?: string;
+    };
+    url: '/api/ledger/accounts/{id}/statement/csv/';
+};
+
+export type LedgerAccountsStatementCsvRetrieveResponses = {
+    200: Blob | File;
+};
+
+export type LedgerAccountsStatementCsvRetrieveResponse = LedgerAccountsStatementCsvRetrieveResponses[keyof LedgerAccountsStatementCsvRetrieveResponses];
+
 export type LedgerAccountsMeRetrieveData = {
     body?: never;
     path?: never;
@@ -5795,6 +6066,10 @@ export type LedgerCategoriesListData = {
     path?: never;
     query?: {
         /**
+         * Also retired ones (treasurer)
+         */
+        include_hidden?: boolean;
+        /**
          * * `income` - Income
          * * `expense` - Expense
          * * `transfer` - Transfer
@@ -5809,6 +6084,19 @@ export type LedgerCategoriesListResponses = {
 };
 
 export type LedgerCategoriesListResponse = LedgerCategoriesListResponses[keyof LedgerCategoriesListResponses];
+
+export type LedgerCategoriesCreateData = {
+    body: LedgerCategoryWrite;
+    path?: never;
+    query?: never;
+    url: '/api/ledger/categories/';
+};
+
+export type LedgerCategoriesCreateResponses = {
+    201: LedgerCategory;
+};
+
+export type LedgerCategoriesCreateResponse = LedgerCategoriesCreateResponses[keyof LedgerCategoriesCreateResponses];
 
 export type LedgerCategoriesRetrieveData = {
     body?: never;
@@ -5827,6 +6115,24 @@ export type LedgerCategoriesRetrieveResponses = {
 };
 
 export type LedgerCategoriesRetrieveResponse = LedgerCategoriesRetrieveResponses[keyof LedgerCategoriesRetrieveResponses];
+
+export type LedgerCategoriesPartialUpdateData = {
+    body?: PatchedLedgerCategoryWrite;
+    path: {
+        /**
+         * Ein UUID-String, der category identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/categories/{id}/';
+};
+
+export type LedgerCategoriesPartialUpdateResponses = {
+    200: LedgerCategory;
+};
+
+export type LedgerCategoriesPartialUpdateResponse = LedgerCategoriesPartialUpdateResponses[keyof LedgerCategoriesPartialUpdateResponses];
 
 export type LedgerDisputesRetrieveData = {
     body?: never;
@@ -5898,7 +6204,12 @@ export type LedgerHealthRetrieveResponse = LedgerHealthRetrieveResponses[keyof L
 export type LedgerProjectsListData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Also retired ones (treasurer)
+         */
+        include_hidden?: boolean;
+    };
     url: '/api/ledger/projects/';
 };
 
@@ -5907,6 +6218,19 @@ export type LedgerProjectsListResponses = {
 };
 
 export type LedgerProjectsListResponse = LedgerProjectsListResponses[keyof LedgerProjectsListResponses];
+
+export type LedgerProjectsCreateData = {
+    body: LedgerProjectWrite;
+    path?: never;
+    query?: never;
+    url: '/api/ledger/projects/';
+};
+
+export type LedgerProjectsCreateResponses = {
+    201: LedgerProject;
+};
+
+export type LedgerProjectsCreateResponse = LedgerProjectsCreateResponses[keyof LedgerProjectsCreateResponses];
 
 export type LedgerProjectsRetrieveData = {
     body?: never;
@@ -5926,6 +6250,24 @@ export type LedgerProjectsRetrieveResponses = {
 
 export type LedgerProjectsRetrieveResponse = LedgerProjectsRetrieveResponses[keyof LedgerProjectsRetrieveResponses];
 
+export type LedgerProjectsPartialUpdateData = {
+    body?: PatchedLedgerProjectWrite;
+    path: {
+        /**
+         * Ein UUID-String, der project identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/projects/{id}/';
+};
+
+export type LedgerProjectsPartialUpdateResponses = {
+    200: LedgerProject;
+};
+
+export type LedgerProjectsPartialUpdateResponse = LedgerProjectsPartialUpdateResponses[keyof LedgerProjectsPartialUpdateResponses];
+
 export type LedgerReceiptsFileRetrieveData = {
     body?: never;
     path: {
@@ -5943,6 +6285,36 @@ export type LedgerReceiptsFileRetrieveResponses = {
 };
 
 export type LedgerReceiptsFileRetrieveResponse = LedgerReceiptsFileRetrieveResponses[keyof LedgerReceiptsFileRetrieveResponses];
+
+export type LedgerReportsAnnualRetrieveData = {
+    body?: never;
+    path?: never;
+    query?: {
+        year?: number;
+    };
+    url: '/api/ledger/reports/annual/';
+};
+
+export type LedgerReportsAnnualRetrieveResponses = {
+    200: LedgerAnnualReport;
+};
+
+export type LedgerReportsAnnualRetrieveResponse = LedgerReportsAnnualRetrieveResponses[keyof LedgerReportsAnnualRetrieveResponses];
+
+export type LedgerReportsAnnualCsvRetrieveData = {
+    body?: never;
+    path?: never;
+    query?: {
+        year?: number;
+    };
+    url: '/api/ledger/reports/annual/csv/';
+};
+
+export type LedgerReportsAnnualCsvRetrieveResponses = {
+    200: Blob | File;
+};
+
+export type LedgerReportsAnnualCsvRetrieveResponse = LedgerReportsAnnualCsvRetrieveResponses[keyof LedgerReportsAnnualCsvRetrieveResponses];
 
 export type LedgerSplitsListData = {
     body?: never;
@@ -6114,6 +6486,33 @@ export type LedgerSplitsReceiptsCreateResponses = {
 };
 
 export type LedgerSplitsReceiptsCreateResponse = LedgerSplitsReceiptsCreateResponses[keyof LedgerSplitsReceiptsCreateResponses];
+
+export type LedgerStatsRetrieveData = {
+    body?: never;
+    path?: never;
+    query?: {
+        category?: string;
+        date_from?: string;
+        date_to?: string;
+        /**
+         * * `category` - category
+         * * `project` - project
+         * * `month` - month
+         * * `member` - member
+         * * `item` - item
+         * * `kind` - kind
+         */
+        group_by?: 'category' | 'project' | 'month' | 'member' | 'item' | 'kind';
+        project?: string;
+    };
+    url: '/api/ledger/stats/';
+};
+
+export type LedgerStatsRetrieveResponses = {
+    200: LedgerStats;
+};
+
+export type LedgerStatsRetrieveResponse = LedgerStatsRetrieveResponses[keyof LedgerStatsRetrieveResponses];
 
 export type LedgerTransactionsListData = {
     body?: never;

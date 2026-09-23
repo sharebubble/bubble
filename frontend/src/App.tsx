@@ -24,6 +24,10 @@ import Home from './pages/Home';
 import Ledger from './pages/Ledger';
 import LedgerAccount from './pages/LedgerAccount';
 import LedgerCostShare from './pages/LedgerCostShare';
+import LedgerManage from './pages/LedgerManage';
+import LedgerReport from './pages/LedgerReport';
+import LedgerStatement from './pages/LedgerStatement';
+import LedgerStats from './pages/LedgerStats';
 import LedgerTransaction from './pages/LedgerTransaction';
 import Browse from './pages/Browse';
 import ItemDetail from './pages/ItemDetail';
@@ -222,6 +226,46 @@ const ProtectedRoutes = () => {
           element={
             <AuthRequired>
               <LedgerAccount />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/stats`}
+          element={
+            <AuthRequired>
+              <LedgerStats />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/report`}
+          element={
+            <AuthRequired>
+              <LedgerReport />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/manage`}
+          element={
+            <AuthRequired>
+              <LedgerManage />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${MY_LEDGER_PATH}/statement`}
+          element={
+            <AuthRequired>
+              <LedgerStatement />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/a/:accountId/statement`}
+          element={
+            <AuthRequired>
+              <LedgerStatement />
             </AuthRequired>
           }
         />
