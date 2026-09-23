@@ -520,6 +520,8 @@ SPECTACULAR_SETTINGS = {
         "LedgerAccountTypeEnum": "bubble.ledger.api.serializers.ACCOUNT_TYPES",
         "LedgerIntentEnum": "bubble.ledger.intents.Intent",
         "LedgerViaEnum": "bubble.ledger.intents.Via",
+        "LedgerCostShareSplitEnum": "bubble.ledger.models.CostShareSplit",
+        "LedgerParticipantResponseEnum": "bubble.ledger.models.ParticipantResponse",
     },
 }
 
@@ -545,6 +547,19 @@ CONSTANCE_ADDITIONAL_FIELDS = {
 
 CONSTANCE_CONFIG = {
     "REQUIRE_LOGIN": (True, "Require a user to login to view the site"),
+    "SALE_AUTO_APPROVE_DAYS": (
+        3,
+        "Days after a seller accepts a sale until it is confirmed automatically "
+        "and charged, if the buyer neither confirms receipt nor reports a "
+        "problem. The buyer is reminded once a day until then.",
+        int,
+    ),
+    "COST_SHARE_AUTO_ACCEPT_DAYS": (
+        3,
+        "Days participants have to accept or object to a shared expense before "
+        "their silence counts as acceptance and the split is booked.",
+        int,
+    ),
     "DEFAULT_ITEM_VISIBILITY": (
         "authenticated",
         "Select default item visibility for new items. Options: public, authenticated, internal, hidden",

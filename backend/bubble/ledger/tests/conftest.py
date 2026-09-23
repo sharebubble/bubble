@@ -43,3 +43,22 @@ def post(book):
         return post_transaction(kind=kind, legs=legs, **kwargs)
 
     return _post
+
+
+@pytest.fixture
+def notices(monkeypatch):
+    """Record ledger notices instead of sending them: ``[(user, context)]``.
+
+    Notices go out on commit; run the code under
+    ``django_capture_on_commit_callbacks(execute=True)`` to see them.
+    """
+    sent = []
+    monkeypatch.setattr(
+        "bubble.ledger.notify.dispatch_notification",
+        lambda user, event_type, context: sent.append((user, context)),
+    )
+    monkeypatch.setattr(
+        "bubble.ledger.notify.send_message_notification",
+        lambda user_id, message: None,
+    )
+    return sent

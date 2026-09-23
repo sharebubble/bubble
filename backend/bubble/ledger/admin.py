@@ -12,12 +12,16 @@ from bubble.ledger.models import (
     AccountBalance,
     Book,
     Category,
+    CostShare,
+    CostShareParticipant,
+    Dispute,
     Entry,
     LedgerPeriod,
     Project,
     Receipt,
     ReceiptAccess,
     Transaction,
+    TransactionComment,
 )
 
 
@@ -114,7 +118,14 @@ class LedgerPeriodAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
 
 @admin.register(Receipt)
 class ReceiptAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
-    list_display = ["file_name", "transaction", "uploaded_by", "uploaded_at", "size"]
+    list_display = [
+        "file_name",
+        "transaction",
+        "cost_share",
+        "uploaded_by",
+        "uploaded_at",
+        "size",
+    ]
     # The file itself is downloaded through the logged API endpoint only.
     exclude = ["content"]
     readonly_fields = ["sha256"]
@@ -129,3 +140,45 @@ class ReceiptAccessAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
     list_display = ["receipt", "accessed_by", "accessed_at"]
     list_select_related = ["receipt", "accessed_by"]
     date_hierarchy = "accessed_at"
+
+
+@admin.register(Dispute)
+class DisputeAdmin(ReadOnlyAdminMixin, SimpleHistoryAdmin):
+    """Disputes are answered in the app, where the answer is also posted."""
+
+    list_display = ["transaction", "raised_by", "state", "created_at", "resolved_at"]
+    list_filter = ["state"]
+    list_select_related = ["transaction", "raised_by"]
+    search_fields = ["reason", "resolution"]
+
+
+@admin.register(TransactionComment)
+class TransactionCommentAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
+    list_display = ["transaction", "author", "created_at"]
+    list_select_related = ["transaction", "author"]
+    search_fields = ["body"]
+
+
+class CostShareParticipantInline(ReadOnlyAdminMixin, admin.TabularInline):
+    model = CostShareParticipant
+    fields = ["account", "weight", "amount", "guests", "response", "objection_reason"]
+    readonly_fields = fields
+    extra = 0
+
+
+@admin.register(CostShare)
+class CostShareAdmin(ReadOnlyAdminMixin, SimpleHistoryAdmin):
+    """Splits change only through the app, so every participant is told."""
+
+    list_display = [
+        "description",
+        "payer",
+        "total",
+        "state",
+        "auto_accept_at",
+        "created_at",
+    ]
+    list_filter = ["state", "split"]
+    list_select_related = ["payer"]
+    search_fields = ["description"]
+    inlines = [CostShareParticipantInline]

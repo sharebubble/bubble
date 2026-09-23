@@ -30,6 +30,7 @@ from bubble.ledger.models import (
     Transaction,
     TransactionKind,
 )
+from bubble.ledger.notify import notify_posting
 from bubble.ledger.rounding import CENT
 from bubble.ledger.services import (
     Leg,
@@ -245,7 +246,8 @@ def post_intent(
         )
         if not tx.receipts.exists():
             for data in receipt_data:
-                _store_receipt(tx, me, data)
+                store_receipt(tx, me, data)
+        notify_posting(tx, actor=user)
     return tx
 
 
@@ -294,9 +296,17 @@ def read_receipt(upload: UploadedFile) -> ReceiptData:
     return ReceiptData(file_name=name, content_type=content_type, content=content)
 
 
-def _store_receipt(tx: Transaction, uploader: Account, data: ReceiptData) -> Receipt:
+def store_receipt(
+    tx: Transaction | None,
+    uploader: Account,
+    data: ReceiptData,
+    *,
+    cost_share=None,
+) -> Receipt:
+    """Keep a receipt for a transaction, or for a shared expense before it posts."""
     return Receipt.objects.create(
         transaction=tx,
+        cost_share=cost_share,
         uploaded_by=uploader,
         file_name=data.file_name,
         content_type=data.content_type,
@@ -324,4 +334,4 @@ def add_receipt(tx: Transaction, upload: UploadedFile, *, user: User) -> Receipt
             _("Attach at most %(count)d receipts.") % {"count": MAX_RECEIPTS},
             field="receipts",
         )
-    return _store_receipt(tx, get_member_account(user, tx.book), read_receipt(upload))
+    return store_receipt(tx, get_member_account(user, tx.book), read_receipt(upload))

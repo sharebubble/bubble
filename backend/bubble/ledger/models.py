@@ -126,6 +126,14 @@ class Account(models.Model):
     )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    soft_limit_reminded_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text=_(
+            "Last reminder that the balance is below the soft limit (plan D10). "
+            "Cleared when the balance recovers."
+        ),
+    )
 
     class Meta:
         constraints = [
@@ -451,7 +459,20 @@ class Receipt(ImmutableModel):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     transaction = models.ForeignKey(
-        Transaction, on_delete=models.PROTECT, related_name="receipts"
+        Transaction,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="receipts",
+    )
+    # A shared expense collects its receipts before it is booked; receipts are
+    # append-only, so they stay attached to the cost share afterwards.
+    cost_share = models.ForeignKey(
+        "CostShare",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="receipts",
     )
     uploaded_by = models.ForeignKey(
         Account,
@@ -471,6 +492,15 @@ class Receipt(ImmutableModel):
 
     class Meta:
         ordering = ["uploaded_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(transaction__isnull=False, cost_share__isnull=True)
+                    | models.Q(transaction__isnull=True, cost_share__isnull=False)
+                ),
+                name="ledger_receipt_belongs_to_one_thing",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.file_name} ({self.sha256[:12]})"
@@ -494,3 +524,201 @@ class ReceiptAccess(ImmutableModel):
 
     def __str__(self):
         return f"{self.accessed_by} read {self.receipt} at {self.accessed_at}"
+
+
+class DisputeState(models.TextChoices):
+    OPEN = "open", _("Open")
+    WITHDRAWN = "withdrawn", _("Withdrawn")
+    REVERSED = "reversed", _("Resolved by a reversal")
+    CORRECTED = "corrected", _("Resolved by a correction")
+    UPHELD = "upheld", _("Kept as it is")
+
+
+class Dispute(models.Model):
+    """A member flags a transaction as wrong (plan D9).
+
+    The transaction itself is never touched: the author or the treasurer
+    answers with a reversal or correction, or keeps it with an explanation.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    transaction = models.ForeignKey(
+        Transaction, on_delete=models.PROTECT, related_name="disputes"
+    )
+    raised_by = models.ForeignKey(
+        Account, on_delete=models.PROTECT, related_name="raised_disputes"
+    )
+    reason = models.TextField()
+    state = models.CharField(
+        max_length=20, choices=DisputeState, default=DisputeState.OPEN
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="resolved_disputes",
+    )
+    resolution = models.TextField(blank=True)
+
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ["created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["transaction", "raised_by"],
+                condition=models.Q(state="open"),
+                name="ledger_one_open_dispute_per_member",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Dispute of #{self.transaction.seq} ({self.get_state_display()})"
+
+
+class TransactionComment(ImmutableModel):
+    """The discussion under a transaction. Comments are never edited."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    transaction = models.ForeignKey(
+        Transaction, on_delete=models.PROTECT, related_name="comments"
+    )
+    author = models.ForeignKey(
+        Account, on_delete=models.PROTECT, related_name="transaction_comments"
+    )
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Comment on #{self.transaction.seq} by {self.author}"
+
+
+class CostShareSplit(models.TextChoices):
+    EQUAL = "equal", _("Equal shares")
+    WEIGHTS = "weights", _("Weighted shares")
+    AMOUNTS = "amounts", _("Fixed amounts")
+
+
+class CostShareState(models.TextChoices):
+    OPEN = "open", _("Waiting for answers")
+    POSTED = "posted", _("Booked")
+    CANCELLED = "cancelled", _("Cancelled")
+
+
+class CostShare(models.Model):
+    """A shared expense waiting for its participants (plan section 7a, D13).
+
+    It lives outside the append-only ledger until everyone answered or the
+    deadline passed; then it posts one SHARED_EXPENSE transaction.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    book = models.ForeignKey(Book, on_delete=models.PROTECT, related_name="cost_shares")
+    payer = models.ForeignKey(
+        Account,
+        on_delete=models.PROTECT,
+        related_name="paid_cost_shares",
+        help_text=_("Who paid, and is credited the other participants' shares."),
+    )
+    description = models.TextField()
+    occurred_on = models.DateField()
+    total = MoneyField(**ledger_money)
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="cost_shares",
+    )
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="cost_shares",
+    )
+    split = models.CharField(
+        max_length=20, choices=CostShareSplit, default=CostShareSplit.EQUAL
+    )
+    payer_participates = models.BooleanField(default=True)
+    payer_weight = models.DecimalField(
+        max_digits=6, decimal_places=2, default=Decimal(1)
+    )
+    payer_guests = models.PositiveSmallIntegerField(default=0)
+    auto_accept_at = models.DateTimeField()
+    state = models.CharField(
+        max_length=20, choices=CostShareState, default=CostShareState.OPEN
+    )
+    posted_transaction = models.OneToOneField(
+        Transaction,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="cost_share",
+    )
+    cancelled_reason = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.description[:50]} ({self.total})"
+
+
+class ParticipantResponse(models.TextChoices):
+    PENDING = "pending", _("Waiting")
+    ACCEPTED = "accepted", _("Accepted")
+    OBJECTED = "objected", _("Objected")
+
+
+class CostShareParticipant(models.Model):
+    """One member charged part of a shared expense, and their answer."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    cost_share = models.ForeignKey(
+        CostShare, on_delete=models.CASCADE, related_name="participants"
+    )
+    account = models.ForeignKey(
+        Account, on_delete=models.PROTECT, related_name="cost_share_participations"
+    )
+    weight = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal(1))
+    amount = MoneyField(
+        **ledger_money,
+        null=True,
+        blank=True,
+        help_text=_("For fixed-amount splits: this participant's amount."),
+    )
+    guests = models.PositiveSmallIntegerField(
+        default=0,
+        help_text=_("Non-members this participant brought; they pay for them."),
+    )
+    response = models.CharField(
+        max_length=20, choices=ParticipantResponse, default=ParticipantResponse.PENDING
+    )
+    responded_at = models.DateTimeField(null=True, blank=True)
+    objection_reason = models.TextField(blank=True)
+    reminded_at = models.DateTimeField(null=True, blank=True)
+
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ["account__name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["cost_share", "account"],
+                name="ledger_one_participation_per_member",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.account} in {self.cost_share}"

@@ -1746,3 +1746,97 @@ msgstr "Deutsch"
 
 #~ msgid "Add"
 #~ msgstr "Hinzufügen"
+
+#: bubble/notifications/models.py
+#: bubble/notifications/messages.py
+msgid "Community ledger"
+msgstr "Gemeinschaftskasse"
+
+#: bubble/notifications/messages.py
+#, python-format
+msgid "%(actor)s booked \"%(description)s\": your balance changes by %(amount)s."
+msgstr "%(actor)s hat „%(description)s“ gebucht: Dein Saldo ändert sich um %(amount)s."
+
+#: bubble/notifications/messages.py
+#, python-format
+msgid "%(actor)s disputes \"%(description)s\": %(reason)s"
+msgstr "%(actor)s beanstandet „%(description)s“: %(reason)s"
+
+#: bubble/notifications/messages.py
+#, python-format
+msgid "Your dispute of \"%(description)s\" was closed: %(resolution)s"
+msgstr "Deine Beanstandung von „%(description)s“ wurde abgeschlossen: %(resolution)s"
+
+#: bubble/notifications/messages.py
+#, python-format
+msgid "%(actor)s commented on \"%(description)s\": %(comment)s"
+msgstr "%(actor)s hat „%(description)s“ kommentiert: %(comment)s"
+
+#: bubble/notifications/messages.py
+#, python-format
+msgid ""
+"%(actor)s split \"%(description)s\": your share is %(amount)s. Accept or "
+"object by %(deadline)s; after that it counts as accepted."
+msgstr ""
+"%(actor)s hat „%(description)s“ aufgeteilt: Dein Anteil beträgt %(amount)s. "
+"Stimme bis %(deadline)s zu oder widersprich; danach gilt er als angenommen."
+
+#: bubble/notifications/messages.py
+#, python-format
+msgid ""
+"%(actor)s changed \"%(description)s\": your share is now %(amount)s. Accept "
+"or object by %(deadline)s."
+msgstr ""
+"%(actor)s hat „%(description)s“ geändert: Dein Anteil beträgt jetzt "
+"%(amount)s. Stimme bis %(deadline)s zu oder widersprich."
+
+#: bubble/notifications/messages.py
+#, python-format
+msgid ""
+"Reminder: \"%(description)s\" counts as accepted on %(deadline)s (your share: "
+"%(amount)s) unless you object."
+msgstr ""
+"Erinnerung: „%(description)s“ gilt am %(deadline)s als angenommen (dein "
+"Anteil: %(amount)s), wenn du nicht widersprichst."
+
+#: bubble/notifications/messages.py
+#, python-format
+msgid "%(actor)s objected to \"%(description)s\": %(reason)s"
+msgstr "%(actor)s hat „%(description)s“ widersprochen: %(reason)s"
+
+#: bubble/notifications/messages.py
+#, python-format
+msgid "%(actor)s cancelled \"%(description)s\"."
+msgstr "%(actor)s hat „%(description)s“ zurückgezogen."
+
+#: bubble/notifications/messages.py
+#, python-format
+msgid "Your balance is %(amount)s, below %(limit)s. Please top up soon."
+msgstr "Dein Saldo beträgt %(amount)s und liegt unter %(limit)s. Bitte zahle bald ein."
+
+#: bubble/notifications/messages.py
+#, python-format
+msgid ""
+"Please confirm that you received %(item)s, or report a problem. Otherwise the "
+"purchase is confirmed automatically on %(deadline)s and %(amount)s is "
+"charged."
+msgstr ""
+"Bitte bestätige, dass du %(item)s erhalten hast, oder melde ein Problem. "
+"Sonst wird der Kauf am %(deadline)s automatisch bestätigt und %(amount)s "
+"werden abgebucht."
+
+#: bubble/notifications/messages.py
+#, python-format
+msgid ""
+"The purchase of %(item)s was confirmed automatically; %(amount)s was charged."
+msgstr ""
+"Der Kauf von %(item)s wurde automatisch bestätigt; %(amount)s wurden "
+"abgebucht."
+
+#: bubble/notifications/messages.py
+msgid "There is news in the community ledger."
+msgstr "Es gibt Neuigkeiten in der Gemeinschaftskasse."
+
+#: bubble/bookings/services.py
+msgid "Receipt confirmed automatically: no answer within {days} days."
+msgstr "Erhalt automatisch bestätigt: keine Antwort innerhalb von {days} Tagen."

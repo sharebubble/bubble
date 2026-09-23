@@ -108,7 +108,7 @@ def create_user_profile(sender, instance, created, **kwargs):
 
 
 def _setup_default_notification_preferences(user) -> None:
-    """Enable RocketChat message notifications by default.
+    """Enable RocketChat message and ledger notifications by default.
 
     Only creates the preference row when the RocketChat Apprise URL is
     configured, always with enabled=True.
@@ -118,12 +118,13 @@ def _setup_default_notification_preferences(user) -> None:
 
         if not is_backend_configured(NotificationPreference.ProviderType.ROCKETCHAT):
             return
-        NotificationPreference.objects.get_or_create(
-            user=user,
-            provider_type=NotificationPreference.ProviderType.ROCKETCHAT,
-            event_type=EventType.NEW_MESSAGE,
-            defaults={"enabled": True},
-        )
+        for event_type in (EventType.NEW_MESSAGE, EventType.LEDGER):
+            NotificationPreference.objects.get_or_create(
+                user=user,
+                provider_type=NotificationPreference.ProviderType.ROCKETCHAT,
+                event_type=event_type,
+                defaults={"enabled": True},
+            )
     except Exception:
         logging.getLogger(__name__).exception(
             "Failed to set up default notification preferences for user %s", user.pk
