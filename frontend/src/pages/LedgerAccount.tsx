@@ -1,8 +1,14 @@
 import { BackButton } from '@/components/layout/BackButton';
+import { CostShareList } from '@/components/ledger/CostShareList';
 import { LedgerBalanceCard } from '@/components/ledger/LedgerBalanceCard';
 import { NewLedgerTransactionModal } from '@/components/ledger/NewLedgerTransactionModal';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useLedgerAccount, useLedgerAccountEntries, useMyLedgerAccount } from '@/hooks/useLedger';
+import {
+  useLedgerAccount,
+  useLedgerAccountEntries,
+  useLedgerCostShares,
+  useMyLedgerAccount,
+} from '@/hooks/useLedger';
 import { formatMoney } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import { LEDGER_PATH, ledgerTransactionPath } from '@/lib/routes';
@@ -39,6 +45,9 @@ const LedgerAccount = () => {
     useLedgerAccountEntries(account?.id);
   const entries = data?.pages.flatMap(page => page.results) ?? [];
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const { data: waiting } = useLedgerCostShares({ waiting_for_me: true }, isMe);
+  const { data: myOpenSplits } = useLedgerCostShares({ mine: true, state: 'open' }, isMe);
+  const paidOpen = (myOpenSplits?.results ?? []).filter(costShare => costShare.is_payer);
 
   return (
     <main className="container mx-auto max-w-3xl px-4 py-4">
@@ -69,6 +78,23 @@ const LedgerAccount = () => {
               {formatMoney(account.balance, account.currency, language)}
             </Text>
           </Card>
+        )}
+
+        {isMe && !!waiting?.results.length && (
+          <Stack gap="xs">
+            <Title order={2} size="h5">
+              {t('ledger.split.waitingForYou')}
+            </Title>
+            <CostShareList costShares={waiting.results} me={me} />
+          </Stack>
+        )}
+        {isMe && paidOpen.length > 0 && (
+          <Stack gap="xs">
+            <Title order={2} size="h5">
+              {t('ledger.split.yourOpenSplits')}
+            </Title>
+            <CostShareList costShares={paidOpen} me={me} />
+          </Stack>
         )}
 
         <Group justify="space-between">

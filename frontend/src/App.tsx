@@ -23,6 +23,7 @@ import Favorites from './pages/Favorites';
 import Home from './pages/Home';
 import Ledger from './pages/Ledger';
 import LedgerAccount from './pages/LedgerAccount';
+import LedgerCostShare from './pages/LedgerCostShare';
 import LedgerTransaction from './pages/LedgerTransaction';
 import Browse from './pages/Browse';
 import ItemDetail from './pages/ItemDetail';
@@ -221,6 +222,14 @@ const ProtectedRoutes = () => {
           element={
             <AuthRequired>
               <LedgerAccount />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/splits/:costShareId`}
+          element={
+            <AuthRequired>
+              <LedgerCostShare />
             </AuthRequired>
           }
         />

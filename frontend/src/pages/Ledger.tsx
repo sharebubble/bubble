@@ -1,4 +1,6 @@
 import { BackButton } from '@/components/layout/BackButton';
+import { CostShareList } from '@/components/ledger/CostShareList';
+import { CostShareModal } from '@/components/ledger/CostShareModal';
 import { LedgerBalanceCard } from '@/components/ledger/LedgerBalanceCard';
 import { LedgerTransactionRow } from '@/components/ledger/LedgerTransactionRow';
 import { NewLedgerTransactionModal } from '@/components/ledger/NewLedgerTransactionModal';
@@ -6,6 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import {
   type LedgerTransactionFilters,
   useLedgerBalances,
+  useLedgerCostShares,
   useLedgerHealth,
   useLedgerTransactions,
   useLedgerUnbilled,
@@ -14,7 +17,7 @@ import {
 import { formatMoney } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import { MY_LEDGER_PATH, ledgerAccountPath } from '@/lib/routes';
-import type { LedgerTransactionKindEnum } from '@/services/django';
+import type { LedgerMyAccount, LedgerTransactionKindEnum } from '@/services/django';
 import {
   Alert,
   Button,
@@ -31,7 +34,7 @@ import {
   Title,
 } from '@mantine/core';
 import { useDebouncedValue, useDisclosure } from '@mantine/hooks';
-import { AlertTriangle, Plus, Search } from 'lucide-react';
+import { AlertTriangle, Plus, Search, Split } from 'lucide-react';
 import { Fragment, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -57,14 +60,16 @@ const TransactionFeed = ({ ownerId }: { ownerId?: string | null }) => {
   const [debouncedSearch] = useDebouncedValue(search, 300);
   const kind = params.get('kind') as LedgerTransactionKindEnum | null;
   const onlyMine = params.get('mine') === '1';
+  const onlyDisputed = params.get('disputed') === '1';
 
   const filters = useMemo<LedgerTransactionFilters>(
     () => ({
       q: debouncedSearch || undefined,
       kind: kind ? [kind] : undefined,
       member: onlyMine && ownerId ? ownerId : undefined,
+      disputed: onlyDisputed || undefined,
     }),
-    [debouncedSearch, kind, onlyMine, ownerId],
+    [debouncedSearch, kind, onlyMine, ownerId, onlyDisputed],
   );
   const { data, isLoading, isError, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useLedgerTransactions(filters);
@@ -105,6 +110,12 @@ const TransactionFeed = ({ ownerId }: { ownerId?: string | null }) => {
           label={t('ledger.onlyMine')}
           checked={onlyMine}
           onChange={event => setParam('mine', event.currentTarget.checked ? '1' : null)}
+          className="pb-2"
+        />
+        <Switch
+          label={t('ledger.onlyDisputed')}
+          checked={onlyDisputed}
+          onChange={event => setParam('disputed', event.currentTarget.checked ? '1' : null)}
           className="pb-2"
         />
       </Group>
@@ -189,6 +200,48 @@ const MemberBalances = () => {
   );
 };
 
+/** Shared expenses: open ones first, then recently booked or withdrawn. */
+const CostShares = ({ me }: { me?: LedgerMyAccount }) => {
+  const { t } = useLanguage();
+  const { data: open, isLoading } = useLedgerCostShares({ state: 'open' });
+  const { data: all } = useLedgerCostShares();
+  const closed = (all?.results ?? []).filter(costShare => costShare.state !== 'open');
+
+  if (isLoading) {
+    return (
+      <Text c="dimmed" className="py-8 text-center">
+        {t('common.loading')}
+      </Text>
+    );
+  }
+
+  return (
+    <Stack gap="sm">
+      <Text size="sm" c="dimmed">
+        {t('ledger.split.listHelp')}
+      </Text>
+      <Title order={2} size="h5">
+        {t('ledger.split.openTitle')}
+      </Title>
+      {open?.results.length ? (
+        <CostShareList costShares={open.results} me={me} />
+      ) : (
+        <Text size="sm" c="dimmed">
+          {t('ledger.split.noneOpen')}
+        </Text>
+      )}
+      {closed.length > 0 && (
+        <>
+          <Title order={2} size="h5">
+            {t('ledger.split.closedTitle')}
+          </Title>
+          <CostShareList costShares={closed} me={me} />
+        </>
+      )}
+    </Stack>
+  );
+};
+
 /** Bookings the ledger could not charge, with the reason (treasurer only). */
 const UnbilledBookings = () => {
   const { t, language } = useLanguage();
@@ -251,9 +304,12 @@ const Ledger = () => {
   const { data: me } = useMyLedgerAccount();
   const { data: health } = useLedgerHealth();
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
+  const [splitOpened, { open: openSplit, close: closeSplit }] = useDisclosure(false);
   const requested = params.get('view');
   const view =
-    requested === 'balances' || (requested === 'unbilled' && me?.is_ledger_admin)
+    requested === 'balances' ||
+    requested === 'splits' ||
+    (requested === 'unbilled' && me?.is_ledger_admin)
       ? requested
       : 'transactions';
 
@@ -268,9 +324,18 @@ const Ledger = () => {
             </Title>
           </Group>
           {me && (
-            <Button leftSection={<Plus size={16} aria-hidden="true" />} onClick={openModal}>
-              {t('ledger.newTransaction')}
-            </Button>
+            <Group gap="xs">
+              <Button
+                variant="default"
+                leftSection={<Split size={16} aria-hidden="true" />}
+                onClick={openSplit}
+              >
+                {t('ledger.split.button')}
+              </Button>
+              <Button leftSection={<Plus size={16} aria-hidden="true" />} onClick={openModal}>
+                {t('ledger.newTransaction')}
+              </Button>
+            </Group>
           )}
         </Group>
 
@@ -299,6 +364,7 @@ const Ledger = () => {
           <Tabs.List>
             <Tabs.Tab value="transactions">{t('ledger.transactions')}</Tabs.Tab>
             <Tabs.Tab value="balances">{t('ledger.balances')}</Tabs.Tab>
+            <Tabs.Tab value="splits">{t('ledger.split.tab')}</Tabs.Tab>
             {me?.is_ledger_admin && <Tabs.Tab value="unbilled">{t('ledger.unbilled')}</Tabs.Tab>}
           </Tabs.List>
           <Tabs.Panel value="transactions" pt="md">
@@ -306,6 +372,9 @@ const Ledger = () => {
           </Tabs.Panel>
           <Tabs.Panel value="balances" pt="md">
             <MemberBalances />
+          </Tabs.Panel>
+          <Tabs.Panel value="splits" pt="md">
+            <CostShares me={me} />
           </Tabs.Panel>
           {me?.is_ledger_admin && (
             <Tabs.Panel value="unbilled" pt="md">
@@ -316,6 +385,7 @@ const Ledger = () => {
       </Stack>
 
       {me && <NewLedgerTransactionModal opened={modalOpened} onClose={closeModal} me={me} />}
+      {me && <CostShareModal opened={splitOpened} onClose={closeSplit} me={me} />}
     </main>
   );
 };

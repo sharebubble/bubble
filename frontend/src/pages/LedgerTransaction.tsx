@@ -1,26 +1,35 @@
 import { BackButton } from '@/components/layout/BackButton';
+import { CorrectionModal } from '@/components/ledger/CorrectionModal';
+import { ReceiptList } from '@/components/ledger/ReceiptList';
+import { TextPromptModal } from '@/components/ledger/TextPromptModal';
+import {
+  TransactionComments,
+  TransactionDisputes,
+} from '@/components/ledger/TransactionDiscussion';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useDownloadReceipt, useLedgerTransaction } from '@/hooks/useLedger';
+import { useDisputeTransaction, useLedgerTransaction, useMyLedgerAccount } from '@/hooks/useLedger';
 import { formatMoney } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
-import { categoryLabel, hasOwnCategory } from '@/lib/ledger';
-import { ledgerAccountPath, ledgerTransactionPath } from '@/lib/routes';
-import { Anchor, Badge, Button, Card, Code, Group, Stack, Table, Text, Title } from '@mantine/core';
-import { Download, Paperclip } from 'lucide-react';
+import { categoryLabel, firstError, hasOwnCategory } from '@/lib/ledger';
+import { ledgerAccountPath, ledgerCostSharePath, ledgerTransactionPath } from '@/lib/routes';
+import { Anchor, Badge, Button, Card, Group, Stack, Table, Text, Title } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { Flag, Undo2 } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 
-const formatSize = (bytes: number) =>
-  bytes < 1024 * 1024 ? `${Math.ceil(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-
 /**
- * One transaction with both sides of every entry, its receipts and its links
- * to corrections. Nothing here can be edited: corrections are new transactions.
+ * One transaction with both sides of every entry, its receipts, disputes and
+ * discussion. Nothing here is edited: a reversal or correction is a new
+ * transaction linked to this one.
  */
 const LedgerTransaction = () => {
   const { transactionId } = useParams<{ transactionId: string }>();
   const { t, language } = useLanguage();
   const { data: transaction, isLoading, isError } = useLedgerTransaction(transactionId);
-  const download = useDownloadReceipt();
+  const { data: me } = useMyLedgerAccount();
+  const dispute = useDisputeTransaction();
+  const [disputeOpened, { open: openDispute, close: closeDispute }] = useDisclosure(false);
+  const [fixOpened, { open: openFix, close: closeFix }] = useDisclosure(false);
 
   if (isLoading) {
     return (
@@ -39,6 +48,10 @@ const LedgerTransaction = () => {
 
   const money = (value: string, signed = false) =>
     formatMoney(value, transaction.currency, language, { signed });
+  const somethingLeft = Object.values(transaction.remaining).some(value => Number(value) !== 0);
+  const alreadyDisputed = transaction.disputes.some(
+    item => item.state === 'open' && item.raised_by.id === me?.id,
+  );
 
   return (
     <main className="container mx-auto max-w-3xl px-4 py-4">
@@ -97,8 +110,39 @@ const LedgerTransaction = () => {
                 </Anchor>
               </Text>
             ))}
+            {transaction.cost_share && (
+              <Text size="sm">
+                <Anchor component={Link} to={ledgerCostSharePath(transaction.cost_share)}>
+                  {t('ledger.split.viewSplit')}
+                </Anchor>
+              </Text>
+            )}
+            <Group gap="xs" mt="xs">
+              {!alreadyDisputed && (
+                <Button
+                  size="xs"
+                  variant="default"
+                  leftSection={<Flag size={14} aria-hidden="true" />}
+                  onClick={openDispute}
+                >
+                  {t('ledger.dispute.raise')}
+                </Button>
+              )}
+              {transaction.can_reverse && somethingLeft && (
+                <Button
+                  size="xs"
+                  variant="default"
+                  leftSection={<Undo2 size={14} aria-hidden="true" />}
+                  onClick={openFix}
+                >
+                  {t('ledger.fix.button')}
+                </Button>
+              )}
+            </Group>
           </Stack>
         </Card>
+
+        <TransactionDisputes transaction={transaction} me={me} />
 
         <Card withBorder padding="sm">
           <Title order={2} size="h5" mb="xs">
@@ -146,42 +190,28 @@ const LedgerTransaction = () => {
           <Title order={2} size="h5" mb="xs">
             {t('ledger.receipts')}
           </Title>
-          {transaction.receipts.length === 0 ? (
-            <Text size="sm" c="dimmed">
-              {t('ledger.noReceipts')}
-            </Text>
-          ) : (
-            <Stack gap="xs">
-              {transaction.receipts.map(receipt => (
-                <Group key={receipt.id} justify="space-between" wrap="nowrap">
-                  <Group gap="xs" wrap="nowrap" className="min-w-0">
-                    <Paperclip size={16} aria-hidden="true" className="shrink-0" />
-                    <div className="min-w-0">
-                      <Text size="sm" truncate>
-                        {receipt.file_name} · {formatSize(receipt.size)}
-                      </Text>
-                      <Text size="xs" c="dimmed" truncate>
-                        SHA-256 <Code>{receipt.sha256}</Code>
-                      </Text>
-                    </div>
-                  </Group>
-                  <Button
-                    size="xs"
-                    variant="default"
-                    leftSection={<Download size={14} aria-hidden="true" />}
-                    onClick={() => download.mutate({ id: receipt.id, fileName: receipt.file_name })}
-                  >
-                    {t('ledger.download')}
-                  </Button>
-                </Group>
-              ))}
-              <Text size="xs" c="dimmed">
-                {t('ledger.receiptAccessLogged')}
-              </Text>
-            </Stack>
-          )}
+          <ReceiptList receipts={transaction.receipts} />
         </Card>
+
+        <TransactionComments transaction={transaction} />
       </Stack>
+
+      <TextPromptModal
+        opened={disputeOpened}
+        onClose={closeDispute}
+        title={t('ledger.dispute.raiseTitle')}
+        body={t('ledger.dispute.raiseBody')}
+        label={t('ledger.dispute.reason')}
+        placeholder={t('ledger.dispute.reasonPlaceholder')}
+        confirm={t('ledger.dispute.raiseConfirm')}
+        color="orange"
+        loading={dispute.isPending}
+        onSubmit={reason => dispute.mutateAsync({ id: transaction.id, reason })}
+        errorMessage={err => firstError(err, t('ledger.postFailed'))}
+      />
+      {transaction.can_reverse && (
+        <CorrectionModal opened={fixOpened} onClose={closeFix} transaction={transaction} />
+      )}
     </main>
   );
 };

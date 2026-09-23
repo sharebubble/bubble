@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthTokenCreateData, AuthTokenCreateResponses, BookingsConfirmReceivedCreateData, BookingsConfirmReceivedCreateResponses, BookingsConfirmReturnedCreateData, BookingsConfirmReturnedCreateResponses, BookingsCreateData, BookingsCreateResponses, BookingsDestroyData, BookingsDestroyResponses, BookingsListData, BookingsListResponses, BookingsPartialUpdateData, BookingsPartialUpdateResponses, BookingsRejectFulfillmentCreateData, BookingsRejectFulfillmentCreateResponses, BookingsRetrieveData, BookingsRetrieveResponses, BookingsUpdateData, BookingsUpdateResponses, BooksCreateData, BooksCreateResponses, BooksDestroyData, BooksDestroyResponses, BooksIsbnUpdateUpdateData, BooksIsbnUpdateUpdateResponses, BooksListData, BooksListResponses, BooksPartialUpdateData, BooksPartialUpdateResponses, BooksRetrieveData, BooksRetrieveResponses, BooksUpdateData, BooksUpdateResponses, CollectionItemsCreateData, CollectionItemsCreateResponses, CollectionItemsDestroyData, CollectionItemsDestroyResponses, CollectionItemsListData, CollectionItemsListResponses, CollectionItemsPartialUpdateData, CollectionItemsPartialUpdateResponses, CollectionItemsRetrieveData, CollectionItemsRetrieveResponses, CollectionItemsUpdateData, CollectionItemsUpdateResponses, CollectionsAddItemCreateData, CollectionsAddItemCreateResponses, CollectionsBulkAddItemsCreateData, CollectionsBulkAddItemsCreateResponses, CollectionsBulkRemoveItemsCreateData, CollectionsBulkRemoveItemsCreateResponses, CollectionsCalendarLinkCreateData, CollectionsCalendarLinkCreateResponses, CollectionsCalendarLinkDestroyData, CollectionsCalendarLinkDestroyResponses, CollectionsCalendarLinkRetrieveData, CollectionsCalendarLinkRetrieveResponses, CollectionsCreateData, CollectionsCreateResponses, CollectionsDestroyData, CollectionsDestroyResponses, CollectionsForItemListData, CollectionsForItemListResponses, CollectionsHistoryListData, CollectionsHistoryListResponses, CollectionsListData, CollectionsListResponses, CollectionsManagePermissionsCreateData, CollectionsManagePermissionsCreateResponses, CollectionsMyCollectionsListData, CollectionsMyCollectionsListResponses, CollectionsPartialUpdateData, CollectionsPartialUpdateResponses, CollectionsPermissionsListData, CollectionsPermissionsListResponses, CollectionsRemoveItemCreateData, CollectionsRemoveItemCreateResponses, CollectionsRetrieveData, CollectionsRetrieveResponses, CollectionsUpdateData, CollectionsUpdateResponses, CommentsCreateData, CommentsCreateResponses, CommentsDestroyData, CommentsDestroyResponses, CommentsListData, CommentsListResponses, CommentsPartialUpdateData, CommentsPartialUpdateResponses, CommentsRetrieveData, CommentsRetrieveResponses, CommentsUpdateData, CommentsUpdateResponses, ConfigRetrieveData, ConfigRetrieveResponses, FavoritesCreateData, FavoritesCreateResponses, FavoritesDestroyData, FavoritesDestroyResponses, FavoritesItemIdsRetrieveData, FavoritesItemIdsRetrieveResponses, FavoritesListData, FavoritesListResponses, FederatedItemsRetrieveData, FederatedItemsRetrieveResponses, GroupsListData, GroupsListResponses, GroupsRetrieveData, GroupsRetrieveResponses, ImagesCreateData, ImagesCreateResponses, ImagesDestroyData, ImagesDestroyResponses, ImagesListData, ImagesListResponses, ImagesPartialUpdateData, ImagesPartialUpdateResponses, ImagesRetrieveData, ImagesRetrieveResponses, ImagesRotateUpdateData, ImagesRotateUpdateResponses, ImagesUpdateData, ImagesUpdateResponses, ItemsAiDescribeUpdateData, ItemsAiDescribeUpdateResponses, ItemsAiImageUpdateData, ItemsAiImageUpdateResponses, ItemsCalendarLinkCreateData, ItemsCalendarLinkCreateResponses, ItemsCalendarLinkDestroyData, ItemsCalendarLinkDestroyResponses, ItemsCalendarLinkRetrieveData, ItemsCalendarLinkRetrieveResponses, ItemsCoOwnersCreateData, ItemsCoOwnersCreateResponses, ItemsCoOwnersDestroyData, ItemsCoOwnersDestroyResponses, ItemsCoOwnersRetrieveData, ItemsCoOwnersRetrieveResponses, ItemsCreateData, ItemsCreateResponses, ItemsDestroyData, ItemsDestroyResponses, ItemsListData, ItemsListResponses, ItemsPartialUpdateData, ItemsPartialUpdateResponses, ItemsReorderImagesUpdateData, ItemsReorderImagesUpdateResponses, ItemsRetrieveData, ItemsRetrieveResponses, ItemsUpdateData, ItemsUpdateResponses, ItemsViewersCreateData, ItemsViewersCreateResponses, ItemsViewersDestroyData, ItemsViewersDestroyResponses, ItemsViewersRetrieveData, ItemsViewersRetrieveResponses, LedgerAccountsEntriesListData, LedgerAccountsEntriesListResponses, LedgerAccountsListData, LedgerAccountsListResponses, LedgerAccountsMeRetrieveData, LedgerAccountsMeRetrieveResponses, LedgerAccountsRetrieveData, LedgerAccountsRetrieveResponses, LedgerCategoriesListData, LedgerCategoriesListResponses, LedgerCategoriesRetrieveData, LedgerCategoriesRetrieveResponses, LedgerHealthRetrieveData, LedgerHealthRetrieveResponses, LedgerProjectsListData, LedgerProjectsListResponses, LedgerProjectsRetrieveData, LedgerProjectsRetrieveResponses, LedgerReceiptsFileRetrieveData, LedgerReceiptsFileRetrieveResponses, LedgerTransactionsCreateData, LedgerTransactionsCreateResponses, LedgerTransactionsListData, LedgerTransactionsListResponses, LedgerTransactionsReceiptsCreateData, LedgerTransactionsReceiptsCreateResponses, LedgerTransactionsRetrieveData, LedgerTransactionsRetrieveResponses, LedgerUnbilledListData, LedgerUnbilledListResponses, LocationsListData, LocationsListResponses, LocationsRetrieveData, LocationsRetrieveResponses, MessagesCreateData, MessagesCreateResponses, MessagesDestroyData, MessagesDestroyResponses, MessagesListData, MessagesListResponses, MessagesPartialUpdateData, MessagesPartialUpdateResponses, MessagesRetrieveData, MessagesRetrieveResponses, MessagesUpdateData, MessagesUpdateResponses, MyCalendarCreateData, MyCalendarCreateResponses, MyCalendarDestroyData, MyCalendarDestroyResponses, MyCalendarRetrieveData, MyCalendarRetrieveResponses, NotificationPreferencesMePartialUpdateData, NotificationPreferencesMePartialUpdateResponses, NotificationPreferencesMeRetrieveData, NotificationPreferencesMeRetrieveResponses, ProfilesListData, ProfilesListResponses, ProfilesMePartialUpdateData, ProfilesMePartialUpdateResponses, ProfilesMeRetrieveData, ProfilesMeRetrieveResponses, ProfilesRetrieveData, ProfilesRetrieveResponses, PublicBookingsListData, PublicBookingsListResponses, PublicBookingsRetrieveData, PublicBookingsRetrieveResponses, PublicItemsBookingHistoryRetrieveData, PublicItemsBookingHistoryRetrieveResponses, PublicItemsFacetsRetrieveData, PublicItemsFacetsRetrieveResponses, PublicItemsListData, PublicItemsListResponses, PublicItemsRetrieveData, PublicItemsRetrieveResponses, PushSubscriptionsStatusRetrieveData, PushSubscriptionsStatusRetrieveResponses, PushSubscriptionsSubscribeCreateData, PushSubscriptionsSubscribeCreateResponses, PushSubscriptionsTestCreateData, PushSubscriptionsTestCreateResponses, PushSubscriptionsUnsubscribeCreateData, PushSubscriptionsUnsubscribeCreateResponses, SchemaRetrieveData, SchemaRetrieveResponses, UsersListData, UsersListResponses, UsersMeRetrieveData, UsersMeRetrieveResponses, UsersPartialUpdateData, UsersPartialUpdateResponses, UsersRetrieveData, UsersRetrieveResponses, UsersUpdateData, UsersUpdateResponses, VersionRetrieveData, VersionRetrieveResponses } from './types.gen';
+import type { AuthTokenCreateData, AuthTokenCreateResponses, BookingsConfirmReceivedCreateData, BookingsConfirmReceivedCreateResponses, BookingsConfirmReturnedCreateData, BookingsConfirmReturnedCreateResponses, BookingsCreateData, BookingsCreateResponses, BookingsDestroyData, BookingsDestroyResponses, BookingsListData, BookingsListResponses, BookingsPartialUpdateData, BookingsPartialUpdateResponses, BookingsRejectFulfillmentCreateData, BookingsRejectFulfillmentCreateResponses, BookingsRetrieveData, BookingsRetrieveResponses, BookingsUpdateData, BookingsUpdateResponses, BooksCreateData, BooksCreateResponses, BooksDestroyData, BooksDestroyResponses, BooksIsbnUpdateUpdateData, BooksIsbnUpdateUpdateResponses, BooksListData, BooksListResponses, BooksPartialUpdateData, BooksPartialUpdateResponses, BooksRetrieveData, BooksRetrieveResponses, BooksUpdateData, BooksUpdateResponses, CollectionItemsCreateData, CollectionItemsCreateResponses, CollectionItemsDestroyData, CollectionItemsDestroyResponses, CollectionItemsListData, CollectionItemsListResponses, CollectionItemsPartialUpdateData, CollectionItemsPartialUpdateResponses, CollectionItemsRetrieveData, CollectionItemsRetrieveResponses, CollectionItemsUpdateData, CollectionItemsUpdateResponses, CollectionsAddItemCreateData, CollectionsAddItemCreateResponses, CollectionsBulkAddItemsCreateData, CollectionsBulkAddItemsCreateResponses, CollectionsBulkRemoveItemsCreateData, CollectionsBulkRemoveItemsCreateResponses, CollectionsCalendarLinkCreateData, CollectionsCalendarLinkCreateResponses, CollectionsCalendarLinkDestroyData, CollectionsCalendarLinkDestroyResponses, CollectionsCalendarLinkRetrieveData, CollectionsCalendarLinkRetrieveResponses, CollectionsCreateData, CollectionsCreateResponses, CollectionsDestroyData, CollectionsDestroyResponses, CollectionsForItemListData, CollectionsForItemListResponses, CollectionsHistoryListData, CollectionsHistoryListResponses, CollectionsListData, CollectionsListResponses, CollectionsManagePermissionsCreateData, CollectionsManagePermissionsCreateResponses, CollectionsMyCollectionsListData, CollectionsMyCollectionsListResponses, CollectionsPartialUpdateData, CollectionsPartialUpdateResponses, CollectionsPermissionsListData, CollectionsPermissionsListResponses, CollectionsRemoveItemCreateData, CollectionsRemoveItemCreateResponses, CollectionsRetrieveData, CollectionsRetrieveResponses, CollectionsUpdateData, CollectionsUpdateResponses, CommentsCreateData, CommentsCreateResponses, CommentsDestroyData, CommentsDestroyResponses, CommentsListData, CommentsListResponses, CommentsPartialUpdateData, CommentsPartialUpdateResponses, CommentsRetrieveData, CommentsRetrieveResponses, CommentsUpdateData, CommentsUpdateResponses, ConfigRetrieveData, ConfigRetrieveResponses, FavoritesCreateData, FavoritesCreateResponses, FavoritesDestroyData, FavoritesDestroyResponses, FavoritesItemIdsRetrieveData, FavoritesItemIdsRetrieveResponses, FavoritesListData, FavoritesListResponses, FederatedItemsRetrieveData, FederatedItemsRetrieveResponses, GroupsListData, GroupsListResponses, GroupsRetrieveData, GroupsRetrieveResponses, ImagesCreateData, ImagesCreateResponses, ImagesDestroyData, ImagesDestroyResponses, ImagesListData, ImagesListResponses, ImagesPartialUpdateData, ImagesPartialUpdateResponses, ImagesRetrieveData, ImagesRetrieveResponses, ImagesRotateUpdateData, ImagesRotateUpdateResponses, ImagesUpdateData, ImagesUpdateResponses, ItemsAiDescribeUpdateData, ItemsAiDescribeUpdateResponses, ItemsAiImageUpdateData, ItemsAiImageUpdateResponses, ItemsCalendarLinkCreateData, ItemsCalendarLinkCreateResponses, ItemsCalendarLinkDestroyData, ItemsCalendarLinkDestroyResponses, ItemsCalendarLinkRetrieveData, ItemsCalendarLinkRetrieveResponses, ItemsCoOwnersCreateData, ItemsCoOwnersCreateResponses, ItemsCoOwnersDestroyData, ItemsCoOwnersDestroyResponses, ItemsCoOwnersRetrieveData, ItemsCoOwnersRetrieveResponses, ItemsCreateData, ItemsCreateResponses, ItemsDestroyData, ItemsDestroyResponses, ItemsListData, ItemsListResponses, ItemsPartialUpdateData, ItemsPartialUpdateResponses, ItemsReorderImagesUpdateData, ItemsReorderImagesUpdateResponses, ItemsRetrieveData, ItemsRetrieveResponses, ItemsUpdateData, ItemsUpdateResponses, ItemsViewersCreateData, ItemsViewersCreateResponses, ItemsViewersDestroyData, ItemsViewersDestroyResponses, ItemsViewersRetrieveData, ItemsViewersRetrieveResponses, LedgerAccountsEntriesListData, LedgerAccountsEntriesListResponses, LedgerAccountsListData, LedgerAccountsListResponses, LedgerAccountsMeRetrieveData, LedgerAccountsMeRetrieveResponses, LedgerAccountsRetrieveData, LedgerAccountsRetrieveResponses, LedgerCategoriesListData, LedgerCategoriesListResponses, LedgerCategoriesRetrieveData, LedgerCategoriesRetrieveResponses, LedgerDisputesRetrieveData, LedgerDisputesRetrieveResponses, LedgerDisputesUpholdCreateData, LedgerDisputesUpholdCreateResponses, LedgerDisputesWithdrawCreateData, LedgerDisputesWithdrawCreateResponses, LedgerHealthRetrieveData, LedgerHealthRetrieveResponses, LedgerProjectsListData, LedgerProjectsListResponses, LedgerProjectsRetrieveData, LedgerProjectsRetrieveResponses, LedgerReceiptsFileRetrieveData, LedgerReceiptsFileRetrieveResponses, LedgerSplitsAcceptCreateData, LedgerSplitsAcceptCreateResponses, LedgerSplitsCancelCreateData, LedgerSplitsCancelCreateResponses, LedgerSplitsCreateData, LedgerSplitsCreateResponses, LedgerSplitsListData, LedgerSplitsListResponses, LedgerSplitsObjectCreateData, LedgerSplitsObjectCreateResponses, LedgerSplitsPartialUpdateData, LedgerSplitsPartialUpdateResponses, LedgerSplitsReceiptsCreateData, LedgerSplitsReceiptsCreateResponses, LedgerSplitsRetrieveData, LedgerSplitsRetrieveResponses, LedgerSplitsUpdateData, LedgerSplitsUpdateResponses, LedgerTransactionsCommentsCreateData, LedgerTransactionsCommentsCreateResponses, LedgerTransactionsCorrectCreateData, LedgerTransactionsCorrectCreateResponses, LedgerTransactionsCreateData, LedgerTransactionsCreateResponses, LedgerTransactionsDisputeCreateData, LedgerTransactionsDisputeCreateResponses, LedgerTransactionsListData, LedgerTransactionsListResponses, LedgerTransactionsReceiptsCreateData, LedgerTransactionsReceiptsCreateResponses, LedgerTransactionsRetrieveData, LedgerTransactionsRetrieveResponses, LedgerTransactionsReverseCreateData, LedgerTransactionsReverseCreateResponses, LedgerUnbilledListData, LedgerUnbilledListResponses, LocationsListData, LocationsListResponses, LocationsRetrieveData, LocationsRetrieveResponses, MessagesCreateData, MessagesCreateResponses, MessagesDestroyData, MessagesDestroyResponses, MessagesListData, MessagesListResponses, MessagesPartialUpdateData, MessagesPartialUpdateResponses, MessagesRetrieveData, MessagesRetrieveResponses, MessagesUpdateData, MessagesUpdateResponses, MyCalendarCreateData, MyCalendarCreateResponses, MyCalendarDestroyData, MyCalendarDestroyResponses, MyCalendarRetrieveData, MyCalendarRetrieveResponses, NotificationPreferencesMePartialUpdateData, NotificationPreferencesMePartialUpdateResponses, NotificationPreferencesMeRetrieveData, NotificationPreferencesMeRetrieveResponses, ProfilesListData, ProfilesListResponses, ProfilesMePartialUpdateData, ProfilesMePartialUpdateResponses, ProfilesMeRetrieveData, ProfilesMeRetrieveResponses, ProfilesRetrieveData, ProfilesRetrieveResponses, PublicBookingsListData, PublicBookingsListResponses, PublicBookingsRetrieveData, PublicBookingsRetrieveResponses, PublicItemsBookingHistoryRetrieveData, PublicItemsBookingHistoryRetrieveResponses, PublicItemsFacetsRetrieveData, PublicItemsFacetsRetrieveResponses, PublicItemsListData, PublicItemsListResponses, PublicItemsRetrieveData, PublicItemsRetrieveResponses, PushSubscriptionsStatusRetrieveData, PushSubscriptionsStatusRetrieveResponses, PushSubscriptionsSubscribeCreateData, PushSubscriptionsSubscribeCreateResponses, PushSubscriptionsTestCreateData, PushSubscriptionsTestCreateResponses, PushSubscriptionsUnsubscribeCreateData, PushSubscriptionsUnsubscribeCreateResponses, SchemaRetrieveData, SchemaRetrieveResponses, UsersListData, UsersListResponses, UsersMeRetrieveData, UsersMeRetrieveResponses, UsersPartialUpdateData, UsersPartialUpdateResponses, UsersRetrieveData, UsersRetrieveResponses, UsersUpdateData, UsersUpdateResponses, VersionRetrieveData, VersionRetrieveResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -1854,6 +1854,65 @@ export const ledgerCategoriesRetrieve = <ThrowOnError extends boolean = true>(op
 });
 
 /**
+ * Answering a dispute: its raiser withdraws it, or the author, the
+ * members it credits or the treasurer keep the transaction with a reason.
+ * A reversal or correction (on the transaction) also closes it.
+ */
+export const ledgerDisputesRetrieve = <ThrowOnError extends boolean = true>(options: Options<LedgerDisputesRetrieveData, ThrowOnError>): RequestResult<LedgerDisputesRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<LedgerDisputesRetrieveResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/disputes/{id}/',
+    ...options
+});
+
+/**
+ * Keep the transaction as it is, and say why.
+ */
+export const ledgerDisputesUpholdCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerDisputesUpholdCreateData, ThrowOnError>): RequestResult<LedgerDisputesUpholdCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerDisputesUpholdCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/disputes/{id}/uphold/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Answering a dispute: its raiser withdraws it, or the author, the
+ * members it credits or the treasurer keep the transaction with a reason.
+ * A reversal or correction (on the transaction) also closes it.
+ */
+export const ledgerDisputesWithdrawCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerDisputesWithdrawCreateData, ThrowOnError>): RequestResult<LedgerDisputesWithdrawCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerDisputesWithdrawCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/disputes/{id}/withdraw/',
+    ...options
+});
+
+/**
  * Is the ledger consistent right now? Shown as a banner when it is not.
  */
 export const ledgerHealthRetrieve = <ThrowOnError extends boolean = true>(options?: Options<LedgerHealthRetrieveData, ThrowOnError>): RequestResult<LedgerHealthRetrieveResponses, unknown, ThrowOnError> => (options?.client ?? client).get<LedgerHealthRetrieveResponses, unknown, ThrowOnError>({
@@ -1913,6 +1972,205 @@ export const ledgerReceiptsFileRetrieve = <ThrowOnError extends boolean = true>(
     ],
     url: '/api/ledger/receipts/{id}/file/',
     ...options
+});
+
+/**
+ * Shared expenses waiting for their participants (plan 7a, D13).
+ *
+ * The payer splits a cost; each participant accepts or objects, and silence
+ * counts as acceptance after the deadline. Then one SHARED_EXPENSE
+ * transaction is posted. Visible to every member, like the ledger.
+ */
+export const ledgerSplitsList = <ThrowOnError extends boolean = true>(options?: Options<LedgerSplitsListData, ThrowOnError>): RequestResult<LedgerSplitsListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<LedgerSplitsListResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/splits/',
+    ...options
+});
+
+/**
+ * Shared expenses waiting for their participants (plan 7a, D13).
+ *
+ * The payer splits a cost; each participant accepts or objects, and silence
+ * counts as acceptance after the deadline. Then one SHARED_EXPENSE
+ * transaction is posted. Visible to every member, like the ledger.
+ */
+export const ledgerSplitsCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerSplitsCreateData, ThrowOnError>): RequestResult<LedgerSplitsCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerSplitsCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/splits/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Shared expenses waiting for their participants (plan 7a, D13).
+ *
+ * The payer splits a cost; each participant accepts or objects, and silence
+ * counts as acceptance after the deadline. Then one SHARED_EXPENSE
+ * transaction is posted. Visible to every member, like the ledger.
+ */
+export const ledgerSplitsRetrieve = <ThrowOnError extends boolean = true>(options: Options<LedgerSplitsRetrieveData, ThrowOnError>): RequestResult<LedgerSplitsRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<LedgerSplitsRetrieveResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/splits/{id}/',
+    ...options
+});
+
+/**
+ * Shared expenses waiting for their participants (plan 7a, D13).
+ *
+ * The payer splits a cost; each participant accepts or objects, and silence
+ * counts as acceptance after the deadline. Then one SHARED_EXPENSE
+ * transaction is posted. Visible to every member, like the ledger.
+ */
+export const ledgerSplitsPartialUpdate = <ThrowOnError extends boolean = true>(options: Options<LedgerSplitsPartialUpdateData, ThrowOnError>): RequestResult<LedgerSplitsPartialUpdateResponses, unknown, ThrowOnError> => (options.client ?? client).patch<LedgerSplitsPartialUpdateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/splits/{id}/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The payer changes an open split; every participant is asked again.
+ */
+export const ledgerSplitsUpdate = <ThrowOnError extends boolean = true>(options: Options<LedgerSplitsUpdateData, ThrowOnError>): RequestResult<LedgerSplitsUpdateResponses, unknown, ThrowOnError> => (options.client ?? client).put<LedgerSplitsUpdateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/splits/{id}/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * I agree to my share.
+ */
+export const ledgerSplitsAcceptCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerSplitsAcceptCreateData, ThrowOnError>): RequestResult<LedgerSplitsAcceptCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerSplitsAcceptCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/splits/{id}/accept/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The payer (or the treasurer) withdraws an open split.
+ */
+export const ledgerSplitsCancelCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerSplitsCancelCreateData, ThrowOnError>): RequestResult<LedgerSplitsCancelCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerSplitsCancelCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/splits/{id}/cancel/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * I do not agree to my share (a reason is required). The payer carries
+ * it for now and may change or cancel the split.
+ */
+export const ledgerSplitsObjectCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerSplitsObjectCreateData, ThrowOnError>): RequestResult<LedgerSplitsObjectCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerSplitsObjectCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/splits/{id}/object/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The payer attaches a receipt; it stays with the booked transaction.
+ */
+export const ledgerSplitsReceiptsCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerSplitsReceiptsCreateData, ThrowOnError>): RequestResult<LedgerSplitsReceiptsCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerSplitsReceiptsCreateResponses, unknown, ThrowOnError>({
+    ...formDataBodySerializer,
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/splits/{id}/receipts/',
+    ...options,
+    headers: {
+        'Content-Type': null,
+        ...options.headers
+    }
 });
 
 /**
@@ -1984,6 +2242,72 @@ export const ledgerTransactionsRetrieve = <ThrowOnError extends boolean = true>(
 });
 
 /**
+ * Add to the discussion under a transaction. Comments are never edited.
+ */
+export const ledgerTransactionsCommentsCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerTransactionsCommentsCreateData, ThrowOnError>): RequestResult<LedgerTransactionsCommentsCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerTransactionsCommentsCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/transactions/{id}/comments/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Undo part of the transaction, e.g. one participant's share.
+ *
+ * ``lines`` name entries of this transaction and how much of each to undo
+ * (positive amounts); they must balance.
+ */
+export const ledgerTransactionsCorrectCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerTransactionsCorrectCreateData, ThrowOnError>): RequestResult<LedgerTransactionsCorrectCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerTransactionsCorrectCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/transactions/{id}/correct/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Flag the transaction as wrong. Any member may; it is never changed.
+ */
+export const ledgerTransactionsDisputeCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerTransactionsDisputeCreateData, ThrowOnError>): RequestResult<LedgerTransactionsDisputeCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerTransactionsDisputeCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/transactions/{id}/dispute/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * Attach another receipt. Only the author or the treasurer may; receipts
  * are never replaced or removed.
  */
@@ -2002,6 +2326,30 @@ export const ledgerTransactionsReceiptsCreate = <ThrowOnError extends boolean = 
     ...options,
     headers: {
         'Content-Type': null,
+        ...options.headers
+    }
+});
+
+/**
+ * Undo everything that is left of the transaction with a new one.
+ *
+ * Allowed for its author, the members it credits (they give it back) and
+ * the treasurer. Open disputes count as resolved.
+ */
+export const ledgerTransactionsReverseCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerTransactionsReverseCreateData, ThrowOnError>): RequestResult<LedgerTransactionsReverseCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerTransactionsReverseCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/transactions/{id}/reverse/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
         ...options.headers
     }
 });

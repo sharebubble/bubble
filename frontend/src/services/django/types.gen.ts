@@ -691,6 +691,7 @@ export type Booking = {
      * The ledger transaction that charged this booking, if any.
      */
     readonly ledger_transaction: string;
+    readonly sale_auto_approve_at: string | null;
     readonly created_at: string;
     readonly updated_at: string;
     /**
@@ -1339,6 +1340,140 @@ export type LedgerCategory = {
  */
 export type LedgerCategoryKindEnum = 'income' | 'expense' | 'transfer';
 
+export type LedgerComment = {
+    readonly id: string;
+    author: LedgerAccountRef;
+    readonly body: string;
+    readonly created_at: string;
+};
+
+export type LedgerCommentCreate = {
+    body: string;
+};
+
+/**
+ * Undo part of a transaction: how much of each line, as positive amounts.
+ */
+export type LedgerCorrection = {
+    description?: string;
+    lines: Array<LedgerCorrectionLine>;
+};
+
+export type LedgerCorrectionLine = {
+    entry: string;
+    amount: string;
+};
+
+export type LedgerCostShare = {
+    readonly id: string;
+    payer: LedgerAccountRef;
+    readonly description: string;
+    readonly occurred_on: string;
+    readonly total: string;
+    readonly currency: string;
+    category: LedgerCategory | null;
+    project: LedgerProject | null;
+    split: LedgerCostShareSplitEnum;
+    readonly payer_participates: boolean;
+    readonly payer_weight: string;
+    readonly payer_guests: number;
+    readonly payer_share: string;
+    readonly auto_accept_at: string;
+    state: LedgerCostShareStateEnum;
+    readonly posted_transaction: string | null;
+    readonly cancelled_reason: string;
+    readonly created_at: string;
+    readonly participants: Array<LedgerCostShareParticipant>;
+    readonly receipts: Array<LedgerReceipt>;
+    my_response: LedgerParticipantResponseEnum | NullEnum | null;
+    readonly is_payer: boolean;
+};
+
+export type LedgerCostShareParticipant = {
+    readonly id: string;
+    account: LedgerAccountRef;
+    readonly weight: string;
+    readonly amount: string | null;
+    /**
+     * Non-members this participant brought; they pay for them.
+     */
+    readonly guests: number;
+    readonly share: string;
+    response: LedgerParticipantResponseEnum;
+    readonly responded_at: string | null;
+    readonly objection_reason: string;
+};
+
+export type LedgerCostShareParticipantInput = {
+    account: string;
+    weight?: string;
+    amount?: string | null;
+    guests?: number;
+};
+
+export type LedgerCostShareRespond = {
+    reason?: string;
+};
+
+/**
+ * * `equal` - Equal shares
+ * * `weights` - Weighted shares
+ * * `amounts` - Fixed amounts
+ */
+export type LedgerCostShareSplitEnum = 'equal' | 'weights' | 'amounts';
+
+/**
+ * * `open` - Waiting for answers
+ * * `posted` - Booked
+ * * `cancelled` - Abgebrochen
+ */
+export type LedgerCostShareStateEnum = 'open' | 'posted' | 'cancelled';
+
+/**
+ * Create or change a shared expense (the payer is the requesting member).
+ */
+export type LedgerCostShareWrite = {
+    description: string;
+    total: string;
+    occurred_on: string;
+    split?: LedgerCostShareSplitEnum;
+    category?: string | null;
+    project?: string | null;
+    payer_participates?: boolean;
+    payer_weight?: string;
+    payer_guests?: number;
+    participants: Array<LedgerCostShareParticipantInput>;
+};
+
+export type LedgerDispute = {
+    readonly id: string;
+    readonly transaction: string;
+    raised_by: LedgerAccountRef;
+    readonly reason: string;
+    state: LedgerDisputeStateEnum;
+    readonly created_at: string;
+    readonly resolved_at: string | null;
+    resolved_by: LedgerAccountRef | null;
+    readonly resolution: string;
+};
+
+export type LedgerDisputeCreate = {
+    reason: string;
+};
+
+export type LedgerDisputeResolve = {
+    resolution: string;
+};
+
+/**
+ * * `open` - Open
+ * * `withdrawn` - Withdrawn
+ * * `reversed` - Resolved by a reversal
+ * * `corrected` - Resolved by a correction
+ * * `upheld` - Kept as it is
+ */
+export type LedgerDisputeStateEnum = 'open' | 'withdrawn' | 'reversed' | 'corrected' | 'upheld';
+
 export type LedgerEntry = {
     readonly id: string;
     account: LedgerAccountRef;
@@ -1414,6 +1549,13 @@ export type LedgerMyAccount = {
     readonly is_ledger_admin: boolean;
 };
 
+/**
+ * * `pending` - Waiting
+ * * `accepted` - Accepted
+ * * `objected` - Objected
+ */
+export type LedgerParticipantResponseEnum = 'pending' | 'accepted' | 'objected';
+
 export type LedgerProject = {
     readonly id: string;
     readonly name: string;
@@ -1436,6 +1578,10 @@ export type LedgerReceipt = {
 
 export type LedgerReceiptUpload = {
     file: string;
+};
+
+export type LedgerReverse = {
+    description?: string;
 };
 
 /**
@@ -1466,6 +1612,7 @@ export type LedgerTransaction = {
     readonly currency: string;
     readonly entries: Array<LedgerEntry>;
     readonly receipt_count: number;
+    readonly open_disputes: number;
     /**
      * Set on REVERSAL and CORRECTION transactions.
      */
@@ -1492,6 +1639,7 @@ export type LedgerTransactionDetail = {
     readonly currency: string;
     readonly entries: Array<LedgerEntry>;
     readonly receipt_count: number;
+    readonly open_disputes: number;
     /**
      * Set on REVERSAL and CORRECTION transactions.
      */
@@ -1499,6 +1647,13 @@ export type LedgerTransactionDetail = {
     readonly reversed_by: Array<string>;
     readonly receipts: Array<LedgerReceipt>;
     readonly meta: unknown;
+    readonly disputes: Array<LedgerDispute>;
+    readonly comments: Array<LedgerComment>;
+    readonly remaining: {
+        [key: string]: string;
+    };
+    readonly can_reverse: boolean;
+    readonly cost_share: string | null;
 };
 
 /**
@@ -1749,6 +1904,13 @@ export type PaginatedLedgerAccountList = {
     results: Array<LedgerAccount>;
 };
 
+export type PaginatedLedgerCostShareList = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<LedgerCostShare>;
+};
+
 export type PaginatedLedgerTransactionList = {
     count: number;
     next?: string | null;
@@ -1987,6 +2149,7 @@ export type PatchedBooking = {
      * The ledger transaction that charged this booking, if any.
      */
     readonly ledger_transaction?: string;
+    readonly sale_auto_approve_at?: string | null;
     readonly created_at?: string;
     readonly updated_at?: string;
     /**
@@ -2201,6 +2364,22 @@ export type PatchedItem = {
      * Where the item is currently kept. Leave blank when the item is at the owner's own place (the default).
      */
     location?: string | null;
+};
+
+/**
+ * Create or change a shared expense (the payer is the requesting member).
+ */
+export type PatchedLedgerCostShareWrite = {
+    description?: string;
+    total?: string;
+    occurred_on?: string;
+    split?: LedgerCostShareSplitEnum;
+    category?: string | null;
+    project?: string | null;
+    payer_participates?: boolean;
+    payer_weight?: string;
+    payer_guests?: number;
+    participants?: Array<LedgerCostShareParticipantInput>;
 };
 
 /**
@@ -3548,6 +3727,13 @@ export type PaginatedLedgerAccountEntryListWritable = {
 };
 
 export type PaginatedLedgerAccountListWritable = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<unknown>;
+};
+
+export type PaginatedLedgerCostShareListWritable = {
     count: number;
     next?: string | null;
     previous?: string | null;
@@ -5642,6 +5828,60 @@ export type LedgerCategoriesRetrieveResponses = {
 
 export type LedgerCategoriesRetrieveResponse = LedgerCategoriesRetrieveResponses[keyof LedgerCategoriesRetrieveResponses];
 
+export type LedgerDisputesRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der dispute identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/disputes/{id}/';
+};
+
+export type LedgerDisputesRetrieveResponses = {
+    200: LedgerDispute;
+};
+
+export type LedgerDisputesRetrieveResponse = LedgerDisputesRetrieveResponses[keyof LedgerDisputesRetrieveResponses];
+
+export type LedgerDisputesUpholdCreateData = {
+    body: LedgerDisputeResolve;
+    path: {
+        /**
+         * Ein UUID-String, der dispute identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/disputes/{id}/uphold/';
+};
+
+export type LedgerDisputesUpholdCreateResponses = {
+    200: LedgerDispute;
+};
+
+export type LedgerDisputesUpholdCreateResponse = LedgerDisputesUpholdCreateResponses[keyof LedgerDisputesUpholdCreateResponses];
+
+export type LedgerDisputesWithdrawCreateData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der dispute identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/disputes/{id}/withdraw/';
+};
+
+export type LedgerDisputesWithdrawCreateResponses = {
+    200: LedgerDispute;
+};
+
+export type LedgerDisputesWithdrawCreateResponse = LedgerDisputesWithdrawCreateResponses[keyof LedgerDisputesWithdrawCreateResponses];
+
 export type LedgerHealthRetrieveData = {
     body?: never;
     path?: never;
@@ -5704,6 +5944,177 @@ export type LedgerReceiptsFileRetrieveResponses = {
 
 export type LedgerReceiptsFileRetrieveResponse = LedgerReceiptsFileRetrieveResponses[keyof LedgerReceiptsFileRetrieveResponses];
 
+export type LedgerSplitsListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Paid by me or waiting for my answer
+         */
+        mine?: boolean;
+        /**
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
+         */
+        page?: number;
+        /**
+         * * `open` - Waiting for answers
+         * * `posted` - Booked
+         * * `cancelled` - Abgebrochen
+         */
+        state?: 'cancelled' | 'open' | 'posted';
+        /**
+         * Waiting for my answer
+         */
+        waiting_for_me?: boolean;
+    };
+    url: '/api/ledger/splits/';
+};
+
+export type LedgerSplitsListResponses = {
+    200: PaginatedLedgerCostShareList;
+};
+
+export type LedgerSplitsListResponse = LedgerSplitsListResponses[keyof LedgerSplitsListResponses];
+
+export type LedgerSplitsCreateData = {
+    body: LedgerCostShareWrite;
+    path?: never;
+    query?: never;
+    url: '/api/ledger/splits/';
+};
+
+export type LedgerSplitsCreateResponses = {
+    201: LedgerCostShare;
+};
+
+export type LedgerSplitsCreateResponse = LedgerSplitsCreateResponses[keyof LedgerSplitsCreateResponses];
+
+export type LedgerSplitsRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der cost share identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/splits/{id}/';
+};
+
+export type LedgerSplitsRetrieveResponses = {
+    200: LedgerCostShare;
+};
+
+export type LedgerSplitsRetrieveResponse = LedgerSplitsRetrieveResponses[keyof LedgerSplitsRetrieveResponses];
+
+export type LedgerSplitsPartialUpdateData = {
+    body?: PatchedLedgerCostShareWrite;
+    path: {
+        /**
+         * Ein UUID-String, der cost share identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/splits/{id}/';
+};
+
+export type LedgerSplitsPartialUpdateResponses = {
+    200: LedgerCostShare;
+};
+
+export type LedgerSplitsPartialUpdateResponse = LedgerSplitsPartialUpdateResponses[keyof LedgerSplitsPartialUpdateResponses];
+
+export type LedgerSplitsUpdateData = {
+    body: LedgerCostShareWrite;
+    path: {
+        /**
+         * Ein UUID-String, der cost share identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/splits/{id}/';
+};
+
+export type LedgerSplitsUpdateResponses = {
+    200: LedgerCostShare;
+};
+
+export type LedgerSplitsUpdateResponse = LedgerSplitsUpdateResponses[keyof LedgerSplitsUpdateResponses];
+
+export type LedgerSplitsAcceptCreateData = {
+    body?: LedgerCostShareRespond;
+    path: {
+        /**
+         * Ein UUID-String, der cost share identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/splits/{id}/accept/';
+};
+
+export type LedgerSplitsAcceptCreateResponses = {
+    200: LedgerCostShare;
+};
+
+export type LedgerSplitsAcceptCreateResponse = LedgerSplitsAcceptCreateResponses[keyof LedgerSplitsAcceptCreateResponses];
+
+export type LedgerSplitsCancelCreateData = {
+    body?: LedgerCostShareRespond;
+    path: {
+        /**
+         * Ein UUID-String, der cost share identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/splits/{id}/cancel/';
+};
+
+export type LedgerSplitsCancelCreateResponses = {
+    200: LedgerCostShare;
+};
+
+export type LedgerSplitsCancelCreateResponse = LedgerSplitsCancelCreateResponses[keyof LedgerSplitsCancelCreateResponses];
+
+export type LedgerSplitsObjectCreateData = {
+    body?: LedgerCostShareRespond;
+    path: {
+        /**
+         * Ein UUID-String, der cost share identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/splits/{id}/object/';
+};
+
+export type LedgerSplitsObjectCreateResponses = {
+    200: LedgerCostShare;
+};
+
+export type LedgerSplitsObjectCreateResponse = LedgerSplitsObjectCreateResponses[keyof LedgerSplitsObjectCreateResponses];
+
+export type LedgerSplitsReceiptsCreateData = {
+    body: LedgerReceiptUpload;
+    path: {
+        /**
+         * Ein UUID-String, der cost share identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/splits/{id}/receipts/';
+};
+
+export type LedgerSplitsReceiptsCreateResponses = {
+    201: LedgerReceipt;
+};
+
+export type LedgerSplitsReceiptsCreateResponse = LedgerSplitsReceiptsCreateResponses[keyof LedgerSplitsReceiptsCreateResponses];
+
 export type LedgerTransactionsListData = {
     body?: never;
     path?: never;
@@ -5715,6 +6126,10 @@ export type LedgerTransactionsListData = {
         category?: string;
         date_from?: string;
         date_to?: string;
+        /**
+         * Has an open dispute
+         */
+        disputed?: boolean;
         has_receipt?: boolean;
         /**
          * Item id
@@ -5786,6 +6201,60 @@ export type LedgerTransactionsRetrieveResponses = {
 
 export type LedgerTransactionsRetrieveResponse = LedgerTransactionsRetrieveResponses[keyof LedgerTransactionsRetrieveResponses];
 
+export type LedgerTransactionsCommentsCreateData = {
+    body: LedgerCommentCreate;
+    path: {
+        /**
+         * Ein UUID-String, der transaction identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/transactions/{id}/comments/';
+};
+
+export type LedgerTransactionsCommentsCreateResponses = {
+    201: LedgerComment;
+};
+
+export type LedgerTransactionsCommentsCreateResponse = LedgerTransactionsCommentsCreateResponses[keyof LedgerTransactionsCommentsCreateResponses];
+
+export type LedgerTransactionsCorrectCreateData = {
+    body: LedgerCorrection;
+    path: {
+        /**
+         * Ein UUID-String, der transaction identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/transactions/{id}/correct/';
+};
+
+export type LedgerTransactionsCorrectCreateResponses = {
+    201: LedgerTransactionDetail;
+};
+
+export type LedgerTransactionsCorrectCreateResponse = LedgerTransactionsCorrectCreateResponses[keyof LedgerTransactionsCorrectCreateResponses];
+
+export type LedgerTransactionsDisputeCreateData = {
+    body: LedgerDisputeCreate;
+    path: {
+        /**
+         * Ein UUID-String, der transaction identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/transactions/{id}/dispute/';
+};
+
+export type LedgerTransactionsDisputeCreateResponses = {
+    201: LedgerDispute;
+};
+
+export type LedgerTransactionsDisputeCreateResponse = LedgerTransactionsDisputeCreateResponses[keyof LedgerTransactionsDisputeCreateResponses];
+
 export type LedgerTransactionsReceiptsCreateData = {
     body: LedgerReceiptUpload;
     path: {
@@ -5803,6 +6272,24 @@ export type LedgerTransactionsReceiptsCreateResponses = {
 };
 
 export type LedgerTransactionsReceiptsCreateResponse = LedgerTransactionsReceiptsCreateResponses[keyof LedgerTransactionsReceiptsCreateResponses];
+
+export type LedgerTransactionsReverseCreateData = {
+    body?: LedgerReverse;
+    path: {
+        /**
+         * Ein UUID-String, der transaction identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/transactions/{id}/reverse/';
+};
+
+export type LedgerTransactionsReverseCreateResponses = {
+    201: LedgerTransactionDetail;
+};
+
+export type LedgerTransactionsReverseCreateResponse = LedgerTransactionsReverseCreateResponses[keyof LedgerTransactionsReverseCreateResponses];
 
 export type LedgerUnbilledListData = {
     body?: never;

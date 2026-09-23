@@ -22,3 +22,5 @@ export const MY_LEDGER_PATH = '/ledger/me';
 export const ledgerTransactionPath = (id: string) => `${LEDGER_PATH}/t/${id}`;
 
 export const ledgerAccountPath = (id: string) => `${LEDGER_PATH}/a/${id}`;
+
+export const ledgerCostSharePath = (id: string) => `${LEDGER_PATH}/splits/${id}`;

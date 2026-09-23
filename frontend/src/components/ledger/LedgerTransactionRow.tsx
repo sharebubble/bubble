@@ -5,7 +5,7 @@ import { categoryLabel, hasOwnCategory } from '@/lib/ledger';
 import { ledgerTransactionPath } from '@/lib/routes';
 import type { LedgerTransaction } from '@/services/django';
 import { Badge, Card, Group, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core';
-import { Paperclip, Undo2 } from 'lucide-react';
+import { Flag, Paperclip, Undo2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 /** Kinds where a missing receipt is worth pointing out (plan section 7). */
@@ -76,6 +76,11 @@ export const LedgerTransactionRow = ({ transaction }: { transaction: LedgerTrans
             {missingReceipt && (
               <Badge variant="light" color="orange">
                 {t('ledger.noReceipt')}
+              </Badge>
+            )}
+            {transaction.open_disputes > 0 && (
+              <Badge variant="light" color="orange" leftSection={<Flag size={12} />}>
+                {t('ledger.disputed')}
               </Badge>
             )}
             {transaction.reversed_by.length > 0 && (

@@ -6,7 +6,7 @@ import {
   usePostLedgerTransaction,
 } from '@/hooks/useLedger';
 import { formatMoney } from '@/lib/currency';
-import { categoryLabel } from '@/lib/ledger';
+import { RECEIPT_TYPES, categoryLabel, type FieldErrors, fieldErrors, today } from '@/lib/ledger';
 import { ledgerTransactionPath } from '@/lib/routes';
 import type { LedgerIntentEnum, LedgerMyAccount, LedgerViaEnum } from '@/services/django';
 import {
@@ -40,22 +40,6 @@ const MY_EFFECT: Partial<Record<LedgerIntentEnum, number>> = {
   expense_for_community: 1,
   top_up: 1,
   member_to_member: -1,
-};
-const RECEIPT_TYPES = 'application/pdf,image/jpeg,image/png,image/webp,image/heic';
-
-type FieldErrors = Partial<Record<string, string>>;
-
-const today = () => new Date().toLocaleDateString('en-CA');
-
-/** The API answers a rejected posting with `{field: [message]}`. */
-const fieldErrors = (error: unknown): FieldErrors => {
-  if (!error || typeof error !== 'object') return {};
-  return Object.fromEntries(
-    Object.entries(error as Record<string, unknown>).map(([field, messages]) => [
-      field,
-      Array.isArray(messages) ? String(messages[0]) : String(messages),
-    ]),
-  );
 };
 
 interface NewLedgerTransactionModalProps {

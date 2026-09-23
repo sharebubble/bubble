@@ -1,6 +1,7 @@
 import { type Language, useLanguage } from '@/contexts/LanguageContext';
 import { useRejectFulfillment } from '@/hooks/useBookings';
 import { formatMoney } from '@/lib/currency';
+import { formatDate } from '@/lib/date';
 import { ledgerTransactionPath } from '@/lib/routes';
 import type { Booking } from '@/services/django';
 import { Alert, Anchor, Button, Group, Modal, Stack, Text, Textarea } from '@mantine/core';
@@ -49,6 +50,13 @@ export const AcceptedSaleNotice = ({
         {isBuyer && (
           <Text size="sm" c="dimmed">
             {t('booking.saleProblemHint')}
+          </Text>
+        )}
+        {booking.sale_auto_approve_at && (
+          <Text size="sm" c="dimmed">
+            {t(isBuyer ? 'booking.saleAutoApproveBuyer' : 'booking.saleAutoApproveSeller', {
+              date: formatDate(booking.sale_auto_approve_at, language),
+            })}
           </Text>
         )}
       </Stack>

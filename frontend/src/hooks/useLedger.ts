@@ -6,15 +6,32 @@ import {
   ledgerAccountsMeRetrieve,
   ledgerAccountsRetrieve,
   ledgerCategoriesList,
+  ledgerDisputesUpholdCreate,
+  ledgerDisputesWithdrawCreate,
   ledgerHealthRetrieve,
   ledgerProjectsList,
   ledgerReceiptsFileRetrieve,
+  ledgerSplitsAcceptCreate,
+  ledgerSplitsCancelCreate,
+  ledgerSplitsCreate,
+  ledgerSplitsList,
+  ledgerSplitsObjectCreate,
+  ledgerSplitsReceiptsCreate,
+  ledgerSplitsRetrieve,
+  ledgerSplitsUpdate,
+  ledgerTransactionsCommentsCreate,
+  ledgerTransactionsCorrectCreate,
   ledgerTransactionsCreate,
+  ledgerTransactionsDisputeCreate,
   ledgerTransactionsList,
   ledgerTransactionsRetrieve,
+  ledgerTransactionsReverseCreate,
   ledgerUnbilledList,
   type LedgerAccount,
+  type LedgerCorrectionLine,
+  type LedgerCostShareWrite,
   type LedgerIntent,
+  type LedgerSplitsListData,
   type LedgerTransactionsListData,
 } from '@/services/django';
 import { notifications } from '@mantine/notifications';
@@ -170,5 +187,173 @@ export const useDownloadReceipt = () => {
     onError: () => {
       notifications.show({ message: t('ledger.receiptDownloadFailed'), color: 'red' });
     },
+  });
+};
+
+// --- Disputes, corrections and comments (phase 4) ---------------------------
+
+/** Every change to a transaction touches balances, feeds and its detail page. */
+const useInvalidateLedger = () => {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: LEDGER_KEY });
+};
+
+/** Any member flags a transaction as wrong; it is never changed itself. */
+export const useDisputeTransaction = () => {
+  const invalidate = useInvalidateLedger();
+  const { t } = useLanguage();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) =>
+      (await ledgerTransactionsDisputeCreate({ path: { id }, body: { reason } })).data,
+    onSuccess: () => {
+      void invalidate();
+      notifications.show({ message: t('ledger.disputeRaised'), color: 'green' });
+    },
+  });
+};
+
+export const useWithdrawDispute = () => {
+  const invalidate = useInvalidateLedger();
+  return useMutation({
+    mutationFn: async (id: string) => (await ledgerDisputesWithdrawCreate({ path: { id } })).data,
+    onSuccess: () => void invalidate(),
+  });
+};
+
+/** Keep the transaction as it is, with an explanation. */
+export const useUpholdDispute = () => {
+  const invalidate = useInvalidateLedger();
+  return useMutation({
+    mutationFn: async ({ id, resolution }: { id: string; resolution: string }) =>
+      (await ledgerDisputesUpholdCreate({ path: { id }, body: { resolution } })).data,
+    onSuccess: () => void invalidate(),
+  });
+};
+
+/** Undo what is left of a transaction with a new, linked one. */
+export const useReverseTransaction = () => {
+  const invalidate = useInvalidateLedger();
+  const { t } = useLanguage();
+  return useMutation({
+    mutationFn: async ({ id, description }: { id: string; description: string }) =>
+      (await ledgerTransactionsReverseCreate({ path: { id }, body: { description } })).data,
+    onSuccess: () => {
+      void invalidate();
+      notifications.show({ message: t('ledger.reversed'), color: 'green' });
+    },
+  });
+};
+
+/** Undo part of a transaction: amounts per entry, as positive numbers. */
+export const useCorrectTransaction = () => {
+  const invalidate = useInvalidateLedger();
+  const { t } = useLanguage();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      description,
+      lines,
+    }: {
+      id: string;
+      description: string;
+      lines: LedgerCorrectionLine[];
+    }) =>
+      (await ledgerTransactionsCorrectCreate({ path: { id }, body: { description, lines } })).data,
+    onSuccess: () => {
+      void invalidate();
+      notifications.show({ message: t('ledger.correctionPosted'), color: 'green' });
+    },
+  });
+};
+
+export const useCommentOnTransaction = () => {
+  const invalidate = useInvalidateLedger();
+  return useMutation({
+    mutationFn: async ({ id, body }: { id: string; body: string }) =>
+      (await ledgerTransactionsCommentsCreate({ path: { id }, body: { body } })).data,
+    onSuccess: () => void invalidate(),
+  });
+};
+
+// --- Shared expenses ----------------------------------------------------------
+
+export type LedgerCostShareFilters = NonNullable<LedgerSplitsListData['query']>;
+
+/** Splits, newest first. `waiting_for_me` lists those the viewer must answer. */
+export const useLedgerCostShares = (filters: LedgerCostShareFilters = {}, enabled = true) =>
+  useQuery({
+    queryKey: [...LEDGER_KEY, 'splits', filters],
+    enabled,
+    queryFn: async () => (await ledgerSplitsList({ query: filters })).data,
+  });
+
+export const useLedgerCostShare = (id?: string) =>
+  useQuery({
+    queryKey: [...LEDGER_KEY, 'splits', 'detail', id],
+    enabled: !!id,
+    queryFn: async () => (await ledgerSplitsRetrieve({ path: { id: id! } })).data,
+  });
+
+/** Create a split, or change one (with `id`): everyone is asked again. */
+export const useSaveCostShare = () => {
+  const invalidate = useInvalidateLedger();
+  const { t } = useLanguage();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      receipts = [],
+      ...body
+    }: LedgerCostShareWrite & { id?: string; receipts?: File[] }) => {
+      const saved = id
+        ? (await ledgerSplitsUpdate({ path: { id }, body })).data
+        : (await ledgerSplitsCreate({ body })).data;
+      for (const file of receipts) {
+        await ledgerSplitsReceiptsCreate({
+          path: { id: saved.id },
+          // The generated type describes the multipart file as a string.
+          body: { file: file as unknown as string },
+        });
+      }
+      return saved;
+    },
+    onSuccess: () => {
+      void invalidate();
+      notifications.show({ message: t('ledger.split.saved'), color: 'green' });
+    },
+  });
+};
+
+/** A participant accepts their share, or objects with a reason. */
+export const useRespondToCostShare = () => {
+  const invalidate = useInvalidateLedger();
+  return useMutation({
+    mutationFn: async ({ id, accept, reason }: { id: string; accept: boolean; reason?: string }) =>
+      accept
+        ? (await ledgerSplitsAcceptCreate({ path: { id }, body: {} })).data
+        : (await ledgerSplitsObjectCreate({ path: { id }, body: { reason } })).data,
+    onSuccess: () => void invalidate(),
+  });
+};
+
+export const useCancelCostShare = () => {
+  const invalidate = useInvalidateLedger();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) =>
+      (await ledgerSplitsCancelCreate({ path: { id }, body: { reason } })).data,
+    onSuccess: () => void invalidate(),
+  });
+};
+
+export const useAddCostShareReceipt = () => {
+  const invalidate = useInvalidateLedger();
+  return useMutation({
+    mutationFn: async ({ id, file }: { id: string; file: File }) =>
+      (
+        await ledgerSplitsReceiptsCreate({
+          path: { id },
+          body: { file: file as unknown as string },
+        })
+      ).data,
+    onSuccess: () => void invalidate(),
   });
 };
