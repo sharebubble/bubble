@@ -1,6 +1,6 @@
 # Ledger — bookkeeping and accounting for Bubble
 
-Status: **phases 1–4 implemented** (`backend/bubble/ledger/`, `backend/bubble/bookings/services.py`, `frontend/src/pages/Ledger*.tsx`); phases 5–6 are design.
+Status: **phases 1–5 implemented** (`backend/bubble/ledger/`, `backend/bubble/bookings/services.py`, `frontend/src/pages/Ledger*.tsx`); phase 6 is design.
 Scope: a transparent, append-only double-entry ledger for one community, covering
 booking charges, member-entered expenses with receipts, top-ups, disputes,
 grouping and statistics.
@@ -615,13 +615,18 @@ POST   /api/ledger/splits/{id}/object/      participant, with reason
 POST   /api/ledger/splits/{id}/cancel/      payer or admin, while OPEN
 POST   /api/ledger/splits/{id}/receipts/    payer adds a receipt
 
-GET    /api/ledger/stats/?group_by=category|project|member|item|month&from=&to=
-GET    /api/ledger/projects/                CRUD for admins, read for all
+GET    /api/ledger/stats/?group_by=category|project|month|member|item|kind
+                                            &date_from=&date_to=&category=&project=
+GET    /api/ledger/categories/              read for all; POST/PATCH treasurer
+GET    /api/ledger/projects/                read for all; POST/PATCH treasurer
+                                            (?include_hidden=true: retired/archived)
 
 GET    /api/ledger/receipts/{id}/file/      authenticated, logged (D8)
 
-GET    /api/ledger/statements/me/?year=2026     per-member statement, CSV/PDF (D12)
-GET    /api/ledger/reports/annual/?year=2026    treasurer's report, CSV/PDF (D12)
+GET    /api/ledger/accounts/{id}/statement/?date_from=&date_to=   statement (D12)
+GET    /api/ledger/accounts/{id}/statement/csv/                    same, as CSV
+GET    /api/ledger/reports/annual/?year=2026    treasurer's report (D12)
+GET    /api/ledger/reports/annual/csv/?year=    same, as CSV
 GET    /api/ledger/exports/datev/?from=&to=     bookkeeping export, admin only (D12)
 GET    /api/ledger/health/                      trial balance + cache check (ok flag)
 ```
@@ -739,8 +744,16 @@ matching and UI are written once.
 
 - **Per-member statement**: all entries touching that member's account in a period, with
   opening and closing balance. CSV + PDF (WeasyPrint or ReportLab — pick during phase 5).
+  *As built:* CSV from the API, and PDF through the browser's print dialog from a
+  print-styled page (`/ledger/me/statement`, `/ledger/a/<id>/statement`). Neither
+  WeasyPrint (system libraries) nor ReportLab is needed, so the image and the lock
+  file stay as they are; a server-side PDF can follow if the tax advisor wants
+  one.
 - **Treasurer's annual report**: income/expense by category and by project, member
   balances at year end, bank/cash position, all reconciling to the trial balance.
+  *As built:* `/ledger/report` (every member can read it, D8), printable and as CSV.
+  It shows the check explicitly: the change in money equals the result plus what
+  members and the other accounts gained or lost, and the trial balance is zero.
 - **DATEV/CSV export**: requires stable account numbers, so `Account.code` is
   immutable once used and a `datev_number` field maps the chart of accounts to SKR42
   (or whatever the tax advisor uses). Exporting a period **closes** it
@@ -753,6 +766,29 @@ Retention: if the association is subject to German bookkeeping duties, receipts 
 ledger rows fall under a 10-year retention obligation, which conflicts with a naive
 "delete everything on account deletion" GDPR flow. Section 14 covers the handling; the
 association should confirm its own obligations with its tax advisor.
+
+**Statistics as built (phase 5).** `bubble/ledger/reports.py` aggregates `Entry`
+rows directly (no rollup table yet, section 8). Every group carries `income` and
+`expense` (the effect on the community's income and expense accounts), `amount`
+(the money moved: the sum of a transaction's debit legs), `credited`/`charged` for
+member groupings, and a transaction count. **Reversals and corrections count
+against what they undo**: their amounts are subtracted and they are not counted as
+transactions, so a reversed 30 € expense shows as 0, not as 60 € of turnover.
+Groupings: category, project (with budget), month, member, item (items that were
+deleted keep their line) and kind. `/ledger/stats` shows the totals as figures, the
+groupings as bar lists (income blue, expenses orange, transfers grey; a legend and
+the amount next to every bar, a tooltip on hover) and months as paired columns with
+the numbers in a table underneath. A category or project opens the feed filtered to
+it.
+
+**Categories and projects UI (phase 5).** The treasurer adds income and expense
+categories on `/ledger/manage`; each new one gets its own income or expense account
+(`expense:<code>`), so it appears on its own line in the statistics and the report.
+Categories can be renamed, reordered and retired (`is_active`), never deleted, and
+their kind never changes; transfer categories belong to the system. Projects get a
+name, optional budget and dates, and are archived rather than deleted; their slug
+never changes. Seeded categories keep the app's translation until the treasurer
+renames them (`has_default_name`).
 
 ---
 
@@ -828,7 +864,7 @@ A user who leaves must not take the community's books with them.
 | 2 ✅ | Manual transactions (intents) + receipts in the database with access log + `/api/ledger/` read & write + feed, detail, my-account and member-balance pages, balance in the account hub and header menu | the drill scenario works end to end |
 | 3 ✅ | Booking integration: `payment_enabled` gate, `Item.ledger_beneficiary` + community ownership in the UI, posting rentals on `COMPLETED`, sales accepted with ownership transfer to the buyer as a `DRAFT` (D17) and charged when the buyer approves the hand-over, or cancelled free of charge when the buyer rejects it (D18), reconciliation job, unbilled view | rentals and sales hit the ledger |
 | 4 ✅ | Disputes, comment threads, reversals and partial corrections in the UI, notifications, soft-limit warnings and reminders; shared expenses (`CostShare`, confirmation flow, auto-accept job) | the trust layer; group cooking works |
-| 5 | Categories/projects UI, statistics endpoints and page, per-member statement, treasurer's report | analytics and D12 part 1 |
+| 5 ✅ | Categories/projects UI, statistics endpoints and page, per-member statement, treasurer's report | analytics and D12 part 1 |
 | 6 | DATEV export + period close; bank import pipeline behind the port; hash chain and daily digest | D11/D12 completion |
 
 Phases 1–2 are the ones worth over-engineering slightly; everything later is additive
