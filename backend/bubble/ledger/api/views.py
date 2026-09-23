@@ -8,6 +8,7 @@ through ``bubble.ledger.intents``, which enforces who may charge whom.
 from django.db.models import Count, Exists, F, OuterRef, Prefetch, Q, Sum, Window
 from django.http import HttpResponse
 from django.utils.http import content_disposition_header
+from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiResponse, extend_schema
@@ -18,6 +19,7 @@ from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from bubble.bookings.models import Booking, BookingLedgerState
 from bubble.ledger.api.serializers import (
     ACCOUNT_TYPES,
     TRANSACTION_KINDS,
@@ -32,6 +34,7 @@ from bubble.ledger.api.serializers import (
     LedgerReceiptUploadSerializer,
     LedgerTransactionDetailSerializer,
     LedgerTransactionSerializer,
+    LedgerUnbilledBookingSerializer,
 )
 from bubble.ledger.intents import (
     IntentError,
@@ -355,3 +358,20 @@ class LedgerViewSet(viewsets.ViewSet):
             "mismatched_accounts": len(result.mismatched_accounts),
         }
         return Response(LedgerHealthSerializer(data).data)
+
+    @extend_schema(responses=LedgerUnbilledBookingSerializer(many=True))
+    @action(detail=False, methods=["get"])
+    def unbilled(self, request):
+        """Bookings that should have been charged but could not be (treasurer).
+
+        For example a booker on another instance, or a price in another
+        currency. The reason is in ``note``.
+        """
+        if not is_ledger_admin(request.user):
+            raise PermissionDenied(_("Only the treasurer can see unbilled bookings."))
+        bookings = (
+            Booking.objects.filter(ledger_state=BookingLedgerState.UNBILLED)
+            .select_related("item", "user", "remote_booker_actor")
+            .order_by("-updated_at")
+        )
+        return Response(LedgerUnbilledBookingSerializer(bookings, many=True).data)

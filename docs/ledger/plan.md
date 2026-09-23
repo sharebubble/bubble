@@ -27,9 +27,10 @@ These were settled up front; the rest of the document follows from them.
 | D12 | Reporting | Per-member yearly statement, treasurer's annual report, DATEV/CSV bookkeeping export. |
 | D13 | Charging other members (shared costs) | Participants are notified and can accept or object; silence counts as acceptance after N days (default 3), then it posts. Only then does it touch the ledger (section 7a). |
 | D14 | Which bookings create charges | Only items with the existing `Item.payment_enabled = True`. Nothing changes for existing items on rollout day. |
-| D15 | Sales | Sales post too: buyer → seller (or → community for community-owned items), same rules as rentals — at acceptance, see D17. |
+| D15 | Sales | Sales post too: buyer → seller (or → community for community-owned items), same rules as rentals — when the buyer approves the hand-over, see D17/D18. |
 | D16 | Community-owned items | The lister stays the steward (`Item.user`); `ledger_beneficiary = COMMUNITY` marks community ownership and routes income. No system user. |
-| D17 | When a sold item changes hands | Ownership moves to the buyer **when the seller accepts the amount** (the sale booking becomes `CONFIRMED`), not at the physical hand-over. The item becomes a `DRAFT` owned by the buyer, who reviews and republishes it. The sale charge posts in the same DB transaction. Supersedes the "on `COMPLETED`" part of D6/D15 for sales (section 6). |
+| D17 | When a sold item changes hands | Ownership moves to the buyer **when the seller accepts the amount** (the sale booking becomes `CONFIRMED`), not at the physical hand-over. The item becomes a `DRAFT` owned by the buyer, who reviews and republishes it. The agreed amount is frozen on the booking at that moment. Supersedes the "on `COMPLETED`" part of D6 for sales (section 6). |
+| D18 | Cancelling an accepted sale | Once the seller has accepted, the seller can no longer cancel. The buyer either **approves the fulfilment** (confirms receipt: the booking completes and the frozen amount is charged) or **rejects it** with a reason (not handed over, not as described): the booking is cancelled, the item goes back to the seller as a `DRAFT`, and nothing is charged. |
 
 Deferred, on purpose: which bank interface (CAMT.053/MT940 upload, PSD2 aggregator,
 FinTS/EBICS, CSV). Section 12 defines the seam so the choice stays a plug-in.
@@ -313,56 +314,62 @@ def post_transaction(*, book, kind, occurred_on, description, legs,
 
 ---
 
-## 6. Booking integration (D6, D14, D15, D17)
+## 6. Booking integration (D6, D14, D15, D17, D18)
 
 Posting happens **when a booking transitions to `COMPLETED`**, in the same
 `transaction.atomic()` block as the status change, through an explicit service call —
 not a `post_save` signal, so the posting cannot fire on unrelated saves and is easy to
 follow when reading the booking code. For rentals that transition lives in
-`BookingViewSet.confirm_returned`. Sales post earlier, at acceptance (D17, below).
+`BookingViewSet.confirm_returned` (and the owner ending a self-service rental). Sales are
+agreed at acceptance and post when the buyer approves the hand-over (D17/D18, below).
 
-**Sales follow D17, not D6.** A sale is final when the seller accepts the amount, so
-ownership and money move at that moment:
+**Sales follow D17 and D18, not D6.** A sale is agreed when the seller accepts the
+amount, and paid when the buyer approves the hand-over:
 
-- **Trigger:** a booking of a `SELL` item enters `CONFIRMED` — the owner accepts the
-  request (PATCH `status`), or `perform_create` auto-confirms it (owner booking,
-  self-service at or above the price). Both paths call one service,
-  `bookings.services.accept_sale(booking)`, inside the same `transaction.atomic()`.
-  Accepting a counter-offer is the booker agreeing to it; the sale is accepted when the
-  owner then confirms, so the amount is always known and agreed by both sides.
-- **Ownership:** `item.transfer_ownership(booking.user)` — the item becomes a `DRAFT`
-  owned by the buyer, with fresh permissions, `local_only` federation visibility and
-  no publish notification. The buyer sees it under "my items", can edit it, and
-  publishes it again (or keeps it private). The seller loses edit rights at acceptance.
-- **Charge:** posted in the same block, buyer → seller (or → `income:sales` for a
-  community item), idempotency key `booking:<id>:charge`, with the same skip rules as
-  rentals. Seller and beneficiary are read **before** `transfer_ownership`, otherwise
-  the buyer is credited for their own purchase. After a sale of a community-owned item,
-  `ledger_beneficiary` resets to `OWNER` — the buyer now owns it privately.
-- **Booking state:** the booking stays `CONFIRMED` until the hand-over.
-  `confirm_received` for sales then only records the hand-over (message + `COMPLETED`)
-  and no longer transfers ownership. Donations (`DONATE`) take the same path with a
-  zero amount: ownership moves at acceptance, nothing posts.
-- **Visibility:** today `Booking.objects.get_for_user` finds the seller's bookings
-  through their `change_item` permission, which moves to the buyer at acceptance. So
-  acceptance stores the seller on the booking (a new nullable `Booking.seller` FK,
-  alongside the existing `accepted_by`), and `get_for_user` also matches on it — the
-  conversation and the hand-over keep working after the transfer.
+- **Acceptance** (the booking of a `SELL` or `DONATE` item enters `CONFIRMED`: the owner
+  accepts via PATCH `status`, or `perform_create` auto-confirms a self-service request
+  at or above the price). One service, `bookings.services.accept_sale(booking)`, runs in
+  the same `transaction.atomic()`:
+  - it **freezes the terms** on the booking: `seller` (the steward at that moment),
+    `sale_accepted_at`, `agreed_price` (counter-offer → offer → item price) and
+    `credit_community` (the item's beneficiary). These are read **before** the transfer:
+    afterwards the buyer owns the item and could change its price or beneficiary;
+  - it **moves ownership**: `item.transfer_ownership(buyer)` — a `DRAFT` owned by the
+    buyer, fresh permissions, `local_only` federation, no publish notification, and
+    `ledger_beneficiary` back to `OWNER` (the buyer owns it privately);
+  - it **rejects other pending requests** for the item, which is no longer the
+    seller's to sell;
+  - **nothing posts yet.** The booking's `ledger_state` becomes `pending` (or
+    `not_charged` when payments are off or the amount is zero).
+- **The seller cannot cancel** an accepted sale (D18). PATCHing the status of an
+  accepted sale is refused for both sides; the buyer's two actions below are the only
+  ways forward.
+- **Buyer approves** (`confirm_received`): the booking completes and the charge posts,
+  buyer → seller (or → `income:sales` when `credit_community`), idempotency key
+  `booking:<id>:charge`, amount = the frozen `agreed_price`.
+- **Buyer rejects** (`reject_fulfillment`, with a reason: not handed over, not as
+  described): the booking is cancelled, the item goes back to the seller as a `DRAFT`
+  (and back to the community if it was a community item), and nothing is charged. The
+  reason is recorded as a booking message. If the buyer has already passed the item on
+  (a later booking of it is confirmed or in progress), rejection is refused.
+- **Donations** take the same path; they never charge.
+- **Visibility:** `Booking.objects.get_for_user` used to find the seller's bookings only
+  through their `change_item` permission, which moves to the buyer at acceptance; it
+  now also matches `seller`, so the conversation keeps working after the transfer.
 - **Remote buyers** (`booking.user is None`): there is no local account to own the
   item, so ownership stays with the seller until a cross-instance transfer is designed
-  (section 17, question 2); acceptance just confirms the booking, as today.
-- **Cancellation after acceptance** (the deal falls through before the hand-over): the
-  owner-at-acceptance or an admin cancels; one service call reverses the charge
-  (`reverse_transaction`, key `booking:<id>:charge:reversal`) and transfers the item
-  back to the seller (again as a `DRAFT`, so the seller republishes it deliberately).
-  The buyer cannot cancel alone once accepted — the seller has to agree, as with any
-  sale. Once `COMPLETED`, a refund is an ordinary correction by the seller, and the
-  item stays with the buyer unless they sell or give it back.
-- **Overlap:** a second pending request for the same sold item is rejected
-  automatically at acceptance (the item is no longer the seller's to sell).
+  (section 17, question 2); acceptance just confirms the booking, as before.
+- **Sales accepted before phase 3** have no `seller` recorded. They keep the old flow:
+  ownership moves at `confirm_received`, and nothing is charged.
+- **Waiting too long:** there is no automatic approval (yet). The daily reconciliation
+  job lists sales awaiting the buyer for more than 14 days, so the treasurer can follow
+  up (section 17, question 7).
+- **After completion**, a refund is an ordinary correction by the seller, and the item
+  stays with the buyer unless they sell or give it back.
 
 **Amount precedence:** accepted `counter_offer` → `offer` → `Booking.rental_price`
-(rentals) or `Item.price` (sales).
+(rentals; an open-ended rental is priced up to the moment it is returned) or `Item.price`
+(sales, frozen at acceptance). Rentals are priced when they complete.
 The chosen amount and its source are written into the transaction description and a
 structured `meta` field, so the charge stays explainable even if the item's price
 changes later. Price is *never* recomputed from the item after posting.
@@ -373,15 +380,26 @@ changes later. Price is *never* recomputed from the item after posting.
 **Skip rules — no transaction at all when:**
 - the item has `payment_enabled = False` (D14),
 - the amount is zero or null (borrow / donate / free items),
-- the booker is a remote federated actor (`booking.user is None`) — remote actors have
-  no local account. These bookings are listed in an "unbilled" view with a note. Cross
-  instance settlement is explicitly out of scope for v1 and needs its own design.
+- the booker is the item's own steward (booking their own item).
+
+**Unbilled — should be charged, but cannot be:** the booker is a remote federated actor
+(`booking.user is None`, no local account), the price is in another currency than the
+book, or the seller's account no longer exists. These bookings are listed in the
+treasurer's "unbilled" view (`GET /api/ledger/unbilled/`) with the reason. Cross-instance
+settlement is explicitly out of scope for v1 and needs its own design.
+
+**Booking ledger state:** every evaluated booking records `ledger_state` — `pending`
+(accepted sale waiting for the buyer), `posted`, `not_charged` (with the reason in
+`ledger_note`) or `unbilled` — so the booking page can show what happened and the
+reconciliation job has something to check. Bookings from before phase 3 stay blank.
 
 **Idempotency key:** `booking:<booking-id>:charge` (rentals and sales alike). Two concurrent completions produce
 one posting; the second call returns the existing transaction.
 
-**Reconciliation job:** a daily huey periodic task lists `COMPLETED` bookings with a chargeable
-amount and no posting, and reports them. Belt and braces against a missed transition.
+**Reconciliation job:** a daily huey periodic task checks that every `posted` booking has
+its transaction and every booking charge belongs to a `posted` booking, and lists
+unbilled bookings and sales awaiting the buyer for more than 14 days. Belt and braces
+against a missed transition.
 
 **Late cancellation of a completed booking** is a reversal, like any other correction.
 
@@ -745,9 +763,10 @@ A user who leaves must not take the community's books with them.
   booker posts nothing, `payment_enabled = False` posts nothing, price precedence
   honoured, price change after posting does not alter the charge, a sale credits the
   seller captured *before* `transfer_ownership`; accepting a sale makes the item a
-  `DRAFT` of the buyer and posts once; cancelling an accepted sale reverses the charge
-  and returns the item to the seller as a `DRAFT`; the seller can still open the
-  booking after the transfer.
+  `DRAFT` of the buyer and posts nothing; the buyer's approval posts once; the buyer's
+  rejection charges nothing and returns the item to the seller as a `DRAFT`; the seller
+  cannot cancel an accepted sale; the seller can still open the booking after the
+  transfer.
 - **Shared expenses**: property test that the rounding helper always sums exactly to
   the charged amount for random totals, weights and guest counts; a split posts only
   once (idempotency) even if the last acceptance and the auto-accept job race; an
@@ -766,7 +785,7 @@ A user who leaves must not take the community's books with them.
 |---|---|---|
 | 1 ✅ | `ledger` app: models, migrations incl. the balance and append-only triggers, `post_transaction` + `reverse_transaction` (full and partial), rounding helper, chart-of-accounts seed, member accounts for every user, read-only Django admin, account release on user deletion, nightly verification, invariant + property + concurrency tests | nothing user-visible |
 | 2 ✅ | Manual transactions (intents) + receipts in the database with access log + `/api/ledger/` read & write + feed, detail, my-account and member-balance pages, balance in the account hub and header menu | the drill scenario works end to end |
-| 3 | Booking integration: `payment_enabled` gate, `Item.ledger_beneficiary` + community ownership in the UI, posting rentals on `COMPLETED`, sales at acceptance with ownership transfer to the buyer as a `DRAFT` (D17), cancellation of accepted sales, reconciliation job, unbilled view | rentals and sales hit the ledger |
+| 3 | Booking integration: `payment_enabled` gate, `Item.ledger_beneficiary` + community ownership in the UI, posting rentals on `COMPLETED`, sales accepted with ownership transfer to the buyer as a `DRAFT` (D17) and charged when the buyer approves the hand-over, or cancelled free of charge when the buyer rejects it (D18), reconciliation job, unbilled view | rentals and sales hit the ledger |
 | 4 | Disputes, comment threads, reversals and partial corrections in the UI, notifications, soft-limit warnings and reminders; shared expenses (`CostShare`, confirmation flow, auto-accept job) | the trust layer; group cooking works |
 | 5 | Categories/projects UI, statistics endpoints and page, per-member statement, treasurer's report | analytics and D12 part 1 |
 | 6 | DATEV export + period close; bank import pipeline behind the port; hash chain and daily digest | D11/D12 completion |
@@ -794,3 +813,7 @@ because the core is append-only.
 6. **Membership fees / recurring postings**: no scheduler in this design. If the
    community charges dues, add a `RecurringPosting` model in phase 5+ that calls
    `post_transaction` from a huey periodic task with a date-derived idempotency key.
+7. **Sales the buyer never approves**: D18 has no automatic approval, so a buyer who
+   keeps the item and never confirms receipt is never charged. The reconciliation job
+   lists these after 14 days. If that turns out to happen, add an auto-approval N days
+   after the seller marks the item as handed over, like the cost-share deadline (D13).

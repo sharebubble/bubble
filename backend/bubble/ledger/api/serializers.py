@@ -308,3 +308,27 @@ class LedgerHealthSerializer(serializers.Serializer):
     ok = serializers.BooleanField()
     trial_balance = serializers.DecimalField(**MONEY)
     mismatched_accounts = serializers.IntegerField()
+
+
+class LedgerUnbilledBookingSerializer(serializers.Serializer):
+    """A booking that should have been charged but could not be."""
+
+    id = serializers.UUIDField()
+    item = serializers.UUIDField(source="item_id")
+    item_name = serializers.CharField(source="item.name")
+    booker = serializers.SerializerMethodField()
+    amount = serializers.DecimalField(
+        source="agreed_price.amount", allow_null=True, **MONEY
+    )
+    currency = serializers.SerializerMethodField()
+    note = serializers.CharField(source="ledger_note")
+    updated_at = serializers.DateTimeField()
+
+    def get_booker(self, obj) -> str:
+        if obj.user_id:
+            return obj.user.name or obj.user.username
+        actor = obj.remote_booker_actor
+        return (actor.name or actor.preferred_username) if actor else ""
+
+    def get_currency(self, obj) -> str:
+        return str(obj.agreed_price.currency) if obj.agreed_price is not None else ""
