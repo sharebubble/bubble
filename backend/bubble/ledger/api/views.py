@@ -5,6 +5,8 @@ per-object visibility, so these viewsets do not use ``get_for_user``. Writes go
 through ``bubble.ledger.intents``, which enforces who may charge whom.
 """
 
+import csv
+
 from django.db.models import (
     Count,
     Exists,
@@ -20,11 +22,14 @@ from django.db.models import (
 )
 from django.db.models.functions import Coalesce
 from django.http import HttpResponse
+from django.utils import timezone
 from django.utils.http import content_disposition_header
+from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from django_filters import rest_framework as filters
 from drf_spectacular.types import OpenApiTypes
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
+from moneyed import Money
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
@@ -39,7 +44,10 @@ from bubble.ledger.api.serializers import (
     TRANSACTION_KINDS,
     LedgerAccountEntrySerializer,
     LedgerAccountSerializer,
+    LedgerAnnualReportQuerySerializer,
+    LedgerAnnualReportSerializer,
     LedgerCategorySerializer,
+    LedgerCategoryWriteSerializer,
     LedgerCommentCreateSerializer,
     LedgerCommentSerializer,
     LedgerCorrectionSerializer,
@@ -52,14 +60,21 @@ from bubble.ledger.api.serializers import (
     LedgerHealthSerializer,
     LedgerIntentSerializer,
     LedgerMyAccountSerializer,
+    LedgerPeriodQuerySerializer,
     LedgerProjectSerializer,
+    LedgerProjectWriteSerializer,
     LedgerReceiptSerializer,
     LedgerReceiptUploadSerializer,
     LedgerReverseSerializer,
+    LedgerStatementSerializer,
+    LedgerStatsQuerySerializer,
+    LedgerStatsSerializer,
     LedgerTransactionDetailSerializer,
     LedgerTransactionSerializer,
     LedgerUnbilledBookingSerializer,
+    account_name,
 )
+from bubble.ledger.chart import create_category, unique_code
 from bubble.ledger.intents import (
     IntentError,
     IntentForbiddenError,
@@ -73,6 +88,7 @@ from bubble.ledger.models import (
     AccountType,
     Book,
     Category,
+    CategoryKind,
     CostShare,
     CostShareParticipant,
     CostShareState,
@@ -87,6 +103,7 @@ from bubble.ledger.models import (
     TransactionComment,
     TransactionKind,
 )
+from bubble.ledger.reports import account_statement, annual_report, ledger_stats
 from bubble.ledger.services import get_member_account, verify_ledger
 
 
@@ -736,29 +753,271 @@ class AccountViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = LedgerAccountEntrySerializer(page, many=True)
         return self.get_paginated_response(serializer.data)
 
+    @extend_schema(
+        parameters=[LedgerPeriodQuerySerializer],
+        responses=LedgerStatementSerializer,
+    )
+    @action(detail=True, methods=["get"])
+    def statement(self, request, id=None):  # noqa: A002
+        """Statement for a period (default: this year) with opening and closing
+        balance and the balance after each line, by business date (plan D12)."""
+        period = _period(request)
+        statement = account_statement(
+            self.get_object(), period["date_from"], period["date_to"]
+        )
+        return Response(LedgerStatementSerializer(statement).data)
 
-class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
+    @extend_schema(
+        parameters=[LedgerPeriodQuerySerializer],
+        responses={(200, "text/csv"): OpenApiResponse(OpenApiTypes.BINARY)},
+    )
+    @action(detail=True, methods=["get"], url_path="statement/csv")
+    def statement_csv(self, request, id=None):  # noqa: A002
+        """The same statement as a spreadsheet."""
+        period = _period(request)
+        account = self.get_object()
+        statement = account_statement(account, period["date_from"], period["date_to"])
+        rows = [
+            ["", "", "", str(_("Opening balance")), "", statement.opening_balance],
+            *(
+                [
+                    line.entry.transaction.occurred_on.isoformat(),
+                    line.entry.transaction.seq,
+                    TransactionKind(line.entry.transaction.kind).label,
+                    line.entry.transaction.description,
+                    line.amount,
+                    line.balance_after,
+                ]
+                for line in statement.lines
+            ),
+            ["", "", "", str(_("Closing balance")), "", statement.closing_balance],
+        ]
+        name = slugify(account_name(account)) or "account"
+        return _csv_response(
+            f"statement-{name}-{statement.date_from}-{statement.date_to}.csv",
+            [
+                str(_("Date")),
+                "#",
+                str(_("Kind")),
+                str(_("Description")),
+                str(_("Amount")),
+                str(_("Balance")),
+            ],
+            rows,
+        )
+
+
+class TreasurerWritesMixin:
+    """Everyone reads; only the treasurer creates or changes. Nothing is deleted."""
+
+    http_method_names = ["get", "post", "patch", "head", "options"]
+
+    def _require_treasurer(self):
+        if not is_ledger_admin(self.request.user):
+            raise PermissionDenied(_("Only the treasurer can change this."))
+
+    def _include_hidden(self) -> bool:
+        return self.request.query_params.get(
+            "include_hidden"
+        ) == "true" and is_ledger_admin(self.request.user)
+
+
+def _csv_response(filename: str, header: list[str], rows) -> HttpResponse:
+    """A CSV download that opens cleanly in spreadsheet apps (UTF-8 with BOM)."""
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = content_disposition_header(
+        as_attachment=True, filename=filename
+    )
+    response.write("\ufeff")
+    writer = csv.writer(response)
+    writer.writerow(header)
+    writer.writerows(rows)
+    return response
+
+
+def _period(request) -> dict:
+    serializer = LedgerPeriodQuerySerializer(data=request.query_params)
+    serializer.is_valid(raise_exception=True)
+    return serializer.validated_data
+
+
+class CategoryViewSet(
+    TreasurerWritesMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Categories to pick when posting. The treasurer adds income and expense
+    categories and renames, reorders or retires them (``is_active``);
+    ``?include_hidden=true`` lists retired ones too (treasurer only)."""
+
     permission_classes = [IsAuthenticated]
     serializer_class = LedgerCategorySerializer
     lookup_field = "id"
     pagination_class = None
     filter_backends = [filters.DjangoFilterBackend]
     filterset_fields = ["kind"]
+    parser_classes = [JSONParser]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "include_hidden", bool, description="Also retired ones (treasurer)"
+            )
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
-        return Category.objects.filter(book=Book.objects.default(), is_active=True)
+        categories = Category.objects.filter(book=Book.objects.default())
+        if self.action == "list" and not self._include_hidden():
+            categories = categories.filter(is_active=True)
+        return categories
+
+    @extend_schema(
+        request=LedgerCategoryWriteSerializer,
+        responses={201: LedgerCategorySerializer},
+    )
+    def create(self, request, *args, **kwargs):
+        self._require_treasurer()
+        serializer = LedgerCategoryWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        if "kind" not in data:
+            raise ValidationError({"kind": [_("Choose income or expense.")]})
+        book = Book.objects.default()
+        account = data.get("account")
+        if account is not None and (
+            account.book_id != book.pk
+            or account.type
+            != (
+                AccountType.INCOME
+                if data["kind"] == CategoryKind.INCOME
+                else AccountType.EXPENSE
+            )
+        ):
+            raise ValidationError({"account": [_("Pick an account of the same kind.")]})
+        category = create_category(
+            book,
+            name=data["name"].strip(),
+            kind=data["kind"],
+            account=account,
+            sort_order=data.get("sort_order"),
+        )
+        if data.get("is_active") is False:
+            category.is_active = False
+            category.save(update_fields=["is_active"])
+        return Response(
+            LedgerCategorySerializer(category).data, status=status.HTTP_201_CREATED
+        )
+
+    @extend_schema(
+        request=LedgerCategoryWriteSerializer, responses=LedgerCategorySerializer
+    )
+    def partial_update(self, request, *args, **kwargs):
+        """Rename, reorder or retire a category; its kind and account stay."""
+        self._require_treasurer()
+        category = self.get_object()
+        if category.kind == CategoryKind.TRANSFER:
+            raise ValidationError(
+                {"non_field_errors": [_("Transfer categories cannot be changed.")]}
+            )
+        serializer = LedgerCategoryWriteSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        if "kind" in data and data["kind"] != category.kind:
+            raise ValidationError({"kind": [_("The kind cannot be changed.")]})
+        for field in ("name", "sort_order", "is_active"):
+            if field in data:
+                setattr(category, field, data[field])
+        category.name = category.name.strip()
+        category.save()
+        return Response(LedgerCategorySerializer(category).data)
 
 
-class ProjectViewSet(viewsets.ReadOnlyModelViewSet):
+class ProjectViewSet(
+    TreasurerWritesMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Projects (cost centres) with an optional budget. The treasurer creates
+    and archives them; ``?include_hidden=true`` lists archived ones too."""
+
     permission_classes = [IsAuthenticated]
     serializer_class = LedgerProjectSerializer
     lookup_field = "id"
     pagination_class = None
+    parser_classes = [JSONParser]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "include_hidden", bool, description="Also retired ones (treasurer)"
+            )
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
-        return Project.objects.filter(
-            book=Book.objects.default(), is_archived=False
-        ).order_by("name")
+        projects = Project.objects.filter(book=Book.objects.default()).order_by(
+            "is_archived", "name"
+        )
+        if self.action == "list" and not self._include_hidden():
+            projects = projects.filter(is_archived=False)
+        return projects
+
+    def _save(self, project: Project, data: dict) -> Project:
+        book = project.book
+        if "name" in data:
+            project.name = data["name"].strip()
+        if not project.slug:
+            project.slug = unique_code(
+                Project.objects.filter(book=book),
+                "slug",
+                slugify(project.name)[:190] or "project",
+                max_length=200,
+            )
+        if "budget" in data:
+            budget = data["budget"]
+            project.budget = (
+                Money(budget, book.currency) if budget is not None else None
+            )
+        for field in ("starts_on", "ends_on", "is_archived"):
+            if field in data:
+                setattr(project, field, data[field])
+        project.save()
+        return project
+
+    @extend_schema(
+        request=LedgerProjectWriteSerializer,
+        responses={201: LedgerProjectSerializer},
+    )
+    def create(self, request, *args, **kwargs):
+        self._require_treasurer()
+        serializer = LedgerProjectWriteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        project = self._save(
+            Project(book=Book.objects.default()), serializer.validated_data
+        )
+        return Response(
+            LedgerProjectSerializer(project).data, status=status.HTTP_201_CREATED
+        )
+
+    @extend_schema(
+        request=LedgerProjectWriteSerializer, responses=LedgerProjectSerializer
+    )
+    def partial_update(self, request, *args, **kwargs):
+        self._require_treasurer()
+        project = self.get_object()
+        serializer = LedgerProjectWriteSerializer(
+            project, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        project = self._save(project, serializer.validated_data)
+        return Response(LedgerProjectSerializer(project).data)
 
 
 class ReceiptViewSet(viewsets.GenericViewSet):
@@ -808,6 +1067,78 @@ class LedgerViewSet(viewsets.ViewSet):
             "mismatched_accounts": len(result.mismatched_accounts),
         }
         return Response(LedgerHealthSerializer(data).data)
+
+    @extend_schema(
+        parameters=[LedgerStatsQuerySerializer], responses=LedgerStatsSerializer
+    )
+    @action(detail=False, methods=["get"])
+    def stats(self, request):
+        """Totals for a period, grouped by category, project, month, member,
+        item or kind (plan D7). Reversals and corrections count against what
+        they undo."""
+        query = LedgerStatsQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        stats = ledger_stats(**query.validated_data)
+        return Response(LedgerStatsSerializer(stats).data)
+
+    def _report(self, request):
+        query = LedgerAnnualReportQuerySerializer(data=request.query_params)
+        query.is_valid(raise_exception=True)
+        return annual_report(
+            query.validated_data.get("year") or timezone.localdate().year
+        )
+
+    @extend_schema(
+        parameters=[LedgerAnnualReportQuerySerializer],
+        responses=LedgerAnnualReportSerializer,
+    )
+    @action(detail=False, methods=["get"], url_path="reports/annual")
+    def annual_report(self, request):
+        """The treasurer's yearly overview, readable by every member (D8, D12)."""
+        return Response(LedgerAnnualReportSerializer(self._report(request)).data)
+
+    @extend_schema(
+        parameters=[LedgerAnnualReportQuerySerializer],
+        responses={(200, "text/csv"): OpenApiResponse(OpenApiTypes.BINARY)},
+    )
+    @action(detail=False, methods=["get"], url_path="reports/annual/csv")
+    def annual_report_csv(self, request):
+        """The annual report as one spreadsheet: section, line, amounts."""
+        report = self._report(request)
+        rows = [
+            *([str(_("Income")), r.label, r.income, ""] for r in report.income),
+            [str(_("Income")), str(_("Total")), report.total_income, ""],
+            *([str(_("Expenses")), r.label, r.expense, ""] for r in report.expense),
+            [str(_("Expenses")), str(_("Total")), report.total_expense, ""],
+            [str(_("Result")), "", report.result, ""],
+            *(
+                [str(_("Projects")), r.label, r.income - r.expense, r.budget or ""]
+                for r in report.projects
+            ),
+            *(
+                [str(_("Money")), p.account.name, p.closing, p.opening]
+                for p in report.money
+            ),
+            *(
+                [str(_("Members")), account_name(p.account), p.closing, p.opening]
+                for p in report.members
+            ),
+            *(
+                [str(_("Other accounts")), p.account.name, p.closing, p.opening]
+                for p in report.other
+            ),
+            [str(_("Check")), str(_("Trial balance")), report.trial_balance, ""],
+        ]
+        return _csv_response(
+            f"annual-report-{report.year}.csv",
+            [
+                str(_("Section")),
+                str(_("Line")),
+                str(_("Amount / closing")),
+                str(_("Budget / opening")),
+            ],
+            rows,
+        )
 
     @extend_schema(responses=LedgerUnbilledBookingSerializer(many=True))
     @action(detail=False, methods=["get"])

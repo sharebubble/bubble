@@ -522,6 +522,7 @@ SPECTACULAR_SETTINGS = {
         "LedgerViaEnum": "bubble.ledger.intents.Via",
         "LedgerCostShareSplitEnum": "bubble.ledger.models.CostShareSplit",
         "LedgerParticipantResponseEnum": "bubble.ledger.models.ParticipantResponse",
+        "LedgerStatsGroupEnum": "bubble.ledger.reports.GROUPS",
     },
 }
 

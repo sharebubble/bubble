@@ -73,3 +73,60 @@ def ensure_chart_of_accounts(book: Book) -> None:
                 "sort_order": order,
             },
         )
+
+
+DEFAULT_CATEGORY_NAMES = {code: name for code, name, _kind, _acc in CATEGORIES}
+
+
+def unique_code(queryset, field: str, base: str, *, max_length: int = 100) -> str:
+    """``base``, or ``base-2``, ``base-3`` … whichever is still free."""
+    base = (base or "x")[: max_length - 4]
+    candidate, n = base, 1
+    while queryset.filter(**{field: candidate}).exists():
+        n += 1
+        candidate = f"{base}-{n}"
+    return candidate
+
+
+def create_category(
+    book: Book,
+    *,
+    name: str,
+    kind: str,
+    account: Account | None = None,
+    sort_order: int | None = None,
+) -> Category:
+    """A new income or expense category (treasurer, phase 5).
+
+    Without ``account`` it gets its own income or expense account, so the
+    statistics and the annual report show it on its own line.
+    """
+    from django.utils.text import slugify  # noqa: PLC0415
+
+    code = unique_code(
+        Category.objects.filter(book=book), "code", slugify(name)[:90] or "category"
+    )
+    if account is None:
+        account_type = (
+            AccountType.INCOME if kind == CategoryKind.INCOME else AccountType.EXPENSE
+        )
+        account = Account.objects.create(
+            book=book,
+            type=account_type,
+            code=unique_code(
+                Account.objects.filter(book=book), "code", f"{kind}:{code}"
+            ),
+            name=name,
+        )
+        AccountBalance.objects.get_or_create(account=account)
+    if sort_order is None:
+        last = Category.objects.filter(book=book).order_by("-sort_order").first()
+        sort_order = (last.sort_order + 1) if last else 0
+    return Category.objects.create(
+        book=book,
+        code=code,
+        name=name,
+        kind=kind,
+        account=account,
+        sort_order=sort_order,
+    )

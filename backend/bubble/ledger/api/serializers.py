@@ -8,10 +8,13 @@ them more).
 
 from decimal import Decimal
 
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from bubble.ledger.chart import DEFAULT_CATEGORY_NAMES
 from bubble.ledger.cost_shares import compute_shares
 from bubble.ledger.disputes import can_reverse
 from bubble.ledger.intents import Intent, Via
@@ -19,6 +22,7 @@ from bubble.ledger.models import (
     Account,
     AccountType,
     Category,
+    CategoryKind,
     CostShare,
     CostShareParticipant,
     CostShareSplit,
@@ -31,6 +35,7 @@ from bubble.ledger.models import (
     TransactionComment,
     TransactionKind,
 )
+from bubble.ledger.reports import GROUPS
 from bubble.ledger.services import reversible_amounts
 
 ACCOUNT_TYPES = [t.name.lower() for t in AccountType]
@@ -115,10 +120,47 @@ class LedgerMyAccountSerializer(LedgerAccountSerializer):
 
 
 class LedgerCategorySerializer(serializers.ModelSerializer):
+    has_default_name = serializers.SerializerMethodField()
+
     class Meta:
         model = Category
-        fields = ["id", "code", "name", "kind"]
+        fields = [
+            "id",
+            "code",
+            "name",
+            "kind",
+            "account",
+            "sort_order",
+            "is_active",
+            "has_default_name",
+        ]
         read_only_fields = fields
+
+    def get_has_default_name(self, obj) -> bool:
+        """Seeded and not renamed: the app may show its own translation."""
+        return DEFAULT_CATEGORY_NAMES.get(obj.code) == obj.name
+
+
+class LedgerCategoryWriteSerializer(serializers.Serializer):
+    """Treasurer: a new income or expense category, or a change to one.
+
+    The kind is fixed once created; transfer categories belong to the system.
+    """
+
+    name = serializers.CharField(max_length=200)
+    kind = serializers.ChoiceField(
+        choices=[CategoryKind.INCOME, CategoryKind.EXPENSE], required=False
+    )
+    account = serializers.PrimaryKeyRelatedField(
+        queryset=Account.objects.filter(
+            type__in=[AccountType.INCOME, AccountType.EXPENSE], is_active=True
+        ),
+        required=False,
+        allow_null=True,
+        help_text="An existing income/expense account; a new one when empty.",
+    )
+    sort_order = serializers.IntegerField(min_value=0, required=False)
+    is_active = serializers.BooleanField(required=False)
 
 
 class LedgerProjectSerializer(serializers.ModelSerializer):
@@ -130,6 +172,32 @@ class LedgerProjectSerializer(serializers.ModelSerializer):
         model = Project
         fields = ["id", "name", "slug", "budget", "starts_on", "ends_on", "is_archived"]
         read_only_fields = fields
+
+
+class LedgerProjectWriteSerializer(serializers.Serializer):
+    """Treasurer: create or change a project (cost centre). Never deleted;
+    archive it instead."""
+
+    name = serializers.CharField(max_length=200)
+    budget = serializers.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        min_value=Decimal("0.00"),
+        required=False,
+        allow_null=True,
+    )
+    starts_on = serializers.DateField(required=False, allow_null=True)
+    ends_on = serializers.DateField(required=False, allow_null=True)
+    is_archived = serializers.BooleanField(required=False)
+
+    def validate(self, attrs):
+        start = attrs.get("starts_on", getattr(self.instance, "starts_on", None))
+        end = attrs.get("ends_on", getattr(self.instance, "ends_on", None))
+        if start and end and start > end:
+            raise serializers.ValidationError(
+                {"ends_on": _("The end date is before the start date.")}
+            )
+        return attrs
 
 
 class LedgerEntrySerializer(serializers.ModelSerializer):
@@ -605,3 +673,137 @@ class LedgerCostShareWriteSerializer(serializers.Serializer):
 
 class LedgerCostShareRespondSerializer(serializers.Serializer):
     reason = serializers.CharField(max_length=2000, required=False, allow_blank=True)
+
+
+# --- Statistics, statements, annual report (phase 5) ------------------------
+
+
+class LedgerStatsRowSerializer(serializers.Serializer):
+    """One group of a statistics view. Unused figures are zero: members carry
+    ``credited``/``charged``, the other groupings ``income``/``expense``/``amount``."""
+
+    key = serializers.CharField(allow_null=True)
+    code = serializers.CharField()
+    label = serializers.CharField()
+    income = serializers.DecimalField(**MONEY)
+    expense = serializers.DecimalField(**MONEY)
+    amount = serializers.DecimalField(**MONEY)
+    credited = serializers.DecimalField(**MONEY)
+    charged = serializers.DecimalField(**MONEY)
+    count = serializers.IntegerField()
+    budget = serializers.DecimalField(allow_null=True, **MONEY)
+    translatable = serializers.BooleanField(
+        help_text="The label is a seeded default the app may translate by code."
+    )
+
+
+class LedgerStatsSerializer(serializers.Serializer):
+    group_by = serializers.ChoiceField(choices=GROUPS)
+    currency = serializers.CharField()
+    date_from = serializers.DateField(allow_null=True)
+    date_to = serializers.DateField(allow_null=True)
+    totals = LedgerStatsRowSerializer()
+    rows = LedgerStatsRowSerializer(many=True)
+
+
+class LedgerStatsQuerySerializer(serializers.Serializer):
+    group_by = serializers.ChoiceField(choices=GROUPS, default="category")
+    date_from = serializers.DateField(required=False)
+    date_to = serializers.DateField(required=False)
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), required=False
+    )
+    project = serializers.PrimaryKeyRelatedField(
+        queryset=Project.objects.all(), required=False
+    )
+
+    def validate(self, attrs):
+        start, end = attrs.get("date_from"), attrs.get("date_to")
+        if start and end and start > end:
+            raise serializers.ValidationError(
+                {"date_to": _("The end date is before the start date.")}
+            )
+        return attrs
+
+
+class LedgerPeriodQuerySerializer(serializers.Serializer):
+    """A statement period; the current calendar year by default."""
+
+    date_from = serializers.DateField(required=False)
+    date_to = serializers.DateField(required=False)
+
+    def validate(self, attrs):
+        today = timezone.localdate()
+        attrs.setdefault("date_from", today.replace(month=1, day=1))
+        attrs.setdefault("date_to", today.replace(month=12, day=31))
+        if attrs["date_from"] > attrs["date_to"]:
+            raise serializers.ValidationError(
+                {"date_to": _("The end date is before the start date.")}
+            )
+        return attrs
+
+
+class LedgerStatementLineSerializer(serializers.Serializer):
+    entry = serializers.UUIDField(source="entry.pk")
+    transaction = serializers.UUIDField(source="entry.transaction_id")
+    seq = serializers.IntegerField(source="entry.transaction.seq")
+    occurred_on = serializers.DateField(source="entry.transaction.occurred_on")
+    kind = serializers.SerializerMethodField()
+    description = serializers.CharField(source="entry.transaction.description")
+    memo = serializers.CharField(source="entry.memo")
+    amount = serializers.DecimalField(**MONEY)
+    balance_after = serializers.DecimalField(**MONEY)
+
+    @extend_schema_field(serializers.ChoiceField(choices=TRANSACTION_KINDS))
+    def get_kind(self, obj) -> str:
+        return TransactionKind(obj.entry.transaction.kind).name.lower()
+
+
+class LedgerStatementSerializer(serializers.Serializer):
+    """An account statement (plan D12): display amounts, like the balance."""
+
+    account = LedgerAccountRefSerializer()
+    currency = serializers.CharField(source="account.book.currency")
+    date_from = serializers.DateField()
+    date_to = serializers.DateField()
+    opening_balance = serializers.DecimalField(**MONEY)
+    closing_balance = serializers.DecimalField(**MONEY)
+    credited = serializers.DecimalField(**MONEY)
+    charged = serializers.DecimalField(**MONEY)
+    lines = LedgerStatementLineSerializer(many=True)
+
+
+class LedgerAccountPositionSerializer(serializers.Serializer):
+    account = LedgerAccountRefSerializer()
+    opening = serializers.DecimalField(**MONEY)
+    closing = serializers.DecimalField(**MONEY)
+    change = serializers.DecimalField(**MONEY)
+
+
+class LedgerAnnualReportSerializer(serializers.Serializer):
+    """The treasurer's yearly overview (plan section 13)."""
+
+    year = serializers.IntegerField()
+    currency = serializers.CharField()
+    date_from = serializers.DateField()
+    date_to = serializers.DateField()
+    income = LedgerStatsRowSerializer(many=True)
+    expense = LedgerStatsRowSerializer(many=True)
+    total_income = serializers.DecimalField(**MONEY)
+    total_expense = serializers.DecimalField(**MONEY)
+    result = serializers.DecimalField(**MONEY)
+    projects = LedgerStatsRowSerializer(many=True)
+    members = LedgerAccountPositionSerializer(many=True)
+    owed_to_members = serializers.DecimalField(**MONEY)
+    owed_by_members = serializers.DecimalField(**MONEY)
+    money = LedgerAccountPositionSerializer(many=True)
+    money_change = serializers.DecimalField(**MONEY)
+    other = LedgerAccountPositionSerializer(many=True)
+    explained_money_change = serializers.DecimalField(**MONEY)
+    transactions = serializers.IntegerField()
+    trial_balance = serializers.DecimalField(**MONEY)
+    reconciles = serializers.BooleanField()
+
+
+class LedgerAnnualReportQuerySerializer(serializers.Serializer):
+    year = serializers.IntegerField(min_value=2000, max_value=2100, required=False)
