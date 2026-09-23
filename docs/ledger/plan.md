@@ -1,6 +1,6 @@
 # Ledger — bookkeeping and accounting for Bubble
 
-Status: **phases 1–3 implemented** (`backend/bubble/ledger/`, `backend/bubble/bookings/services.py`, `frontend/src/pages/Ledger*.tsx`); phases 4–6 are design.
+Status: **phases 1–4 implemented** (`backend/bubble/ledger/`, `backend/bubble/bookings/services.py`, `frontend/src/pages/Ledger*.tsx`); phases 5–6 are design.
 Scope: a transparent, append-only double-entry ledger for one community, covering
 booking charges, member-entered expenses with receipts, top-ups, disputes,
 grouping and statistics.
@@ -31,6 +31,7 @@ These were settled up front; the rest of the document follows from them.
 | D16 | Community-owned items | The lister stays the steward (`Item.user`); `ledger_beneficiary = COMMUNITY` marks community ownership and routes income. No system user. |
 | D17 | When a sold item changes hands | Ownership moves to the buyer **when the seller accepts the amount** (the sale booking becomes `CONFIRMED`), not at the physical hand-over. The item becomes a `DRAFT` owned by the buyer, who reviews and republishes it. The agreed amount is frozen on the booking at that moment. Supersedes the "on `COMPLETED`" part of D6 for sales (section 6). |
 | D18 | Cancelling an accepted sale | Once the seller has accepted, the seller can no longer cancel. The buyer either **approves the fulfilment** (confirms receipt: the booking completes and the frozen amount is charged) or **rejects it** with a reason (not handed over, not as described): the booking is cancelled, the item goes back to the seller as a `DRAFT`, and nothing is charged. |
+| D19 | A buyer who never answers | An accepted sale is **approved automatically 3 days** after acceptance (Constance `SALE_AUTO_APPROVE_DAYS`) and charged, exactly as if the buyer had confirmed receipt. Until then the buyer gets **one reminder a day** saying when it will happen and how to report a problem instead. |
 
 Deferred, on purpose: which bank interface (CAMT.053/MT940 upload, PSD2 aggregator,
 FinTS/EBICS, CSV). Section 12 defines the seam so the choice stays a plug-in.
@@ -361,9 +362,14 @@ amount, and paid when the buyer approves the hand-over:
   (section 17, question 2); acceptance just confirms the booking, as before.
 - **Sales accepted before phase 3** have no `seller` recorded. They keep the old flow:
   ownership moves at `confirm_received`, and nothing is charged.
-- **Waiting too long:** there is no automatic approval (yet). The daily reconciliation
-  job lists sales awaiting the buyer for more than 14 days, so the treasurer can follow
-  up (section 17, question 7).
+- **The buyer does not answer (D19):** an hourly huey task sends the buyer one reminder
+  per day after acceptance (notification + in-app message, naming the date of the
+  automatic approval), and **approves the sale automatically once
+  `SALE_AUTO_APPROVE_DAYS` (default 3) have passed**: the booking completes and the
+  frozen amount is charged, with a booking message saying it happened automatically.
+  `Booking.sale_reminders_sent` makes the reminders idempotent. The reconciliation job
+  still lists sales waiting longer than 14 days, which now only happens if the task
+  stopped running.
 - **After completion**, a refund is an ordinary correction by the seller, and the item
   stays with the buyer unless they sell or give it back.
 
@@ -515,6 +521,37 @@ payer is credited exactly the sum of the shares actually posted (their own exclu
 so the transaction balances by construction. The same helper rounds rental prices, so
 there is one rounding rule in the codebase.
 
+**As built (phase 4).** The models live in `bubble/ledger/models.py` with the payer
+and participants as member *accounts* rather than users (like every other ledger
+reference), the service in `bubble/ledger/cost_shares.py`, and the job
+`process_cost_share_deadlines_hourly`, which also sends the one reminder a pending
+participant gets a day before the deadline (`COST_SHARE_AUTO_ACCEPT_DAYS`, default 3).
+The payer is listed last in the rounding, so leftover cents go to participants first.
+An objected share keeps its computed value on the split page (struck through) but is
+not posted; if every participant objects, the split is cancelled instead of posted.
+Editing an open split replaces its participants and asks everyone again. The posted
+transaction's detail page shows the split's receipts and links back to the split
+(`/ledger/splits/<id>`).
+
+**Disputes, comments and corrections (phase 4).** `Dispute` (one open dispute per
+member and transaction) and the append-only `TransactionComment` live next to the
+transaction; the service is `bubble/ledger/disputes.py`. The transaction's author,
+the members it *credits* (they give money back) and the treasurer may reverse it,
+correct part of it (the UI takes positive amounts per line and requires both sides to
+balance; the sign follows what is left of each line) or keep it with an explanation.
+A reversal or correction closes the open disputes on it. Reversals and corrections
+themselves are not reversed again; a mistake in one is fixed with a new entry.
+
+**Notifications (phase 4).** One new event type, `ledger`, joins the "messages"
+group of the notification settings (existing preferences are copied from "new
+messages", and new users get it on RocketChat by default). `bubble/ledger/notify.py`
+sends each notice after the database transaction commits, as an in-app message and on
+the member's channels, in the member's language: postings that change a member's
+balance (not to the person who posted), disputes, answers, comments, split requests,
+changes, reminders and objections, the weekly soft-limit reminder
+(`remind_low_balances_daily`, at most once a week while below the limit), and the sale
+reminders and automatic confirmation of D19.
+
 **Why not just `Project`?** Projects are cost centres ("Thursday dinners", "summer
 festival") for grouping and budgets. A `CostShare` is one concrete event with
 participants. A CostShare can belong to a project, which is how "what did the Thursday
@@ -556,10 +593,12 @@ GET    /api/ledger/transactions/            list, all members (D8)
                                             disputed, q
 POST   /api/ledger/transactions/            manual intent (section 7)
 GET    /api/ledger/transactions/{id}/       entries, receipts, dispute, reversal links
-POST   /api/ledger/transactions/{id}/reverse/     author or admin
+POST   /api/ledger/transactions/{id}/reverse/     author, credited member or admin
+POST   /api/ledger/transactions/{id}/correct/     same; {lines: [{entry, amount}]}
 POST   /api/ledger/transactions/{id}/dispute/     any member (D9)
-POST   /api/ledger/transactions/{id}/dispute/withdraw/
 POST   /api/ledger/transactions/{id}/comments/    discussion thread
+POST   /api/ledger/disputes/{id}/withdraw/        the member who raised it
+POST   /api/ledger/disputes/{id}/uphold/          keep it, with a resolution
 
 GET    /api/ledger/accounts/                chart of accounts; ?type=member lists every
                                             member's balance (transparent, D8)
@@ -567,12 +606,14 @@ GET    /api/ledger/accounts/me/             my account + balance + soft-limit st
 GET    /api/ledger/accounts/{id}/entries/   statement with the balance after each entry
 POST   /api/ledger/transactions/{id}/receipts/    add a receipt (author or treasurer)
 
-POST   /api/ledger/cost-shares/             create a shared expense (section 7a)
-GET    /api/ledger/cost-shares/?mine=1      open splits I paid for or take part in
-PATCH  /api/ledger/cost-shares/{id}/        payer edits while OPEN (re-notifies)
-POST   /api/ledger/cost-shares/{id}/accept/     participant
-POST   /api/ledger/cost-shares/{id}/object/     participant, with reason
-POST   /api/ledger/cost-shares/{id}/cancel/     payer or admin, while OPEN
+POST   /api/ledger/splits/                  create a shared expense (section 7a)
+GET    /api/ledger/splits/?mine=1           splits I paid for or take part in;
+                                            ?waiting_for_me=1, ?state=open
+PUT    /api/ledger/splits/{id}/             payer edits while OPEN (re-notifies)
+POST   /api/ledger/splits/{id}/accept/      participant
+POST   /api/ledger/splits/{id}/object/      participant, with reason
+POST   /api/ledger/splits/{id}/cancel/      payer or admin, while OPEN
+POST   /api/ledger/splits/{id}/receipts/    payer adds a receipt
 
 GET    /api/ledger/stats/?group_by=category|project|member|item|month&from=&to=
 GET    /api/ledger/projects/                CRUD for admins, read for all
@@ -592,8 +633,8 @@ on that account's readable balance.
 
 **Permissions.** Read: any authenticated user, everything (D8). Write: members may post
 manual transactions that charge only their own account, create cost shares, answer
-the ones they take part in, dispute anything, and reverse transactions **they
-authored**. A `ledger_admin` group (treasurer) may post payouts and adjustments, reverse
+the ones they take part in, dispute and comment on anything, and reverse or correct
+transactions **they authored or that credit them** (giving money back). A `ledger_admin` group (treasurer) may post payouts and adjustments, reverse
 anyone's transaction, manage categories/projects, close periods and run exports. Nothing
 is deletable by anyone, including admins and the Django admin — the admin registers the
 models read-only.
@@ -786,7 +827,7 @@ A user who leaves must not take the community's books with them.
 | 1 ✅ | `ledger` app: models, migrations incl. the balance and append-only triggers, `post_transaction` + `reverse_transaction` (full and partial), rounding helper, chart-of-accounts seed, member accounts for every user, read-only Django admin, account release on user deletion, nightly verification, invariant + property + concurrency tests | nothing user-visible |
 | 2 ✅ | Manual transactions (intents) + receipts in the database with access log + `/api/ledger/` read & write + feed, detail, my-account and member-balance pages, balance in the account hub and header menu | the drill scenario works end to end |
 | 3 ✅ | Booking integration: `payment_enabled` gate, `Item.ledger_beneficiary` + community ownership in the UI, posting rentals on `COMPLETED`, sales accepted with ownership transfer to the buyer as a `DRAFT` (D17) and charged when the buyer approves the hand-over, or cancelled free of charge when the buyer rejects it (D18), reconciliation job, unbilled view | rentals and sales hit the ledger |
-| 4 | Disputes, comment threads, reversals and partial corrections in the UI, notifications, soft-limit warnings and reminders; shared expenses (`CostShare`, confirmation flow, auto-accept job) | the trust layer; group cooking works |
+| 4 ✅ | Disputes, comment threads, reversals and partial corrections in the UI, notifications, soft-limit warnings and reminders; shared expenses (`CostShare`, confirmation flow, auto-accept job) | the trust layer; group cooking works |
 | 5 | Categories/projects UI, statistics endpoints and page, per-member statement, treasurer's report | analytics and D12 part 1 |
 | 6 | DATEV export + period close; bank import pipeline behind the port; hash chain and daily digest | D11/D12 completion |
 
@@ -813,7 +854,5 @@ because the core is append-only.
 6. **Membership fees / recurring postings**: no scheduler in this design. If the
    community charges dues, add a `RecurringPosting` model in phase 5+ that calls
    `post_transaction` from a huey periodic task with a date-derived idempotency key.
-7. **Sales the buyer never approves**: D18 has no automatic approval, so a buyer who
-   keeps the item and never confirms receipt is never charged. The reconciliation job
-   lists these after 14 days. If that turns out to happen, add an auto-approval N days
-   after the seller marks the item as handed over, like the cost-share deadline (D13).
+7. ~~**Sales the buyer never approves**~~ — decided as D19: automatic approval after 3
+   days, with a daily reminder until then.
