@@ -15,8 +15,10 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from datetime import timedelta
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
+from constance import config
 from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -29,6 +31,7 @@ from bubble.bookings.models import (
 )
 from bubble.items.models import LedgerBeneficiary, SalesType
 from bubble.ledger.models import Book, Category, Transaction, TransactionKind
+from bubble.ledger.notify import money, notify, notify_posting
 from bubble.ledger.services import (
     Leg,
     get_member_account,
@@ -154,6 +157,7 @@ def _settle(  # noqa: PLR0913
         book=book,
     )
     _set_state(booking, BookingLedgerState.POSTED)
+    notify_posting(tx)
     return tx
 
 
@@ -332,6 +336,79 @@ def reject_sale(booking: Booking, *, reason: str) -> None:
                 reason=reason
             ),
         )
+
+
+def sale_auto_approve_at(booking: Booking):
+    """When an accepted sale is confirmed automatically if the buyer is silent."""
+    if not booking.is_accepted_sale:
+        return None
+    return booking.sale_accepted_at + timedelta(days=config.SALE_AUTO_APPROVE_DAYS)
+
+
+def _price_text(booking: Booking) -> str:
+    if booking.ledger_state != BookingLedgerState.PENDING or not booking.agreed_price:
+        return money(Decimal(0), str(Book.objects.default().currency))
+    return money(booking.agreed_price.amount, str(booking.agreed_price.currency))
+
+
+def remind_or_auto_approve_sales(now=None) -> tuple[int, int]:
+    """Remind silent buyers daily and approve their sales after the deadline (D19).
+
+    Returns ``(reminders_sent, sales_approved)``. Safe to run as often as
+    wanted: the reminder counter and the booking status make it idempotent.
+    """
+    now = now or timezone.now()
+    days = config.SALE_AUTO_APPROVE_DAYS
+    reminded = approved = 0
+    waiting = Booking.objects.filter(
+        status=BookingStatus.CONFIRMED,
+        seller__isnull=False,
+        sale_accepted_at__isnull=False,
+    ).values_list("pk", flat=True)
+    for pk in waiting:
+        with transaction.atomic():
+            booking = (
+                Booking.objects.select_for_update(skip_locked=True, of=("self",))
+                .select_related("item", "user", "seller")
+                .filter(pk=pk, status=BookingStatus.CONFIRMED)
+                .first()
+            )
+            if booking is None:
+                continue
+            elapsed_days = int(
+                (now - booking.sale_accepted_at).total_seconds() // 86400
+            )
+            if elapsed_days >= days:
+                approve_sale(booking)
+                Message.objects.create(
+                    booking=booking,
+                    sender=booking.user,
+                    message=_(
+                        "Receipt confirmed automatically: no answer within {days} days."
+                    ).format(days=days),
+                )
+                for person in (booking.user, booking.seller):
+                    notify(
+                        person,
+                        "sale_auto_approved",
+                        path=f"/bookings/{booking.pk}",
+                        item=booking.item.name,
+                        amount=_price_text(booking),
+                    )
+                approved += 1
+            elif elapsed_days >= 1 and booking.sale_reminders_sent < elapsed_days:
+                booking.sale_reminders_sent = elapsed_days
+                booking.save(update_fields=["sale_reminders_sent"])
+                notify(
+                    booking.user,
+                    "sale_reminder",
+                    path=f"/bookings/{booking.pk}",
+                    item=booking.item.name,
+                    deadline=timezone.localdate(sale_auto_approve_at(booking)),
+                    amount=_price_text(booking),
+                )
+                reminded += 1
+    return reminded, approved
 
 
 # --- Rentals ----------------------------------------------------------------

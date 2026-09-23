@@ -8,7 +8,10 @@ from huey import crontab
 from huey.contrib.djhuey import periodic_task
 
 from bubble.bookings.models import Booking, BookingStatus
-from bubble.bookings.services import reconcile_booking_charges
+from bubble.bookings.services import (
+    reconcile_booking_charges,
+    remind_or_auto_approve_sales,
+)
 from bubble.items.models import Item, ItemStatus, SalesType
 
 logger = logging.getLogger(__name__)
@@ -86,3 +89,15 @@ def reconcile_booking_charges_daily() -> None:
         )
     if report.unbilled:
         logger.info("%d bookings are unbilled", report.unbilled)
+
+
+@periodic_task(crontab(minute="15"))
+def remind_or_auto_approve_sales_hourly() -> None:
+    """Hourly: remind silent buyers once a day; approve after the deadline (D19)."""
+    reminded, approved = remind_or_auto_approve_sales()
+    if reminded or approved:
+        logger.info(
+            "Accepted sales: %d buyers reminded, %d sales approved automatically",
+            reminded,
+            approved,
+        )

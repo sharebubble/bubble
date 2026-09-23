@@ -10,6 +10,7 @@ from bubble.bookings.models import (
     BookingStatus,
     Message,
 )
+from bubble.bookings.services import sale_auto_approve_at
 from bubble.items.api.serializers import ItemMinimalSerializer
 from bubble.items.models import Item, SalesType
 from bubble.ledger.models import Transaction
@@ -33,6 +34,7 @@ class BookingSerializer(serializers.ModelSerializer):
     remote_booker_actor = RemoteActorMinimalSerializer(read_only=True)
     unread_messages_count = serializers.SerializerMethodField()
     ledger_transaction = serializers.SerializerMethodField()
+    sale_auto_approve_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -55,6 +57,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "ledger_state",
             "ledger_note",
             "ledger_transaction",
+            "sale_auto_approve_at",
             "created_at",
             "updated_at",
             "unread_messages_count",
@@ -84,6 +87,14 @@ class BookingSerializer(serializers.ModelSerializer):
             .first()
         )
         return str(tx_id) if tx_id else None
+
+    @extend_schema_field(serializers.DateTimeField(allow_null=True))
+    def get_sale_auto_approve_at(self, obj) -> str | None:
+        """When an accepted sale is confirmed automatically (ledger plan D19)."""
+        if obj.status != BookingStatus.CONFIRMED:
+            return None
+        when = sale_auto_approve_at(obj)
+        return serializers.DateTimeField().to_representation(when) if when else None
 
     def get_unread_messages_count(self, obj) -> int | None:
         """Return unread_messages_count if it exists as an annotated field."""

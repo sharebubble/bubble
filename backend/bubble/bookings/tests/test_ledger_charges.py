@@ -5,10 +5,11 @@ accepts, and are charged when the buyer approves the hand-over; a buyer who
 rejects it pays nothing and the item goes back to the seller.
 """
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 import pytest
+from constance.test import override_config
 from django.contrib.auth.models import Group
 from django.utils import timezone
 from moneyed import Money
@@ -21,7 +22,11 @@ from bubble.bookings.models import (
     BookingStatus,
     Message,
 )
-from bubble.bookings.services import complete_rental, reconcile_booking_charges
+from bubble.bookings.services import (
+    complete_rental,
+    reconcile_booking_charges,
+    remind_or_auto_approve_sales,
+)
 from bubble.bookings.tests.factories import BookingFactory, ItemFactory
 from bubble.core.permissions_config import DefaultGroup
 from bubble.federation.models import AllowlistState, RemoteActor, RemoteInstance
@@ -339,6 +344,108 @@ class TestNobodyCancelsAnAcceptedSale:
         booking.item.refresh_from_db()
         assert booking.item.user == people["buyer"]
         assert not charges().exists()
+
+
+@pytest.fixture
+def notices(monkeypatch):
+    sent = []
+    monkeypatch.setattr(
+        "bubble.ledger.notify.dispatch_notification",
+        lambda user, event_type, context: sent.append((user.username, context)),
+    )
+    monkeypatch.setattr(
+        "bubble.ledger.notify.send_message_notification",
+        lambda user_id, message: None,
+    )
+    return sent
+
+
+class TestTheBuyerDoesNotAnswer:
+    """D19: a daily reminder, then approval and the charge after 3 days."""
+
+    def test_reminded_daily_then_approved_and_charged(
+        self, api, people, sale, notices, django_capture_on_commit_callbacks
+    ):
+        booking = accept(api, people, sale())
+        accepted = booking.sale_accepted_at
+        deadline = accepted + timedelta(days=3)
+        response = api(people["buyer"]).get(f"{BOOKINGS}{booking.id}/")
+        shown = datetime.fromisoformat(response.data["sale_auto_approve_at"])
+        assert shown == deadline
+
+        with django_capture_on_commit_callbacks(execute=True):
+            # Not yet a day: nothing.
+            assert remind_or_auto_approve_sales(accepted + timedelta(hours=23)) == (
+                0,
+                0,
+            )
+            # One reminder a day, however often the job runs.
+            for hours, expected in [(24, (1, 0)), (25, (0, 0)), (47, (0, 0))]:
+                assert (
+                    remind_or_auto_approve_sales(accepted + timedelta(hours=hours))
+                    == expected
+                )
+            assert remind_or_auto_approve_sales(accepted + timedelta(hours=48)) == (
+                1,
+                0,
+            )
+        assert [(user, c["kind"]) for user, c in notices] == [
+            ("buyer", "sale_reminder"),
+            ("buyer", "sale_reminder"),
+        ]
+        assert notices[0][1]["amount"] == "50.00 EUR"
+        assert notices[0][1]["deadline"] == str(timezone.localdate(deadline))
+        assert not charges().exists()
+
+        notices.clear()
+        with django_capture_on_commit_callbacks(execute=True):
+            assert remind_or_auto_approve_sales(deadline + timedelta(minutes=5)) == (
+                0,
+                1,
+            )
+
+        booking.refresh_from_db()
+        assert booking.status == BookingStatus.COMPLETED
+        assert booking.ledger_state == BookingLedgerState.POSTED
+        assert member_balance(people["buyer"]) == Decimal("-50.00")
+        assert member_balance(people["seller"]) == Decimal("50.00")
+        assert Message.objects.filter(
+            booking=booking, message__contains="automatically"
+        ).exists()
+        kinds = {(user, c["kind"]) for user, c in notices}
+        assert ("buyer", "sale_auto_approved") in kinds
+        assert ("seller", "sale_auto_approved") in kinds
+        # Idempotent: a second run charges nothing more.
+        assert remind_or_auto_approve_sales(deadline + timedelta(hours=2)) == (0, 0)
+        assert charges().count() == 1
+
+    def test_the_setting_moves_the_deadline(self, api, people, sale):
+        booking = accept(api, people, sale())
+        with override_config(SALE_AUTO_APPROVE_DAYS=1):
+            assert remind_or_auto_approve_sales(
+                booking.sale_accepted_at + timedelta(days=1, minutes=1)
+            ) == (0, 1)
+
+    def test_an_answered_sale_is_left_alone(self, api, people, sale):
+        booking = accept(api, people, sale())
+        api(people["buyer"]).post(
+            f"{BOOKINGS}{booking.id}/reject_fulfillment/",
+            {"reason": "Broken"},
+            format="json",
+        )
+        later = booking.sale_accepted_at + timedelta(days=5)
+        assert remind_or_auto_approve_sales(later) == (0, 0)
+        assert not charges().exists()
+
+    def test_legacy_and_unaccepted_sales_are_not_touched(self, api, people, sale):
+        legacy = sale()
+        legacy.status = BookingStatus.CONFIRMED
+        legacy.save()
+        sale()  # still pending
+        later = timezone.now() + timedelta(days=5)
+        assert remind_or_auto_approve_sales(later) == (0, 0)
+        legacy.refresh_from_db()
+        assert legacy.status == BookingStatus.CONFIRMED
 
 
 @pytest.fixture

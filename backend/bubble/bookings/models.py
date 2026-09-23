@@ -133,6 +133,12 @@ class Booking(models.Model):
         blank=True,
     )
     ledger_note = models.CharField(max_length=255, blank=True)
+    sale_reminders_sent = models.PositiveSmallIntegerField(
+        default=0,
+        help_text=_(
+            "Daily reminders sent to the buyer of an accepted sale (ledger plan D19)."
+        ),
+    )
 
     # Federation: remote booker (XOR with user — enforced by DB constraint below)
     remote_booker_actor = models.ForeignKey(
