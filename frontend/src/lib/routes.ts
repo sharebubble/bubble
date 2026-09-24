@@ -30,6 +30,10 @@ export const LEDGER_STATS_PATH = `${LEDGER_PATH}/stats`;
 export const LEDGER_REPORT_PATH = `${LEDGER_PATH}/report`;
 
 export const LEDGER_MANAGE_PATH = `${LEDGER_PATH}/manage`;
+/** Tamper evidence: the hash chain and the published digests. */
+export const LEDGER_CHAIN_PATH = `${LEDGER_PATH}/chain`;
+/** The treasurer's bank statement import. */
+export const LEDGER_BANK_PATH = `${LEDGER_PATH}/bank`;
 
 export const MY_STATEMENT_PATH = `${MY_LEDGER_PATH}/statement`;
 

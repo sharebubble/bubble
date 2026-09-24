@@ -7,12 +7,30 @@ import {
   ledgerAccountsRetrieve,
   ledgerAccountsStatementCsvRetrieve,
   ledgerAccountsStatementRetrieve,
+  ledgerAccountsDatevCreate,
+  ledgerBankImportsCreate,
+  ledgerBankImportsList,
+  ledgerBankLinesAssignCreate,
+  ledgerBankLinesBookCreate,
+  ledgerBankLinesCandidatesList,
+  ledgerBankLinesIgnoreCreate,
+  ledgerBankLinesLinkCreate,
+  ledgerBankLinesList,
+  ledgerBankLinesParkCreate,
+  ledgerBankLinesReopenCreate,
+  ledgerBankLinesSummaryRetrieve,
   ledgerCategoriesCreate,
   ledgerCategoriesList,
   ledgerCategoriesPartialUpdate,
+  ledgerChainExportRetrieve,
+  ledgerChainRetrieve,
   ledgerDisputesUpholdCreate,
   ledgerDisputesWithdrawCreate,
+  ledgerExportsDatevRetrieve,
+  ledgerExportsJournalRetrieve,
   ledgerHealthRetrieve,
+  ledgerPeriodsCreate,
+  ledgerPeriodsList,
   ledgerProjectsCreate,
   ledgerProjectsList,
   ledgerProjectsPartialUpdate,
@@ -37,6 +55,9 @@ import {
   ledgerTransactionsReverseCreate,
   ledgerUnbilledList,
   type LedgerAccount,
+  type LedgerAccountTypeEnum,
+  type LedgerBankBook,
+  type LedgerBankLinesListData,
   type LedgerCategoryWrite,
   type LedgerProjectWrite,
   type LedgerStatsRetrieveData,
@@ -50,6 +71,7 @@ import { notifications } from '@mantine/notifications';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 const LEDGER_KEY = ['ledger'] as const;
+const BANK_KEY = [...LEDGER_KEY, 'bank'] as const;
 
 export type LedgerTransactionFilters = NonNullable<LedgerTransactionsListData['query']>;
 
@@ -479,5 +501,164 @@ export const useSaveLedgerProject = () => {
         ? (await ledgerProjectsPartialUpdate({ path: { id }, body })).data
         : (await ledgerProjectsCreate({ body: body as LedgerProjectWrite })).data,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: [...LEDGER_KEY, 'projects'] }),
+  });
+};
+
+// --- Hash chain, periods, exports and bank import (phase 6) ------------------
+
+/** The chain head, whether a digest channel is set up, and recent digests. */
+export const useLedgerChain = () =>
+  useQuery({
+    queryKey: [...LEDGER_KEY, 'chain'],
+    queryFn: async () => (await ledgerChainRetrieve()).data,
+  });
+
+export const useDownloadChainCsv = () => {
+  const { t } = useLanguage();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await ledgerChainExportRetrieve({ parseAs: 'blob' });
+      saveBlob(response.data as Blob, 'ledger-chain.csv');
+    },
+    onError: () => notifications.show({ message: t('ledger.downloadFailed'), color: 'red' }),
+  });
+};
+
+/** Closed bookkeeping periods, newest first. */
+export const useLedgerPeriods = () =>
+  useQuery({
+    queryKey: [...LEDGER_KEY, 'periods'],
+    queryFn: async () => (await ledgerPeriodsList()).data,
+  });
+
+export const useCloseLedgerPeriod = () => {
+  const invalidate = useInvalidateLedger();
+  return useMutation({
+    mutationFn: async (body: { starts_on: string; ends_on: string }) =>
+      (await ledgerPeriodsCreate({ body })).data,
+    onSuccess: () => void invalidate(),
+  });
+};
+
+/** The journal (every member) or the DATEV file (treasurer) for a period.
+ * A DATEV download fails with the accounts that still need a number. */
+export const useDownloadLedgerExport = () =>
+  useMutation({
+    mutationFn: async ({
+      format,
+      period,
+    }: {
+      format: 'journal' | 'datev';
+      period: LedgerPeriod;
+    }) => {
+      const download =
+        format === 'datev' ? ledgerExportsDatevRetrieve : ledgerExportsJournalRetrieve;
+      const response = await download({ query: period, parseAs: 'blob' });
+      const name = format === 'datev' ? 'EXTF_bubble' : 'journal';
+      saveBlob(response.data as Blob, `${name}-${period.date_from}-${period.date_to}.csv`);
+    },
+  });
+
+const SYSTEM_TYPES: LedgerAccountTypeEnum[] = ['asset', 'income', 'expense', 'equity', 'suspense'];
+
+/** Every account that is not a member's, for the DATEV number table. */
+export const useLedgerSystemAccounts = (enabled: boolean) =>
+  useQuery({
+    queryKey: [...LEDGER_KEY, 'accounts', 'system'],
+    enabled,
+    queryFn: async () => {
+      const pages = await Promise.all(
+        SYSTEM_TYPES.map(type => ledgerAccountsList({ query: { type } })),
+      );
+      return pages.flatMap(page => page.data.results);
+    },
+  });
+
+export const useSetDatevNumber = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, datev_number }: { id: string; datev_number: string }) =>
+      (await ledgerAccountsDatevCreate({ path: { id }, body: { datev_number } })).data,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: [...LEDGER_KEY, 'accounts', 'system'] }),
+  });
+};
+
+/** Lines waiting for a decision, balances, and when the last file came in. */
+export const useBankSummary = () =>
+  useQuery({
+    queryKey: [...BANK_KEY, 'summary'],
+    queryFn: async () => (await ledgerBankLinesSummaryRetrieve()).data,
+  });
+
+export const useBankImports = () =>
+  useQuery({
+    queryKey: [...BANK_KEY, 'imports'],
+    queryFn: async () => (await ledgerBankImportsList()).data,
+  });
+
+export type BankLineFilters = NonNullable<LedgerBankLinesListData['query']>;
+
+export const useBankLines = (filters: BankLineFilters) =>
+  useInfiniteQuery({
+    queryKey: [...BANK_KEY, 'lines', filters],
+    queryFn: async ({ pageParam }) =>
+      (await ledgerBankLinesList({ query: { ...filters, page: pageParam } })).data,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => (lastPage?.next ? allPages.length + 1 : undefined),
+  });
+
+/** Entries a line could be linked to: same amount on the bank account, near its date. */
+export const useBankLineCandidates = (id?: string) =>
+  useQuery({
+    queryKey: [...BANK_KEY, 'candidates', id],
+    enabled: !!id,
+    queryFn: async () => (await ledgerBankLinesCandidatesList({ path: { id: id! } })).data,
+  });
+
+export const useUploadBankStatement = () => {
+  const invalidate = useInvalidateLedger();
+  return useMutation({
+    mutationFn: async (file: File) =>
+      (
+        await ledgerBankImportsCreate({
+          // The generated type describes the multipart file as a string.
+          body: { file: file as unknown as string },
+        })
+      ).data,
+    onSuccess: () => void invalidate(),
+  });
+};
+
+export type BankLineDecision =
+  | { action: 'book' | 'assign'; id: string; body: LedgerBankBook }
+  | { action: 'link'; id: string; transaction: string }
+  | { action: 'park' | 'ignore'; id: string; note: string }
+  | { action: 'reopen'; id: string };
+
+/** Book, assign, link, park, ignore or reopen one bank line. */
+export const useDecideBankLine = () => {
+  const invalidate = useInvalidateLedger();
+  return useMutation({
+    mutationFn: async (decision: BankLineDecision) => {
+      const path = { id: decision.id };
+      switch (decision.action) {
+        case 'book':
+          return (await ledgerBankLinesBookCreate({ path, body: decision.body })).data;
+        case 'assign':
+          return (await ledgerBankLinesAssignCreate({ path, body: decision.body })).data;
+        case 'link':
+          return (
+            await ledgerBankLinesLinkCreate({ path, body: { transaction: decision.transaction } })
+          ).data;
+        case 'park':
+          return (await ledgerBankLinesParkCreate({ path, body: { note: decision.note } })).data;
+        case 'ignore':
+          return (await ledgerBankLinesIgnoreCreate({ path, body: { note: decision.note } })).data;
+        case 'reopen':
+          return (await ledgerBankLinesReopenCreate({ path })).data;
+      }
+    },
+    onSuccess: () => void invalidate(),
   });
 };

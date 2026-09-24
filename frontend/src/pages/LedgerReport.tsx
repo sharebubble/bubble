@@ -81,8 +81,8 @@ const LedgerReport = () => {
       <Table.Thead>
         <Table.Tr>
           <Table.Th />
-          <Table.Th className="text-right">{t('ledger.report.opening')}</Table.Th>
-          <Table.Th className="text-right">{t('ledger.report.closing')}</Table.Th>
+          <Table.Th ta="right">{t('ledger.report.opening')}</Table.Th>
+          <Table.Th ta="right">{t('ledger.report.closing')}</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
@@ -191,9 +191,9 @@ const LedgerReport = () => {
                   <Table.Thead>
                     <Table.Tr>
                       <Table.Th />
-                      <Table.Th className="text-right">{t('ledger.stats.income')}</Table.Th>
-                      <Table.Th className="text-right">{t('ledger.stats.expense')}</Table.Th>
-                      <Table.Th className="text-right">{t('ledger.stats.budget')}</Table.Th>
+                      <Table.Th ta="right">{t('ledger.stats.income')}</Table.Th>
+                      <Table.Th ta="right">{t('ledger.stats.expense')}</Table.Th>
+                      <Table.Th ta="right">{t('ledger.stats.budget')}</Table.Th>
                     </Table.Tr>
                   </Table.Thead>
                   <Table.Tbody>

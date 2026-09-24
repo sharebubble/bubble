@@ -2,7 +2,7 @@
 
 import { type Client, type ClientMeta, formDataBodySerializer, type Options as Options2, type RequestResult, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { AuthTokenCreateData, AuthTokenCreateResponses, BookingsConfirmReceivedCreateData, BookingsConfirmReceivedCreateResponses, BookingsConfirmReturnedCreateData, BookingsConfirmReturnedCreateResponses, BookingsCreateData, BookingsCreateResponses, BookingsDestroyData, BookingsDestroyResponses, BookingsListData, BookingsListResponses, BookingsPartialUpdateData, BookingsPartialUpdateResponses, BookingsRejectFulfillmentCreateData, BookingsRejectFulfillmentCreateResponses, BookingsRetrieveData, BookingsRetrieveResponses, BookingsUpdateData, BookingsUpdateResponses, BooksCreateData, BooksCreateResponses, BooksDestroyData, BooksDestroyResponses, BooksIsbnUpdateUpdateData, BooksIsbnUpdateUpdateResponses, BooksListData, BooksListResponses, BooksPartialUpdateData, BooksPartialUpdateResponses, BooksRetrieveData, BooksRetrieveResponses, BooksUpdateData, BooksUpdateResponses, CollectionItemsCreateData, CollectionItemsCreateResponses, CollectionItemsDestroyData, CollectionItemsDestroyResponses, CollectionItemsListData, CollectionItemsListResponses, CollectionItemsPartialUpdateData, CollectionItemsPartialUpdateResponses, CollectionItemsRetrieveData, CollectionItemsRetrieveResponses, CollectionItemsUpdateData, CollectionItemsUpdateResponses, CollectionsAddItemCreateData, CollectionsAddItemCreateResponses, CollectionsBulkAddItemsCreateData, CollectionsBulkAddItemsCreateResponses, CollectionsBulkRemoveItemsCreateData, CollectionsBulkRemoveItemsCreateResponses, CollectionsCalendarLinkCreateData, CollectionsCalendarLinkCreateResponses, CollectionsCalendarLinkDestroyData, CollectionsCalendarLinkDestroyResponses, CollectionsCalendarLinkRetrieveData, CollectionsCalendarLinkRetrieveResponses, CollectionsCreateData, CollectionsCreateResponses, CollectionsDestroyData, CollectionsDestroyResponses, CollectionsForItemListData, CollectionsForItemListResponses, CollectionsHistoryListData, CollectionsHistoryListResponses, CollectionsListData, CollectionsListResponses, CollectionsManagePermissionsCreateData, CollectionsManagePermissionsCreateResponses, CollectionsMyCollectionsListData, CollectionsMyCollectionsListResponses, CollectionsPartialUpdateData, CollectionsPartialUpdateResponses, CollectionsPermissionsListData, CollectionsPermissionsListResponses, CollectionsRemoveItemCreateData, CollectionsRemoveItemCreateResponses, CollectionsRetrieveData, CollectionsRetrieveResponses, CollectionsUpdateData, CollectionsUpdateResponses, CommentsCreateData, CommentsCreateResponses, CommentsDestroyData, CommentsDestroyResponses, CommentsListData, CommentsListResponses, CommentsPartialUpdateData, CommentsPartialUpdateResponses, CommentsRetrieveData, CommentsRetrieveResponses, CommentsUpdateData, CommentsUpdateResponses, ConfigRetrieveData, ConfigRetrieveResponses, FavoritesCreateData, FavoritesCreateResponses, FavoritesDestroyData, FavoritesDestroyResponses, FavoritesItemIdsRetrieveData, FavoritesItemIdsRetrieveResponses, FavoritesListData, FavoritesListResponses, FederatedItemsRetrieveData, FederatedItemsRetrieveResponses, GroupsListData, GroupsListResponses, GroupsRetrieveData, GroupsRetrieveResponses, ImagesCreateData, ImagesCreateResponses, ImagesDestroyData, ImagesDestroyResponses, ImagesListData, ImagesListResponses, ImagesPartialUpdateData, ImagesPartialUpdateResponses, ImagesRetrieveData, ImagesRetrieveResponses, ImagesRotateUpdateData, ImagesRotateUpdateResponses, ImagesUpdateData, ImagesUpdateResponses, ItemsAiDescribeUpdateData, ItemsAiDescribeUpdateResponses, ItemsAiImageUpdateData, ItemsAiImageUpdateResponses, ItemsCalendarLinkCreateData, ItemsCalendarLinkCreateResponses, ItemsCalendarLinkDestroyData, ItemsCalendarLinkDestroyResponses, ItemsCalendarLinkRetrieveData, ItemsCalendarLinkRetrieveResponses, ItemsCoOwnersCreateData, ItemsCoOwnersCreateResponses, ItemsCoOwnersDestroyData, ItemsCoOwnersDestroyResponses, ItemsCoOwnersRetrieveData, ItemsCoOwnersRetrieveResponses, ItemsCreateData, ItemsCreateResponses, ItemsDestroyData, ItemsDestroyResponses, ItemsListData, ItemsListResponses, ItemsPartialUpdateData, ItemsPartialUpdateResponses, ItemsReorderImagesUpdateData, ItemsReorderImagesUpdateResponses, ItemsRetrieveData, ItemsRetrieveResponses, ItemsUpdateData, ItemsUpdateResponses, ItemsViewersCreateData, ItemsViewersCreateResponses, ItemsViewersDestroyData, ItemsViewersDestroyResponses, ItemsViewersRetrieveData, ItemsViewersRetrieveResponses, LedgerAccountsEntriesListData, LedgerAccountsEntriesListResponses, LedgerAccountsListData, LedgerAccountsListResponses, LedgerAccountsMeRetrieveData, LedgerAccountsMeRetrieveResponses, LedgerAccountsRetrieveData, LedgerAccountsRetrieveResponses, LedgerAccountsStatementCsvRetrieveData, LedgerAccountsStatementCsvRetrieveResponses, LedgerAccountsStatementRetrieveData, LedgerAccountsStatementRetrieveResponses, LedgerCategoriesCreateData, LedgerCategoriesCreateResponses, LedgerCategoriesListData, LedgerCategoriesListResponses, LedgerCategoriesPartialUpdateData, LedgerCategoriesPartialUpdateResponses, LedgerCategoriesRetrieveData, LedgerCategoriesRetrieveResponses, LedgerDisputesRetrieveData, LedgerDisputesRetrieveResponses, LedgerDisputesUpholdCreateData, LedgerDisputesUpholdCreateResponses, LedgerDisputesWithdrawCreateData, LedgerDisputesWithdrawCreateResponses, LedgerHealthRetrieveData, LedgerHealthRetrieveResponses, LedgerProjectsCreateData, LedgerProjectsCreateResponses, LedgerProjectsListData, LedgerProjectsListResponses, LedgerProjectsPartialUpdateData, LedgerProjectsPartialUpdateResponses, LedgerProjectsRetrieveData, LedgerProjectsRetrieveResponses, LedgerReceiptsFileRetrieveData, LedgerReceiptsFileRetrieveResponses, LedgerReportsAnnualCsvRetrieveData, LedgerReportsAnnualCsvRetrieveResponses, LedgerReportsAnnualRetrieveData, LedgerReportsAnnualRetrieveResponses, LedgerSplitsAcceptCreateData, LedgerSplitsAcceptCreateResponses, LedgerSplitsCancelCreateData, LedgerSplitsCancelCreateResponses, LedgerSplitsCreateData, LedgerSplitsCreateResponses, LedgerSplitsListData, LedgerSplitsListResponses, LedgerSplitsObjectCreateData, LedgerSplitsObjectCreateResponses, LedgerSplitsPartialUpdateData, LedgerSplitsPartialUpdateResponses, LedgerSplitsReceiptsCreateData, LedgerSplitsReceiptsCreateResponses, LedgerSplitsRetrieveData, LedgerSplitsRetrieveResponses, LedgerSplitsUpdateData, LedgerSplitsUpdateResponses, LedgerStatsRetrieveData, LedgerStatsRetrieveResponses, LedgerTransactionsCommentsCreateData, LedgerTransactionsCommentsCreateResponses, LedgerTransactionsCorrectCreateData, LedgerTransactionsCorrectCreateResponses, LedgerTransactionsCreateData, LedgerTransactionsCreateResponses, LedgerTransactionsDisputeCreateData, LedgerTransactionsDisputeCreateResponses, LedgerTransactionsListData, LedgerTransactionsListResponses, LedgerTransactionsReceiptsCreateData, LedgerTransactionsReceiptsCreateResponses, LedgerTransactionsRetrieveData, LedgerTransactionsRetrieveResponses, LedgerTransactionsReverseCreateData, LedgerTransactionsReverseCreateResponses, LedgerUnbilledListData, LedgerUnbilledListResponses, LocationsListData, LocationsListResponses, LocationsRetrieveData, LocationsRetrieveResponses, MessagesCreateData, MessagesCreateResponses, MessagesDestroyData, MessagesDestroyResponses, MessagesListData, MessagesListResponses, MessagesPartialUpdateData, MessagesPartialUpdateResponses, MessagesRetrieveData, MessagesRetrieveResponses, MessagesUpdateData, MessagesUpdateResponses, MyCalendarCreateData, MyCalendarCreateResponses, MyCalendarDestroyData, MyCalendarDestroyResponses, MyCalendarRetrieveData, MyCalendarRetrieveResponses, NotificationPreferencesMePartialUpdateData, NotificationPreferencesMePartialUpdateResponses, NotificationPreferencesMeRetrieveData, NotificationPreferencesMeRetrieveResponses, ProfilesListData, ProfilesListResponses, ProfilesMePartialUpdateData, ProfilesMePartialUpdateResponses, ProfilesMeRetrieveData, ProfilesMeRetrieveResponses, ProfilesRetrieveData, ProfilesRetrieveResponses, PublicBookingsListData, PublicBookingsListResponses, PublicBookingsRetrieveData, PublicBookingsRetrieveResponses, PublicItemsBookingHistoryRetrieveData, PublicItemsBookingHistoryRetrieveResponses, PublicItemsFacetsRetrieveData, PublicItemsFacetsRetrieveResponses, PublicItemsListData, PublicItemsListResponses, PublicItemsRetrieveData, PublicItemsRetrieveResponses, PushSubscriptionsStatusRetrieveData, PushSubscriptionsStatusRetrieveResponses, PushSubscriptionsSubscribeCreateData, PushSubscriptionsSubscribeCreateResponses, PushSubscriptionsTestCreateData, PushSubscriptionsTestCreateResponses, PushSubscriptionsUnsubscribeCreateData, PushSubscriptionsUnsubscribeCreateResponses, SchemaRetrieveData, SchemaRetrieveResponses, UsersListData, UsersListResponses, UsersMeRetrieveData, UsersMeRetrieveResponses, UsersPartialUpdateData, UsersPartialUpdateResponses, UsersRetrieveData, UsersRetrieveResponses, UsersUpdateData, UsersUpdateResponses, VersionRetrieveData, VersionRetrieveResponses } from './types.gen';
+import type { AuthTokenCreateData, AuthTokenCreateResponses, BookingsConfirmReceivedCreateData, BookingsConfirmReceivedCreateResponses, BookingsConfirmReturnedCreateData, BookingsConfirmReturnedCreateResponses, BookingsCreateData, BookingsCreateResponses, BookingsDestroyData, BookingsDestroyResponses, BookingsListData, BookingsListResponses, BookingsPartialUpdateData, BookingsPartialUpdateResponses, BookingsRejectFulfillmentCreateData, BookingsRejectFulfillmentCreateResponses, BookingsRetrieveData, BookingsRetrieveResponses, BookingsUpdateData, BookingsUpdateResponses, BooksCreateData, BooksCreateResponses, BooksDestroyData, BooksDestroyResponses, BooksIsbnUpdateUpdateData, BooksIsbnUpdateUpdateResponses, BooksListData, BooksListResponses, BooksPartialUpdateData, BooksPartialUpdateResponses, BooksRetrieveData, BooksRetrieveResponses, BooksUpdateData, BooksUpdateResponses, CollectionItemsCreateData, CollectionItemsCreateResponses, CollectionItemsDestroyData, CollectionItemsDestroyResponses, CollectionItemsListData, CollectionItemsListResponses, CollectionItemsPartialUpdateData, CollectionItemsPartialUpdateResponses, CollectionItemsRetrieveData, CollectionItemsRetrieveResponses, CollectionItemsUpdateData, CollectionItemsUpdateResponses, CollectionsAddItemCreateData, CollectionsAddItemCreateResponses, CollectionsBulkAddItemsCreateData, CollectionsBulkAddItemsCreateResponses, CollectionsBulkRemoveItemsCreateData, CollectionsBulkRemoveItemsCreateResponses, CollectionsCalendarLinkCreateData, CollectionsCalendarLinkCreateResponses, CollectionsCalendarLinkDestroyData, CollectionsCalendarLinkDestroyResponses, CollectionsCalendarLinkRetrieveData, CollectionsCalendarLinkRetrieveResponses, CollectionsCreateData, CollectionsCreateResponses, CollectionsDestroyData, CollectionsDestroyResponses, CollectionsForItemListData, CollectionsForItemListResponses, CollectionsHistoryListData, CollectionsHistoryListResponses, CollectionsListData, CollectionsListResponses, CollectionsManagePermissionsCreateData, CollectionsManagePermissionsCreateResponses, CollectionsMyCollectionsListData, CollectionsMyCollectionsListResponses, CollectionsPartialUpdateData, CollectionsPartialUpdateResponses, CollectionsPermissionsListData, CollectionsPermissionsListResponses, CollectionsRemoveItemCreateData, CollectionsRemoveItemCreateResponses, CollectionsRetrieveData, CollectionsRetrieveResponses, CollectionsUpdateData, CollectionsUpdateResponses, CommentsCreateData, CommentsCreateResponses, CommentsDestroyData, CommentsDestroyResponses, CommentsListData, CommentsListResponses, CommentsPartialUpdateData, CommentsPartialUpdateResponses, CommentsRetrieveData, CommentsRetrieveResponses, CommentsUpdateData, CommentsUpdateResponses, ConfigRetrieveData, ConfigRetrieveResponses, FavoritesCreateData, FavoritesCreateResponses, FavoritesDestroyData, FavoritesDestroyResponses, FavoritesItemIdsRetrieveData, FavoritesItemIdsRetrieveResponses, FavoritesListData, FavoritesListResponses, FederatedItemsRetrieveData, FederatedItemsRetrieveResponses, GroupsListData, GroupsListResponses, GroupsRetrieveData, GroupsRetrieveResponses, ImagesCreateData, ImagesCreateResponses, ImagesDestroyData, ImagesDestroyResponses, ImagesListData, ImagesListResponses, ImagesPartialUpdateData, ImagesPartialUpdateResponses, ImagesRetrieveData, ImagesRetrieveResponses, ImagesRotateUpdateData, ImagesRotateUpdateResponses, ImagesUpdateData, ImagesUpdateResponses, ItemsAiDescribeUpdateData, ItemsAiDescribeUpdateResponses, ItemsAiImageUpdateData, ItemsAiImageUpdateResponses, ItemsCalendarLinkCreateData, ItemsCalendarLinkCreateResponses, ItemsCalendarLinkDestroyData, ItemsCalendarLinkDestroyResponses, ItemsCalendarLinkRetrieveData, ItemsCalendarLinkRetrieveResponses, ItemsCoOwnersCreateData, ItemsCoOwnersCreateResponses, ItemsCoOwnersDestroyData, ItemsCoOwnersDestroyResponses, ItemsCoOwnersRetrieveData, ItemsCoOwnersRetrieveResponses, ItemsCreateData, ItemsCreateResponses, ItemsDestroyData, ItemsDestroyResponses, ItemsListData, ItemsListResponses, ItemsPartialUpdateData, ItemsPartialUpdateResponses, ItemsReorderImagesUpdateData, ItemsReorderImagesUpdateResponses, ItemsRetrieveData, ItemsRetrieveResponses, ItemsUpdateData, ItemsUpdateResponses, ItemsViewersCreateData, ItemsViewersCreateResponses, ItemsViewersDestroyData, ItemsViewersDestroyResponses, ItemsViewersRetrieveData, ItemsViewersRetrieveResponses, LedgerAccountsDatevCreateData, LedgerAccountsDatevCreateResponses, LedgerAccountsEntriesListData, LedgerAccountsEntriesListResponses, LedgerAccountsListData, LedgerAccountsListResponses, LedgerAccountsMeRetrieveData, LedgerAccountsMeRetrieveResponses, LedgerAccountsRetrieveData, LedgerAccountsRetrieveResponses, LedgerAccountsStatementCsvRetrieveData, LedgerAccountsStatementCsvRetrieveResponses, LedgerAccountsStatementRetrieveData, LedgerAccountsStatementRetrieveResponses, LedgerBankImportsCreateData, LedgerBankImportsCreateResponses, LedgerBankImportsListData, LedgerBankImportsListResponses, LedgerBankLinesAssignCreateData, LedgerBankLinesAssignCreateResponses, LedgerBankLinesBookCreateData, LedgerBankLinesBookCreateResponses, LedgerBankLinesCandidatesListData, LedgerBankLinesCandidatesListResponses, LedgerBankLinesIgnoreCreateData, LedgerBankLinesIgnoreCreateResponses, LedgerBankLinesLinkCreateData, LedgerBankLinesLinkCreateResponses, LedgerBankLinesListData, LedgerBankLinesListResponses, LedgerBankLinesParkCreateData, LedgerBankLinesParkCreateResponses, LedgerBankLinesReopenCreateData, LedgerBankLinesReopenCreateResponses, LedgerBankLinesRetrieveData, LedgerBankLinesRetrieveResponses, LedgerBankLinesSummaryRetrieveData, LedgerBankLinesSummaryRetrieveResponses, LedgerCategoriesCreateData, LedgerCategoriesCreateResponses, LedgerCategoriesListData, LedgerCategoriesListResponses, LedgerCategoriesPartialUpdateData, LedgerCategoriesPartialUpdateResponses, LedgerCategoriesRetrieveData, LedgerCategoriesRetrieveResponses, LedgerChainExportRetrieveData, LedgerChainExportRetrieveResponses, LedgerChainRetrieveData, LedgerChainRetrieveResponses, LedgerDisputesRetrieveData, LedgerDisputesRetrieveResponses, LedgerDisputesUpholdCreateData, LedgerDisputesUpholdCreateResponses, LedgerDisputesWithdrawCreateData, LedgerDisputesWithdrawCreateResponses, LedgerExportsDatevRetrieveData, LedgerExportsDatevRetrieveResponses, LedgerExportsJournalRetrieveData, LedgerExportsJournalRetrieveResponses, LedgerHealthRetrieveData, LedgerHealthRetrieveResponses, LedgerPeriodsCreateData, LedgerPeriodsCreateResponses, LedgerPeriodsListData, LedgerPeriodsListResponses, LedgerProjectsCreateData, LedgerProjectsCreateResponses, LedgerProjectsListData, LedgerProjectsListResponses, LedgerProjectsPartialUpdateData, LedgerProjectsPartialUpdateResponses, LedgerProjectsRetrieveData, LedgerProjectsRetrieveResponses, LedgerReceiptsFileRetrieveData, LedgerReceiptsFileRetrieveResponses, LedgerReportsAnnualCsvRetrieveData, LedgerReportsAnnualCsvRetrieveResponses, LedgerReportsAnnualRetrieveData, LedgerReportsAnnualRetrieveResponses, LedgerSplitsAcceptCreateData, LedgerSplitsAcceptCreateResponses, LedgerSplitsCancelCreateData, LedgerSplitsCancelCreateResponses, LedgerSplitsCreateData, LedgerSplitsCreateResponses, LedgerSplitsListData, LedgerSplitsListResponses, LedgerSplitsObjectCreateData, LedgerSplitsObjectCreateResponses, LedgerSplitsPartialUpdateData, LedgerSplitsPartialUpdateResponses, LedgerSplitsReceiptsCreateData, LedgerSplitsReceiptsCreateResponses, LedgerSplitsRetrieveData, LedgerSplitsRetrieveResponses, LedgerSplitsUpdateData, LedgerSplitsUpdateResponses, LedgerStatsRetrieveData, LedgerStatsRetrieveResponses, LedgerTransactionsCommentsCreateData, LedgerTransactionsCommentsCreateResponses, LedgerTransactionsCorrectCreateData, LedgerTransactionsCorrectCreateResponses, LedgerTransactionsCreateData, LedgerTransactionsCreateResponses, LedgerTransactionsDisputeCreateData, LedgerTransactionsDisputeCreateResponses, LedgerTransactionsListData, LedgerTransactionsListResponses, LedgerTransactionsReceiptsCreateData, LedgerTransactionsReceiptsCreateResponses, LedgerTransactionsRetrieveData, LedgerTransactionsRetrieveResponses, LedgerTransactionsReverseCreateData, LedgerTransactionsReverseCreateResponses, LedgerUnbilledListData, LedgerUnbilledListResponses, LocationsListData, LocationsListResponses, LocationsRetrieveData, LocationsRetrieveResponses, MessagesCreateData, MessagesCreateResponses, MessagesDestroyData, MessagesDestroyResponses, MessagesListData, MessagesListResponses, MessagesPartialUpdateData, MessagesPartialUpdateResponses, MessagesRetrieveData, MessagesRetrieveResponses, MessagesUpdateData, MessagesUpdateResponses, MyCalendarCreateData, MyCalendarCreateResponses, MyCalendarDestroyData, MyCalendarDestroyResponses, MyCalendarRetrieveData, MyCalendarRetrieveResponses, NotificationPreferencesMePartialUpdateData, NotificationPreferencesMePartialUpdateResponses, NotificationPreferencesMeRetrieveData, NotificationPreferencesMeRetrieveResponses, ProfilesListData, ProfilesListResponses, ProfilesMePartialUpdateData, ProfilesMePartialUpdateResponses, ProfilesMeRetrieveData, ProfilesMeRetrieveResponses, ProfilesRetrieveData, ProfilesRetrieveResponses, PublicBookingsListData, PublicBookingsListResponses, PublicBookingsRetrieveData, PublicBookingsRetrieveResponses, PublicItemsBookingHistoryRetrieveData, PublicItemsBookingHistoryRetrieveResponses, PublicItemsFacetsRetrieveData, PublicItemsFacetsRetrieveResponses, PublicItemsListData, PublicItemsListResponses, PublicItemsRetrieveData, PublicItemsRetrieveResponses, PushSubscriptionsStatusRetrieveData, PushSubscriptionsStatusRetrieveResponses, PushSubscriptionsSubscribeCreateData, PushSubscriptionsSubscribeCreateResponses, PushSubscriptionsTestCreateData, PushSubscriptionsTestCreateResponses, PushSubscriptionsUnsubscribeCreateData, PushSubscriptionsUnsubscribeCreateResponses, SchemaRetrieveData, SchemaRetrieveResponses, UsersListData, UsersListResponses, UsersMeRetrieveData, UsersMeRetrieveResponses, UsersPartialUpdateData, UsersPartialUpdateResponses, UsersRetrieveData, UsersRetrieveResponses, UsersUpdateData, UsersUpdateResponses, VersionRetrieveData, VersionRetrieveResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -1791,6 +1791,27 @@ export const ledgerAccountsRetrieve = <ThrowOnError extends boolean = true>(opti
 });
 
 /**
+ * Treasurer: set the account's number in the tax advisor's chart.
+ */
+export const ledgerAccountsDatevCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerAccountsDatevCreateData, ThrowOnError>): RequestResult<LedgerAccountsDatevCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerAccountsDatevCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/accounts/{id}/datev/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
  * The account statement: every entry, newest first, with the balance
  * right after it.
  */
@@ -1857,6 +1878,239 @@ export const ledgerAccountsMeRetrieve = <ThrowOnError extends boolean = true>(op
         { name: 'X-Session-Token', type: 'apiKey' }
     ],
     url: '/api/ledger/accounts/me/',
+    ...options
+});
+
+/**
+ * Uploaded statement files. Upload CAMT.053 (XML) or CSV from online
+ * banking; lines seen in an earlier file are skipped.
+ */
+export const ledgerBankImportsList = <ThrowOnError extends boolean = true>(options?: Options<LedgerBankImportsListData, ThrowOnError>): RequestResult<LedgerBankImportsListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<LedgerBankImportsListResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/bank/imports/',
+    ...options
+});
+
+/**
+ * Uploaded statement files. Upload CAMT.053 (XML) or CSV from online
+ * banking; lines seen in an earlier file are skipped.
+ */
+export const ledgerBankImportsCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerBankImportsCreateData, ThrowOnError>): RequestResult<LedgerBankImportsCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerBankImportsCreateResponses, unknown, ThrowOnError>({
+    ...formDataBodySerializer,
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/bank/imports/',
+    ...options,
+    headers: {
+        'Content-Type': null,
+        ...options.headers
+    }
+});
+
+/**
+ * Bank lines with a proposed match; the treasurer books, links, parks or
+ * ignores each one. ``?state=open`` is the work list.
+ */
+export const ledgerBankLinesList = <ThrowOnError extends boolean = true>(options?: Options<LedgerBankLinesListData, ThrowOnError>): RequestResult<LedgerBankLinesListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<LedgerBankLinesListResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/bank/lines/',
+    ...options
+});
+
+/**
+ * Bank lines with a proposed match; the treasurer books, links, parks or
+ * ignores each one. ``?state=open`` is the work list.
+ */
+export const ledgerBankLinesRetrieve = <ThrowOnError extends boolean = true>(options: Options<LedgerBankLinesRetrieveData, ThrowOnError>): RequestResult<LedgerBankLinesRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<LedgerBankLinesRetrieveResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/bank/lines/{id}/',
+    ...options
+});
+
+/**
+ * Move a parked line out of suspense to a member or category.
+ */
+export const ledgerBankLinesAssignCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerBankLinesAssignCreateData, ThrowOnError>): RequestResult<LedgerBankLinesAssignCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerBankLinesAssignCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/bank/lines/{id}/assign/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Book the line to a member (top-up or payout) or a category.
+ */
+export const ledgerBankLinesBookCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerBankLinesBookCreateData, ThrowOnError>): RequestResult<LedgerBankLinesBookCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerBankLinesBookCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/bank/lines/{id}/book/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Entries this line could be linked to.
+ */
+export const ledgerBankLinesCandidatesList = <ThrowOnError extends boolean = true>(options: Options<LedgerBankLinesCandidatesListData, ThrowOnError>): RequestResult<LedgerBankLinesCandidatesListResponses, unknown, ThrowOnError> => (options.client ?? client).get<LedgerBankLinesCandidatesListResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/bank/lines/{id}/candidates/',
+    ...options
+});
+
+/**
+ * Leave it out of the books; a reason is required.
+ */
+export const ledgerBankLinesIgnoreCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerBankLinesIgnoreCreateData, ThrowOnError>): RequestResult<LedgerBankLinesIgnoreCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerBankLinesIgnoreCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/bank/lines/{id}/ignore/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * The money is already in the books as this entry.
+ */
+export const ledgerBankLinesLinkCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerBankLinesLinkCreateData, ThrowOnError>): RequestResult<LedgerBankLinesLinkCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerBankLinesLinkCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/bank/lines/{id}/link/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Book it to suspense until someone knows what it was.
+ */
+export const ledgerBankLinesParkCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerBankLinesParkCreateData, ThrowOnError>): RequestResult<LedgerBankLinesParkCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerBankLinesParkCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/bank/lines/{id}/park/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Undo ignoring or linking.
+ */
+export const ledgerBankLinesReopenCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerBankLinesReopenCreateData, ThrowOnError>): RequestResult<LedgerBankLinesReopenCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerBankLinesReopenCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/bank/lines/{id}/reopen/',
+    ...options
+});
+
+/**
+ * How many lines wait for a decision, and the bank balance in the books.
+ */
+export const ledgerBankLinesSummaryRetrieve = <ThrowOnError extends boolean = true>(options?: Options<LedgerBankLinesSummaryRetrieveData, ThrowOnError>): RequestResult<LedgerBankLinesSummaryRetrieveResponses, unknown, ThrowOnError> => (options?.client ?? client).get<LedgerBankLinesSummaryRetrieveResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/bank/lines/summary/',
     ...options
 });
 
@@ -1943,6 +2197,47 @@ export const ledgerCategoriesPartialUpdate = <ThrowOnError extends boolean = tru
 });
 
 /**
+ * The hash chain's head and the last 30 daily digests (plan section 11).
+ *
+ * Keep a digest's head hash somewhere outside the app: if the books are
+ * ever changed behind the app's back, the chain will no longer lead to it.
+ */
+export const ledgerChainRetrieve = <ThrowOnError extends boolean = true>(options?: Options<LedgerChainRetrieveData, ThrowOnError>): RequestResult<LedgerChainRetrieveResponses, unknown, ThrowOnError> => (options?.client ?? client).get<LedgerChainRetrieveResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/chain/',
+    ...options
+});
+
+/**
+ * The whole chain with the exact bytes each hash covers.
+ *
+ * Verify it anywhere: for every row, ``sha256(prev_hash + canonical)``
+ * must equal ``hash``, each ``prev_hash`` must be the previous row's
+ * ``hash``, and the last ``hash`` must match a digest you kept.
+ */
+export const ledgerChainExportRetrieve = <ThrowOnError extends boolean = true>(options?: Options<LedgerChainExportRetrieveData, ThrowOnError>): RequestResult<LedgerChainExportRetrieveResponses, unknown, ThrowOnError> => (options?.client ?? client).get<LedgerChainExportRetrieveResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/chain/export/',
+    ...options
+});
+
+/**
  * Answering a dispute: its raiser withdraws it, or the author, the
  * members it credits or the treasurer keep the transaction with a reason.
  * A reversal or correction (on the transaction) also closes it.
@@ -2002,6 +2297,41 @@ export const ledgerDisputesWithdrawCreate = <ThrowOnError extends boolean = true
 });
 
 /**
+ * DATEV Buchungsstapel for the tax advisor (treasurer only).
+ */
+export const ledgerExportsDatevRetrieve = <ThrowOnError extends boolean = true>(options: Options<LedgerExportsDatevRetrieveData, ThrowOnError>): RequestResult<LedgerExportsDatevRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<LedgerExportsDatevRetrieveResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/exports/datev/',
+    ...options
+});
+
+/**
+ * Every entry of a period as CSV (plan D12). The same period always
+ * gives the same file; its SHA-256 is recorded when the period closes.
+ */
+export const ledgerExportsJournalRetrieve = <ThrowOnError extends boolean = true>(options: Options<LedgerExportsJournalRetrieveData, ThrowOnError>): RequestResult<LedgerExportsJournalRetrieveResponses, unknown, ThrowOnError> => (options.client ?? client).get<LedgerExportsJournalRetrieveResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/exports/journal/',
+    ...options
+});
+
+/**
  * Is the ledger consistent right now? Shown as a banner when it is not.
  */
 export const ledgerHealthRetrieve = <ThrowOnError extends boolean = true>(options?: Options<LedgerHealthRetrieveData, ThrowOnError>): RequestResult<LedgerHealthRetrieveResponses, unknown, ThrowOnError> => (options?.client ?? client).get<LedgerHealthRetrieveResponses, unknown, ThrowOnError>({
@@ -2016,6 +2346,48 @@ export const ledgerHealthRetrieve = <ThrowOnError extends boolean = true>(option
     ],
     url: '/api/ledger/health/',
     ...options
+});
+
+/**
+ * Closed bookkeeping periods (plan section 13, I6). Everyone reads; the
+ * treasurer closes a period, which records its export hash and the chain
+ * head and refuses any later posting dated inside it.
+ */
+export const ledgerPeriodsList = <ThrowOnError extends boolean = true>(options?: Options<LedgerPeriodsListData, ThrowOnError>): RequestResult<LedgerPeriodsListResponses, unknown, ThrowOnError> => (options?.client ?? client).get<LedgerPeriodsListResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/periods/',
+    ...options
+});
+
+/**
+ * Closed bookkeeping periods (plan section 13, I6). Everyone reads; the
+ * treasurer closes a period, which records its export hash and the chain
+ * head and refuses any later posting dated inside it.
+ */
+export const ledgerPeriodsCreate = <ThrowOnError extends boolean = true>(options: Options<LedgerPeriodsCreateData, ThrowOnError>): RequestResult<LedgerPeriodsCreateResponses, unknown, ThrowOnError> => (options.client ?? client).post<LedgerPeriodsCreateResponses, unknown, ThrowOnError>({
+    security: [
+        {
+            in: 'cookie',
+            name: 'sessionid',
+            type: 'apiKey'
+        },
+        { name: 'Authorization', type: 'apiKey' },
+        { name: 'X-Session-Token', type: 'apiKey' }
+    ],
+    url: '/api/ledger/periods/',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
 });
 
 /**

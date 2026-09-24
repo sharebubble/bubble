@@ -1,5 +1,6 @@
 import { BackButton } from '@/components/layout/BackButton';
 import { CorrectionModal } from '@/components/ledger/CorrectionModal';
+import { HashValue } from '@/components/ledger/HashValue';
 import { ReceiptList } from '@/components/ledger/ReceiptList';
 import { TextPromptModal } from '@/components/ledger/TextPromptModal';
 import {
@@ -11,7 +12,12 @@ import { useDisputeTransaction, useLedgerTransaction, useMyLedgerAccount } from 
 import { formatMoney } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import { categoryLabel, firstError, hasOwnCategory } from '@/lib/ledger';
-import { ledgerAccountPath, ledgerCostSharePath, ledgerTransactionPath } from '@/lib/routes';
+import {
+  LEDGER_CHAIN_PATH,
+  ledgerAccountPath,
+  ledgerCostSharePath,
+  ledgerTransactionPath,
+} from '@/lib/routes';
 import { Anchor, Badge, Button, Card, Group, Stack, Table, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Flag, Undo2 } from 'lucide-react';
@@ -194,6 +200,18 @@ const LedgerTransaction = () => {
         </Card>
 
         <TransactionComments transaction={transaction} />
+
+        {transaction.seal && (
+          <Group gap="xs" wrap="wrap">
+            <Text size="xs" c="dimmed">
+              {t('ledger.chain.sealed', { position: transaction.seal.position })}
+            </Text>
+            <HashValue hash={transaction.seal.hash} />
+            <Anchor component={Link} to={LEDGER_CHAIN_PATH} size="xs">
+              {t('ledger.chain.whatIsThis')}
+            </Anchor>
+          </Group>
+        )}
       </Stack>
 
       <TextPromptModal

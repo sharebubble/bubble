@@ -24,6 +24,8 @@ import Home from './pages/Home';
 import Ledger from './pages/Ledger';
 import LedgerAccount from './pages/LedgerAccount';
 import LedgerCostShare from './pages/LedgerCostShare';
+import LedgerBank from './pages/LedgerBank';
+import LedgerChain from './pages/LedgerChain';
 import LedgerManage from './pages/LedgerManage';
 import LedgerReport from './pages/LedgerReport';
 import LedgerStatement from './pages/LedgerStatement';
@@ -250,6 +252,22 @@ const ProtectedRoutes = () => {
           element={
             <AuthRequired>
               <LedgerManage />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/chain`}
+          element={
+            <AuthRequired>
+              <LedgerChain />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/bank`}
+          element={
+            <AuthRequired>
+              <LedgerBank />
             </AuthRequired>
           }
         />

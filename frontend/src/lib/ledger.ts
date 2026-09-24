@@ -134,3 +134,6 @@ export const statsRowLabel = (
 /** Years to offer in statement and report pickers, newest first. */
 export const recentYears = (count = 6, now = new Date()) =>
   Array.from({ length: count }, (_, index) => now.getFullYear() - index);
+
+/** The start and end of a SHA-256 hash, enough to compare by eye. */
+export const shortHash = (hash: string) => `${hash.slice(0, 12)}…${hash.slice(-6)}`;

@@ -1278,6 +1278,10 @@ export type LedgerAccount = {
     readonly balance: string;
     readonly entry_count: number;
     readonly currency: string;
+    /**
+     * Account number in the tax advisor's chart (DATEV export). Member accounts may leave it empty to use the shared member account.
+     */
+    readonly datev_number: string;
 };
 
 /**
@@ -1354,6 +1358,107 @@ export type LedgerAnnualReport = {
 };
 
 /**
+ * Exactly one of ``account`` (a member) or ``category``.
+ */
+export type LedgerBankBook = {
+    account?: string | null;
+    category?: string | null;
+    description?: string;
+};
+
+export type LedgerBankImport = {
+    readonly id: string;
+    /**
+     * Adapter, e.g. camt053.
+     */
+    readonly source: string;
+    readonly file_name: string;
+    readonly imported_at: string;
+    readonly imported_by_name: string;
+    readonly line_count: number;
+    readonly new_line_count: number;
+    readonly open_count: number;
+};
+
+export type LedgerBankImportResult = {
+    statement: LedgerBankImport;
+    /**
+     * Lines already imported from an earlier file.
+     */
+    duplicates: number;
+    /**
+     * Lines booked straight away by their payment reference.
+     */
+    booked: number;
+};
+
+export type LedgerBankLine = {
+    readonly id: string;
+    readonly statement: string;
+    readonly booked_on: string;
+    readonly value_date: string | null;
+    readonly amount: string;
+    readonly currency: string;
+    readonly counterparty_name: string;
+    readonly counterparty_iban: string;
+    readonly reference: string;
+    readonly end_to_end_id: string;
+    state: LedgerBankLineStateEnum;
+    proposed_account: LedgerAccountRef | null;
+    proposed_transaction: LedgerTransactionRef | null;
+    confidence: LedgerMatchConfidenceEnum;
+    readonly reason: string;
+    transaction: LedgerTransactionRef | null;
+    settlement: LedgerTransactionRef | null;
+    readonly resolved_by_name: string;
+    readonly resolved_at: string | null;
+    readonly note: string;
+};
+
+/**
+ * * `open` - To review
+ * * `booked` - Booked
+ * * `linked` - Matched to an entry
+ * * `suspense` - Parked, to be clarified
+ * * `ignored` - Ignored
+ */
+export type LedgerBankLineStateEnum = 'open' | 'booked' | 'linked' | 'suspense' | 'ignored';
+
+export type LedgerBankLink = {
+    transaction: string;
+};
+
+export type LedgerBankNote = {
+    note?: string;
+};
+
+export type LedgerBankSummary = {
+    open: number;
+    suspense: number;
+    booked: number;
+    linked: number;
+    ignored: number;
+    /**
+     * The bank account's balance in the books.
+     */
+    bank_balance: string;
+    /**
+     * Money parked until someone knows what it was.
+     */
+    suspense_balance: string;
+    last_import: string | null;
+    /**
+     * The newest line the bank reported.
+     */
+    last_booked_on: string | null;
+    auto_confirm: boolean;
+};
+
+export type LedgerBankUpload = {
+    file: string;
+};
+
+/**
  * * `owner` - Owner
  * * `community` - Community
  */
@@ -1404,6 +1509,25 @@ export type LedgerCategoryWrite = {
  * * `expense` - expense
  */
 export type LedgerCategoryWriteKindEnum = 'income' | 'expense';
+
+/**
+ * The hash chain's current head and its recent published digests.
+ */
+export type LedgerChain = {
+    head: LedgerChainHead | null;
+    /**
+     * A channel for publishing digests is configured.
+     */
+    digest_channel: boolean;
+    digests: Array<LedgerDigest>;
+};
+
+export type LedgerChainHead = {
+    position: number;
+    hash: string;
+    transaction: string;
+    seq: number;
+};
 
 export type LedgerComment = {
     readonly id: string;
@@ -1510,6 +1634,19 @@ export type LedgerCostShareWrite = {
     participants: Array<LedgerCostShareParticipantInput>;
 };
 
+export type LedgerDatevNumber = {
+    datev_number: string | string;
+};
+
+export type LedgerDigest = {
+    id: string;
+    created_at: string;
+    position: number;
+    head_hash: string;
+    chain_ok: boolean;
+    published: boolean;
+};
+
 export type LedgerDispute = {
     readonly id: string;
     readonly transaction: string;
@@ -1556,6 +1693,11 @@ export type LedgerHealth = {
     ok: boolean;
     trial_balance: string;
     mismatched_accounts: number;
+    /**
+     * Result of the last digest; null before the first.
+     */
+    chain_ok: boolean | null;
+    chain_checked_at: string | null;
 };
 
 /**
@@ -1592,6 +1734,14 @@ export type LedgerIntent = {
  */
 export type LedgerIntentEnum = 'expense_for_community' | 'top_up' | 'member_to_member' | 'payout' | 'income';
 
+/**
+ * * `high` - Payment reference
+ * * `medium` - Known account
+ * * `low` - Similar name
+ * * `none` - No match
+ */
+export type LedgerMatchConfidenceEnum = 'high' | 'medium' | 'low' | 'none';
+
 export type LedgerMyAccount = {
     readonly id: string;
     /**
@@ -1609,9 +1759,22 @@ export type LedgerMyAccount = {
     readonly balance: string;
     readonly entry_count: number;
     readonly currency: string;
+    /**
+     * Account number in the tax advisor's chart (DATEV export). Member accounts may leave it empty to use the shared member account.
+     */
+    readonly datev_number: string;
     readonly soft_limit: string;
     readonly below_soft_limit: boolean;
     readonly is_ledger_admin: boolean;
+    /**
+     * Member accounts: the reference to put on bank transfers, so an imported statement line finds its member (plan section 12).
+     */
+    readonly payment_reference: string;
+    /**
+     * Where to transfer money to; shown with the payment reference.
+     */
+    readonly community_iban: string;
+    readonly community_account_holder: string;
 };
 
 /**
@@ -1620,6 +1783,29 @@ export type LedgerMyAccount = {
  * * `objected` - Objected
  */
 export type LedgerParticipantResponseEnum = 'pending' | 'accepted' | 'objected';
+
+export type LedgerPeriod = {
+    readonly id: string;
+    readonly starts_on: string;
+    readonly ends_on: string;
+    readonly closed_at: string | null;
+    readonly closed_by_name: string;
+    readonly transaction_count: number;
+    /**
+     * SHA-256 of the journal export of the period at closing.
+     */
+    readonly export_hash: string;
+    readonly chain_position: number | null;
+    /**
+     * Head of the hash chain when the period was closed.
+     */
+    readonly chain_head: string;
+};
+
+export type LedgerPeriodClose = {
+    starts_on: string;
+    ends_on: string;
+};
 
 export type LedgerProject = {
     readonly id: string;
@@ -1659,6 +1845,12 @@ export type LedgerReceiptUpload = {
 
 export type LedgerReverse = {
     description?: string;
+};
+
+export type LedgerSeal = {
+    position: number;
+    prev_hash: string;
+    hash: string;
 };
 
 /**
@@ -1798,6 +1990,7 @@ export type LedgerTransactionDetail = {
     };
     readonly can_reverse: boolean;
     readonly cost_share: string | null;
+    seal: LedgerSeal | null;
 };
 
 /**
@@ -1813,8 +2006,20 @@ export type LedgerTransactionDetail = {
  * * `correction` - correction
  * * `member_transfer` - member_transfer
  * * `income` - income
+ * * `expense` - expense
  */
-export type LedgerTransactionKindEnum = 'booking_charge' | 'member_expense' | 'shared_expense' | 'top_up' | 'payout' | 'membership_fee' | 'adjustment' | 'opening_balance' | 'reversal' | 'correction' | 'member_transfer' | 'income';
+export type LedgerTransactionKindEnum = 'booking_charge' | 'member_expense' | 'shared_expense' | 'top_up' | 'payout' | 'membership_fee' | 'adjustment' | 'opening_balance' | 'reversal' | 'correction' | 'member_transfer' | 'income' | 'expense';
+
+export type LedgerTransactionRef = {
+    readonly id: string;
+    readonly seq: number;
+    kind: LedgerTransactionKindEnum;
+    /**
+     * Business date of the transaction.
+     */
+    readonly occurred_on: string;
+    readonly description: string;
+};
 
 /**
  * A booking that should have been charged but could not be.
@@ -2046,6 +2251,20 @@ export type PaginatedLedgerAccountList = {
     next?: string | null;
     previous?: string | null;
     results: Array<LedgerAccount>;
+};
+
+export type PaginatedLedgerBankImportList = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<LedgerBankImport>;
+};
+
+export type PaginatedLedgerBankLineList = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<LedgerBankLine>;
 };
 
 export type PaginatedLedgerCostShareList = {
@@ -3754,6 +3973,17 @@ export type LedgerAnnualReportWritable = {
     reconciles: boolean;
 };
 
+export type LedgerBankImportResultWritable = {
+    /**
+     * Lines already imported from an earlier file.
+     */
+    duplicates: number;
+    /**
+     * Lines booked straight away by their payment reference.
+     */
+    booked: number;
+};
+
 /**
  * An account statement (plan D12): display amounts, like the balance.
  */
@@ -3777,6 +4007,10 @@ export type LedgerStatementLineWritable = {
     memo: string;
     amount: string;
     balance_after: string;
+};
+
+export type LedgerTransactionDetailWritable = {
+    [key: string]: unknown;
 };
 
 /**
@@ -3956,6 +4190,20 @@ export type PaginatedLedgerAccountEntryListWritable = {
 };
 
 export type PaginatedLedgerAccountListWritable = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<unknown>;
+};
+
+export type PaginatedLedgerBankImportListWritable = {
+    count: number;
+    next?: string | null;
+    previous?: string | null;
+    results: Array<unknown>;
+};
+
+export type PaginatedLedgerBankLineListWritable = {
     count: number;
     next?: string | null;
     previous?: string | null;
@@ -5972,6 +6220,24 @@ export type LedgerAccountsRetrieveResponses = {
 
 export type LedgerAccountsRetrieveResponse = LedgerAccountsRetrieveResponses[keyof LedgerAccountsRetrieveResponses];
 
+export type LedgerAccountsDatevCreateData = {
+    body: LedgerDatevNumber;
+    path: {
+        /**
+         * Ein UUID-String, der account identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/accounts/{id}/datev/';
+};
+
+export type LedgerAccountsDatevCreateResponses = {
+    200: LedgerAccount;
+};
+
+export type LedgerAccountsDatevCreateResponse = LedgerAccountsDatevCreateResponses[keyof LedgerAccountsDatevCreateResponses];
+
 export type LedgerAccountsEntriesListData = {
     body?: never;
     path: {
@@ -6061,6 +6327,233 @@ export type LedgerAccountsMeRetrieveResponses = {
 
 export type LedgerAccountsMeRetrieveResponse = LedgerAccountsMeRetrieveResponses[keyof LedgerAccountsMeRetrieveResponses];
 
+export type LedgerBankImportsListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
+         */
+        page?: number;
+    };
+    url: '/api/ledger/bank/imports/';
+};
+
+export type LedgerBankImportsListResponses = {
+    200: PaginatedLedgerBankImportList;
+};
+
+export type LedgerBankImportsListResponse = LedgerBankImportsListResponses[keyof LedgerBankImportsListResponses];
+
+export type LedgerBankImportsCreateData = {
+    body: LedgerBankUpload;
+    path?: never;
+    query?: never;
+    url: '/api/ledger/bank/imports/';
+};
+
+export type LedgerBankImportsCreateResponses = {
+    201: LedgerBankImportResult;
+};
+
+export type LedgerBankImportsCreateResponse = LedgerBankImportsCreateResponses[keyof LedgerBankImportsCreateResponses];
+
+export type LedgerBankLinesListData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Eine Seitenzahl in der paginierten Ergebnismenge.
+         */
+        page?: number;
+        q?: string;
+        /**
+         * * `open` - To review
+         * * `booked` - Booked
+         * * `linked` - Matched to an entry
+         * * `suspense` - Parked, to be clarified
+         * * `ignored` - Ignored
+         */
+        state?: Array<'booked' | 'ignored' | 'linked' | 'open' | 'suspense'>;
+        statement?: string;
+    };
+    url: '/api/ledger/bank/lines/';
+};
+
+export type LedgerBankLinesListResponses = {
+    200: PaginatedLedgerBankLineList;
+};
+
+export type LedgerBankLinesListResponse = LedgerBankLinesListResponses[keyof LedgerBankLinesListResponses];
+
+export type LedgerBankLinesRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der statement line identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/bank/lines/{id}/';
+};
+
+export type LedgerBankLinesRetrieveResponses = {
+    200: LedgerBankLine;
+};
+
+export type LedgerBankLinesRetrieveResponse = LedgerBankLinesRetrieveResponses[keyof LedgerBankLinesRetrieveResponses];
+
+export type LedgerBankLinesAssignCreateData = {
+    body?: LedgerBankBook;
+    path: {
+        /**
+         * Ein UUID-String, der statement line identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/bank/lines/{id}/assign/';
+};
+
+export type LedgerBankLinesAssignCreateResponses = {
+    200: LedgerBankLine;
+};
+
+export type LedgerBankLinesAssignCreateResponse = LedgerBankLinesAssignCreateResponses[keyof LedgerBankLinesAssignCreateResponses];
+
+export type LedgerBankLinesBookCreateData = {
+    body?: LedgerBankBook;
+    path: {
+        /**
+         * Ein UUID-String, der statement line identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/bank/lines/{id}/book/';
+};
+
+export type LedgerBankLinesBookCreateResponses = {
+    200: LedgerBankLine;
+};
+
+export type LedgerBankLinesBookCreateResponse = LedgerBankLinesBookCreateResponses[keyof LedgerBankLinesBookCreateResponses];
+
+export type LedgerBankLinesCandidatesListData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der statement line identifiziert.
+         */
+        id: string;
+    };
+    query?: {
+        q?: string;
+        /**
+         * * `open` - To review
+         * * `booked` - Booked
+         * * `linked` - Matched to an entry
+         * * `suspense` - Parked, to be clarified
+         * * `ignored` - Ignored
+         */
+        state?: Array<'booked' | 'ignored' | 'linked' | 'open' | 'suspense'>;
+        statement?: string;
+    };
+    url: '/api/ledger/bank/lines/{id}/candidates/';
+};
+
+export type LedgerBankLinesCandidatesListResponses = {
+    200: Array<LedgerTransactionRef>;
+};
+
+export type LedgerBankLinesCandidatesListResponse = LedgerBankLinesCandidatesListResponses[keyof LedgerBankLinesCandidatesListResponses];
+
+export type LedgerBankLinesIgnoreCreateData = {
+    body?: LedgerBankNote;
+    path: {
+        /**
+         * Ein UUID-String, der statement line identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/bank/lines/{id}/ignore/';
+};
+
+export type LedgerBankLinesIgnoreCreateResponses = {
+    200: LedgerBankLine;
+};
+
+export type LedgerBankLinesIgnoreCreateResponse = LedgerBankLinesIgnoreCreateResponses[keyof LedgerBankLinesIgnoreCreateResponses];
+
+export type LedgerBankLinesLinkCreateData = {
+    body: LedgerBankLink;
+    path: {
+        /**
+         * Ein UUID-String, der statement line identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/bank/lines/{id}/link/';
+};
+
+export type LedgerBankLinesLinkCreateResponses = {
+    200: LedgerBankLine;
+};
+
+export type LedgerBankLinesLinkCreateResponse = LedgerBankLinesLinkCreateResponses[keyof LedgerBankLinesLinkCreateResponses];
+
+export type LedgerBankLinesParkCreateData = {
+    body?: LedgerBankNote;
+    path: {
+        /**
+         * Ein UUID-String, der statement line identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/bank/lines/{id}/park/';
+};
+
+export type LedgerBankLinesParkCreateResponses = {
+    200: LedgerBankLine;
+};
+
+export type LedgerBankLinesParkCreateResponse = LedgerBankLinesParkCreateResponses[keyof LedgerBankLinesParkCreateResponses];
+
+export type LedgerBankLinesReopenCreateData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der statement line identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/ledger/bank/lines/{id}/reopen/';
+};
+
+export type LedgerBankLinesReopenCreateResponses = {
+    200: LedgerBankLine;
+};
+
+export type LedgerBankLinesReopenCreateResponse = LedgerBankLinesReopenCreateResponses[keyof LedgerBankLinesReopenCreateResponses];
+
+export type LedgerBankLinesSummaryRetrieveData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/ledger/bank/lines/summary/';
+};
+
+export type LedgerBankLinesSummaryRetrieveResponses = {
+    200: LedgerBankSummary;
+};
+
+export type LedgerBankLinesSummaryRetrieveResponse = LedgerBankLinesSummaryRetrieveResponses[keyof LedgerBankLinesSummaryRetrieveResponses];
+
 export type LedgerCategoriesListData = {
     body?: never;
     path?: never;
@@ -6134,6 +6627,32 @@ export type LedgerCategoriesPartialUpdateResponses = {
 
 export type LedgerCategoriesPartialUpdateResponse = LedgerCategoriesPartialUpdateResponses[keyof LedgerCategoriesPartialUpdateResponses];
 
+export type LedgerChainRetrieveData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/ledger/chain/';
+};
+
+export type LedgerChainRetrieveResponses = {
+    200: LedgerChain;
+};
+
+export type LedgerChainRetrieveResponse = LedgerChainRetrieveResponses[keyof LedgerChainRetrieveResponses];
+
+export type LedgerChainExportRetrieveData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/ledger/chain/export/';
+};
+
+export type LedgerChainExportRetrieveResponses = {
+    200: Blob | File;
+};
+
+export type LedgerChainExportRetrieveResponse = LedgerChainExportRetrieveResponses[keyof LedgerChainExportRetrieveResponses];
+
 export type LedgerDisputesRetrieveData = {
     body?: never;
     path: {
@@ -6188,6 +6707,38 @@ export type LedgerDisputesWithdrawCreateResponses = {
 
 export type LedgerDisputesWithdrawCreateResponse = LedgerDisputesWithdrawCreateResponses[keyof LedgerDisputesWithdrawCreateResponses];
 
+export type LedgerExportsDatevRetrieveData = {
+    body?: never;
+    path?: never;
+    query: {
+        date_from: string;
+        date_to: string;
+    };
+    url: '/api/ledger/exports/datev/';
+};
+
+export type LedgerExportsDatevRetrieveResponses = {
+    200: Blob | File;
+};
+
+export type LedgerExportsDatevRetrieveResponse = LedgerExportsDatevRetrieveResponses[keyof LedgerExportsDatevRetrieveResponses];
+
+export type LedgerExportsJournalRetrieveData = {
+    body?: never;
+    path?: never;
+    query: {
+        date_from: string;
+        date_to: string;
+    };
+    url: '/api/ledger/exports/journal/';
+};
+
+export type LedgerExportsJournalRetrieveResponses = {
+    200: Blob | File;
+};
+
+export type LedgerExportsJournalRetrieveResponse = LedgerExportsJournalRetrieveResponses[keyof LedgerExportsJournalRetrieveResponses];
+
 export type LedgerHealthRetrieveData = {
     body?: never;
     path?: never;
@@ -6200,6 +6751,32 @@ export type LedgerHealthRetrieveResponses = {
 };
 
 export type LedgerHealthRetrieveResponse = LedgerHealthRetrieveResponses[keyof LedgerHealthRetrieveResponses];
+
+export type LedgerPeriodsListData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/ledger/periods/';
+};
+
+export type LedgerPeriodsListResponses = {
+    200: Array<LedgerPeriod>;
+};
+
+export type LedgerPeriodsListResponse = LedgerPeriodsListResponses[keyof LedgerPeriodsListResponses];
+
+export type LedgerPeriodsCreateData = {
+    body: LedgerPeriodClose;
+    path?: never;
+    query?: never;
+    url: '/api/ledger/periods/';
+};
+
+export type LedgerPeriodsCreateResponses = {
+    201: LedgerPeriod;
+};
+
+export type LedgerPeriodsCreateResponse = LedgerPeriodsCreateResponses[keyof LedgerPeriodsCreateResponses];
 
 export type LedgerProjectsListData = {
     body?: never;
@@ -6547,8 +7124,9 @@ export type LedgerTransactionsListData = {
          * * `correction` - correction
          * * `member_transfer` - member_transfer
          * * `income` - income
+         * * `expense` - expense
          */
-        kind?: Array<'adjustment' | 'booking_charge' | 'correction' | 'income' | 'member_expense' | 'member_transfer' | 'membership_fee' | 'opening_balance' | 'payout' | 'reversal' | 'shared_expense' | 'top_up'>;
+        kind?: Array<'adjustment' | 'booking_charge' | 'correction' | 'expense' | 'income' | 'member_expense' | 'member_transfer' | 'membership_fee' | 'opening_balance' | 'payout' | 'reversal' | 'shared_expense' | 'top_up'>;
         /**
          * User id
          */

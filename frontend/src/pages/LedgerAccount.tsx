@@ -2,6 +2,7 @@ import { BackButton } from '@/components/layout/BackButton';
 import { CostShareList } from '@/components/ledger/CostShareList';
 import { LedgerBalanceCard } from '@/components/ledger/LedgerBalanceCard';
 import { NewLedgerTransactionModal } from '@/components/ledger/NewLedgerTransactionModal';
+import { PaymentInfoCard } from '@/components/ledger/PaymentInfoCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
   useLedgerAccount,
@@ -84,6 +85,8 @@ const LedgerAccount = () => {
             </Text>
           </Card>
         )}
+
+        {isMe && me && <PaymentInfoCard account={me} />}
 
         {isMe && !!waiting?.results.length && (
           <Stack gap="xs">

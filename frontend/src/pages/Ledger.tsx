@@ -20,6 +20,8 @@ import { formatMoney } from '@/lib/currency';
 import { formatDate } from '@/lib/date';
 import { categoryLabel } from '@/lib/ledger';
 import {
+  LEDGER_BANK_PATH,
+  LEDGER_CHAIN_PATH,
   LEDGER_MANAGE_PATH,
   LEDGER_REPORT_PATH,
   LEDGER_STATS_PATH,
@@ -31,6 +33,7 @@ import type { LedgerMyAccount, LedgerTransactionKindEnum } from '@/services/djan
 import {
   ActionIcon,
   Alert,
+  Anchor,
   Badge,
   Button,
   Card,
@@ -51,15 +54,17 @@ import {
   AlertTriangle,
   BarChart3,
   FileText,
+  Landmark,
   MoreHorizontal,
   Plus,
   Search,
   Settings,
+  ShieldCheck,
   Split,
   X,
 } from 'lucide-react';
 import { Fragment, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 const KINDS: LedgerTransactionKindEnum[] = [
   'member_expense',
@@ -69,6 +74,7 @@ const KINDS: LedgerTransactionKindEnum[] = [
   'shared_expense',
   'payout',
   'income',
+  'expense',
   'membership_fee',
   'reversal',
   'correction',
@@ -418,13 +424,28 @@ const Ledger = () => {
                   >
                     {t('ledger.statementPage.mine')}
                   </Menu.Item>
+                  <Menu.Item
+                    leftSection={<ShieldCheck size={16} />}
+                    onClick={() => navigate(LEDGER_CHAIN_PATH)}
+                  >
+                    {t('ledger.chain.title')}
+                  </Menu.Item>
                   {me.is_ledger_admin && (
-                    <Menu.Item
-                      leftSection={<Settings size={16} />}
-                      onClick={() => navigate(LEDGER_MANAGE_PATH)}
-                    >
-                      {t('ledger.manage.title')}
-                    </Menu.Item>
+                    <>
+                      <Menu.Divider />
+                      <Menu.Item
+                        leftSection={<Landmark size={16} />}
+                        onClick={() => navigate(LEDGER_BANK_PATH)}
+                      >
+                        {t('ledger.bank.title')}
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<Settings size={16} />}
+                        onClick={() => navigate(LEDGER_MANAGE_PATH)}
+                      >
+                        {t('ledger.manage.title')}
+                      </Menu.Item>
+                    </>
                   )}
                 </Menu.Dropdown>
               </Menu>
@@ -438,7 +459,10 @@ const Ledger = () => {
             icon={<AlertTriangle size={16} aria-hidden="true" />}
             title={t('ledger.healthTitle')}
           >
-            {t('ledger.healthBody')}
+            {health.chain_ok === false ? t('ledger.chain.brokenBody') : t('ledger.healthBody')}{' '}
+            <Anchor component={Link} to={LEDGER_CHAIN_PATH} size="sm">
+              {t('ledger.chain.title')}
+            </Anchor>
           </Alert>
         )}
 
