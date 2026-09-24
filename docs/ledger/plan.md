@@ -707,6 +707,22 @@ Feature list, in rough order of trust-per-line-of-code:
    by anyone who saved yesterday's digest. Cheap to add once the rest is stable, and it
    changes the trust story from "trust the admins" to "verify the admins".
 
+**Hash chain as built (phase 6).** The seal lives in its own append-only table,
+`TransactionSeal` (position, `prev_hash`, `hash`), written in the same database
+transaction as the posting, because the hash covers the entries, which are written
+after the `Transaction` row. `hash = sha256(prev_hash ‖ canonical)`, where
+`canonical` is sorted, compact JSON of the transaction's fields and its entries
+(`bubble/ledger/chain.py`); the first `prev_hash` is 64 zeros. Postings take a
+per-book advisory lock first, so the chain never forks (a unique constraint on
+`(book, prev_hash)` backs this up). Migration 0005 sealed the existing rows in
+`seq` order. Every night `publish_ledger_digest_daily` recomputes the whole chain,
+stores a `LedgerDigest` (head, count, result) and posts it through Apprise to
+`LEDGER_DIGEST_APPRISE_URL` if that is set; a broken chain turns the health banner
+red, and `verify_chain()` names the first broken position. `/ledger/chain` shows the head, the
+digests and a ten-line script; `/api/ledger/chain/export/` returns every link with
+its canonical text, so anyone can check the chain without trusting the server's
+own verification. Every transaction page shows its seal.
+
 ---
 
 ## 12. Bank import — the port, with the adapter deferred (D11)
@@ -738,6 +754,40 @@ stays reconcilable even before someone assigns them.
 Whatever adapter is chosen later plugs in behind the protocol; the pipeline, models,
 matching and UI are written once.
 
+**As built (phase 6).** `bubble/ledger/bank/`: `sources.py` defines `ParsedLine`
+and the `BankStatementSource` protocol; `camt.py` reads CAMT.053 (versions 02 to
+08, namespaces ignored, DTDs refused, booked entries only, batches with amounts per
+transaction split into lines); `csv_source.py` finds columns by their German or
+English header names, after any preamble, with `;`/`,`/tab separators, German or
+English number formats and UTF-8 or Windows-1252. MT940 is refused with a hint to
+download CAMT or CSV instead. **D11 stays open**: no PSD2 or FinTS/EBICS adapter
+exists; one would produce `ParsedLine` objects and call `pipeline.ingest`.
+
+- Lines are deduplicated by a fingerprint (the bank's `AcctSvcrRef` when present,
+  otherwise the line's fields plus its occurrence number), so overlapping downloads
+  are harmless; the same file twice is refused outright.
+- The match proposal is stored on `StatementLine` itself (no separate
+  `MatchProposal` table): payment reference `BUB-XXXXXX` (per member, shown on
+  `/ledger/me` with the community IBAN and copy buttons) → high; an IBAN learned
+  from an earlier confirmed line (`KnownIban`) → medium; a similar name (unique
+  best match, ratio ≥ 0.85) → low. Independently, an unlinked hand-posted entry
+  that moves the same amount on `asset:bank` within ten days is proposed for
+  **linking**, so a top-up a member already entered is not booked twice.
+- The treasurer decides per line: **book** (member → `TOP_UP`/`PAYOUT`; category →
+  `INCOME` or the new `EXPENSE` kind for money the community paid straight from the
+  bank), **link**, **park** (to `suspense:unmatched`, then **assign** later with a
+  settlement posting), or **ignore** with a reason. Linking and ignoring can be
+  reopened; booked and parked lines are undone by reversing their entry. Idempotency
+  keys `statement_line:<id>` (and `…:settle`) make double booking impossible. A
+  line dated in a closed period is booked today, with the bank's date in `meta`.
+- `BANK_AUTO_CONFIRM_REFERENCES` (off by default) books incoming high-confidence
+  lines on import. Foreign-currency lines can only be ignored.
+- Bank lines name outsiders and their IBANs, so they are **treasurer-only** — the
+  one deliberate exception to D8. The resulting postings are ordinary, public
+  ledger entries.
+- The SEPA QR code on `/ledger/me` is not built: it needs a QR library, which
+  would change the lock file. The IBAN and reference have copy buttons instead.
+
 ---
 
 ## 13. Reporting and period close (D12)
@@ -761,6 +811,20 @@ matching and UI are written once.
   closed period are rejected (I6) and must be booked in the open period as a correction
   with a reference to the original — standard practice, and it stops an export from
   going stale.
+  *As built (phase 6):* closing is an explicit treasurer action on `/ledger/manage`,
+  not a side effect of downloading, so a trial export does not lock anything. It
+  refuses periods that have not ended, overlap a closed one or still contain open
+  shared costs; it takes the chain lock and records the SHA-256 of the period's
+  journal CSV (deterministic, so re-downloading gives the same hash), the chain head
+  and the transaction count. Postings into a closed period are refused inside the
+  same lock (I6), and the API explains how to book them instead. Exports: the
+  **journal** (every entry, UTF-8 CSV, all members) and the **DATEV Buchungsstapel**
+  (EXTF 700, category 21, format 13, Windows-1252, treasurer only). Every account used
+  needs a DATEV number (`Account.datev_number`, edited on the manage page); member
+  accounts may share `DATEV_MEMBER_ACCOUNT`. A transaction with more than two legs
+  becomes one DATEV booking per leg against its largest leg. **The DATEV file has not
+  been checked against a real DATEV import yet**: the tax advisor should test-import a
+  first file before relying on it.
 
 Retention: if the association is subject to German bookkeeping duties, receipts and
 ledger rows fall under a 10-year retention obligation, which conflicts with a naive
@@ -865,7 +929,7 @@ A user who leaves must not take the community's books with them.
 | 3 ✅ | Booking integration: `payment_enabled` gate, `Item.ledger_beneficiary` + community ownership in the UI, posting rentals on `COMPLETED`, sales accepted with ownership transfer to the buyer as a `DRAFT` (D17) and charged when the buyer approves the hand-over, or cancelled free of charge when the buyer rejects it (D18), reconciliation job, unbilled view | rentals and sales hit the ledger |
 | 4 ✅ | Disputes, comment threads, reversals and partial corrections in the UI, notifications, soft-limit warnings and reminders; shared expenses (`CostShare`, confirmation flow, auto-accept job) | the trust layer; group cooking works |
 | 5 ✅ | Categories/projects UI, statistics endpoints and page, per-member statement, treasurer's report | analytics and D12 part 1 |
-| 6 | DATEV export + period close; bank import pipeline behind the port; hash chain and daily digest | D11/D12 completion |
+| 6 ✅ | DATEV export + period close; bank import pipeline behind the port (file adapters only; the bank interface, D11, is still open); hash chain and daily digest | D11/D12 completion |
 
 Phases 1–2 are the ones worth over-engineering slightly; everything later is additive
 because the core is append-only.
