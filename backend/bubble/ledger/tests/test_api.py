@@ -422,7 +422,13 @@ class TestReading:
     def test_health(self, members, client_for):
         post_intent(client_for(members["bob"]), intent="top_up", amount="5")
         health = client_for(members["bob"]).get("/api/ledger/health/").data
-        assert health == {"ok": True, "trial_balance": "0.00", "mismatched_accounts": 0}
+        assert health == {
+            "ok": True,
+            "trial_balance": "0.00",
+            "mismatched_accounts": 0,
+            "chain_ok": None,  # no digest yet
+            "chain_checked_at": None,
+        }
 
     def test_categories_and_projects(self, members, client_for):
         client = client_for(members["bob"])

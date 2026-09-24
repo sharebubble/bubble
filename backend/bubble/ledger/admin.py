@@ -16,12 +16,17 @@ from bubble.ledger.models import (
     CostShareParticipant,
     Dispute,
     Entry,
+    KnownIban,
+    LedgerDigest,
     LedgerPeriod,
     Project,
     Receipt,
     ReceiptAccess,
+    StatementImport,
+    StatementLine,
     Transaction,
     TransactionComment,
+    TransactionSeal,
 )
 
 
@@ -182,3 +187,50 @@ class CostShareAdmin(ReadOnlyAdminMixin, SimpleHistoryAdmin):
     list_select_related = ["payer"]
     search_fields = ["description"]
     inlines = [CostShareParticipantInline]
+
+
+@admin.register(TransactionSeal)
+class TransactionSealAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
+    list_display = ["position", "transaction", "hash", "sealed_at"]
+    search_fields = ["hash", "prev_hash"]
+
+
+@admin.register(LedgerDigest)
+class LedgerDigestAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
+    list_display = ["created_at", "position", "head_hash", "chain_ok", "published"]
+    list_filter = ["chain_ok", "published"]
+
+
+@admin.register(StatementImport)
+class StatementImportAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
+    list_display = ["imported_at", "file_name", "source", "line_count", "imported_by"]
+
+
+@admin.register(StatementLine)
+class StatementLineAdmin(ReadOnlyAdminMixin, SimpleHistoryAdmin):
+    """Decisions on lines are made in the app, where they post to the ledger."""
+
+    list_display = [
+        "booked_on",
+        "amount",
+        "counterparty_name",
+        "state",
+        "confidence",
+        "proposed_account",
+    ]
+    list_filter = ["state", "confidence"]
+    search_fields = ["counterparty_name", "counterparty_iban", "reference"]
+    date_hierarchy = "booked_on"
+
+
+@admin.register(KnownIban)
+class KnownIbanAdmin(admin.ModelAdmin):
+    """IBANs learned from confirmed lines. Only a matching hint: deleting or
+    reassigning a wrong one changes no booking."""
+
+    list_display = ["iban", "account", "learned_at"]
+    search_fields = ["iban", "account__name"]
+    readonly_fields = ["book", "iban", "learned_at"]
+
+    def has_add_permission(self, request, obj=None):
+        return False

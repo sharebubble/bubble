@@ -523,6 +523,8 @@ SPECTACULAR_SETTINGS = {
         "LedgerCostShareSplitEnum": "bubble.ledger.models.CostShareSplit",
         "LedgerParticipantResponseEnum": "bubble.ledger.models.ParticipantResponse",
         "LedgerStatsGroupEnum": "bubble.ledger.reports.GROUPS",
+        "LedgerBankLineStateEnum": "bubble.ledger.models.LineState",
+        "LedgerMatchConfidenceEnum": "bubble.ledger.models.MatchConfidence",
     },
 }
 
@@ -560,6 +562,51 @@ CONSTANCE_CONFIG = {
         "Days participants have to accept or object to a shared expense before "
         "their silence counts as acceptance and the split is booked.",
         int,
+    ),
+    "LEDGER_DIGEST_APPRISE_URL": (
+        "",
+        (
+            "Apprise URL of a shared channel (e.g. a RocketChat or Matrix room) "
+            "that receives the ledger's daily digest: the head hash of the "
+            "transaction chain. Anyone who keeps these messages can detect a "
+            "later edit of the books. Empty: digests are only kept in the app."
+        ),
+    ),
+    "COMMUNITY_IBAN": (
+        "",
+        "IBAN of the community's bank account, shown to members for top-ups.",
+    ),
+    "COMMUNITY_ACCOUNT_HOLDER": (
+        "",
+        "Account holder shown next to the community IBAN.",
+    ),
+    "BANK_AUTO_CONFIRM_REFERENCES": (
+        False,
+        (
+            "Book imported bank lines automatically when they carry a member's "
+            "payment reference. Otherwise the treasurer confirms every line."
+        ),
+        bool,
+    ),
+    "DATEV_CONSULTANT_NUMBER": (
+        "",
+        "DATEV Beraternummer of the tax advisor (for the DATEV export).",
+    ),
+    "DATEV_CLIENT_NUMBER": (
+        "",
+        "DATEV Mandantennummer of the association (for the DATEV export).",
+    ),
+    "DATEV_ACCOUNT_LENGTH": (
+        4,
+        "Length of general ledger account numbers in DATEV (Sachkontenlänge).",
+        int,
+    ),
+    "DATEV_MEMBER_ACCOUNT": (
+        "",
+        (
+            "DATEV account used for all member balances (e.g. a clearing "
+            "account). A member account with its own DATEV number overrides it."
+        ),
     ),
     "DEFAULT_ITEM_VISIBILITY": (
         "authenticated",

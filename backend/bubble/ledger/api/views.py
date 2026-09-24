@@ -7,6 +7,7 @@ through ``bubble.ledger.intents``, which enforces who may charge whom.
 
 import csv
 
+from constance import config
 from django.db.models import (
     Count,
     Exists,
@@ -46,21 +47,34 @@ from bubble.ledger.api.serializers import (
     LedgerAccountSerializer,
     LedgerAnnualReportQuerySerializer,
     LedgerAnnualReportSerializer,
+    LedgerBankBookSerializer,
+    LedgerBankImportResultSerializer,
+    LedgerBankImportSerializer,
+    LedgerBankLineSerializer,
+    LedgerBankLinkSerializer,
+    LedgerBankNoteSerializer,
+    LedgerBankSummarySerializer,
+    LedgerBankUploadSerializer,
     LedgerCategorySerializer,
     LedgerCategoryWriteSerializer,
+    LedgerChainSerializer,
     LedgerCommentCreateSerializer,
     LedgerCommentSerializer,
     LedgerCorrectionSerializer,
     LedgerCostShareRespondSerializer,
     LedgerCostShareSerializer,
     LedgerCostShareWriteSerializer,
+    LedgerDatevNumberSerializer,
     LedgerDisputeCreateSerializer,
     LedgerDisputeResolveSerializer,
     LedgerDisputeSerializer,
+    LedgerExportQuerySerializer,
     LedgerHealthSerializer,
     LedgerIntentSerializer,
     LedgerMyAccountSerializer,
+    LedgerPeriodCloseSerializer,
     LedgerPeriodQuerySerializer,
+    LedgerPeriodSerializer,
     LedgerProjectSerializer,
     LedgerProjectWriteSerializer,
     LedgerReceiptSerializer,
@@ -70,11 +84,16 @@ from bubble.ledger.api.serializers import (
     LedgerStatsQuerySerializer,
     LedgerStatsSerializer,
     LedgerTransactionDetailSerializer,
+    LedgerTransactionRefSerializer,
     LedgerTransactionSerializer,
     LedgerUnbilledBookingSerializer,
     account_name,
 )
+from bubble.ledger.bank import pipeline
+from bubble.ledger.bank.matching import link_candidates
+from bubble.ledger.chain import canonical
 from bubble.ledger.chart import create_category, unique_code
+from bubble.ledger.exports import close_period, datev_csv, journal_csv
 from bubble.ledger.intents import (
     IntentError,
     IntentForbiddenError,
@@ -95,13 +114,19 @@ from bubble.ledger.models import (
     Dispute,
     DisputeState,
     Entry,
+    LedgerDigest,
+    LedgerPeriod,
+    LineState,
     ParticipantResponse,
     Project,
     Receipt,
     ReceiptAccess,
+    StatementImport,
+    StatementLine,
     Transaction,
     TransactionComment,
     TransactionKind,
+    TransactionSeal,
 )
 from bubble.ledger.reports import account_statement, annual_report, ledger_stats
 from bubble.ledger.services import get_member_account, verify_ledger
@@ -202,7 +227,12 @@ class TransactionViewSet(
         return (
             Transaction.objects.filter(book=Book.objects.default())
             .select_related(
-                "book", "category", "project", "created_by__owner", "cost_share"
+                "book",
+                "category",
+                "project",
+                "created_by__owner",
+                "cost_share",
+                "seal",
             )
             .prefetch_related(
                 Prefetch(
@@ -754,6 +784,21 @@ class AccountViewSet(viewsets.ReadOnlyModelViewSet):
         return self.get_paginated_response(serializer.data)
 
     @extend_schema(
+        request=LedgerDatevNumberSerializer, responses=LedgerAccountSerializer
+    )
+    @action(detail=True, methods=["post"], parser_classes=[JSONParser])
+    def datev(self, request, id=None):  # noqa: A002
+        """Treasurer: set the account's number in the tax advisor's chart."""
+        if not is_ledger_admin(request.user):
+            raise PermissionDenied(_("Only the treasurer can change this."))
+        serializer = LedgerDatevNumberSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        account = self.get_object()
+        account.datev_number = serializer.validated_data["datev_number"]
+        account.save(update_fields=["datev_number"])
+        return Response(LedgerAccountSerializer(self.get_object()).data)
+
+    @extend_schema(
         parameters=[LedgerPeriodQuerySerializer],
         responses=LedgerStatementSerializer,
     )
@@ -839,6 +884,60 @@ def _period(request) -> dict:
     serializer = LedgerPeriodQuerySerializer(data=request.query_params)
     serializer.is_valid(raise_exception=True)
     return serializer.validated_data
+
+
+def _export_period(request) -> dict:
+    serializer = LedgerExportQuerySerializer(data=request.query_params)
+    serializer.is_valid(raise_exception=True)
+    return serializer.validated_data
+
+
+def _download(content: bytes, filename: str, content_type: str) -> HttpResponse:
+    response = HttpResponse(content, content_type=content_type)
+    response["Content-Disposition"] = content_disposition_header(
+        as_attachment=True, filename=filename
+    )
+    return response
+
+
+class PeriodViewSet(
+    TreasurerWritesMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Closed bookkeeping periods (plan section 13, I6). Everyone reads; the
+    treasurer closes a period, which records its export hash and the chain
+    head and refuses any later posting dated inside it."""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = LedgerPeriodSerializer
+    pagination_class = None
+    parser_classes = [JSONParser]
+
+    def get_queryset(self):
+        return LedgerPeriod.objects.filter(book=Book.objects.default()).select_related(
+            "closed_by"
+        )
+
+    @extend_schema(
+        request=LedgerPeriodCloseSerializer, responses={201: LedgerPeriodSerializer}
+    )
+    def create(self, request, *args, **kwargs):
+        self._require_treasurer()
+        serializer = LedgerPeriodCloseSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            period = close_period(
+                Book.objects.default(),
+                serializer.validated_data["starts_on"],
+                serializer.validated_data["ends_on"],
+                user=request.user,
+            )
+        except IntentError as exc:
+            raise _intent_error(exc) from exc
+        return Response(
+            LedgerPeriodSerializer(period).data, status=status.HTTP_201_CREATED
+        )
 
 
 class CategoryViewSet(
@@ -1061,12 +1160,109 @@ class LedgerViewSet(viewsets.ViewSet):
     def health(self, request):
         """Is the ledger consistent right now? Shown as a banner when it is not."""
         result = verify_ledger()
+        last = LedgerDigest.objects.filter(book=Book.objects.default()).first()
         data = {
-            "ok": result.ok,
+            "ok": result.ok and (last is None or last.chain_ok),
             "trial_balance": result.trial_balance,
             "mismatched_accounts": len(result.mismatched_accounts),
+            "chain_ok": last.chain_ok if last else None,
+            "chain_checked_at": last.created_at if last else None,
         }
         return Response(LedgerHealthSerializer(data).data)
+
+    @extend_schema(
+        parameters=[LedgerExportQuerySerializer],
+        responses={(200, "text/csv"): OpenApiResponse(OpenApiTypes.BINARY)},
+    )
+    @action(detail=False, methods=["get"], url_path="exports/journal")
+    def export_journal(self, request):
+        """Every entry of a period as CSV (plan D12). The same period always
+        gives the same file; its SHA-256 is recorded when the period closes."""
+        period = _export_period(request)
+        content = journal_csv(
+            Book.objects.default(), period["date_from"], period["date_to"]
+        )
+        return _download(
+            content,
+            f"journal-{period['date_from']}-{period['date_to']}.csv",
+            "text/csv; charset=utf-8",
+        )
+
+    @extend_schema(
+        parameters=[LedgerExportQuerySerializer],
+        responses={(200, "text/csv"): OpenApiResponse(OpenApiTypes.BINARY)},
+    )
+    @action(detail=False, methods=["get"], url_path="exports/datev")
+    def export_datev(self, request):
+        """DATEV Buchungsstapel for the tax advisor (treasurer only)."""
+        if not is_ledger_admin(request.user):
+            raise PermissionDenied(_("Only the treasurer can export for DATEV."))
+        period = _export_period(request)
+        try:
+            content = datev_csv(
+                Book.objects.default(), period["date_from"], period["date_to"]
+            )
+        except IntentError as exc:
+            raise _intent_error(exc) from exc
+        return _download(
+            content,
+            f"EXTF_Buchungsstapel_{period['date_from']}_{period['date_to']}.csv",
+            "text/csv; charset=windows-1252",
+        )
+
+    @extend_schema(responses=LedgerChainSerializer)
+    @action(detail=False, methods=["get"])
+    def chain(self, request):
+        """The hash chain's head and the last 30 daily digests (plan section 11).
+
+        Keep a digest's head hash somewhere outside the app: if the books are
+        ever changed behind the app's back, the chain will no longer lead to it.
+        """
+        book = Book.objects.default()
+        current = (
+            TransactionSeal.objects.filter(book=book)
+            .select_related("transaction")
+            .order_by("-position")
+            .first()
+        )
+        data = {
+            "head": current,
+            "digest_channel": bool(config.LEDGER_DIGEST_APPRISE_URL),
+            "digests": LedgerDigest.objects.filter(book=book)[:30],
+        }
+        return Response(LedgerChainSerializer(data).data)
+
+    @extend_schema(responses={(200, "text/csv"): OpenApiResponse(OpenApiTypes.BINARY)})
+    @action(detail=False, methods=["get"], url_path="chain/export")
+    def chain_export(self, request):
+        """The whole chain with the exact bytes each hash covers.
+
+        Verify it anywhere: for every row, ``sha256(prev_hash + canonical)``
+        must equal ``hash``, each ``prev_hash`` must be the previous row's
+        ``hash``, and the last ``hash`` must match a digest you kept.
+        """
+        book = Book.objects.default()
+        seals = (
+            TransactionSeal.objects.filter(book=book)
+            .select_related("transaction")
+            .prefetch_related("transaction__entries")
+            .order_by("position")
+        )
+        rows = (
+            [
+                link.position,
+                link.transaction.seq,
+                link.prev_hash,
+                link.hash,
+                canonical(link.transaction).decode(),
+            ]
+            for link in seals.iterator(chunk_size=500)
+        )
+        return _csv_response(
+            "ledger-chain.csv",
+            ["position", "seq", "prev_hash", "hash", "canonical"],
+            rows,
+        )
 
     @extend_schema(
         parameters=[LedgerStatsQuerySerializer], responses=LedgerStatsSerializer
@@ -1156,3 +1352,188 @@ class LedgerViewSet(viewsets.ViewSet):
             .order_by("-updated_at")
         )
         return Response(LedgerUnbilledBookingSerializer(bookings, many=True).data)
+
+
+# --- Bank import (plan section 12) ----------------------------------------------
+
+
+class TreasurerOnly(IsAuthenticated):
+    """Bank lines name people outside the community and their IBANs, so only
+    the treasurer sees them (an exception to D8)."""
+
+    def has_permission(self, request, view):
+        return super().has_permission(request, view) and is_ledger_admin(request.user)
+
+
+class BankImportViewSet(
+    mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet
+):
+    """Uploaded statement files. Upload CAMT.053 (XML) or CSV from online
+    banking; lines seen in an earlier file are skipped."""
+
+    permission_classes = [TreasurerOnly]
+    serializer_class = LedgerBankImportSerializer
+    parser_classes = [MultiPartParser]
+
+    def get_queryset(self):
+        return (
+            StatementImport.objects.filter(book=Book.objects.default())
+            .select_related("imported_by__owner")
+            .annotate(open_count=Count("lines", filter=Q(lines__state=LineState.OPEN)))
+        )
+
+    @extend_schema(
+        request=LedgerBankUploadSerializer,
+        responses={201: LedgerBankImportResultSerializer},
+    )
+    def create(self, request, *args, **kwargs):
+        serializer = LedgerBankUploadSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        upload = serializer.validated_data["file"]
+        if upload.size > pipeline.MAX_FILE_SIZE:
+            raise ValidationError({"file": [_("The file is larger than 5 MB.")]})
+        try:
+            result = pipeline.import_file(
+                upload.read(), upload.name or "", user=request.user
+            )
+        except IntentError as exc:
+            raise _intent_error(exc) from exc
+        statement = self.get_queryset().get(pk=result.statement.pk)
+        data = {
+            "statement": statement,
+            "duplicates": result.duplicates,
+            "booked": result.booked,
+        }
+        return Response(
+            LedgerBankImportResultSerializer(data).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class BankLineFilter(filters.FilterSet):
+    state = filters.MultipleChoiceFilter(choices=LineState.choices)
+    statement = filters.UUIDFilter()
+    q = filters.CharFilter(method="filter_q")
+
+    class Meta:
+        model = StatementLine
+        fields = []
+
+    def filter_q(self, queryset, name, value):
+        return queryset.filter(
+            Q(counterparty_name__icontains=value)
+            | Q(reference__icontains=value)
+            | Q(counterparty_iban__icontains=value.replace(" ", ""))
+        )
+
+
+class BankLineViewSet(viewsets.ReadOnlyModelViewSet):
+    """Bank lines with a proposed match; the treasurer books, links, parks or
+    ignores each one. ``?state=open`` is the work list."""
+
+    permission_classes = [TreasurerOnly]
+    serializer_class = LedgerBankLineSerializer
+    filter_backends = [filters.DjangoFilterBackend]
+    filterset_class = BankLineFilter
+    parser_classes = [JSONParser]
+
+    def get_queryset(self):
+        return StatementLine.objects.filter(book=Book.objects.default()).select_related(
+            "proposed_account__owner",
+            "proposed_transaction",
+            "transaction",
+            "settlement",
+            "resolved_by__owner",
+        )
+
+    def _run(self, action, *args, **kwargs):
+        try:
+            line = action(self.get_object(), *args, user=self.request.user, **kwargs)
+        except IntentError as exc:
+            raise _intent_error(exc) from exc
+        return Response(self.get_serializer(self.get_queryset().get(pk=line.pk)).data)
+
+    def _target(self, request) -> dict:
+        serializer = LedgerBankBookSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return serializer.validated_data
+
+    @extend_schema(request=LedgerBankBookSerializer, responses=LedgerBankLineSerializer)
+    @action(detail=True, methods=["post"])
+    def book(self, request, pk=None):
+        """Book the line to a member (top-up or payout) or a category."""
+        return self._run(pipeline.book_line, **self._target(request))
+
+    @extend_schema(request=LedgerBankBookSerializer, responses=LedgerBankLineSerializer)
+    @action(detail=True, methods=["post"])
+    def assign(self, request, pk=None):
+        """Move a parked line out of suspense to a member or category."""
+        return self._run(pipeline.assign_line, **self._target(request))
+
+    @extend_schema(request=LedgerBankLinkSerializer, responses=LedgerBankLineSerializer)
+    @action(detail=True, methods=["post"])
+    def link(self, request, pk=None):
+        """The money is already in the books as this entry."""
+        serializer = LedgerBankLinkSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return self._run(pipeline.link_line, serializer.validated_data["transaction"])
+
+    @extend_schema(request=LedgerBankNoteSerializer, responses=LedgerBankLineSerializer)
+    @action(detail=True, methods=["post"])
+    def park(self, request, pk=None):
+        """Book it to suspense until someone knows what it was."""
+        serializer = LedgerBankNoteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return self._run(pipeline.park_line, note=serializer.validated_data["note"])
+
+    @extend_schema(request=LedgerBankNoteSerializer, responses=LedgerBankLineSerializer)
+    @action(detail=True, methods=["post"])
+    def ignore(self, request, pk=None):
+        """Leave it out of the books; a reason is required."""
+        serializer = LedgerBankNoteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return self._run(pipeline.ignore_line, note=serializer.validated_data["note"])
+
+    @extend_schema(request=None, responses=LedgerBankLineSerializer)
+    @action(detail=True, methods=["post"])
+    def reopen(self, request, pk=None):
+        """Undo ignoring or linking."""
+        return self._run(pipeline.reopen_line)
+
+    @extend_schema(responses=LedgerTransactionRefSerializer(many=True))
+    @action(detail=True, methods=["get"], pagination_class=None)
+    def candidates(self, request, pk=None):
+        """Entries this line could be linked to."""
+        line = self.get_object()
+        return Response(
+            LedgerTransactionRefSerializer(link_candidates(line)[:20], many=True).data
+        )
+
+    @extend_schema(responses=LedgerBankSummarySerializer)
+    @action(detail=False, methods=["get"])
+    def summary(self, request):
+        """How many lines wait for a decision, and the bank balance in the books."""
+        book = Book.objects.default()
+        counts = dict(
+            StatementLine.objects.filter(book=book)
+            .values_list("state")
+            .annotate(n=Count("id"))
+            .order_by()
+        )
+        balances = {
+            a.code: a.display(a.balance.balance)
+            for a in Account.objects.filter(
+                book=book, code__in=["asset:bank", "suspense:unmatched"]
+            ).select_related("balance")
+        }
+        latest = StatementLine.objects.filter(book=book).order_by("-booked_on").first()
+        last_import = StatementImport.objects.filter(book=book).first()
+        data = {
+            **{state: counts.get(state, 0) for state in LineState.values},
+            "bank_balance": balances.get("asset:bank", 0),
+            "suspense_balance": balances.get("suspense:unmatched", 0),
+            "last_import": last_import.imported_at if last_import else None,
+            "last_booked_on": latest.booked_on if latest else None,
+            "auto_confirm": config.BANK_AUTO_CONFIRM_REFERENCES,
+        }
+        return Response(LedgerBankSummarySerializer(data).data)

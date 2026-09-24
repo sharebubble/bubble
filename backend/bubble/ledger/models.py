@@ -125,6 +125,22 @@ class Account(models.Model):
         ),
     )
     is_active = models.BooleanField(default=True)
+    payment_reference = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text=_(
+            "Member accounts: the reference to put on bank transfers, so an "
+            "imported statement line finds its member (plan section 12)."
+        ),
+    )
+    datev_number = models.CharField(
+        max_length=9,
+        blank=True,
+        help_text=_(
+            "Account number in the tax advisor's chart (DATEV export). Member "
+            "accounts may leave it empty to use the shared member account."
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     soft_limit_reminded_at = models.DateTimeField(
         null=True,
@@ -144,6 +160,11 @@ class Account(models.Model):
                 fields=["book", "owner"],
                 condition=models.Q(owner__isnull=False),
                 name="ledger_one_member_account_per_user",
+            ),
+            models.UniqueConstraint(
+                fields=["book", "payment_reference"],
+                condition=~models.Q(payment_reference=""),
+                name="ledger_payment_reference_per_book",
             ),
         ]
 
@@ -236,6 +257,7 @@ class TransactionKind(models.IntegerChoices):
     CORRECTION = 10, _("Correction")
     MEMBER_TRANSFER = 11, _("Between members")
     INCOME = 12, _("Income")
+    EXPENSE = 13, _("Expense")
 
 
 TRANSACTION_SEQUENCE = "ledger_transaction_seq"
@@ -424,7 +446,18 @@ class LedgerPeriod(models.Model):
         blank=True,
         related_name="+",
     )
-    export_hash = models.CharField(max_length=64, blank=True)
+    export_hash = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text=_("SHA-256 of the journal export of the period at closing."),
+    )
+    chain_position = models.BigIntegerField(null=True, blank=True)
+    chain_head = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text=_("Head of the hash chain when the period was closed."),
+    )
+    transaction_count = models.PositiveIntegerField(default=0)
 
     class Meta:
         ordering = ["starts_on"]
@@ -722,3 +755,209 @@ class CostShareParticipant(models.Model):
 
     def __str__(self):
         return f"{self.account} in {self.cost_share}"
+
+
+class TransactionSeal(ImmutableModel):
+    """One link of the hash chain (plan section 11, phase 6).
+
+    ``hash = sha256(prev_hash + canonical transaction)``, written in the same
+    database transaction as the posting. Anyone who kept an earlier head hash
+    (the daily digest) can detect a later edit anywhere before it, even one
+    made directly in the database.
+    """
+
+    transaction = models.OneToOneField(
+        Transaction, on_delete=models.PROTECT, primary_key=True, related_name="seal"
+    )
+    book = models.ForeignKey(Book, on_delete=models.PROTECT, related_name="seals")
+    position = models.BigIntegerField(help_text=_("1 for the first transaction."))
+    prev_hash = models.CharField(max_length=64)
+    hash = models.CharField(max_length=64)
+    sealed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["position"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["book", "position"], name="ledger_seal_position_per_book"
+            ),
+            models.UniqueConstraint(
+                fields=["book", "prev_hash"], name="ledger_seal_no_fork"
+            ),
+        ]
+
+    def __str__(self):
+        return f"#{self.position} {self.hash[:12]}"
+
+
+class LedgerDigest(ImmutableModel):
+    """The chain head as it was at one moment, published outside the app."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    book = models.ForeignKey(Book, on_delete=models.PROTECT, related_name="digests")
+    created_at = models.DateTimeField(auto_now_add=True)
+    position = models.BigIntegerField()
+    head_hash = models.CharField(max_length=64)
+    transaction_count = models.BigIntegerField()
+    chain_ok = models.BooleanField(
+        help_text=_("The whole chain was recomputed and matched when this was made.")
+    )
+    published = models.BooleanField(
+        default=False, help_text=_("Sent to the configured digest channel.")
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        get_latest_by = "created_at"
+
+    def __str__(self):
+        return f"{self.created_at:%Y-%m-%d} #{self.position} {self.head_hash[:12]}"
+
+
+# --- Bank import (plan section 12, D11) ----------------------------------------
+
+
+class StatementImport(models.Model):
+    """One uploaded bank statement file (or one pull from a bank adapter)."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    book = models.ForeignKey(Book, on_delete=models.PROTECT, related_name="imports")
+    source = models.CharField(max_length=20, help_text=_("Adapter, e.g. camt053."))
+    file_name = models.CharField(max_length=255, blank=True)
+    sha256 = models.CharField(max_length=64)
+    imported_at = models.DateTimeField(auto_now_add=True)
+    imported_by = models.ForeignKey(
+        Account, on_delete=models.PROTECT, null=True, related_name="+"
+    )
+    line_count = models.PositiveIntegerField(default=0)
+    new_line_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["-imported_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["book", "sha256"], name="ledger_import_once_per_file"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.file_name or self.source} ({self.imported_at:%Y-%m-%d})"
+
+
+class LineState(models.TextChoices):
+    OPEN = "open", _("To review")
+    BOOKED = "booked", _("Booked")
+    LINKED = "linked", _("Matched to an entry")
+    SUSPENSE = "suspense", _("Parked, to be clarified")
+    IGNORED = "ignored", _("Ignored")
+
+
+class MatchConfidence(models.TextChoices):
+    HIGH = "high", _("Payment reference")
+    MEDIUM = "medium", _("Known account")
+    LOW = "low", _("Similar name")
+    NONE = "none", _("No match")
+
+
+class StatementLine(models.Model):
+    """One booked movement on the community's bank account.
+
+    Positive amounts came in, negative ones went out. A line is booked as a
+    top-up or payout, linked to an entry someone already posted by hand,
+    parked in ``suspense:unmatched`` until it is clarified, or ignored.
+    """
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    book = models.ForeignKey(Book, on_delete=models.PROTECT, related_name="bank_lines")
+    statement = models.ForeignKey(
+        StatementImport, on_delete=models.PROTECT, related_name="lines"
+    )
+    fingerprint = models.CharField(
+        max_length=64, help_text=_("Recognises the same line in overlapping files.")
+    )
+    booked_on = models.DateField()
+    value_date = models.DateField(null=True, blank=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3)
+    counterparty_name = models.CharField(max_length=255, blank=True)
+    counterparty_iban = models.CharField(max_length=34, blank=True)
+    reference = models.TextField(blank=True)
+    end_to_end_id = models.CharField(max_length=100, blank=True)
+    raw = models.JSONField(default=dict, blank=True)
+
+    state = models.CharField(max_length=20, choices=LineState, default=LineState.OPEN)
+    proposed_account = models.ForeignKey(
+        Account, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    proposed_transaction = models.ForeignKey(
+        "Transaction",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text=_("An entry already posted by hand that this line pays for."),
+    )
+    confidence = models.CharField(
+        max_length=10, choices=MatchConfidence, default=MatchConfidence.NONE
+    )
+    reason = models.CharField(max_length=255, blank=True)
+
+    transaction = models.ForeignKey(
+        "Transaction",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="bank_lines",
+        help_text=_("The entry that booked or matched this line."),
+    )
+    settlement = models.ForeignKey(
+        "Transaction",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="+",
+        help_text=_("The entry that moved a parked line out of suspense."),
+    )
+    resolved_by = models.ForeignKey(
+        Account, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    note = models.TextField(blank=True)
+
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ["-booked_on", "-amount"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["book", "fingerprint"], name="ledger_bank_line_once"
+            ),
+            models.UniqueConstraint(
+                fields=["transaction"],
+                condition=models.Q(transaction__isnull=False),
+                name="ledger_bank_line_one_per_transaction",
+            ),
+        ]
+        indexes = [models.Index(fields=["book", "state"])]
+
+    def __str__(self):
+        return f"{self.booked_on} {self.amount} {self.counterparty_name}"
+
+
+class KnownIban(models.Model):
+    """An IBAN a member has paid from before (medium-confidence matching)."""
+
+    book = models.ForeignKey(Book, on_delete=models.PROTECT, related_name="+")
+    iban = models.CharField(max_length=34)
+    account = models.ForeignKey(
+        Account, on_delete=models.CASCADE, related_name="known_ibans"
+    )
+    learned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["book", "iban"], name="ledger_iban_once"),
+        ]
+
+    def __str__(self):
+        return f"{self.iban} → {self.account}"

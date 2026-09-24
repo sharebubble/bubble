@@ -8,6 +8,7 @@ cached balances, or it writes nothing.
 from __future__ import annotations
 
 import logging
+import secrets
 from collections import defaultdict
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -20,6 +21,7 @@ from django.utils import timezone
 from guardian.conf import settings as guardian_settings
 from moneyed import Money
 
+from bubble.ledger.chain import lock_chain, seal
 from bubble.ledger.exceptions import (
     ClosedPeriodError,
     CurrencyMismatchError,
@@ -93,6 +95,20 @@ def is_technical_user(user: User) -> bool:
     return user.username == guardian_settings.ANONYMOUS_USER_NAME
 
 
+# No 0/O, 1/I/L: the reference is typed from a screen into a banking app.
+REFERENCE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"
+REFERENCE_PREFIX = "BUB"
+
+
+def new_payment_reference(book: Book) -> str:
+    """A fresh ``BUB-XXXXXX`` reference, unique in the book."""
+    while True:
+        code = "".join(secrets.choice(REFERENCE_ALPHABET) for _ in range(6))
+        reference = f"{REFERENCE_PREFIX}-{code}"
+        if not Account.objects.filter(book=book, payment_reference=reference).exists():
+            return reference
+
+
 def get_member_account(user: User, book: Book | None = None) -> Account:
     """Return the user's member account, opening it on first use."""
     if is_technical_user(user):
@@ -110,6 +126,7 @@ def get_member_account(user: User, book: Book | None = None) -> Account:
                 code=member_account_code(user),
                 name=user.name or user.username,
                 owner=user,
+                payment_reference=new_payment_reference(book),
             )
             AccountBalance.objects.create(account=account)
     except IntegrityError:
@@ -131,14 +148,18 @@ def _amount(leg: Leg, currency: str) -> Decimal:
     return Decimal(amount)
 
 
-def _check_period_open(book: Book, occurred_on: date) -> None:
-    closed = LedgerPeriod.objects.filter(
+def is_period_closed(book: Book, day: date) -> bool:
+    """Does ``day`` fall inside a closed (exported) period? (invariant I6)"""
+    return LedgerPeriod.objects.filter(
         book=book,
         closed_at__isnull=False,
-        starts_on__lte=occurred_on,
-        ends_on__gte=occurred_on,
+        starts_on__lte=day,
+        ends_on__gte=day,
     ).exists()
-    if closed:
+
+
+def _check_period_open(book: Book, occurred_on: date) -> None:
+    if is_period_closed(book, occurred_on):
         msg = f"{occurred_on} falls inside a closed period; book it as a correction."
         raise ClosedPeriodError(msg)
 
@@ -202,7 +223,6 @@ def post_transaction(  # noqa: PLR0913
         if leg.account.book_id != book.pk:
             msg = f"Account {leg.account.code} belongs to another book."
             raise UnbalancedTransactionError(msg)
-    _check_period_open(book, occurred_on)
 
     source_type, source_id = source or ("", "")
     try:
@@ -253,6 +273,11 @@ def _write(  # noqa: PLR0913
     meta,
     reverses,
 ) -> Transaction:
+    # The chain lock comes first, so every posting takes its locks in the same
+    # order (chain, then balances by account id) and cannot deadlock.
+    lock_chain(book)
+    # Under the chain lock, so closing a period cannot race this posting.
+    _check_period_open(book, occurred_on)
     account_ids = sorted({leg.account.pk for leg in legs})
     for account_id in account_ids:
         AccountBalance.objects.get_or_create(account_id=account_id)
@@ -293,7 +318,9 @@ def _write(  # noqa: PLR0913
     )
     _check_database_constraints()
 
-    tx.refresh_from_db(fields=["seq"])
+    # Seal from the stored values, exactly as a later verification reads them.
+    tx.refresh_from_db()
+    seal(tx)
     per_account: dict = defaultdict(lambda: [Decimal(0), 0])
     for leg, amount in zip(legs, amounts, strict=True):
         per_account[leg.account.pk][0] += amount

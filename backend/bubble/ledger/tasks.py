@@ -3,7 +3,9 @@ import logging
 from huey import crontab
 from huey.contrib.djhuey import periodic_task
 
+from bubble.ledger.chain import publish_digest
 from bubble.ledger.cost_shares import process_cost_share_deadlines
+from bubble.ledger.models import Book
 from bubble.ledger.reminders import remind_low_balances
 from bubble.ledger.services import verify_ledger
 
@@ -39,3 +41,18 @@ def remind_low_balances_daily() -> None:
     sent = remind_low_balances()
     if sent:
         logger.info("Sent %d low-balance reminders", sent)
+
+
+@periodic_task(crontab(hour="3", minute="45"))
+def publish_ledger_digest_daily() -> None:
+    """Verify the hash chain and publish its head (plan section 11)."""
+    for book in Book.objects.all():
+        digest = publish_digest(book)
+        logger.info(
+            "Ledger digest for %s: #%s %s (chain ok: %s, published: %s)",
+            book,
+            digest.position,
+            digest.head_hash,
+            digest.chain_ok,
+            digest.published,
+        )

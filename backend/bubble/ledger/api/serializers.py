@@ -8,6 +8,7 @@ them more).
 
 from decimal import Decimal
 
+from constance import config
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from drf_spectacular.types import OpenApiTypes
@@ -28,9 +29,14 @@ from bubble.ledger.models import (
     CostShareSplit,
     Dispute,
     Entry,
+    LedgerPeriod,
+    LineState,
+    MatchConfidence,
     ParticipantResponse,
     Project,
     Receipt,
+    StatementImport,
+    StatementLine,
     Transaction,
     TransactionComment,
     TransactionKind,
@@ -82,6 +88,7 @@ class LedgerAccountSerializer(LedgerAccountRefSerializer):
             "balance",
             "entry_count",
             "currency",
+            "datev_number",
         ]
         read_only_fields = fields
 
@@ -102,6 +109,8 @@ class LedgerMyAccountSerializer(LedgerAccountSerializer):
     )
     below_soft_limit = serializers.SerializerMethodField()
     is_ledger_admin = serializers.SerializerMethodField()
+    community_iban = serializers.SerializerMethodField()
+    community_account_holder = serializers.SerializerMethodField()
 
     class Meta(LedgerAccountSerializer.Meta):
         fields = [
@@ -109,8 +118,18 @@ class LedgerMyAccountSerializer(LedgerAccountSerializer):
             "soft_limit",
             "below_soft_limit",
             "is_ledger_admin",
+            "payment_reference",
+            "community_iban",
+            "community_account_holder",
         ]
         read_only_fields = fields
+
+    def get_community_iban(self, obj) -> str:
+        """Where to transfer money to; shown with the payment reference."""
+        return config.COMMUNITY_IBAN
+
+    def get_community_account_holder(self, obj) -> str:
+        return config.COMMUNITY_ACCOUNT_HOLDER
 
     def get_below_soft_limit(self, obj) -> bool:
         return Decimal(self.get_balance(obj)) < obj.book.negative_balance_soft_limit
@@ -290,6 +309,12 @@ class LedgerTransactionSerializer(serializers.ModelSerializer):
         return f"{total:.2f}"
 
 
+class LedgerSealSerializer(serializers.Serializer):
+    position = serializers.IntegerField()
+    prev_hash = serializers.CharField()
+    hash = serializers.CharField()
+
+
 class LedgerDisputeSerializer(serializers.ModelSerializer):
     raised_by = LedgerAccountRefSerializer(read_only=True)
     resolved_by = LedgerAccountRefSerializer(read_only=True, allow_null=True)
@@ -326,6 +351,7 @@ class LedgerTransactionDetailSerializer(LedgerTransactionSerializer):
     remaining = serializers.SerializerMethodField()
     can_reverse = serializers.SerializerMethodField()
     cost_share = serializers.SerializerMethodField()
+    seal = serializers.SerializerMethodField()
 
     class Meta(LedgerTransactionSerializer.Meta):
         fields = [
@@ -337,6 +363,7 @@ class LedgerTransactionDetailSerializer(LedgerTransactionSerializer):
             "remaining",
             "can_reverse",
             "cost_share",
+            "seal",
         ]
         read_only_fields = fields
 
@@ -364,6 +391,11 @@ class LedgerTransactionDetailSerializer(LedgerTransactionSerializer):
     def get_can_reverse(self, obj) -> bool:
         request = self.context.get("request")
         return bool(request and can_reverse(obj, request.user))
+
+    @extend_schema_field(LedgerSealSerializer(allow_null=True))
+    def get_seal(self, obj):
+        seal = getattr(obj, "seal", None)
+        return LedgerSealSerializer(seal).data if seal is not None else None
 
     @extend_schema_field(serializers.UUIDField(allow_null=True))
     def get_cost_share(self, obj) -> str | None:
@@ -460,6 +492,36 @@ class LedgerHealthSerializer(serializers.Serializer):
     ok = serializers.BooleanField()
     trial_balance = serializers.DecimalField(**MONEY)
     mismatched_accounts = serializers.IntegerField()
+    chain_ok = serializers.BooleanField(
+        allow_null=True, help_text="Result of the last digest; null before the first."
+    )
+    chain_checked_at = serializers.DateTimeField(allow_null=True)
+
+
+class LedgerDigestSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    created_at = serializers.DateTimeField()
+    position = serializers.IntegerField()
+    head_hash = serializers.CharField()
+    chain_ok = serializers.BooleanField()
+    published = serializers.BooleanField()
+
+
+class LedgerChainHeadSerializer(serializers.Serializer):
+    position = serializers.IntegerField()
+    hash = serializers.CharField()
+    transaction = serializers.UUIDField(source="transaction_id")
+    seq = serializers.IntegerField(source="transaction.seq")
+
+
+class LedgerChainSerializer(serializers.Serializer):
+    """The hash chain's current head and its recent published digests."""
+
+    head = LedgerChainHeadSerializer(allow_null=True)
+    digest_channel = serializers.BooleanField(
+        help_text="A channel for publishing digests is configured."
+    )
+    digests = LedgerDigestSerializer(many=True)
 
 
 class LedgerUnbilledBookingSerializer(serializers.Serializer):
@@ -807,3 +869,192 @@ class LedgerAnnualReportSerializer(serializers.Serializer):
 
 class LedgerAnnualReportQuerySerializer(serializers.Serializer):
     year = serializers.IntegerField(min_value=2000, max_value=2100, required=False)
+
+
+# --- Period close, exports, DATEV (phase 6) -----------------------------------
+
+
+class LedgerPeriodSerializer(serializers.ModelSerializer):
+    closed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LedgerPeriod
+        fields = [
+            "id",
+            "starts_on",
+            "ends_on",
+            "closed_at",
+            "closed_by_name",
+            "transaction_count",
+            "export_hash",
+            "chain_position",
+            "chain_head",
+        ]
+        read_only_fields = fields
+
+    def get_closed_by_name(self, obj) -> str:
+        user = obj.closed_by
+        return (user.name or user.username) if user else ""
+
+
+class LedgerPeriodCloseSerializer(serializers.Serializer):
+    starts_on = serializers.DateField()
+    ends_on = serializers.DateField()
+
+
+class LedgerExportQuerySerializer(serializers.Serializer):
+    date_from = serializers.DateField()
+    date_to = serializers.DateField()
+
+    def validate(self, attrs):
+        if attrs["date_from"] > attrs["date_to"]:
+            raise serializers.ValidationError(
+                {"date_to": _("The end date is before the start date.")}
+            )
+        return attrs
+
+
+class LedgerDatevNumberSerializer(serializers.Serializer):
+    datev_number = serializers.RegexField(
+        r"^\d{0,9}$",
+        allow_blank=True,
+        max_length=9,
+        error_messages={"invalid": _("Digits only, at most nine.")},
+    )
+
+
+# --- Bank import (plan section 12) ---------------------------------------------
+
+
+class LedgerTransactionRefSerializer(serializers.ModelSerializer):
+    kind = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Transaction
+        fields = ["id", "seq", "kind", "occurred_on", "description"]
+        read_only_fields = fields
+
+    @extend_schema_field(serializers.ChoiceField(choices=TRANSACTION_KINDS))
+    def get_kind(self, obj) -> str:
+        return TransactionKind(obj.kind).name.lower()
+
+
+class LedgerBankImportSerializer(serializers.ModelSerializer):
+    imported_by_name = serializers.SerializerMethodField()
+    open_count = serializers.IntegerField(read_only=True, default=0)
+
+    class Meta:
+        model = StatementImport
+        fields = [
+            "id",
+            "source",
+            "file_name",
+            "imported_at",
+            "imported_by_name",
+            "line_count",
+            "new_line_count",
+            "open_count",
+        ]
+        read_only_fields = fields
+
+    def get_imported_by_name(self, obj) -> str:
+        return account_name(obj.imported_by) if obj.imported_by else ""
+
+
+class LedgerBankImportResultSerializer(serializers.Serializer):
+    statement = LedgerBankImportSerializer()
+    duplicates = serializers.IntegerField(
+        help_text=_("Lines already imported from an earlier file.")
+    )
+    booked = serializers.IntegerField(
+        help_text=_("Lines booked straight away by their payment reference.")
+    )
+
+
+class LedgerBankUploadSerializer(serializers.Serializer):
+    file = serializers.FileField()
+
+
+class LedgerBankLineSerializer(serializers.ModelSerializer):
+    amount = serializers.DecimalField(read_only=True, **MONEY)
+    proposed_account = LedgerAccountRefSerializer(read_only=True, allow_null=True)
+    proposed_transaction = LedgerTransactionRefSerializer(
+        read_only=True, allow_null=True
+    )
+    transaction = LedgerTransactionRefSerializer(read_only=True, allow_null=True)
+    settlement = LedgerTransactionRefSerializer(read_only=True, allow_null=True)
+    state = serializers.ChoiceField(choices=LineState.choices, read_only=True)
+    confidence = serializers.ChoiceField(
+        choices=MatchConfidence.choices, read_only=True
+    )
+    resolved_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = StatementLine
+        fields = [
+            "id",
+            "statement",
+            "booked_on",
+            "value_date",
+            "amount",
+            "currency",
+            "counterparty_name",
+            "counterparty_iban",
+            "reference",
+            "end_to_end_id",
+            "state",
+            "proposed_account",
+            "proposed_transaction",
+            "confidence",
+            "reason",
+            "transaction",
+            "settlement",
+            "resolved_by_name",
+            "resolved_at",
+            "note",
+        ]
+        read_only_fields = fields
+
+    def get_resolved_by_name(self, obj) -> str:
+        return account_name(obj.resolved_by) if obj.resolved_by else ""
+
+
+class LedgerBankBookSerializer(serializers.Serializer):
+    """Exactly one of ``account`` (a member) or ``category``."""
+
+    account = serializers.PrimaryKeyRelatedField(
+        queryset=Account.objects.filter(type=AccountType.MEMBER),
+        required=False,
+        allow_null=True,
+    )
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(), required=False, allow_null=True
+    )
+    description = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class LedgerBankLinkSerializer(serializers.Serializer):
+    transaction = serializers.PrimaryKeyRelatedField(queryset=Transaction.objects.all())
+
+
+class LedgerBankNoteSerializer(serializers.Serializer):
+    note = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class LedgerBankSummarySerializer(serializers.Serializer):
+    open = serializers.IntegerField()
+    suspense = serializers.IntegerField()
+    booked = serializers.IntegerField()
+    linked = serializers.IntegerField()
+    ignored = serializers.IntegerField()
+    bank_balance = serializers.DecimalField(
+        help_text=_("The bank account's balance in the books."), **MONEY
+    )
+    suspense_balance = serializers.DecimalField(
+        help_text=_("Money parked until someone knows what it was."), **MONEY
+    )
+    last_import = serializers.DateTimeField(allow_null=True)
+    last_booked_on = serializers.DateField(
+        allow_null=True, help_text=_("The newest line the bank reported.")
+    )
+    auto_confirm = serializers.BooleanField()

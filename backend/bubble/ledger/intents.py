@@ -36,6 +36,7 @@ from bubble.ledger.services import (
     Leg,
     get_member_account,
     get_system_account,
+    is_period_closed,
     post_transaction,
 )
 
@@ -216,6 +217,14 @@ def post_intent(
         )
     receipt_data = [read_receipt(f) for f in receipts]
 
+    if is_period_closed(book, posting.occurred_on):
+        raise IntentError(
+            _(
+                "This date lies in a closed bookkeeping period. Use today's date "
+                "and mention the original date in the description."
+            ),
+            field="occurred_on",
+        )
     me = get_member_account(user, book)
     category = _category(posting, book)
     if posting.project is not None and (

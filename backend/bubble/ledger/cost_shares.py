@@ -49,7 +49,12 @@ from bubble.ledger.models import (
 )
 from bubble.ledger.notify import display_name, money, notify, notify_posting
 from bubble.ledger.rounding import CENT, allocate
-from bubble.ledger.services import Leg, get_member_account, post_transaction
+from bubble.ledger.services import (
+    Leg,
+    get_member_account,
+    is_period_closed,
+    post_transaction,
+)
 
 if TYPE_CHECKING:
     from datetime import date
@@ -143,14 +148,22 @@ def _validate_participants(
             raise IntentError(_("Weights must be positive."), field="participants")
 
 
+def _validate_date(day: date, book: Book) -> None:
+    if day > timezone.localdate():
+        raise IntentError(_("The date cannot be in the future."), field="occurred_on")
+    if is_period_closed(book, day):
+        raise IntentError(
+            _("This date lies in a closed bookkeeping period."), field="occurred_on"
+        )
+
+
 def _validate(data: CostShareInput, payer: Account, book: Book) -> None:
     total = data.total
     if total <= 0 or total != total.quantize(CENT):
         raise IntentError(_("Enter a positive amount in cents."), field="total")
     if total > MAX_AMOUNT:
         raise IntentError(_("This amount is too large."), field="total")
-    if data.occurred_on > timezone.localdate():
-        raise IntentError(_("The date cannot be in the future."), field="occurred_on")
+    _validate_date(data.occurred_on, book)
     if not data.description.strip():
         raise IntentError(_("Describe what this is for."), field="description")
     if data.split not in CostShareSplit.values:
