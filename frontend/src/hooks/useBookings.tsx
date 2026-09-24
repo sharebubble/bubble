@@ -6,6 +6,7 @@ import {
   bookingsCreate,
   bookingsList,
   bookingsPartialUpdate,
+  bookingsRejectFulfillmentCreate,
   bookingsRetrieve,
   type BookingWritable,
   type PatchedBooking,
@@ -140,6 +141,21 @@ export const useUpdateBooking = () => {
   });
 };
 
+/** Hand-overs move items between owners and post ledger charges. */
+const invalidateAfterFulfillment = (queryClient: ReturnType<typeof useQueryClient>) => {
+  queryClient.invalidateQueries({ queryKey: ['bookings'] });
+  queryClient.invalidateQueries({ queryKey: ['items'] });
+  queryClient.invalidateQueries({ queryKey: ['item'] });
+  queryClient.invalidateQueries({ queryKey: ['ledger'] });
+};
+
+const fulfillmentErrorMessage = (error: unknown, fallback: string) => {
+  const err = error as
+    { non_field_errors?: string[]; detail?: string; reason?: string[] } | string | null;
+  if (typeof err === 'string') return err;
+  return err?.non_field_errors?.[0] ?? err?.reason?.[0] ?? err?.detail ?? fallback;
+};
+
 const useFulfillmentMutation = (
   action: typeof bookingsConfirmReceivedCreate | typeof bookingsConfirmReturnedCreate,
   successKey: string,
@@ -154,9 +170,7 @@ const useFulfillmentMutation = (
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['items'] });
-      queryClient.invalidateQueries({ queryKey: ['item'] });
+      invalidateAfterFulfillment(queryClient);
       toast({
         title: t('booking.successTitle'),
         description: t(successKey),
@@ -164,10 +178,7 @@ const useFulfillmentMutation = (
     },
     onError: (error: unknown) => {
       console.error('Error confirming fulfillment:', error);
-      const err = error as { non_field_errors?: string[]; detail?: string } | string | null;
-      const description =
-        (typeof err === 'string' ? err : (err?.non_field_errors?.[0] ?? err?.detail)) ||
-        t('booking.errorUpdate');
+      const description = fulfillmentErrorMessage(error, t('booking.errorUpdate'));
       toast({
         title: t('common.error'),
         description,
@@ -184,3 +195,38 @@ export const useConfirmReceived = () =>
 /** Owner confirms a rented item was returned, completing the rental. */
 export const useConfirmReturned = () =>
   useFulfillmentMutation(bookingsConfirmReturnedCreate, 'booking.successReturned');
+
+/**
+ * Buyer rejects an accepted sale (not handed over, not as described): the sale
+ * is cancelled, nothing is charged and the item goes back to the seller.
+ */
+export const useRejectFulfillment = () => {
+  const { toast } = useToast();
+  const { t } = useLanguage();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const response = await bookingsRejectFulfillmentCreate({
+        path: { id },
+        body: { reason },
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      invalidateAfterFulfillment(queryClient);
+      toast({
+        title: t('booking.successTitle'),
+        description: t('booking.successProblemReported'),
+      });
+    },
+    onError: (error: unknown) => {
+      console.error('Error reporting a problem:', error);
+      toast({
+        title: t('common.error'),
+        description: fulfillmentErrorMessage(error, t('booking.errorUpdate')),
+        variant: 'destructive',
+      });
+    },
+  });
+};

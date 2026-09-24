@@ -25,6 +25,16 @@ class BookingStatus(models.IntegerChoices):
     IN_PROGRESS = 6, _("In Progress")
 
 
+class BookingLedgerState(models.TextChoices):
+    """What the ledger did with a booking (plan section 6)."""
+
+    NONE = "", _("Not evaluated")
+    PENDING = "pending", _("Waiting for the buyer")
+    POSTED = "posted", _("Charged")
+    NOT_CHARGED = "not_charged", _("Not charged")
+    UNBILLED = "unbilled", _("Unbilled")
+
+
 class BookingManager(models.Manager):
     def get_for_user(self, user):
         items_with_change_permission = get_objects_for_user(
@@ -35,9 +45,12 @@ class BookingManager(models.Manager):
         )
 
         # Include bookings where the local user is the booker OR where
-        # the user owns the item (covers both local and remote bookers).
-        return self.filter(user=user) | self.filter(
-            item__in=items_with_change_permission
+        # the user owns the item (covers both local and remote bookers) OR
+        # where they sold the item, which then no longer belongs to them.
+        return (
+            self.filter(user=user)
+            | self.filter(item__in=items_with_change_permission)
+            | self.filter(seller=user)
         )
 
 
@@ -89,6 +102,44 @@ class Booking(models.Model):
         related_name="accepted_bookings",
     )
 
+    # Sale terms, frozen when the seller accepts (ledger plan D17). The item
+    # changes hands at that moment, so none of this may be read from the item
+    # afterwards.
+    seller = models.ForeignKey(
+        AUTH_USER_MODEL,
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
+        related_name="sales",
+        help_text=_("Who sold the item. Set when the sale is accepted."),
+    )
+    sale_accepted_at = models.DateTimeField(blank=True, null=True)
+    agreed_price = MoneyField(
+        **money_defaults,
+        blank=True,
+        null=True,
+        default_currency=settings.DEFAULT_CURRENCY,
+        verbose_name=_("Agreed price"),
+        help_text=_("The amount charged, or to be charged, for this booking."),
+    )
+    credit_community = models.BooleanField(
+        default=False,
+        help_text=_("The item belonged to the community when it was sold."),
+    )
+    ledger_state = models.CharField(
+        max_length=20,
+        choices=BookingLedgerState,
+        default=BookingLedgerState.NONE,
+        blank=True,
+    )
+    ledger_note = models.CharField(max_length=255, blank=True)
+    sale_reminders_sent = models.PositiveSmallIntegerField(
+        default=0,
+        help_text=_(
+            "Daily reminders sent to the buyer of an accepted sale (ledger plan D19)."
+        ),
+    )
+
     # Federation: remote booker (XOR with user — enforced by DB constraint below)
     remote_booker_actor = models.ForeignKey(
         "federation.RemoteActor",
@@ -118,6 +169,7 @@ class Booking(models.Model):
         indexes = [
             models.Index(fields=["user", "status"]),
             models.Index(fields=["item", "status"]),
+            models.Index(fields=["ledger_state"]),
         ]
         # Prevent overlapping confirmed bookings for the same item.
         # Uses PostgreSQL exclusion constraint on the tstzrange(time_from, time_to)
@@ -160,6 +212,11 @@ class Booking(models.Model):
         return f"Booking for {self.item.name} by {booker}"
 
     @property
+    def is_accepted_sale(self) -> bool:
+        """An accepted sale under D17/D18: the item has already changed hands."""
+        return self.seller_id is not None and self.sale_accepted_at is not None
+
+    @property
     def is_active(self):
         """Check if the booking is currently active."""
         if self.time_from is None:
@@ -182,9 +239,17 @@ class Booking(models.Model):
         or week, as set by ``item.rental_period``). The hourly rate is derived
         from that period before multiplying by the booked duration in hours.
         """
+        return self.rental_price_until(self.time_to)
+
+    def rental_price_until(self, end) -> Money | None:
+        """The rental price for the booked time up to ``end``.
+
+        Open-ended rentals have no ``time_to``; when they are returned, the
+        ledger prices them up to the return (plan section 6).
+        """
         if self.item.sales_type != "rent" or not self.item.price:
             return None
-        if not self.time_from or not self.time_to:
+        if not self.time_from or not end:
             return None
 
         period_hours = {
@@ -196,7 +261,7 @@ class Booking(models.Model):
             self.item.rental_period, decimal.Decimal("1")
         )
 
-        duration = self.time_to - self.time_from
+        duration = end - self.time_from
         total_seconds = decimal.Decimal(str(duration.total_seconds()))
         hours = total_seconds / decimal.Decimal("3600")
         price = self.item.price * hours / hours_per_period

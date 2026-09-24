@@ -14,11 +14,13 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 
+from bubble.bookings import services as booking_services
 from bubble.bookings.api.filters import BookingFilter, MessageFilter
 from bubble.bookings.api.serializers import (
     BookingListSerializer,
     BookingSerializer,
     MessageSerializer,
+    RejectFulfillmentSerializer,
 )
 from bubble.bookings.models import Booking, BookingStatus, Message
 from bubble.core.api.pagination import SelectablePageSizePagination
@@ -154,6 +156,9 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
                 if error is not None:
                     raise error from exc
                 raise
+            # A self-service sale at the asking price is accepted right away
+            # (ledger plan D17): the item moves to the buyer now.
+            booking_services.accept_sale(booking)
 
         message = _("Booking request created for {offer}").format(offer=booking.offer)
         Message.objects.create(
@@ -161,6 +166,7 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
         )
 
     def perform_update(self, serializer):
+        previous_status = serializer.instance.status
         try:
             super().perform_update(serializer)
         except IntegrityError as exc:
@@ -170,6 +176,13 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
             raise
 
         booking = serializer.instance
+        # The owner accepting a sale hands the item to the buyer (D17); the
+        # owner ending a self-service rental charges it (D6).
+        if booking.status != previous_status:
+            if booking.status == BookingStatus.CONFIRMED:
+                booking_services.accept_sale(booking)
+            elif booking.status == BookingStatus.COMPLETED:
+                booking_services.complete_rental(booking)
 
         if "status" in serializer.validated_data:
             message = _("Booking status updated to {status}").format(
@@ -200,9 +213,10 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
     def confirm_received(self, request, id=None):  # noqa: A002
         """Booker confirms they received the item.
 
-        For a sale this transfers ownership of the item to the booker and
-        completes the booking. For a rental it starts the rental: the item
-        becomes RENTED and the booking moves to IN_PROGRESS.
+        For an accepted sale this is the buyer approving the hand-over: the
+        booking completes and the agreed amount is charged (the item already
+        changed hands when the seller accepted). For a rental it starts the
+        rental: the item becomes RENTED and the booking moves to IN_PROGRESS.
         """
         booking = self.get_object()
 
@@ -219,7 +233,13 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
         sales_type = item.sales_type
 
         with transaction.atomic():
-            if sales_type in self.SALE_TYPES:
+            if sales_type in self.SALE_TYPES and booking.is_accepted_sale:
+                # The buyer approves the hand-over: the frozen amount is
+                # charged now (D18). The item changed hands at acceptance.
+                booking_services.approve_sale(booking)
+            elif sales_type in self.SALE_TYPES:
+                # Sales accepted before the ledger (no seller recorded) keep
+                # the old flow: ownership moves at the hand-over, no charge.
                 item.transfer_ownership(booking.user)
                 booking.status = BookingStatus.COMPLETED
             elif sales_type in self.RENTAL_TYPES:
@@ -268,6 +288,7 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
             item.save(update_fields=["status"])
             booking.status = BookingStatus.COMPLETED
             booking.save(update_fields=["status"])
+            booking_services.complete_rental(booking)
 
         # The return is recorded as a booking message: its sender and created_at
         # capture who confirmed and when.
@@ -278,6 +299,32 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
         )
         serializer = self.get_serializer(booking)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(request=RejectFulfillmentSerializer, responses=BookingSerializer)
+    @action(detail=True, methods=["post"])
+    def reject_fulfillment(self, request, id=None):  # noqa: A002
+        """Buyer rejects an accepted sale: not handed over, or not as described.
+
+        The sale is cancelled, nothing is charged, and the item goes back to
+        the seller (ledger plan D18). Only the buyer can do this; the seller
+        cannot cancel a sale once they accepted it.
+        """
+        booking = self.get_object()
+        if request.user != booking.user:
+            raise PermissionDenied(_("Only the buyer can report a problem."))
+        if booking.status != BookingStatus.CONFIRMED or not booking.is_accepted_sale:
+            raise ValidationError(
+                _("A problem can only be reported for an accepted sale.")
+            )
+        serializer = RejectFulfillmentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            booking_services.reject_sale(
+                booking, reason=serializer.validated_data["reason"]
+            )
+        except booking_services.SaleError as exc:
+            raise ValidationError({"non_field_errors": [exc.user_message]}) from exc
+        return Response(self.get_serializer(booking).data, status=status.HTTP_200_OK)
 
 
 class MessageViewSet(viewsets.ModelViewSet):

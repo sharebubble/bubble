@@ -13,13 +13,15 @@ class EventType(models.TextChoices):
     NEW_MESSAGE = "new_message", _("New Message")
     NEW_BOOKING = "new_booking", _("New Booking")
     NEW_ITEM = "new_item", _("New Item")
+    LEDGER = "ledger", _("Community ledger")
 
 
 # User-facing preference groups. A single toggle in the profile can control
-# more than one underlying event type — "messages" covers both new chat
-# messages and new bookings, since both relate to a user's own items/bookings.
+# more than one underlying event type — "messages" covers new chat messages,
+# new bookings and ledger activity on the user's own account, since all of it
+# relates to the user's own items, bookings and money.
 EVENT_GROUPS: dict[str, tuple[str, ...]] = {
-    "messages": (EventType.NEW_MESSAGE, EventType.NEW_BOOKING),
+    "messages": (EventType.NEW_MESSAGE, EventType.NEW_BOOKING, EventType.LEDGER),
     "new_item": (EventType.NEW_ITEM,),
 }
 

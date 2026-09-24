@@ -171,3 +171,16 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Ledger statements and the annual report are printed (or saved as PDF) from
+   the browser: leave out the app chrome and anything marked print-hide. */
+@media print {
+  header,
+  nav,
+  .print-hide {
+    display: none !important;
+  }
+  body {
+    background: #fff !important;
+  }
+}

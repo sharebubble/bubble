@@ -123,6 +123,8 @@ class ItemSerializer(serializers.ModelSerializer):
             "date_updated",
             "images",
             "co_owners",
+            # Handing an item to the community is the treasurer's call (admin).
+            "ledger_beneficiary",
         ]
 
     def get_first_image(self, obj):
