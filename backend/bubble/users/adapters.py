@@ -75,14 +75,15 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
 
         logger.warning(
             "Social login failed: provider=%s error=%s state_found=%s "
-            "start_marker=%s start_session_matches=%s state_already_consumed=%s "
-            "session_cookies=%s session_row_exists=%s provider_error=%s "
-            "exception=%s",
+            "start_marker=%s start_session_matches=%s start_state_matches=%s "
+            "state_already_consumed=%s session_cookies=%s session_row_exists=%s "
+            "provider_error=%s exception=%s",
             provider_id,
             error_code,
             context["state_found"],
             context["start_marker"],
             context["start_session_matches"],
+            context["start_state_matches"],
             context["state_already_consumed"],
             context["session_cookie_count"],
             context["session_row_exists"],
@@ -105,6 +106,7 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
             for tag in (
                 "start_marker",
                 "start_session_matches",
+                "start_state_matches",
                 "state_already_consumed",
                 "session_cookie_count",
                 "session_row_exists",
