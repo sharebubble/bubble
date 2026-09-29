@@ -12,3 +12,29 @@ export const ACCOUNT_PATH = '/account';
 
 /** The viewer's favorite items, reachable from the profile menu. */
 export const FAVORITES_PATH = '/favorites';
+
+/** The community ledger: every transaction, visible to every member. */
+export const LEDGER_PATH = '/ledger';
+
+/** The signed-in member's own ledger account and statement. */
+export const MY_LEDGER_PATH = '/ledger/me';
+
+export const ledgerTransactionPath = (id: string) => `${LEDGER_PATH}/t/${id}`;
+
+export const ledgerAccountPath = (id: string) => `${LEDGER_PATH}/a/${id}`;
+
+export const ledgerCostSharePath = (id: string) => `${LEDGER_PATH}/splits/${id}`;
+
+export const LEDGER_STATS_PATH = `${LEDGER_PATH}/stats`;
+
+export const LEDGER_REPORT_PATH = `${LEDGER_PATH}/report`;
+
+export const LEDGER_MANAGE_PATH = `${LEDGER_PATH}/manage`;
+/** Tamper evidence: the hash chain and the published digests. */
+export const LEDGER_CHAIN_PATH = `${LEDGER_PATH}/chain`;
+/** The treasurer's bank statement import. */
+export const LEDGER_BANK_PATH = `${LEDGER_PATH}/bank`;
+
+export const MY_STATEMENT_PATH = `${MY_LEDGER_PATH}/statement`;
+
+export const ledgerStatementPath = (accountId: string) => `${LEDGER_PATH}/a/${accountId}/statement`;

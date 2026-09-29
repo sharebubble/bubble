@@ -1,5 +1,10 @@
 import BookingCounterOfferDialog from '@/components/bookings/BookingCounterOfferDialog';
 import BookingEditDialog from '@/components/bookings/BookingEditDialog';
+import {
+  AcceptedSaleNotice,
+  BookingChargeInfo,
+  ReportProblemButton,
+} from '@/components/bookings/SaleFulfillment';
 import { getBookingStatusBadge } from '@/components/bookings/status';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,6 +17,7 @@ import {
 import { useItem } from '@/hooks/useItem';
 import { useCreateMessage, useMarkMessageAsRead, useMessages } from '@/hooks/useMessages';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
+import { isAcceptedSale } from '@/lib/ledger';
 import { cn } from '@/lib/utils';
 import {
   ActionIcon,
@@ -274,6 +280,7 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
               </Text>
             </div>
           )}
+          <BookingChargeInfo booking={selectedBooking} />
         </Box>
 
         {/* Action Buttons - For pending bookings */}
@@ -424,7 +431,13 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
         {selectedBooking.status === 3 &&
           (() => {
             const isBuyer = user?.username === selectedBooking.user?.username;
-            const salesType = selectedItemDetails?.sales_type;
+            // After an accepted sale the seller can no longer open the item,
+            // so the booking's own copy of it decides the listing type.
+            const salesType =
+              selectedBooking.item_details?.sales_type ?? selectedItemDetails?.sales_type;
+            // An accepted sale has changed hands: nobody can cancel it; the
+            // buyer confirms receipt or reports a problem (ledger plan D18).
+            const acceptedSale = isAcceptedSale(selectedBooking);
             const isSale = salesType === 'sell' || salesType === 'donate';
             const isRental = salesType === 'rent' || salesType === 'borrow';
             const showConfirmReceived =
@@ -435,53 +448,57 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
               !!selectedBooking.time_to && new Date(selectedBooking.time_to) <= new Date();
 
             return (
-              <div className="flex items-center gap-2 mt-4">
-                {showConfirmReceived && (
-                  <Button
-                    color="teal"
-                    onClick={() => confirmReceivedMutation.mutate(selectedBooking.id)}
-                    disabled={confirmReceivedMutation.isPending}
-                  >
-                    {confirmReceivedMutation.isPending
-                      ? t('common.submitting')
-                      : t('requests.confirmReceived')}
-                  </Button>
-                )}
-                {!isPast && (
-                  <Button
-                    variant="outline"
-                    onClick={async () => {
-                      try {
-                        await updateBookingMutation.mutateAsync({
-                          id: selectedBooking.id,
-                          data: { status: 2 }, // Cancelled
-                        });
-                      } catch (error) {
-                        console.error('Error cancelling booking:', error);
-                      }
-                    }}
-                    disabled={updateBookingMutation.isPending}
-                  >
-                    {updateBookingMutation.isPending
-                      ? t('common.submitting')
-                      : t('requests.cancel')}
-                  </Button>
-                )}
+              <>
+                {acceptedSale && <AcceptedSaleNotice booking={selectedBooking} isBuyer={isBuyer} />}
+                <div className="flex items-center gap-2 mt-4">
+                  {showConfirmReceived && (
+                    <Button
+                      color="teal"
+                      onClick={() => confirmReceivedMutation.mutate(selectedBooking.id)}
+                      disabled={confirmReceivedMutation.isPending}
+                    >
+                      {confirmReceivedMutation.isPending
+                        ? t('common.submitting')
+                        : t('requests.confirmReceived')}
+                    </Button>
+                  )}
+                  {acceptedSale && isBuyer && <ReportProblemButton booking={selectedBooking} />}
+                  {!isPast && !acceptedSale && (
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          await updateBookingMutation.mutateAsync({
+                            id: selectedBooking.id,
+                            data: { status: 2 }, // Cancelled
+                          });
+                        } catch (error) {
+                          console.error('Error cancelling booking:', error);
+                        }
+                      }}
+                      disabled={updateBookingMutation.isPending}
+                    >
+                      {updateBookingMutation.isPending
+                        ? t('common.submitting')
+                        : t('requests.cancel')}
+                    </Button>
+                  )}
 
-                <div className="ml-auto">
-                  <ActionIcon
-                    variant="subtle"
-                    size="lg"
-                    onClick={() => refetchMessages()}
-                    disabled={isFetchingMessages}
-                    aria-label={t('requests.refresh')}
-                  >
-                    <RefreshCw
-                      className={isFetchingMessages ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
-                    />
-                  </ActionIcon>
+                  <div className="ml-auto">
+                    <ActionIcon
+                      variant="subtle"
+                      size="lg"
+                      onClick={() => refetchMessages()}
+                      disabled={isFetchingMessages}
+                      aria-label={t('requests.refresh')}
+                    >
+                      <RefreshCw
+                        className={isFetchingMessages ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
+                      />
+                    </ActionIcon>
+                  </div>
                 </div>
-              </div>
+              </>
             );
           })()}
 

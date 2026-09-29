@@ -262,6 +262,13 @@ const ItemDetail = () => {
                   </Badge>
                 </Tooltip>
               )}
+              {item.ledger_beneficiary === 'community' && (
+                <Tooltip multiline w={240} label={t('item.communityOwnedTooltip')}>
+                  <Badge color="teal" variant="light" className="cursor-default">
+                    {t('item.communityOwned')}
+                  </Badge>
+                </Tooltip>
+              )}
             </div>
 
             <h1 className="text-3xl font-bold leading-tight">{name}</h1>

@@ -25,7 +25,19 @@ class BookingAdmin(SimpleHistoryAdmin):
     ordering = ("-created_at",)
     list_select_related = ("item", "user")
     autocomplete_fields = ("item", "user")
-    readonly_fields = ("created_at", "updated_at", "ap_id")
+    # The sale terms and ledger state are written by the booking services;
+    # editing them by hand would make the ledger disagree with the booking.
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+        "ap_id",
+        "seller",
+        "sale_accepted_at",
+        "agreed_price",
+        "credit_community",
+        "ledger_state",
+        "ledger_note",
+    )
 
     @admin.display(description=_("Confirmed price"))
     def confirmed_price(self, obj):

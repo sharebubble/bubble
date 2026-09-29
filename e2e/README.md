@@ -66,6 +66,38 @@ runs migrations, seeds realistic demo content (`manage.py seed_demo`), and — i
 credentials you've already configured. See `scripts/e2e-local-up.sh --help`
 for all options.
 
+## Ledger specs (`specs/ledger/`, tag `@ledger`)
+
+Walk through the community ledger the way a person would test it by hand, in
+the browser, as four pooled users (`admin` is the treasurer):
+
+| Spec       | What it does                                                                                          |
+| ---------- | ----------------------------------------------------------------------------------------------------- |
+| `entries`  | A member posts an expense with a receipt, then a top-up                                               |
+| `bookings` | A returned rental and a confirmed sale are charged                                                    |
+| `disputes` | A member disputes an entry; its author reverses it                                                    |
+| `splits`   | A bill split three ways is booked once everyone accepted                                              |
+| `reports`  | Statistics and the annual report open; the books add up                                               |
+| `bank`     | The treasurer imports a CAMT.053 file, books a line by payment reference, parks and assigns another   |
+| `periods`  | The treasurer closes a period; the journal download matches its fingerprint; late entries are refused |
+| `chain`    | A member downloads the hash chain and every link is recomputed                                        |
+
+```bash
+cd e2e
+npm run test:ledger          # headless, in parallel
+npm run test:ledger:watch    # headed browser, one test at a time, slowed down
+PW_SLOWMO=1000 npm run test:ledger:watch   # even slower
+npm run test:ui -- --grep @ledger          # Playwright UI: pick, re-run and step through tests
+```
+
+**Local only.** Ledger entries are append-only and can never be deleted, so
+these specs only run when `E2E_BASE_URL` points at `localhost`/`127.0.0.1`
+(or with `E2E_LEDGER=1`); against stage they are skipped. They are repeatable:
+every run posts new, namespaced entries and asserts only on those, never on
+absolute balances, so balances grow with every run. Each run of `periods`
+closes one more day in the distant past (the day before the earliest closed
+period) — reset the database (`just e2e-up --reset`) to start from zero.
+
 ## Test data: seed & purge (backend commands)
 
 Two kinds of seed data, for two different purposes:

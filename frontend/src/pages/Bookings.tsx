@@ -105,6 +105,8 @@ const BookingRow = ({
 }: BookingRowProps) => {
   const isOwner = booking.user?.username !== currentUsername;
   const isPending = booking.status === BOOKING_STATUS.pending;
+  const isSale =
+    booking.item_details?.sales_type === 'sell' || booking.item_details?.sales_type === 'donate';
   const itemTitle = booking.item_details?.name ?? t('bookings.item');
   const itemImage = booking.item_details?.first_image;
   const userName = booking.user?.name || booking.user?.username || '—';
@@ -207,8 +209,9 @@ const BookingRow = ({
           </Text>
         </div>
 
-        {/* End booking button — only for active bookings owned by the current user */}
-        {state === 'active' && isOwner && !isPending && (
+        {/* End booking button — only for active bookings owned by the current user.
+            Sales never "end": the buyer confirms receipt or reports a problem. */}
+        {state === 'active' && isOwner && !isPending && !isSale && (
           <Button
             size="xs"
             color="red"

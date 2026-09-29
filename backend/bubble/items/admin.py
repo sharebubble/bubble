@@ -80,7 +80,7 @@ class ItemAdmin(GuardedModelAdminMixin, SimpleHistoryAdmin):
         (
             _("Internal Options"),
             {
-                "fields": ("internal", "payment_enabled"),
+                "fields": ("internal", "payment_enabled", "ledger_beneficiary"),
                 "classes": ("collapse",),
             },
         ),

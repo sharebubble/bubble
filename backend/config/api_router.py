@@ -7,6 +7,7 @@ from bubble.collections.urls import router as collections_router
 from bubble.comments.urls import router as comments_router
 from bubble.favorites.api.urls import router as favorites_router
 from bubble.items.urls import router as items_router
+from bubble.ledger.urls import router as ledger_router
 from bubble.notifications.api.urls import router as notifications_router
 from bubble.users.api.views import GroupViewSet, ProfileViewSet, UserViewSet
 
@@ -23,6 +24,7 @@ router.registry.extend(collections_router.registry)
 router.registry.extend(comments_router.registry)
 router.registry.extend(favorites_router.registry)
 router.registry.extend(notifications_router.registry)
+router.registry.extend(ledger_router.registry)
 
 app_name = "api"
 urlpatterns = router.urls

@@ -1,3 +1,5 @@
+import type { Language } from '@/contexts/LanguageContext';
+
 // Currency utility functions
 
 /**
@@ -130,4 +132,27 @@ export function displayPrice(
 ): string {
   const formatted = formatPrice(price, currencyCode);
   return formatted || placeholder;
+}
+
+const MONEY_LOCALES: Record<Language, string> = { en: 'en-GB', de: 'de-DE' };
+
+/**
+ * Format a ledger amount in the app language, e.g. `€50.00` / `50,00 €`.
+ * @param amount - Decimal string or number as sent by the API
+ * @param currencyCode - Three-letter currency code of the book
+ * @param language - Current app language
+ * @param signed - Always show the sign (`+€5.00`), except for zero
+ */
+export function formatMoney(
+  amount: string | number,
+  currencyCode: string,
+  language: Language,
+  { signed = false }: { signed?: boolean } = {},
+): string {
+  const value = typeof amount === 'string' ? Number(amount) : amount;
+  return new Intl.NumberFormat(MONEY_LOCALES[language], {
+    style: 'currency',
+    currency: currencyCode || 'EUR',
+    signDisplay: signed ? 'exceptZero' : 'auto',
+  }).format(value);
 }
