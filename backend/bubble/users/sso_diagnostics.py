@@ -123,7 +123,7 @@ def session_cookie_count(request: HttpRequest) -> int:
     ours, and Django only ever sees one of them.
     """
     prefix = f"{settings.SESSION_COOKIE_NAME}="
-    raw = request.META.get("HTTP_COOKIE", "")
+    raw = request.headers.get("cookie", "")
     return sum(1 for part in raw.split(";") if part.strip().startswith(prefix))
 
 
