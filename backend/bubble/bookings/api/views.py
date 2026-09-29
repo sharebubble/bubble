@@ -85,8 +85,12 @@ class PublicBookingViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         """Return only confirmed bookings."""
-        return Booking.objects.filter(status=BookingStatus.CONFIRMED).select_related(
-            "item", "user", "accepted_by"
+        # ``item_details`` serializes ``first_image``; prefetching the images
+        # avoids one query per booking (N+1).
+        return (
+            Booking.objects.filter(status=BookingStatus.CONFIRMED)
+            .select_related("item", "user", "accepted_by")
+            .prefetch_related("item__images")
         )
 
 
@@ -104,6 +108,7 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
         return (
             Booking.objects.get_for_user(self.request.user)
             .select_related("item", "user", "accepted_by")
+            .prefetch_related("item__images")
             .annotate(
                 unread_messages_count=Count(
                     "messages",
