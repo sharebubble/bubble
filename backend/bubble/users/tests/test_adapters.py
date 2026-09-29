@@ -175,6 +175,7 @@ def test_authentication_error_reports_missing_state(rf) -> None:
     assert context["has_session_cookie"] is False
     assert context["is_secure"] is False
     assert context["provider_error"] is None
+    assert context["start_state_matches"] is None
     assert request._social_auth_error_reported is True  # noqa: SLF001
     # Must be serializable, unlike allauth's raw extra_context.
     json.dumps(context)
@@ -208,3 +209,4 @@ def test_authentication_error_reports_provider_error(rf) -> None:
     assert context["provider_error_description"] == "nope"
     assert context["has_code"] is False
     assert context["is_secure"] is True
+    assert context["start_state_matches"] is None
