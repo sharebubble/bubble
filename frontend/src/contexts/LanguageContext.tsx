@@ -493,6 +493,18 @@ const translations = {
     'itemDetail.deleteConfirmDescription':
       'This action cannot be undone. This will permanently delete your item.',
     'itemDetail.notFound': 'Item not found',
+    'itemDetail.notFoundTitle': 'Item not found',
+    'itemDetail.notFoundBack': 'Back to browsing',
+    'itemDetail.notFoundJoke1':
+      'This item has wandered off. Maybe someone borrowed it and forgot to return it.',
+    'itemDetail.notFoundJoke2':
+      'We looked under the couch, in the attic and behind the sofa cushions. Nothing.',
+    'itemDetail.notFoundJoke3': 'Plot twist: this item was never here in the first place.',
+    'itemDetail.notFoundJoke4': 'It popped like a bubble. Poof! Gone.',
+    'itemDetail.notFoundJoke5':
+      'Our hamsters searched the whole warehouse and came back empty-pawed.',
+    'itemDetail.notFoundJoke6':
+      'Someone probably lent it to a neighbour who lent it to a neighbour...',
     'itemDetail.availability': 'Availability',
     'itemDetail.properties': 'Properties',
     'itemDetail.previousImage': 'Previous image',
@@ -1251,6 +1263,18 @@ const translations = {
     'itemDetail.deleteConfirmDescription':
       'Diese Aktion kann nicht rückgängig gemacht werden. Dieser Artikel wird dauerhaft gelöscht.',
     'itemDetail.notFound': 'Artikel nicht gefunden',
+    'itemDetail.notFoundTitle': 'Artikel nicht gefunden',
+    'itemDetail.notFoundBack': 'Zurück zum Stöbern',
+    'itemDetail.notFoundJoke1':
+      'Dieser Artikel ist spazieren gegangen. Vielleicht hat ihn jemand geliehen und vergessen zurückzubringen.',
+    'itemDetail.notFoundJoke2':
+      'Wir haben unterm Sofa, auf dem Dachboden und hinter den Kissen gesucht. Nichts.',
+    'itemDetail.notFoundJoke3': 'Plot Twist: Dieser Artikel war nie da.',
+    'itemDetail.notFoundJoke4': 'Er ist wie eine Seifenblase zerplatzt. Puff! Weg.',
+    'itemDetail.notFoundJoke5':
+      'Unsere Hamster haben das ganze Lager durchsucht und kamen mit leeren Pfoten zurück.',
+    'itemDetail.notFoundJoke6':
+      'Bestimmt hat ihn jemand an die Nachbarin verliehen, die ihn an den Nachbarn verliehen hat...',
     'itemDetail.availability': 'Verfügbarkeit',
     'itemDetail.properties': 'Eigenschaften',
     'itemDetail.previousImage': 'Vorheriges Bild',

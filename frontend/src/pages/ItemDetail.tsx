@@ -16,7 +16,8 @@ import { BackButton } from '@/components/layout/BackButton';
 import OwnerLink from '@/components/users/OwnerLink';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
-import { useItem } from '@/hooks/useItem';
+import { ItemNotFoundError, useItem } from '@/hooks/useItem';
+import { ItemNotFound } from '@/components/items/ItemNotFound';
 import { useDeleteItem } from '@/hooks/useMyItems';
 import { useItemCollections } from '@/hooks/useCollections';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
@@ -94,12 +95,14 @@ const ItemDetail = () => {
     );
   }
 
+  if (error instanceof ItemNotFoundError || (!error && !item)) {
+    return <ItemNotFound />;
+  }
+
   if (error || !item) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <Text c={error ? 'red' : undefined}>
-          {error ? error.message : t('itemDetail.notFound')}
-        </Text>
+        <Text c="red">{error?.message}</Text>
         <Button component={Link} to="/" mt="md" variant="light">
           {t('common.back')}
         </Button>
