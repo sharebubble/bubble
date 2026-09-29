@@ -13,6 +13,7 @@ from django.contrib.auth.models import Group
 from django.core.files.base import ContentFile
 
 from bubble.core.permissions_config import DefaultGroup
+from bubble.users import sso_diagnostics
 
 if typing.TYPE_CHECKING:
     from allauth.socialaccount.models import SocialLogin
@@ -74,13 +75,18 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
 
         logger.warning(
             "Social login failed: provider=%s error=%s state_found=%s "
-            "provider_error=%s secure=%s session_cookie=%s exception=%s",
+            "start_marker=%s start_session_matches=%s state_already_consumed=%s "
+            "session_cookies=%s session_row_exists=%s provider_error=%s "
+            "exception=%s",
             provider_id,
             error_code,
             context["state_found"],
+            context["start_marker"],
+            context["start_session_matches"],
+            context["state_already_consumed"],
+            context["session_cookie_count"],
+            context["session_row_exists"],
             context["provider_error"],
-            context["is_secure"],
-            context["has_session_cookie"],
             context["exception"],
             extra={"social_auth_context": context},
         )
@@ -95,6 +101,15 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
             scope.set_tag("auth_error_code", error_code)
             scope.set_tag("auth_state_found", context["state_found"])
             scope.set_tag("auth_request_secure", context["is_secure"])
+            # Tags rather than only context: they can be searched and counted.
+            for tag in (
+                "start_marker",
+                "start_session_matches",
+                "state_already_consumed",
+                "session_cookie_count",
+                "session_row_exists",
+            ):
+                scope.set_tag(f"auth_{tag}", str(context[tag]))
             sentry_sdk.capture_message(
                 (
                     f"Social login failed: {provider_name or provider_id}"
@@ -118,9 +133,9 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         modes apart are kept:
 
         - ``state_found`` false: the OAuth state stashed in the session at the
-          start of the login was not there on the callback. The session cookie
-          did not come back (see ``has_session_cookie`` / ``is_secure``), the
-          state expired, or the callback URL was opened twice.
+          start of the login was not there on the callback. The ``start_*``,
+          ``state_already_consumed`` and ``session_*`` fields from
+          ``sso_diagnostics`` say why.
         - ``provider_error`` set: the provider redirected back with an error
           instead of an authorization code.
         - ``exception`` set: the token exchange or login completion failed.
@@ -146,10 +161,10 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
             "scheme": request.scheme,
             "forwarded_proto": request.headers.get("x-forwarded-proto"),
             "has_session_cookie": settings.SESSION_COOKIE_NAME in request.COOKIES,
-            "session_key": request.session.session_key,
             "user_agent": request.headers.get("user-agent"),
             "remote_addr": request.META.get("REMOTE_ADDR"),
             "referer": request.headers.get("referer"),
+            **sso_diagnostics.callback_diagnostics(request),
         }
 
     def update_groups(self, user, sociallogin):
@@ -177,6 +192,10 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         Triggered every time a user logs in.
         We use this to sync profile data from Authentik to Django.
         """
+        # Lets a later failing callback with the same state be recognised as a
+        # replay of this successful one (see sso_diagnostics).
+        sso_diagnostics.mark_state_consumed(request)
+
         # If the user doesn't exist yet, populate_user (the logic from before) handles
         if not sociallogin.is_existing:
             return

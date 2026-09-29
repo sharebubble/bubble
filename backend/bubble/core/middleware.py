@@ -6,7 +6,39 @@ import urllib.parse
 import sentry_sdk
 from django.http import HttpResponseRedirect
 
+from bubble.users import sso_diagnostics
+
 logger = logging.getLogger(__name__)
+
+
+class SocialLoginStartMarkerMiddleware:
+    """Mark the browser when it leaves for a social login provider.
+
+    Sits above ``SessionMiddleware`` so the session has been saved, and a new
+    one has its final key, by the time the response passes through here. See
+    ``bubble.users.sso_diagnostics`` for how the callback uses the marker.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        response = self.get_response(request)
+        if (
+            request.method == "POST"
+            and request.path.rstrip("/").endswith(
+                sso_diagnostics.PROVIDER_REDIRECT_SUFFIX
+            )
+            and isinstance(response, HttpResponseRedirect)
+            # A start that failed redirects back with ?error= and stashed no
+            # state; marking it would point the callback at an older one.
+            and "error"
+            not in urllib.parse.parse_qs(
+                urllib.parse.urlparse(response.get("Location", "")).query
+            )
+        ):
+            sso_diagnostics.set_start_marker(request, response)
+        return response
 
 
 class SocialLoginErrorLoggingMiddleware:
@@ -59,7 +91,7 @@ class SocialLoginErrorLoggingMiddleware:
             "user_agent": request.headers.get("user-agent"),
             "remote_addr": request.META.get("REMOTE_ADDR"),
             "referer": request.headers.get("referer"),
-            "session_key": request.session.session_key,
+            "session_key_hash": sso_diagnostics.hash_key(request.session.session_key),
             "user_id": str(request.user.pk) if request.user.is_authenticated else None,
         }
 

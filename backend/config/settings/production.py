@@ -62,7 +62,13 @@ SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
 # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-secure
 SESSION_COOKIE_SECURE = env.bool("DJANGO_SESSION_COOKIE_SECURE", default=True)
 # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-name
-SESSION_COOKIE_NAME = "__Secure-sessionid"
+# `__Host-` makes browsers reject the cookie unless it is host-only (no Domain),
+# Secure and Path=/. A cookie of the same name set for the parent domain by
+# another app on treibhausdonaufeld.at can then never shadow ours, which would
+# make a login start and its callback read different sessions (the OAuth state
+# is lost and the login fails with `error=unknown`). Renaming signs everyone
+# out once.
+SESSION_COOKIE_NAME = "__Host-sessionid" if SESSION_COOKIE_SECURE else "sessionid"
 # Build OAuth/OIDC redirect URIs (and other absolute allauth links) with https
 # even when the request reached Django as plain http behind a TLS-terminating
 # proxy. Otherwise the provider sends the browser back to an http:// callback,
