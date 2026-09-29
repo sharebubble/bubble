@@ -5,7 +5,8 @@ from decimal import Decimal
 
 import pytest
 from django.contrib.auth.models import Group
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 from guardian.shortcuts import assign_perm, get_users_with_perms
 from rest_framework import status
@@ -18,7 +19,7 @@ from bubble.bookings.tests.factories import (
     SelfServiceItemFactory,
 )
 from bubble.core.permissions_config import DefaultGroup
-from bubble.items.models import ItemStatus, RentalPeriodType, SalesType
+from bubble.items.models import Image, ItemStatus, RentalPeriodType, SalesType
 from bubble.users.tests.factories import UserFactory
 
 
@@ -2431,3 +2432,43 @@ class BookingVisibleWindowFilterTestCase(APITestCase):
         )
         assert response.status_code == status.HTTP_200_OK, response.content
         assert response.data["results"] == []
+
+
+class BookingListQueryCountTestCase(APITestCase):
+    """Guard the booking lists against N+1 queries on ``item.first_image``."""
+
+    def setUp(self):
+        self.client = APIClient()
+        default_group, _ = Group.objects.get_or_create(name=DefaultGroup.DEFAULT)
+        self.user = UserFactory()
+        self.user.groups.add(default_group)
+        self.client.force_authenticate(user=self.user)
+        self.now = timezone.now()
+
+    def _add_booking(self, idx):
+        item = ItemFactory(user=self.user)
+        Image.objects.create(item=item, original=f"items/img-{idx}.jpg", ordering=0)
+        BookingFactory(
+            user=self.user,
+            item=item,
+            status=BookingStatus.CONFIRMED,
+            time_from=self.now + timedelta(days=idx),
+            time_to=self.now + timedelta(days=idx, hours=1),
+        )
+
+    def _count_queries(self, url):
+        with CaptureQueriesContext(connection) as ctx:
+            response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+        return len(ctx.captured_queries)
+
+    def test_query_count_is_constant(self):
+        self._add_booking(1)
+        baselines = {
+            url: self._count_queries(url)
+            for url in ("/api/bookings/", "/api/public-bookings/")
+        }
+        for idx in range(2, 6):
+            self._add_booking(idx)
+        for url, baseline in baselines.items():
+            assert self._count_queries(url) == baseline, url
