@@ -63,6 +63,13 @@ SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
 SESSION_COOKIE_SECURE = env.bool("DJANGO_SESSION_COOKIE_SECURE", default=True)
 # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-name
 SESSION_COOKIE_NAME = "__Secure-sessionid"
+# Build OAuth/OIDC redirect URIs (and other absolute allauth links) with https
+# even when the request reached Django as plain http behind a TLS-terminating
+# proxy. Otherwise the provider sends the browser back to an http:// callback,
+# where the Secure session cookie is not sent, the OAuth state stashed in the
+# session is missing and the login fails with `error=unknown`.
+# https://docs.allauth.org/en/latest/account/configuration.html
+ACCOUNT_DEFAULT_HTTP_PROTOCOL = env("ACCOUNT_DEFAULT_HTTP_PROTOCOL", default="https")
 # https://docs.djangoproject.com/en/dev/topics/security/#ssl-https
 # https://docs.djangoproject.com/en/dev/ref/settings/#secure-hsts-seconds
 # TODO: set this to 60 seconds first and then to 518400 once you prove the former works

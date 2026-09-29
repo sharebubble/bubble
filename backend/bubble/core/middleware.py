@@ -71,6 +71,11 @@ class SocialLoginErrorLoggingMiddleware:
             extra={"social_auth_redirect_context": context},
         )
 
+        # The adapter already captured this failure with the underlying cause;
+        # a second event here would only split it into a duplicate issue.
+        if getattr(request, "_social_auth_error_reported", False):
+            return response
+
         with sentry_sdk.new_scope() as scope:
             scope.set_context("social_auth_redirect", context)
             scope.set_tag("auth_error_code", error_code)
