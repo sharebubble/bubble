@@ -125,12 +125,15 @@ const BookForm = ({
       />
       {target === 'member' ? (
         <Select
+          // Remount once the members arrive, so a proposed member shows its name.
+          key={members ? 'members' : 'loading'}
           label={t('ledger.bank.member')}
           data={(members ?? []).map(member => ({ value: member.id, label: member.name }))}
           value={account}
           onChange={setAccount}
           searchable
           required
+          allowDeselect={false}
           data-autofocus
         />
       ) : (
@@ -144,6 +147,7 @@ const BookForm = ({
           onChange={setCategory}
           searchable
           required
+          allowDeselect={false}
         />
       )}
       <TextInput
