@@ -79,6 +79,11 @@ export interface SsoReturn {
   returned: boolean;
   /** allauth's error code, when it reported one (e.g. "signup_closed"). */
   error: string | null;
+  /**
+   * The `sso` marker survived the round trip. allauth only keeps it when it
+   * found the OAuth state, so an error without it means the state was lost.
+   */
+  hasReturnMarker: boolean;
 }
 
 /**
@@ -90,7 +95,7 @@ export interface SsoReturn {
  * module load, before the router ever looks at the location.
  */
 function readAndStripReturnParams(): SsoReturn {
-  const none: SsoReturn = { returned: false, error: null };
+  const none: SsoReturn = { returned: false, error: null, hasReturnMarker: false };
   if (typeof window === 'undefined') return none;
 
   const url = new URL(window.location.href);
@@ -110,7 +115,7 @@ function readAndStripReturnParams(): SsoReturn {
   }
   window.history.replaceState(window.history.state, '', url.toString());
 
-  return { returned: true, error: loginError };
+  return { returned: true, error: loginError, hasReturnMarker };
 }
 
 const ssoReturn = readAndStripReturnParams();
@@ -162,6 +167,12 @@ export function clearSsoAttempt(): void {
   } catch {
     // Ignore.
   }
+}
+
+/** Milliseconds since the last recorded forward to the provider, if any. */
+export function getSsoAttemptAgeMs(): number | null {
+  const stored = read();
+  return stored?.reason === 'attempt' ? Date.now() - stored.at : null;
 }
 
 export function getSsoSuppression(): SsoSuppression | null {
