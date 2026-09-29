@@ -61,39 +61,40 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
         error_code = error.value if hasattr(error, "value") else error
         provider_id = getattr(provider, "id", None)
         provider_name = getattr(provider, "name", None)
-
-        # Avoid double-reporting the same exception if allauth already handed it
-        # to Sentry via its own error handling.
-        exception_info = (
-            {"type": type(exception).__name__, "message": str(exception)}
-            if exception
-            else None
+        context = self._authentication_error_context(
+            request, error_code, exception, extra_context
         )
-
-        context = {
-            "provider_id": provider_id,
-            "provider_name": provider_name,
-            "error_code": error_code,
-            "error_enum": str(error),
-            "extra_context": extra_context,
-            "user_agent": request.headers.get("user-agent"),
-            "remote_addr": request.META.get("REMOTE_ADDR"),
-            "referer": request.headers.get("referer"),
-            "session_key": request.session.session_key,
-        }
+        context.update(
+            {
+                "provider_id": provider_id,
+                "provider_name": provider_name,
+                "error_enum": str(error),
+            }
+        )
 
         logger.warning(
-            "Social login failed: provider=%s error=%s exception=%s",
+            "Social login failed: provider=%s error=%s state_found=%s "
+            "provider_error=%s secure=%s session_cookie=%s exception=%s",
             provider_id,
             error_code,
-            exception_info,
+            context["state_found"],
+            context["provider_error"],
+            context["is_secure"],
+            context["has_session_cookie"],
+            context["exception"],
             extra={"social_auth_context": context},
         )
+
+        # The redirect middleware reports the same failure again unless told
+        # it has already been captured here, with the richer context.
+        request._social_auth_error_reported = True  # noqa: SLF001
 
         with sentry_sdk.new_scope() as scope:
             scope.set_context("social_auth", context)
             scope.set_tag("provider", provider_id)
             scope.set_tag("auth_error_code", error_code)
+            scope.set_tag("auth_state_found", context["state_found"])
+            scope.set_tag("auth_request_secure", context["is_secure"])
             sentry_sdk.capture_message(
                 (
                     f"Social login failed: {provider_name or provider_id}"
@@ -101,6 +102,55 @@ class SocialAccountAdapter(DefaultSocialAccountAdapter):
                 ),
                 level="warning",
             )
+
+    @staticmethod
+    def _authentication_error_context(
+        request: HttpRequest,
+        error_code,
+        exception,
+        extra_context,
+    ) -> dict[str, typing.Any]:
+        """Describe a failed social login in JSON-serializable terms.
+
+        allauth's ``extra_context`` carries the callback view and the raw OAuth
+        state, neither of which survive serialization (the whole context used
+        to arrive in Sentry as ``null``). Only the facts that tell the failure
+        modes apart are kept:
+
+        - ``state_found`` false: the OAuth state stashed in the session at the
+          start of the login was not there on the callback. The session cookie
+          did not come back (see ``has_session_cookie`` / ``is_secure``), the
+          state expired, or the callback URL was opened twice.
+        - ``provider_error`` set: the provider redirected back with an error
+          instead of an authorization code.
+        - ``exception`` set: the token exchange or login completion failed.
+        """
+        extra_context = extra_context or {}
+        state = extra_context.get("state")
+        return {
+            "error_code": error_code,
+            "state_found": state is not None,
+            "state_id_present": bool(
+                extra_context.get("state_id") or request.GET.get("state")
+            ),
+            "state_process": state.get("process") if state else None,
+            "provider_error": request.GET.get("error"),
+            "provider_error_description": request.GET.get("error_description"),
+            "has_code": "code" in request.GET,
+            "exception": (
+                {"type": type(exception).__name__, "message": str(exception)}
+                if exception
+                else None
+            ),
+            "is_secure": request.is_secure(),
+            "scheme": request.scheme,
+            "forwarded_proto": request.headers.get("x-forwarded-proto"),
+            "has_session_cookie": settings.SESSION_COOKIE_NAME in request.COOKIES,
+            "session_key": request.session.session_key,
+            "user_agent": request.headers.get("user-agent"),
+            "remote_addr": request.META.get("REMOTE_ADDR"),
+            "referer": request.headers.get("referer"),
+        }
 
     def update_groups(self, user, sociallogin):
         # add to default group

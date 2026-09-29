@@ -1,7 +1,11 @@
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 import requests as requests_lib
+from allauth.socialaccount.providers.base import AuthError
+from django.conf import settings
+from django.contrib.sessions.backends.db import SessionStore
 from django.core.files.base import ContentFile
 
 from bubble.users.adapters import SocialAccountAdapter
@@ -127,3 +131,80 @@ def test_sync_profile_noop_without_picture_claim() -> None:
 
     user.profile.refresh_from_db()
     assert not user.profile.profile_image
+
+
+def _callback_request(rf, query: str = "", *, secure: bool = False, cookie=True):
+
+    request = rf.get(
+        f"/accounts/oidc/authentik/login/callback/{query}",
+        secure=secure,
+    )
+    request.session = SessionStore()
+    if cookie:
+        request.COOKIES[settings.SESSION_COOKIE_NAME] = "abc"
+    return request
+
+
+def _captured_context(capture_message, set_context):
+    capture_message.assert_called_once()
+    (name, context), _ = set_context.call_args
+    assert name == "social_auth"
+    return context
+
+
+@pytest.mark.django_db
+def test_authentication_error_reports_missing_state(rf) -> None:
+    request = _callback_request(rf, "?code=c&state=s1", cookie=False)
+    provider = MagicMock(id="openid_connect")
+    provider.name = "Treibhaus Login"
+
+    with (
+        patch("bubble.users.adapters.sentry_sdk.capture_message") as capture,
+        patch("sentry_sdk.Scope.set_context") as set_context,
+    ):
+        SocialAccountAdapter().on_authentication_error(
+            request,
+            provider,
+            error=AuthError.UNKNOWN,
+            extra_context={"state_id": "s1", "callback_view": object()},
+        )
+
+    context = _captured_context(capture, set_context)
+    assert context["state_found"] is False
+    assert context["state_id_present"] is True
+    assert context["has_session_cookie"] is False
+    assert context["is_secure"] is False
+    assert context["provider_error"] is None
+    assert request._social_auth_error_reported is True  # noqa: SLF001
+    # Must be serializable, unlike allauth's raw extra_context.
+    json.dumps(context)
+
+
+@pytest.mark.django_db
+def test_authentication_error_reports_provider_error(rf) -> None:
+    request = _callback_request(
+        rf,
+        "?error=invalid_scope&error_description=nope&state=s1",
+        secure=True,
+    )
+    provider = MagicMock(id="openid_connect")
+    provider.name = "Treibhaus Login"
+
+    with (
+        patch("bubble.users.adapters.sentry_sdk.capture_message") as capture,
+        patch("sentry_sdk.Scope.set_context") as set_context,
+    ):
+        SocialAccountAdapter().on_authentication_error(
+            request,
+            provider,
+            error=AuthError.UNKNOWN,
+            extra_context={"state": {"process": "login"}, "callback_view": object()},
+        )
+
+    context = _captured_context(capture, set_context)
+    assert context["state_found"] is True
+    assert context["state_process"] == "login"
+    assert context["provider_error"] == "invalid_scope"
+    assert context["provider_error_description"] == "nope"
+    assert context["has_code"] is False
+    assert context["is_secure"] is True
