@@ -2,13 +2,16 @@
 
 from datetime import timedelta
 from decimal import Decimal
+from io import BytesIO
 
 import pytest
 from django.contrib.auth.models import Group
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError, connection, transaction
 from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 from guardian.shortcuts import assign_perm, get_users_with_perms
+from PIL import Image as PILImage
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
@@ -2447,7 +2450,15 @@ class BookingListQueryCountTestCase(APITestCase):
 
     def _add_booking(self, idx):
         item = ItemFactory(user=self.user)
-        Image.objects.create(item=item, original=f"items/img-{idx}.jpg", ordering=0)
+        buf = BytesIO()
+        PILImage.new("RGB", (10, 10), color="blue").save(buf, format="JPEG")
+        Image.objects.create(
+            item=item,
+            original=SimpleUploadedFile(
+                f"img-{idx}.jpg", buf.getvalue(), content_type="image/jpeg"
+            ),
+            ordering=0,
+        )
         BookingFactory(
             user=self.user,
             item=item,
