@@ -45,7 +45,7 @@ dependencies = [
     "pyld>=3.3.0",
     "http-message-signatures>=2.0.1",
     "cryptography>=50.0.1",
-    "apprise>=1.13.1",
+    "apprise>=2.0.0",
     "pywebpush>=2.5.0",
 ]
 
