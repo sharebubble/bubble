@@ -261,7 +261,11 @@ const NewLedgerTransactionForm = ({
         <Button variant="default" onClick={onClose}>
           {t('common.cancel')}
         </Button>
-        <Button onClick={() => void handleSubmit()} loading={post.isPending}>
+        <Button
+          onClick={() => void handleSubmit()}
+          loading={post.isPending}
+          data-testid="ledger-entry-submit"
+        >
           {t('ledger.post')}
         </Button>
       </Group>

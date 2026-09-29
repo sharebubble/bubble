@@ -83,7 +83,7 @@ const LedgerChain = () => {
                         #{data.head.seq}
                       </Anchor>
                     </Text>
-                    <HashValue hash={data.head.hash} />
+                    <HashValue hash={data.head.hash} testId="chain-head-hash" />
                   </>
                 ) : (
                   <Text size="sm" c="dimmed">
@@ -102,6 +102,7 @@ const LedgerChain = () => {
                     leftSection={<Download size={14} aria-hidden="true" />}
                     loading={download.isPending}
                     onClick={() => download.mutate()}
+                    data-testid="chain-download"
                     className="print-hide"
                   >
                     {t('ledger.chain.download')}

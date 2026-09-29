@@ -4,11 +4,13 @@ import { Button, Code, CopyButton, Group } from '@mantine/core';
 import { Copy } from 'lucide-react';
 
 /** A hash in monospace with a copy button; the full value is in the tooltip. */
-export const HashValue = ({ hash }: { hash: string }) => {
+export const HashValue = ({ hash, testId }: { hash: string; testId?: string }) => {
   const { t } = useLanguage();
   return (
     <Group gap={4} wrap="nowrap">
-      <Code title={hash}>{shortHash(hash)}</Code>
+      <Code title={hash} data-hash={hash} data-testid={testId}>
+        {shortHash(hash)}
+      </Code>
       <CopyButton value={hash}>
         {({ copied, copy }) => (
           <Button

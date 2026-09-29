@@ -64,7 +64,7 @@ const LedgerTransaction = () => {
       <Stack gap="md">
         <Group gap="sm" wrap="nowrap">
           <BackButton />
-          <Title order={1} size="h3" className="min-w-0">
+          <Title order={1} size="h3" className="min-w-0" data-testid="transaction-title">
             {transaction.description}
           </Title>
         </Group>
@@ -206,7 +206,7 @@ const LedgerTransaction = () => {
             <Text size="xs" c="dimmed">
               {t('ledger.chain.sealed', { position: transaction.seal.position })}
             </Text>
-            <HashValue hash={transaction.seal.hash} />
+            <HashValue hash={transaction.seal.hash} testId="transaction-seal" />
             <Anchor component={Link} to={LEDGER_CHAIN_PATH} size="xs">
               {t('ledger.chain.whatIsThis')}
             </Anchor>

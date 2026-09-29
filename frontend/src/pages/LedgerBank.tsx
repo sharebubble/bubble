@@ -317,7 +317,7 @@ const LineCard = ({
       : null;
 
   return (
-    <Card withBorder padding="sm">
+    <Card withBorder padding="sm" data-testid="bank-line">
       <Stack gap={6}>
         <Group justify="space-between" wrap="nowrap" align="flex-start">
           <div className="min-w-0">
@@ -354,7 +354,12 @@ const LineCard = ({
             )}
             <Group gap="xs">
               {quick && (
-                <Button size="xs" onClick={quick.run} loading={decide.isPending}>
+                <Button
+                  size="xs"
+                  onClick={quick.run}
+                  loading={decide.isPending}
+                  data-testid="bank-line-quick"
+                >
                   {quick.label}
                 </Button>
               )}
@@ -364,6 +369,7 @@ const LineCard = ({
                     size="xs"
                     variant={quick ? 'default' : 'filled'}
                     rightSection={<ChevronDown size={14} aria-hidden="true" />}
+                    data-testid="bank-line-menu"
                   >
                     {quick ? t('ledger.bank.other') : t('ledger.bank.decide')}
                   </Button>

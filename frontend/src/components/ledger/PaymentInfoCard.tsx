@@ -3,7 +3,7 @@ import type { LedgerMyAccount } from '@/services/django';
 import { Button, Card, CopyButton, Group, Stack, Text, Title } from '@mantine/core';
 import { Check, Copy } from 'lucide-react';
 
-const CopyRow = ({ label, value }: { label: string; value: string }) => {
+const CopyRow = ({ label, value, testId }: { label: string; value: string; testId?: string }) => {
   const { t } = useLanguage();
   return (
     <Group justify="space-between" wrap="nowrap" gap="xs">
@@ -11,7 +11,7 @@ const CopyRow = ({ label, value }: { label: string; value: string }) => {
         <Text size="xs" c="dimmed">
           {label}
         </Text>
-        <Text fw={600} className="break-words font-mono">
+        <Text fw={600} className="break-words font-mono" data-testid={testId}>
           {value}
         </Text>
       </div>
@@ -60,7 +60,11 @@ export const PaymentInfoCard = ({ account }: { account: LedgerMyAccount }) => {
             value={account.community_iban}
           />
         )}
-        <CopyRow label={t('ledger.pay.reference')} value={account.payment_reference} />
+        <CopyRow
+          label={t('ledger.pay.reference')}
+          value={account.payment_reference}
+          testId="payment-reference"
+        />
       </Stack>
     </Card>
   );

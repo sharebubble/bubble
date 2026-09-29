@@ -308,6 +308,7 @@ const PeriodsAndExports = () => {
           variant="default"
           leftSection={<Lock size={14} aria-hidden="true" />}
           onClick={() => setClosing(true)}
+          data-testid="close-period"
         >
           {t('ledger.periods.close')}
         </Button>
@@ -328,7 +329,7 @@ const PeriodsAndExports = () => {
             </Table.Thead>
             <Table.Tbody>
               {periods.map(item => (
-                <Table.Tr key={item.id}>
+                <Table.Tr key={item.id} data-testid="ledger-period" data-starts-on={item.starts_on}>
                   <Table.Td>
                     {formatDate(item.starts_on, language)} – {formatDate(item.ends_on, language)}
                   </Table.Td>
@@ -362,18 +363,21 @@ const PeriodsAndExports = () => {
           label={t('ledger.manage.startsOn')}
           value={period.date_from}
           onChange={event => setPeriod({ ...period, date_from: event.currentTarget.value })}
+          data-testid="export-date-from"
         />
         <TextInput
           type="date"
           label={t('ledger.manage.endsOn')}
           value={period.date_to}
           onChange={event => setPeriod({ ...period, date_to: event.currentTarget.value })}
+          data-testid="export-date-to"
         />
         <Button
           variant="default"
           leftSection={<Download size={14} aria-hidden="true" />}
           loading={download.isPending && download.variables?.format === 'journal'}
           onClick={() => get('journal')}
+          data-testid="export-journal"
         >
           {t('ledger.exports.journal')}
         </Button>
@@ -382,6 +386,7 @@ const PeriodsAndExports = () => {
           leftSection={<Download size={14} aria-hidden="true" />}
           loading={download.isPending && download.variables?.format === 'datev'}
           onClick={() => get('datev')}
+          data-testid="export-datev"
         >
           {t('ledger.exports.datev')}
         </Button>

@@ -393,10 +393,15 @@ const Ledger = () => {
                 variant="default"
                 leftSection={<Split size={16} aria-hidden="true" />}
                 onClick={openSplit}
+                data-testid="ledger-split"
               >
                 {t('ledger.split.button')}
               </Button>
-              <Button leftSection={<Plus size={16} aria-hidden="true" />} onClick={openModal}>
+              <Button
+                leftSection={<Plus size={16} aria-hidden="true" />}
+                onClick={openModal}
+                data-testid="ledger-new-entry"
+              >
                 {t('ledger.newTransaction')}
               </Button>
               <Menu position="bottom-end">
