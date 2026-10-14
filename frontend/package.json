@@ -14,16 +14,16 @@
     "types:openapi": "openapi-ts"
   },
   "dependencies": {
-    "@mantine/carousel": "^9.7.1",
-    "@mantine/core": "^9.7.1",
-    "@mantine/dates": "^9.7.1",
-    "@mantine/form": "^9.7.1",
-    "@mantine/hooks": "^9.7.1",
-    "@mantine/modals": "^9.7.1",
-    "@mantine/notifications": "^9.7.1",
+    "@mantine/carousel": "^9.7.2",
+    "@mantine/core": "^9.7.2",
+    "@mantine/dates": "^9.7.2",
+    "@mantine/form": "^9.7.2",
+    "@mantine/hooks": "^9.7.2",
+    "@mantine/modals": "^9.7.2",
+    "@mantine/notifications": "^9.7.2",
     "@sentry/react": "^11.6.0",
     "@sentry/vite-plugin": "^5.4.1",
-    "@tanstack/react-query": "^5.104.1",
+    "@tanstack/react-query": "^5.104.2",
     "barcode-detector": "^3.2.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -36,7 +36,7 @@
     "react-router-dom": "^7.18.4",
     "tailwind-merge": "^3.7.0",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^4.6.5",
+    "zod": "^4.6.6",
     "zxing-wasm": "^3.1.5"
   },
   "overrides": {
