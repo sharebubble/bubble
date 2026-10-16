@@ -21,6 +21,16 @@ import EditBook from './pages/EditBook';
 import EditItem from './pages/EditItem';
 import Favorites from './pages/Favorites';
 import Home from './pages/Home';
+import Ledger from './pages/Ledger';
+import LedgerAccount from './pages/LedgerAccount';
+import LedgerCostShare from './pages/LedgerCostShare';
+import LedgerBank from './pages/LedgerBank';
+import LedgerChain from './pages/LedgerChain';
+import LedgerManage from './pages/LedgerManage';
+import LedgerReport from './pages/LedgerReport';
+import LedgerStatement from './pages/LedgerStatement';
+import LedgerStats from './pages/LedgerStats';
+import LedgerTransaction from './pages/LedgerTransaction';
 import Browse from './pages/Browse';
 import ItemDetail from './pages/ItemDetail';
 import ItemBookingHistory from './pages/ItemBookingHistory';
@@ -32,7 +42,13 @@ import { AppUpdatePrompt } from './components/layout/AppUpdatePrompt';
 import { Header } from './components/layout/Header';
 import { MobileBottomNav } from './components/layout/MobileBottomNav';
 import { OfflineIndicator } from './components/layout/OfflineIndicator';
-import { ACCOUNT_PATH, BROWSE_PATH, FAVORITES_PATH } from './lib/routes';
+import {
+  ACCOUNT_PATH,
+  BROWSE_PATH,
+  FAVORITES_PATH,
+  LEDGER_PATH,
+  MY_LEDGER_PATH,
+} from './lib/routes';
 import { localStorageColorSchemeManager, MantineProvider } from '@mantine/core';
 import { mantineTheme } from './theme/mantine';
 
@@ -188,6 +204,102 @@ const ProtectedRoutes = () => {
           element={
             <AuthRequired>
               <CollectionDetail />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={LEDGER_PATH}
+          element={
+            <AuthRequired>
+              <Ledger />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={MY_LEDGER_PATH}
+          element={
+            <AuthRequired>
+              <LedgerAccount />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/a/:accountId`}
+          element={
+            <AuthRequired>
+              <LedgerAccount />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/stats`}
+          element={
+            <AuthRequired>
+              <LedgerStats />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/report`}
+          element={
+            <AuthRequired>
+              <LedgerReport />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/manage`}
+          element={
+            <AuthRequired>
+              <LedgerManage />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/chain`}
+          element={
+            <AuthRequired>
+              <LedgerChain />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/bank`}
+          element={
+            <AuthRequired>
+              <LedgerBank />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${MY_LEDGER_PATH}/statement`}
+          element={
+            <AuthRequired>
+              <LedgerStatement />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/a/:accountId/statement`}
+          element={
+            <AuthRequired>
+              <LedgerStatement />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/splits/:costShareId`}
+          element={
+            <AuthRequired>
+              <LedgerCostShare />
+            </AuthRequired>
+          }
+        />
+        <Route
+          path={`${LEDGER_PATH}/t/:transactionId`}
+          element={
+            <AuthRequired>
+              <LedgerTransaction />
             </AuthRequired>
           }
         />

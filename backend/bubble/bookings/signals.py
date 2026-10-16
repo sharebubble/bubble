@@ -141,6 +141,11 @@ def update_item_status(sender, instance: Booking, created, **kwargs):
     handlers and are intentionally not handled here, so this signal never fights
     those writes.
     """
+    # An accepted sale has already moved the item to the buyer (ledger plan
+    # D17); the booking services manage its status from then on.
+    if instance.is_accepted_sale:
+        return
+
     # Get the item
     item: Item = instance.item
 

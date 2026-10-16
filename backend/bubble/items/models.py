@@ -95,6 +95,13 @@ class SalesType(models.TextChoices):
     WANT_RENT = "want_rent", _("Want to Rent")
 
 
+class LedgerBeneficiary(models.TextChoices):
+    """Who is credited when a booking of the item is charged (ledger plan D4/D16)."""
+
+    OWNER = "owner", _("Owner")
+    COMMUNITY = "community", _("Community")
+
+
 class CategoryType(models.TextChoices):
     BOOKS = "books", _("Books")
     CLOTHING = "clothing", _("Clothing")
@@ -291,7 +298,20 @@ class Item(models.Model):
 
     payment_enabled = models.BooleanField(
         default=False,
-        help_text=_("Enable payment via internal payment system"),
+        help_text=_(
+            "Charge bookings of this item through the community ledger. "
+            "Without it, bookings never post a charge, whatever the price."
+        ),
+    )
+    ledger_beneficiary = models.CharField(
+        max_length=20,
+        choices=LedgerBeneficiary,
+        default=LedgerBeneficiary.OWNER,
+        help_text=_(
+            "Owner: booking charges credit the owner. Community: the community "
+            "owns the item and its charges go to the community; the owner looks "
+            "after it. Set by the treasurer."
+        ),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -462,6 +482,9 @@ class Item(models.Model):
 
             self.user = new_owner
             self.status = ItemStatus.DRAFT
+            # A sold item belongs to its buyer privately, even if the
+            # community owned it before.
+            self.ledger_beneficiary = LedgerBeneficiary.OWNER
             self.publish_notification_sent = False
             self.federation_visibility = "local_only"
             self.save()

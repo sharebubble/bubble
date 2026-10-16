@@ -2,8 +2,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
+import { useMyLedgerAccount } from '@/hooks/useLedger';
 import { useProfile } from '@/hooks/useProfile';
-import { FAVORITES_PATH } from '@/lib/routes';
+import { LedgerBalanceCard } from '@/components/ledger/LedgerBalanceCard';
+import { FAVORITES_PATH, LEDGER_PATH, MY_LEDGER_PATH } from '@/lib/routes';
 import {
   Avatar,
   Button,
@@ -25,6 +27,7 @@ import {
   Heart,
   Library,
   LogOut,
+  Receipt,
   Settings,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -43,6 +46,7 @@ const ENTRIES: HubEntry[] = [
   { labelKey: 'header.items', icon: Library, to: '/my-items' },
   { labelKey: 'collections.title', icon: BookMarked, to: '/collections' },
   { labelKey: 'favorites.title', icon: Heart, to: FAVORITES_PATH },
+  { labelKey: 'ledger.title', icon: Receipt, to: LEDGER_PATH },
   { labelKey: 'account.settings', icon: Settings, to: '/profile' },
   { labelKey: 'header.notificationSettings', icon: Bell, to: '/profile/notifications' },
   { labelKey: 'header.calendarSettings', icon: Calendar, to: '/profile/calendar' },
@@ -52,6 +56,7 @@ const Account = () => {
   const { t } = useLanguage();
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
+  const { data: ledgerAccount } = useMyLedgerAccount();
   const { installed, canInstall, promptInstall } = useInstallPrompt();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -102,6 +107,15 @@ const Account = () => {
             </div>
           </Group>
         </UnstyledButton>
+
+        {/* The member's balance in the community ledger. */}
+        {ledgerAccount && (
+          <LedgerBalanceCard
+            account={ledgerAccount}
+            isMe
+            onClick={() => navigate(MY_LEDGER_PATH)}
+          />
+        )}
 
         {/* Destinations */}
         <Card withBorder padding={0}>

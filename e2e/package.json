@@ -11,6 +11,8 @@
     "test": "node --env-file-if-exists=.env node_modules/.bin/playwright test",
     "test:smoke": "node --env-file-if-exists=.env node_modules/.bin/playwright test --grep @smoke",
     "test:regression": "node --env-file-if-exists=.env node_modules/.bin/playwright test --grep @regression",
+    "test:ledger": "node --env-file-if-exists=.env node_modules/.bin/playwright test --grep @ledger",
+    "test:ledger:watch": "PW_SLOWMO=${PW_SLOWMO:-400} node --env-file-if-exists=.env node_modules/.bin/playwright test --grep @ledger --headed --workers=1",
     "test:ui": "node --env-file-if-exists=.env node_modules/.bin/playwright test --ui",
     "report": "playwright show-report",
     "list": "node --env-file-if-exists=.env node_modules/.bin/playwright test --list",

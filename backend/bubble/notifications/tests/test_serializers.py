@@ -25,6 +25,12 @@ def test_to_representation_reports_availability_and_toggles() -> None:
         event_type=EventType.NEW_BOOKING,
         defaults={"enabled": True},
     )
+    NotificationPreference.objects.update_or_create(
+        user=user,
+        provider_type=NotificationPreference.ProviderType.ROCKETCHAT,
+        event_type=EventType.LEDGER,
+        defaults={"enabled": True},
+    )
 
     data = NotificationPreferenceMeSerializer().to_representation(user)
 
@@ -75,7 +81,7 @@ def test_email_is_available_but_disabled_by_default() -> None:
 
 @pytest.mark.django_db
 @override_config(APPRISE_ROCKETCHAT_URL=ROCKET_URL)
-def test_messages_toggle_writes_message_and_booking_events() -> None:
+def test_messages_toggle_writes_message_booking_and_ledger_events() -> None:
     user = UserFactory(username="alice")
     serializer = NotificationPreferenceMeSerializer(data={"rocketchat_messages": True})
     assert serializer.is_valid(), serializer.errors
@@ -89,7 +95,7 @@ def test_messages_toggle_writes_message_and_booking_events() -> None:
             enabled=True,
         ).values_list("event_type", flat=True)
     )
-    assert events == {EventType.NEW_MESSAGE, EventType.NEW_BOOKING}
+    assert events == {EventType.NEW_MESSAGE, EventType.NEW_BOOKING, EventType.LEDGER}
 
 
 @pytest.mark.django_db

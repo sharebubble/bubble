@@ -68,6 +68,8 @@ export type EditItemFormData = {
   rental_period: RentalPeriodEnum | '';
   rental_self_service: boolean;
   rental_open_end: boolean;
+  /** Charge bookings through the community ledger. */
+  payment_enabled: boolean;
   /** Location FK id, or '' when the item is at the owner's own place. */
   location: string;
   [key: string]: unknown;
@@ -177,6 +179,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
     rental_period: '' as RentalPeriodEnum | '',
     rental_self_service: false,
     rental_open_end: false,
+    payment_enabled: false,
     location: '',
   });
 
@@ -289,6 +292,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
         rental_self_service:
           item.rental_self_service !== undefined ? item.rental_self_service : false,
         rental_open_end: item.rental_open_end !== undefined ? item.rental_open_end : false,
+        payment_enabled: !!item.payment_enabled,
         location: item.location || '',
       };
 
@@ -309,6 +313,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
         rental_period: loadedData.rental_period,
         rental_self_service: loadedData.rental_self_service,
         rental_open_end: loadedData.rental_open_end,
+        payment_enabled: loadedData.payment_enabled,
         location: loadedData.location === '' ? null : loadedData.location,
       };
 
@@ -392,6 +397,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
             : undefined,
           rental_self_service: hasRentalOptions ? formData.rental_self_service : undefined,
           rental_open_end: hasRentalOptions ? formData.rental_open_end : undefined,
+          payment_enabled: formData.payment_enabled,
         };
 
         await updateItemMutation.mutateAsync({
@@ -462,6 +468,7 @@ const EditItem = (props: EditItemExtensionProps = {}) => {
             : undefined,
           rental_self_service: hasRentalOptions ? formData.rental_self_service : undefined,
           rental_open_end: hasRentalOptions ? formData.rental_open_end : undefined,
+          payment_enabled: formData.payment_enabled,
         };
 
         await updateItemMutation.mutateAsync({

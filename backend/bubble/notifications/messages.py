@@ -41,6 +41,9 @@ def notification_path(event_type: str, context: dict) -> str:
         item_id = context.get("item_id", "")
         return f"/item/{item_id}" if item_id else "/"
 
+    if event_type == EventType.LEDGER:
+        return context.get("path", "") or "/ledger"
+
     return "/"
 
 
@@ -78,6 +81,68 @@ def format_notification(event_type: str, context: dict) -> tuple[str, str]:
             parts.append(link)
         return title, "\n".join(parts)
 
+    if event_type == EventType.LEDGER:
+        return _("Community ledger"), _ledger_body(context)
+
     return _("Notification"), _("Notification: %(event_type)s") % {
         "event_type": event_type
     }
+
+
+def _ledger_body(context: dict) -> str:
+    """One sentence per ledger notice kind (see ``bubble.ledger.notify``)."""
+    kind = context.get("kind", "")
+    texts = {
+        "posted": _(
+            '%(actor)s booked "%(description)s": your balance changes by %(amount)s.'
+        ),
+        "disputed": _('%(actor)s disputes "%(description)s": %(reason)s'),
+        "dispute_resolved": _(
+            'Your dispute of "%(description)s" was closed: %(resolution)s'
+        ),
+        "comment": _('%(actor)s commented on "%(description)s": %(comment)s'),
+        "cost_share_added": _(
+            '%(actor)s split "%(description)s": your share is %(amount)s. '
+            "Accept or object by %(deadline)s; after that it counts as accepted."
+        ),
+        "cost_share_changed": _(
+            '%(actor)s changed "%(description)s": your share is now %(amount)s. '
+            "Accept or object by %(deadline)s."
+        ),
+        "cost_share_reminder": _(
+            'Reminder: "%(description)s" counts as accepted on %(deadline)s '
+            "(your share: %(amount)s) unless you object."
+        ),
+        "cost_share_objected": _('%(actor)s objected to "%(description)s": %(reason)s'),
+        "cost_share_cancelled": _('%(actor)s cancelled "%(description)s".'),
+        "soft_limit": _(
+            "Your balance is %(amount)s, below %(limit)s. Please top up soon."
+        ),
+        "sale_reminder": _(
+            "Please confirm that you received %(item)s, or report a problem. "
+            "Otherwise the purchase is confirmed automatically on %(deadline)s "
+            "and %(amount)s is charged."
+        ),
+        "sale_auto_approved": _(
+            "The purchase of %(item)s was confirmed automatically; %(amount)s was "
+            "charged."
+        ),
+    }
+    template = texts.get(kind)
+    if template is None:
+        return _("There is news in the community ledger.")
+    values = {
+        key: context.get(key, "")
+        for key in (
+            "actor",
+            "description",
+            "amount",
+            "reason",
+            "resolution",
+            "comment",
+            "deadline",
+            "limit",
+            "item",
+        )
+    }
+    return template % values

@@ -44,9 +44,13 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         // Escape hatch for environments with a pinned/preinstalled browser whose
         // build differs from this Playwright version (set to the chromium binary).
-        launchOptions: process.env.PW_EXECUTABLE_PATH
-          ? { executablePath: process.env.PW_EXECUTABLE_PATH }
-          : {},
+        launchOptions: {
+          ...(process.env.PW_EXECUTABLE_PATH
+            ? { executablePath: process.env.PW_EXECUTABLE_PATH }
+            : {}),
+          // Milliseconds between actions, to follow a headed run by eye.
+          slowMo: Number(process.env.PW_SLOWMO) || 0,
+        },
       },
       dependencies: ['setup'],
     },

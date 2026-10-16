@@ -29,6 +29,13 @@ export const env = {
   apiURL: optional('E2E_API_URL', baseURL).replace(/\/$/, ''),
   /** Namespace tag for any data this run creates, for safe isolated cleanup. */
   runId: optional('E2E_RUN_ID', optional('GITHUB_RUN_ID', `local-${process.pid}`)),
+  /**
+   * Ledger specs post real, append-only bookkeeping entries that can never be
+   * deleted, so they only run against a local stack (localhost/127.0.0.1) or
+   * when E2E_LEDGER=1 opts in explicitly.
+   */
+  ledger:
+    optional('E2E_LEDGER') === '1' || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(baseURL),
 };
 
 /** Roles in the multi-user pool. Extend as flows require more actors. */

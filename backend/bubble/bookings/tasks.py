@@ -8,7 +8,11 @@ from huey import crontab
 from huey.contrib.djhuey import periodic_task
 
 from bubble.bookings.models import Booking, BookingStatus
-from bubble.items.models import Item, ItemStatus
+from bubble.bookings.services import (
+    reconcile_booking_charges,
+    remind_or_auto_approve_sales,
+)
+from bubble.items.models import Item, ItemStatus, SalesType
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +46,13 @@ def check_bookings_active() -> None:
         "item_id", flat=True
     )
     # Set self-service items that are AVAILABLE/RESERVED -> RENTED
+    # Sales are never "rented": a buyer may relist an item they bought while
+    # its sale booking still waits for their approval (ledger plan D18).
     updated = Item.objects.filter(
         id__in=active_item_ids_qs,
         rental_self_service=True,
         status__in=[ItemStatus.AVAILABLE, ItemStatus.RESERVED],
-    )
+    ).exclude(sales_type__in=[SalesType.SELL, SalesType.DONATE, SalesType.WANT_BUY])
     for item in updated:
         item.status = ItemStatus.RENTED
         item.save(update_fields=["status"])
@@ -62,3 +68,36 @@ def check_bookings_active() -> None:
         item.status = ItemStatus.AVAILABLE
         item.save(update_fields=["status"])
         logger.debug("Item %d marked as AVAILABLE", item.id)
+
+
+@periodic_task(crontab(hour="4", minute="0"))
+def reconcile_booking_charges_daily() -> None:
+    """Daily: every charged booking has its ledger charge, and the reverse."""
+    report = reconcile_booking_charges()
+    if not report.ok:
+        logger.error(
+            "Booking charges out of sync: charged bookings without a ledger "
+            "charge %s, ledger charges without a charged booking %s",
+            report.missing_charges,
+            report.orphan_charges,
+        )
+    if report.waiting_sales:
+        logger.warning(
+            "%d accepted sales wait for the buyer for more than 14 days: %s",
+            len(report.waiting_sales),
+            report.waiting_sales,
+        )
+    if report.unbilled:
+        logger.info("%d bookings are unbilled", report.unbilled)
+
+
+@periodic_task(crontab(minute="15"))
+def remind_or_auto_approve_sales_hourly() -> None:
+    """Hourly: remind silent buyers once a day; approve after the deadline (D19)."""
+    reminded, approved = remind_or_auto_approve_sales()
+    if reminded or approved:
+        logger.info(
+            "Accepted sales: %d buyers reminded, %d sales approved automatically",
+            reminded,
+            approved,
+        )
