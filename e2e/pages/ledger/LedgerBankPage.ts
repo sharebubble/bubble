@@ -52,9 +52,14 @@ export class LedgerBankPage extends BasePage {
     await line.getByRole('button', { name: 'Assign' }).click();
     const dialog = this.page.getByRole('dialog');
     const select = dialog.getByRole('combobox', { name: 'Member' });
-    // The matcher may already have proposed the member; picking it again keeps it.
-    await select.click();
-    await this.page.getByRole('option', { name: member, exact: true }).click();
+    // The matcher may already have proposed the member; picking it again keeps
+    // it. The list of members loads just after the dialog opens and the select
+    // is rebuilt then, so open it again if it closed in between.
+    const option = this.page.getByRole('option', { name: member, exact: true });
+    await expect(async () => {
+      if (!(await option.isVisible())) await select.click();
+      await option.click({ timeout: 2000 });
+    }).toPass();
     await expect(select).toHaveValue(member);
     await dialog.getByRole('button', { name: 'Book', exact: true }).click();
     await dialog.waitFor({ state: 'hidden' });
