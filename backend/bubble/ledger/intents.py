@@ -18,6 +18,7 @@ from django.db.models import TextChoices
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from bubble.ledger.chain import lock_chain, seal_receipt
 from bubble.ledger.exceptions import LedgerError
 from bubble.ledger.models import (
     RECEIPT_MAX_BYTES,
@@ -312,17 +313,23 @@ def store_receipt(
     *,
     cost_share=None,
 ) -> Receipt:
-    """Keep a receipt for a transaction, or for a shared expense before it posts."""
-    return Receipt.objects.create(
-        transaction=tx,
-        cost_share=cost_share,
-        uploaded_by=uploader,
-        file_name=data.file_name,
-        content_type=data.content_type,
-        size=len(data.content),
-        sha256=hashlib.sha256(data.content).hexdigest(),
-        content=data.content,
-    )
+    """Keep a receipt for a transaction, or for a shared expense before it
+    posts, and seal it into the book's receipt chain."""
+    book = (tx or cost_share).book
+    with db_transaction.atomic():
+        lock_chain(book)
+        receipt = Receipt.objects.create(
+            transaction=tx,
+            cost_share=cost_share,
+            uploaded_by=uploader,
+            file_name=data.file_name,
+            content_type=data.content_type,
+            size=len(data.content),
+            sha256=hashlib.sha256(data.content).hexdigest(),
+            content=data.content,
+        )
+        seal_receipt(receipt)
+    return receipt
 
 
 def can_add_receipt(tx: Transaction, user: User) -> bool:

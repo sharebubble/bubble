@@ -1,7 +1,7 @@
 import { BackButton } from '@/components/layout/BackButton';
 import { HashValue } from '@/components/ledger/HashValue';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useDownloadChainCsv, useLedgerChain } from '@/hooks/useLedger';
+import { useDownloadChainCsv, useDownloadReceiptChainCsv, useLedgerChain } from '@/hooks/useLedger';
 import { formatDate } from '@/lib/date';
 import { shortHash } from '@/lib/ledger';
 import { ledgerTransactionPath } from '@/lib/routes';
@@ -31,6 +31,7 @@ const LedgerChain = () => {
   const { t, language } = useLanguage();
   const { data, isLoading, isError } = useLedgerChain();
   const download = useDownloadChainCsv();
+  const downloadReceipts = useDownloadReceiptChainCsv();
   const latest = data?.digests[0];
 
   return (
@@ -69,6 +70,18 @@ const LedgerChain = () => {
                 {t('ledger.chain.okAt', { date: formatDate(latest.created_at, language) })}
               </Alert>
             ) : null}
+            {(!data.digest_channel || (latest && !latest.published)) && (
+              <Alert
+                color="orange"
+                icon={<ShieldAlert size={16} aria-hidden="true" />}
+                title={t('ledger.chain.notPublishedTitle')}
+                data-testid="chain-not-published"
+              >
+                {data.digest_channel
+                  ? t('ledger.chain.notPublishedBody')
+                  : t('ledger.chain.noChannel')}
+              </Alert>
+            )}
 
             <Card withBorder>
               <Stack gap="xs">
@@ -90,11 +103,19 @@ const LedgerChain = () => {
                     {t('ledger.chain.empty')}
                   </Text>
                 )}
-                <Text size="xs" c="dimmed">
-                  {data.digest_channel
-                    ? t('ledger.chain.publishedTo')
-                    : t('ledger.chain.noChannel')}
-                </Text>
+                {data.receipt_head && (
+                  <>
+                    <Text size="sm">
+                      {t('ledger.chain.receiptHead', { count: data.receipt_head.position })}
+                    </Text>
+                    <HashValue hash={data.receipt_head.hash} testId="receipt-chain-head-hash" />
+                  </>
+                )}
+                {data.digest_channel && (
+                  <Text size="xs" c="dimmed">
+                    {t('ledger.chain.publishedTo')}
+                  </Text>
+                )}
                 <Group>
                   <Button
                     size="xs"
@@ -107,6 +128,19 @@ const LedgerChain = () => {
                   >
                     {t('ledger.chain.download')}
                   </Button>
+                  {data.receipt_head && (
+                    <Button
+                      size="xs"
+                      variant="default"
+                      leftSection={<Download size={14} aria-hidden="true" />}
+                      loading={downloadReceipts.isPending}
+                      onClick={() => downloadReceipts.mutate()}
+                      data-testid="receipt-chain-download"
+                      className="print-hide"
+                    >
+                      {t('ledger.chain.downloadReceipts')}
+                    </Button>
+                  )}
                 </Group>
               </Stack>
             </Card>
@@ -119,6 +153,7 @@ const LedgerChain = () => {
                 <List.Item>{t('ledger.chain.how1')}</List.Item>
                 <List.Item>{t('ledger.chain.how2')}</List.Item>
                 <List.Item>{t('ledger.chain.how3')}</List.Item>
+                <List.Item>{t('ledger.chain.how4')}</List.Item>
               </List>
               <Code block mt="sm">
                 {`import csv, hashlib

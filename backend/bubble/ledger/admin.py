@@ -22,6 +22,7 @@ from bubble.ledger.models import (
     Project,
     Receipt,
     ReceiptAccess,
+    ReceiptSeal,
     StatementImport,
     StatementLine,
     Transaction,
@@ -195,9 +196,22 @@ class TransactionSealAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
     search_fields = ["hash", "prev_hash"]
 
 
+@admin.register(ReceiptSeal)
+class ReceiptSealAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
+    list_display = ["position", "receipt", "hash", "sealed_at"]
+    search_fields = ["hash", "prev_hash"]
+
+
 @admin.register(LedgerDigest)
 class LedgerDigestAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
-    list_display = ["created_at", "position", "head_hash", "chain_ok", "published"]
+    list_display = [
+        "created_at",
+        "position",
+        "head_hash",
+        "receipt_position",
+        "chain_ok",
+        "published",
+    ]
     list_filter = ["chain_ok", "published"]
 
 

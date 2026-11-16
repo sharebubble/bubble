@@ -462,9 +462,26 @@ const Ledger = () => {
           <Alert
             color="red"
             icon={<AlertTriangle size={16} aria-hidden="true" />}
-            title={t('ledger.healthTitle')}
+            title={
+              health.chain_ok !== false &&
+              !health.digest_ok &&
+              Number(health.trial_balance) === 0 &&
+              !health.mismatched_accounts
+                ? t('ledger.chain.notPublishedTitle')
+                : t('ledger.healthTitle')
+            }
           >
-            {health.chain_ok === false ? t('ledger.chain.brokenBody') : t('ledger.healthBody')}{' '}
+            {health.chain_ok === false
+              ? t('ledger.chain.brokenBody')
+              : !health.digest_ok &&
+                  Number(health.trial_balance) === 0 &&
+                  !health.mismatched_accounts
+                ? t(
+                    health.digest_channel
+                      ? 'ledger.chain.notPublishedBody'
+                      : 'ledger.chain.noChannel',
+                  )
+                : t('ledger.healthBody')}{' '}
             <Anchor component={Link} to={LEDGER_CHAIN_PATH} size="sm">
               {t('ledger.chain.title')}
             </Anchor>

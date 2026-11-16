@@ -538,6 +538,11 @@ class Receipt(ImmutableModel):
     def __str__(self):
         return f"{self.file_name} ({self.sha256[:12]})"
 
+    @property
+    def book_id(self):
+        owner = self.transaction if self.transaction_id else self.cost_share
+        return owner.book_id
+
 
 class ReceiptAccess(ImmutableModel):
     """One row per receipt download: who looked at which receipt, and when."""
@@ -790,6 +795,42 @@ class TransactionSeal(ImmutableModel):
         return f"#{self.position} {self.hash[:12]}"
 
 
+class ReceiptSeal(ImmutableModel):
+    """One link of the receipt chain: like ``TransactionSeal``, for receipts.
+
+    Receipts can be attached after their transaction was sealed, so they form
+    a chain of their own per book. Each link covers the receipt's metadata and
+    the SHA-256 of its file, and verification re-hashes the stored file, so a
+    swapped file is detected even if its stored hash was changed with it.
+    """
+
+    receipt = models.OneToOneField(
+        Receipt, on_delete=models.PROTECT, primary_key=True, related_name="seal"
+    )
+    book = models.ForeignKey(
+        Book, on_delete=models.PROTECT, related_name="receipt_seals"
+    )
+    position = models.BigIntegerField(help_text=_("1 for the first receipt."))
+    prev_hash = models.CharField(max_length=64)
+    hash = models.CharField(max_length=64)
+    sealed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["position"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["book", "position"],
+                name="ledger_receipt_seal_position_per_book",
+            ),
+            models.UniqueConstraint(
+                fields=["book", "prev_hash"], name="ledger_receipt_seal_no_fork"
+            ),
+        ]
+
+    def __str__(self):
+        return f"#{self.position} {self.hash[:12]}"
+
+
 class LedgerDigest(ImmutableModel):
     """The chain head as it was at one moment, published outside the app."""
 
@@ -799,8 +840,13 @@ class LedgerDigest(ImmutableModel):
     position = models.BigIntegerField()
     head_hash = models.CharField(max_length=64)
     transaction_count = models.BigIntegerField()
+    receipt_position = models.BigIntegerField(default=0)
+    receipt_head_hash = models.CharField(max_length=64, blank=True)
     chain_ok = models.BooleanField(
-        help_text=_("The whole chain was recomputed and matched when this was made.")
+        help_text=_(
+            "Both chains (transactions and receipts) were recomputed and matched "
+            "when this was made."
+        )
     )
     published = models.BooleanField(
         default=False, help_text=_("Sent to the configured digest channel.")

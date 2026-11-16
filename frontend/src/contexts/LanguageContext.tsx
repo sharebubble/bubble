@@ -783,7 +783,7 @@ const translations = {
     'ledger.kind.expense': 'Expense',
     'ledger.chain.title': 'Verify the books',
     'ledger.chain.help':
-      'Every entry is sealed with a SHA-256 hash that includes the hash of the entry before it. Changing or deleting anything afterwards, even directly in the database, breaks the chain from that point on. The head of the chain is checked and published every night.',
+      'Every entry and every receipt is sealed with a SHA-256 hash that includes the hash of the one before it. Changing or deleting anything afterwards, even directly in the database, breaks the chain from that point on. The heads of both chains are checked and published every night.',
     'ledger.chain.okAt': 'The chain was intact at the last check ({{date}}).',
     'ledger.chain.brokenTitle': 'The chain is broken',
     'ledger.chain.brokenBody':
@@ -794,7 +794,7 @@ const translations = {
     'ledger.chain.publishedTo':
       'Each night the head is also posted to the community channel, so an old value can be compared with today’s.',
     'ledger.chain.noChannel':
-      'No digest channel is set up yet; the nightly checks are kept here only.',
+      'No digest channel is set up. The nightly check must be published to a channel outside this app (admin setting LEDGER_DIGEST_APPRISE_URL); until then nobody could notice a change made directly in the database.',
     'ledger.chain.download': 'Download the chain (CSV)',
     'ledger.chain.howTitle': 'Check it yourself',
     'ledger.chain.how1':
@@ -910,6 +910,13 @@ const translations = {
     'ledger.pay.iban': 'IBAN',
     'ledger.pay.reference': 'Your payment reference',
     'ledger.pay.copy': 'Copy',
+    'ledger.chain.notPublishedTitle': 'The nightly check is not being published',
+    'ledger.chain.notPublishedBody':
+      'The last nightly check could not be sent to the digest channel, or is overdue. The treasurer needs to check the channel setting and the background jobs.',
+    'ledger.chain.receiptHead': '{{count}} receipts sealed; newest link:',
+    'ledger.chain.downloadReceipts': 'Download the receipt chain (CSV)',
+    'ledger.chain.how4':
+      'Receipts have their own chain, checked the same way. Each row contains the SHA-256 of the file: download a receipt, hash it and compare.',
     'ledger.healthTitle': 'The ledger failed its consistency check',
     'ledger.healthBody':
       'The treasurer has been alerted. Balances may be out of date until this is fixed.',
@@ -2069,7 +2076,7 @@ const translations = {
     'ledger.kind.expense': 'Ausgabe',
     'ledger.chain.title': 'Kasse prüfen',
     'ledger.chain.help':
-      'Jede Buchung ist mit einem SHA-256-Hash versiegelt, der den Hash der vorherigen Buchung enthält. Wird danach etwas geändert oder gelöscht, auch direkt in der Datenbank, bricht die Kette ab dieser Stelle. Das Ende der Kette wird jede Nacht geprüft und veröffentlicht.',
+      'Jede Buchung und jeder Beleg ist mit einem SHA-256-Hash versiegelt, der den Hash des vorherigen Eintrags enthält. Wird danach etwas geändert oder gelöscht, auch direkt in der Datenbank, bricht die Kette ab dieser Stelle. Die Enden beider Ketten werden jede Nacht geprüft und veröffentlicht.',
     'ledger.chain.okAt': 'Die Kette war bei der letzten Prüfung intakt ({{date}}).',
     'ledger.chain.brokenTitle': 'Die Kette ist gebrochen',
     'ledger.chain.brokenBody':
@@ -2080,7 +2087,7 @@ const translations = {
     'ledger.chain.publishedTo':
       'Jede Nacht wird das Kettenende auch im Community-Kanal veröffentlicht, sodass ein alter Wert mit dem heutigen verglichen werden kann.',
     'ledger.chain.noChannel':
-      'Es ist noch kein Kanal für die Zusammenfassung eingerichtet; die nächtlichen Prüfungen stehen nur hier.',
+      'Es ist kein Kanal für die Zusammenfassung eingerichtet. Die nächtliche Prüfung muss in einem Kanal außerhalb dieser App veröffentlicht werden (Admin-Einstellung LEDGER_DIGEST_APPRISE_URL); bis dahin würde niemand eine Änderung direkt in der Datenbank bemerken.',
     'ledger.chain.download': 'Kette herunterladen (CSV)',
     'ledger.chain.howTitle': 'Selbst nachprüfen',
     'ledger.chain.how1':
@@ -2199,6 +2206,13 @@ const translations = {
     'ledger.pay.iban': 'IBAN',
     'ledger.pay.reference': 'Deine Zahlungsreferenz',
     'ledger.pay.copy': 'Kopieren',
+    'ledger.chain.notPublishedTitle': 'Die nächtliche Prüfung wird nicht veröffentlicht',
+    'ledger.chain.notPublishedBody':
+      'Die letzte nächtliche Prüfung konnte nicht an den Kanal gesendet werden oder ist überfällig. Der Kassenwart muss die Kanal-Einstellung und die Hintergrundjobs prüfen.',
+    'ledger.chain.receiptHead': '{{count}} Belege versiegelt; neuestes Glied:',
+    'ledger.chain.downloadReceipts': 'Belegkette herunterladen (CSV)',
+    'ledger.chain.how4':
+      'Belege haben eine eigene Kette, die genauso geprüft wird. Jede Zeile enthält den SHA-256 der Datei: Beleg herunterladen, hashen und vergleichen.',
     'ledger.healthTitle': 'Die Kasse hat die Konsistenzprüfung nicht bestanden',
     'ledger.healthBody':
       'Die Kassenführung wurde informiert. Bis zur Behebung können Salden veraltet sein.',

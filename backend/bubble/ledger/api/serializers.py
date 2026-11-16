@@ -496,6 +496,13 @@ class LedgerHealthSerializer(serializers.Serializer):
         allow_null=True, help_text="Result of the last digest; null before the first."
     )
     chain_checked_at = serializers.DateTimeField(allow_null=True)
+    digest_ok = serializers.BooleanField(
+        help_text=(
+            "A digest channel is set, the last digest was published to it and "
+            "it is not overdue."
+        )
+    )
+    digest_channel = serializers.BooleanField()
 
 
 class LedgerDigestSerializer(serializers.Serializer):
@@ -503,6 +510,8 @@ class LedgerDigestSerializer(serializers.Serializer):
     created_at = serializers.DateTimeField()
     position = serializers.IntegerField()
     head_hash = serializers.CharField()
+    receipt_position = serializers.IntegerField()
+    receipt_head_hash = serializers.CharField(allow_blank=True)
     chain_ok = serializers.BooleanField()
     published = serializers.BooleanField()
 
@@ -514,12 +523,18 @@ class LedgerChainHeadSerializer(serializers.Serializer):
     seq = serializers.IntegerField(source="transaction.seq")
 
 
+class LedgerReceiptChainHeadSerializer(serializers.Serializer):
+    position = serializers.IntegerField()
+    hash = serializers.CharField()
+
+
 class LedgerChainSerializer(serializers.Serializer):
-    """The hash chain's current head and its recent published digests."""
+    """The hash chains' current heads and the recent published digests."""
 
     head = LedgerChainHeadSerializer(allow_null=True)
+    receipt_head = LedgerReceiptChainHeadSerializer(allow_null=True)
     digest_channel = serializers.BooleanField(
-        help_text="A channel for publishing digests is configured."
+        help_text="The required channel for publishing digests is configured."
     )
     digests = LedgerDigestSerializer(many=True)
 

@@ -170,6 +170,22 @@ export class ApiClient {
     return (await this.expectOk('post', path, data, okStatuses)) as T;
   }
 
+  /** POST a multipart form (file uploads); throws unless the answer is 2xx. */
+  async postMultipart<T = Record<string, unknown>>(
+    path: string,
+    multipart: Record<string, string | { name: string; mimeType: string; buffer: Buffer }>,
+  ): Promise<T> {
+    const csrf = await this.csrfToken();
+    const res = await this.request.post(`${this.apiURL}${path}`, {
+      headers: { 'X-CSRFToken': csrf },
+      multipart,
+    });
+    if (!res.ok()) {
+      throw new Error(`POST ${path} → ${res.status()}: ${await res.text()}`);
+    }
+    return (await res.json()) as T;
+  }
+
   /** POST JSON without throwing; for asserting on refusals. */
   async tryPostJson(path: string, data: unknown = {}): Promise<{ status: number; body: unknown }> {
     return this.send('post', path, data);

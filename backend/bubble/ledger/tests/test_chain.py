@@ -1,18 +1,30 @@
 """The hash chain and daily digest (plan section 11, phase 6)."""
 
 import csv
+import datetime
 import hashlib
 import io
 
 import pytest
 from constance.test import override_config
+from django.apps import apps as django_apps
 from django.db import connection, transaction
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
 from bubble.ledger.chain import GENESIS, publish_digest, verify_chain
-from bubble.ledger.models import LedgerDigest, TransactionKind, TransactionSeal
+from bubble.ledger.intents import ReceiptData, store_receipt
+from bubble.ledger.models import (
+    LedgerDigest,
+    ReceiptSeal,
+    TransactionKind,
+    TransactionSeal,
+)
 from bubble.ledger.services import reverse_transaction
+
+CHANNEL = "rocket://x/#ledger"
+PDF = "application/pdf"
 
 
 @pytest.fixture
@@ -169,3 +181,143 @@ class TestApi:
         ):
             c.execute("UPDATE ledger_ledgerdigest SET head_hash = 'x'")
         assert LedgerDigest.objects.get().head_hash != "x"
+
+
+@pytest.fixture
+def receipts(three, members):
+    """Two receipts: one on the first transaction, one added later to the third."""
+    alice = members["alice"]
+    return [
+        store_receipt(
+            three[0], alice, ReceiptData("a.pdf", "application/pdf", b"%PDF-a")
+        ),
+        store_receipt(
+            three[2], alice, ReceiptData("b.pdf", "application/pdf", b"%PDF-b")
+        ),
+    ]
+
+
+class TestReceiptChain:
+    def test_every_receipt_is_linked_to_the_previous_one(self, book, receipts):
+        seals = list(ReceiptSeal.objects.filter(book=book).order_by("position"))
+        assert [s.receipt_id for s in seals] == [r.pk for r in receipts]
+        assert seals[0].prev_hash == GENESIS
+        assert seals[1].prev_hash == seals[0].hash
+        check = verify_chain(book)
+        assert check.ok
+        assert (check.receipt_length, check.receipt_head_hash) == (2, seals[1].hash)
+
+    def test_a_swapped_file_is_caught_even_with_its_hash_changed(self, book, receipts):
+        # A database admin replaces the file and fixes up the stored hash.
+        fake = b"%PDF-forged"
+        tamper(
+            "UPDATE ledger_receipt SET content = %s, sha256 = %s, size = %s "
+            "WHERE id = %s",
+            [fake, hashlib.sha256(fake).hexdigest(), len(fake), receipts[0].pk],
+        )
+        check = verify_chain(book)
+        assert not check.ok
+        assert check.receipt_broken_at == 1
+        # The transaction chain itself is untouched.
+        assert check.broken_at is None
+
+    def test_a_swapped_file_alone_is_caught_too(self, book, receipts):
+        tamper(
+            "UPDATE ledger_receipt SET content = %s WHERE id = %s",
+            [b"%PDF-x", receipts[1].pk],
+        )
+        assert verify_chain(book).receipt_broken_at == 2  # noqa: PLR2004
+
+    def test_a_receipt_slipped_in_without_a_seal_is_caught(self, book, receipts):
+        tamper("DELETE FROM ledger_receiptseal WHERE receipt_id = %s", [receipts[1].pk])
+        check = verify_chain(book)
+        assert not check.ok
+        assert check.unsealed_receipts == 1
+
+    def test_receipt_seals_are_append_only(self, receipts):
+        with (
+            pytest.raises(Exception, match="append-only"),
+            transaction.atomic(),
+            connection.cursor() as c,
+        ):
+            c.execute("UPDATE ledger_receiptseal SET hash = 'x'")
+
+    def test_the_digest_carries_the_receipt_head(self, book, receipts, monkeypatch):
+        sent = []
+        monkeypatch.setattr(
+            "bubble.notifications.providers.apprise_provider.send_apprise_notification",
+            lambda url, title, body: sent.append(body) or True,
+        )
+        with override_config(LEDGER_DIGEST_APPRISE_URL=CHANNEL):
+            digest = publish_digest(book)
+        head = receipts[1].seal.hash
+        assert (digest.receipt_position, digest.receipt_head_hash) == (2, head)
+        assert head in sent[0]
+
+    def test_existing_receipts_are_sealed_by_the_migration(self, book, receipts):
+        migration = __import__(
+            "bubble.ledger.migrations.0008_receipt_chain", fromlist=["x"]
+        )
+        before = [s.hash for s in ReceiptSeal.objects.order_by("position")]
+        tamper("DELETE FROM ledger_receiptseal", [])
+        migration.seal_existing_receipts(django_apps, None)
+        assert [s.hash for s in ReceiptSeal.objects.order_by("position")] == before
+
+    def test_export_and_head_over_the_api(self, receipts, members):
+        client = APIClient()
+        client.force_authenticate(members["dan"].owner)
+        head = client.get("/api/ledger/chain/").data["receipt_head"]
+        assert head == {"position": 2, "hash": receipts[1].seal.hash}
+
+        response = client.get("/api/ledger/chain/receipts/export/")
+        rows = list(csv.DictReader(io.StringIO(response.content.decode("utf-8-sig"))))
+        prev = GENESIS
+        for row in rows:
+            assert row["prev_hash"] == prev
+            prev = hashlib.sha256((prev + row["canonical"]).encode()).hexdigest()
+            assert prev == row["hash"]
+        assert prev == head["hash"]
+        assert hashlib.sha256(b"%PDF-a").hexdigest() in rows[0]["canonical"]
+
+
+class TestDigestIsRequired:
+    def health(self, members):
+        client = APIClient()
+        client.force_authenticate(members["carla"].owner)
+        return client.get("/api/ledger/health/").data
+
+    def test_no_channel_fails_the_health_check(self, three, members):
+        health = self.health(members)
+        assert health["digest_channel"] is False
+        assert health["digest_ok"] is False
+        assert health["ok"] is False
+
+    @override_config(LEDGER_DIGEST_APPRISE_URL=CHANNEL)
+    def test_a_digest_that_could_not_be_sent_fails_it(
+        self, book, three, members, monkeypatch
+    ):
+        monkeypatch.setattr(
+            "bubble.notifications.providers.apprise_provider.send_apprise_notification",
+            lambda url, title, body: False,
+        )
+        assert self.health(members)["ok"] is True
+        assert publish_digest(book).published is False
+        health = self.health(members)
+        assert (health["chain_ok"], health["digest_ok"], health["ok"]) == (
+            True,
+            False,
+            False,
+        )
+
+    @override_config(LEDGER_DIGEST_APPRISE_URL=CHANNEL)
+    def test_an_overdue_digest_fails_it(self, book, three, members, monkeypatch):
+        monkeypatch.setattr(
+            "bubble.notifications.providers.apprise_provider.send_apprise_notification",
+            lambda url, title, body: True,
+        )
+        publish_digest(book)
+        assert self.health(members)["ok"] is True
+        three_days = timezone.now() + datetime.timedelta(days=3)
+        monkeypatch.setattr(timezone, "now", lambda: three_days)
+        health = self.health(members)
+        assert (health["digest_ok"], health["ok"]) == (False, False)

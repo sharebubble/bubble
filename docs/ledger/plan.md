@@ -723,6 +723,16 @@ digests and a ten-line script; `/api/ledger/chain/export/` returns every link wi
 its canonical text, so anyone can check the chain without trusting the server's
 own verification. Every transaction page shows its seal.
 
+**Receipts and the required channel (after phase 6).** Receipts can be attached
+after their transaction was sealed, so they have a chain of their own
+(`ReceiptSeal`, same shape, same lock): each link covers the receipt's metadata
+and the SHA-256 of its file, and the nightly check re-hashes every stored file, so
+a swapped file is caught even when its stored hash was changed with it. The digest
+carries both heads, and `/api/ledger/chain/receipts/export/` returns the receipt
+chain. The digest channel is no longer optional: without a channel, after a digest
+that could not be sent, or with no digest for 48 hours while entries exist, the
+health check fails and every member sees the banner.
+
 ---
 
 ## 12. Bank import — the port, with the adapter deferred (D11)

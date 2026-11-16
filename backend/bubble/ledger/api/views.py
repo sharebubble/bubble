@@ -6,6 +6,7 @@ through ``bubble.ledger.intents``, which enforces who may charge whom.
 """
 
 import csv
+import datetime
 
 from constance import config
 from django.db.models import (
@@ -91,7 +92,7 @@ from bubble.ledger.api.serializers import (
 )
 from bubble.ledger.bank import pipeline
 from bubble.ledger.bank.matching import link_candidates
-from bubble.ledger.chain import canonical
+from bubble.ledger.chain import canonical, canonical_receipt, receipt_head
 from bubble.ledger.chart import create_category, unique_code
 from bubble.ledger.exports import close_period, datev_csv, journal_csv
 from bubble.ledger.intents import (
@@ -121,6 +122,7 @@ from bubble.ledger.models import (
     Project,
     Receipt,
     ReceiptAccess,
+    ReceiptSeal,
     StatementImport,
     StatementLine,
     Transaction,
@@ -130,6 +132,9 @@ from bubble.ledger.models import (
 )
 from bubble.ledger.reports import account_statement, annual_report, ledger_stats
 from bubble.ledger.services import get_member_account, verify_ledger
+
+# A digest older than this, while there are sealed entries, fails the health check.
+DIGEST_MAX_AGE = datetime.timedelta(hours=48)
 
 
 def _intent_error(exc: IntentError) -> APIException:
@@ -1160,13 +1165,27 @@ class LedgerViewSet(viewsets.ViewSet):
     def health(self, request):
         """Is the ledger consistent right now? Shown as a banner when it is not."""
         result = verify_ledger()
-        last = LedgerDigest.objects.filter(book=Book.objects.default()).first()
+        book = Book.objects.default()
+        last = LedgerDigest.objects.filter(book=book).first()
+        channel = bool(config.LEDGER_DIGEST_APPRISE_URL)
+        # The digest must leave the app: no channel, a digest that could not
+        # be sent, or none for two days while there is something to seal.
+        oldest = TransactionSeal.objects.filter(book=book).order_by("position").first()
+        overdue = timezone.now() - DIGEST_MAX_AGE
+        stale = (
+            oldest is not None
+            and oldest.sealed_at < overdue
+            and (last is None or last.created_at < overdue)
+        )
+        digest_ok = channel and not stale and (last is None or last.published)
         data = {
-            "ok": result.ok and (last is None or last.chain_ok),
+            "ok": result.ok and (last is None or last.chain_ok) and digest_ok,
             "trial_balance": result.trial_balance,
             "mismatched_accounts": len(result.mismatched_accounts),
             "chain_ok": last.chain_ok if last else None,
             "chain_checked_at": last.created_at if last else None,
+            "digest_ok": digest_ok,
+            "digest_channel": channel,
         }
         return Response(LedgerHealthSerializer(data).data)
 
@@ -1227,6 +1246,7 @@ class LedgerViewSet(viewsets.ViewSet):
         )
         data = {
             "head": current,
+            "receipt_head": receipt_head(book),
             "digest_channel": bool(config.LEDGER_DIGEST_APPRISE_URL),
             "digests": LedgerDigest.objects.filter(book=book)[:30],
         }
@@ -1261,6 +1281,37 @@ class LedgerViewSet(viewsets.ViewSet):
         return _csv_response(
             "ledger-chain.csv",
             ["position", "seq", "prev_hash", "hash", "canonical"],
+            rows,
+        )
+
+    @extend_schema(responses={(200, "text/csv"): OpenApiResponse(OpenApiTypes.BINARY)})
+    @action(detail=False, methods=["get"], url_path="chain/receipts/export")
+    def receipt_chain_export(self, request):
+        """The receipt chain, verified like the transaction chain.
+
+        ``canonical`` contains each file's SHA-256: download a receipt, hash
+        it, and compare.
+        """
+        book = Book.objects.default()
+        seals = (
+            ReceiptSeal.objects.filter(book=book)
+            .select_related("receipt")
+            .defer("receipt__content")
+            .order_by("position")
+        )
+        rows = (
+            [
+                link.position,
+                link.receipt_id,
+                link.prev_hash,
+                link.hash,
+                canonical_receipt(link.receipt).decode(),
+            ]
+            for link in seals.iterator(chunk_size=500)
+        )
+        return _csv_response(
+            "ledger-receipt-chain.csv",
+            ["position", "receipt", "prev_hash", "hash", "canonical"],
             rows,
         )
 

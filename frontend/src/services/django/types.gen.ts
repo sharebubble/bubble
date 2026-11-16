@@ -1511,12 +1511,13 @@ export type LedgerCategoryWrite = {
 export type LedgerCategoryWriteKindEnum = 'income' | 'expense';
 
 /**
- * The hash chain's current head and its recent published digests.
+ * The hash chains' current heads and the recent published digests.
  */
 export type LedgerChain = {
     head: LedgerChainHead | null;
+    receipt_head: LedgerReceiptChainHead | null;
     /**
-     * A channel for publishing digests is configured.
+     * The required channel for publishing digests is configured.
      */
     digest_channel: boolean;
     digests: Array<LedgerDigest>;
@@ -1643,6 +1644,8 @@ export type LedgerDigest = {
     created_at: string;
     position: number;
     head_hash: string;
+    receipt_position: number;
+    receipt_head_hash: string;
     chain_ok: boolean;
     published: boolean;
 };
@@ -1698,6 +1701,11 @@ export type LedgerHealth = {
      */
     chain_ok: boolean | null;
     chain_checked_at: string | null;
+    /**
+     * A digest channel is set, the last digest was published to it and it is not overdue.
+     */
+    digest_ok: boolean;
+    digest_channel: boolean;
 };
 
 /**
@@ -1837,6 +1845,11 @@ export type LedgerReceipt = {
     readonly sha256: string;
     readonly uploaded_at: string;
     uploaded_by: LedgerAccountRef | null;
+};
+
+export type LedgerReceiptChainHead = {
+    position: number;
+    hash: string;
 };
 
 export type LedgerReceiptUpload = {
@@ -6652,6 +6665,19 @@ export type LedgerChainExportRetrieveResponses = {
 };
 
 export type LedgerChainExportRetrieveResponse = LedgerChainExportRetrieveResponses[keyof LedgerChainExportRetrieveResponses];
+
+export type LedgerChainReceiptsExportRetrieveData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/ledger/chain/receipts/export/';
+};
+
+export type LedgerChainReceiptsExportRetrieveResponses = {
+    200: Blob | File;
+};
+
+export type LedgerChainReceiptsExportRetrieveResponse = LedgerChainReceiptsExportRetrieveResponses[keyof LedgerChainReceiptsExportRetrieveResponses];
 
 export type LedgerDisputesRetrieveData = {
     body?: never;

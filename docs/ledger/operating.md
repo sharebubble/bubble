@@ -20,7 +20,7 @@ is idempotent, so a missed or repeated run is harmless.
 | Job | When | What it does |
 |---|---|---|
 | `verify_ledger_nightly` | 03:30 | Trial balance is zero and every cached balance matches its entries (I7, I8). A failure is logged as an error (reaches Glitchtip) and the ledger page shows a red banner. |
-| `publish_ledger_digest_daily` | 03:45 | Recomputes the hash chain, stores the head as a digest (shown on `/ledger/chain`) and posts it to `LEDGER_DIGEST_APPRISE_URL` if set. A broken chain turns the banner red and the post's title says "CHAIN BROKEN". |
+| `publish_ledger_digest_daily` | 03:45 | Recomputes both hash chains (transactions and receipts, re-hashing every stored receipt file), stores the heads as a digest (shown on `/ledger/chain`) and posts them to `LEDGER_DIGEST_APPRISE_URL`. A broken chain turns the banner red and the post's title says "CHAIN BROKEN". If the digest cannot be published, the banner turns red too. |
 | `reconcile_booking_charges_daily` | 04:00 | Finds charged bookings without a ledger charge, and sales still waiting for the buyer after 14 days. |
 | `remind_low_balances_daily` | 09:00 | Reminds members below the book's soft limit, at most once a week each (D10). |
 | `remind_or_auto_approve_sales_hourly` | minute 15 | Reminds silent buyers once a day and approves accepted sales after `SALE_AUTO_APPROVE_DAYS` (D19). |
@@ -37,10 +37,12 @@ Changed at runtime in the Django admin under *Constance → Config*:
   it is confirmed and charged automatically.
 - `COST_SHARE_AUTO_ACCEPT_DAYS` (default 3): days participants have to answer a
   split before silence counts as acceptance.
-- `LEDGER_DIGEST_APPRISE_URL`: where the nightly digest goes, as an Apprise URL
-  (e.g. a Rocket.Chat or Matrix room every member can read). Empty: digests are
-  only kept in the app. Posting the head somewhere the admins cannot rewrite is what
-  makes a quiet database edit detectable.
+- `LEDGER_DIGEST_APPRISE_URL` (**required**): where the nightly digest goes, as an
+  Apprise URL (e.g. a Rocket.Chat or Matrix room every member can read). Posting
+  the heads somewhere the admins cannot rewrite is what makes a quiet database edit
+  detectable, so the ledger fails its health check, with a banner for every
+  member, while this is empty, while the last digest could not be sent, or when no
+  digest was made for 48 hours although entries exist. Set it before go-live.
 - `COMMUNITY_IBAN`, `COMMUNITY_ACCOUNT_HOLDER`: shown to members on `/ledger/me`
   next to their payment reference.
 - `BANK_AUTO_CONFIRM_REFERENCES` (default off): book incoming bank lines that carry
@@ -58,7 +60,7 @@ reminded. Nothing is ever blocked.
 
 The ledger rows (`ledger_transaction`, `ledger_entry`, `ledger_receipt`,
 `ledger_receiptaccess`, `ledger_transactioncomment`, `ledger_transactionseal`,
-`ledger_ledgerdigest`) are protected three times:
+`ledger_receiptseal`, `ledger_ledgerdigest`) are protected three times:
 the models refuse updates and deletes, `BEFORE UPDATE OR DELETE` triggers refuse
 raw SQL (`ledger_forbid_change`), and — in production — the application's
 database role should not have the privileges to try. Run migrations with a
@@ -69,12 +71,12 @@ separate owner role and grant the app role only what it needs:
 REVOKE UPDATE, DELETE, TRUNCATE ON
     ledger_transaction, ledger_entry, ledger_receipt,
     ledger_receiptaccess, ledger_transactioncomment,
-    ledger_transactionseal, ledger_ledgerdigest
+    ledger_transactionseal, ledger_receiptseal, ledger_ledgerdigest
 FROM bubble_app;
 GRANT SELECT, INSERT ON
     ledger_transaction, ledger_entry, ledger_receipt,
     ledger_receiptaccess, ledger_transactioncomment,
-    ledger_transactionseal, ledger_ledgerdigest
+    ledger_transactionseal, ledger_receiptseal, ledger_ledgerdigest
 TO bubble_app;
 ```
 
@@ -152,7 +154,9 @@ a real DATEV import.
 
 The digest and `/ledger/chain` say that the chain is broken; to find where, run
 `verify_chain(Book.objects.default())` from `bubble.ledger.chain` in
-`manage.py shell`: `broken_at` is the first position whose seal no longer matches. Something changed that row, or one before it, outside the app (the
+`manage.py shell`: `broken_at` is the first transaction position whose seal no
+longer matches, `receipt_broken_at` the first receipt whose seal or stored file no
+longer matches, and `unsealed`/`unsealed_receipts` count rows added without a seal. Something changed that row, or one before it, outside the app (the
 append-only triggers stop the app itself). Compare the row with the last backup
 from before the digest that still said "intact", restore if needed, and treat it as
 a security incident: the database was written to by someone with superuser rights.

@@ -567,9 +567,10 @@ CONSTANCE_CONFIG = {
         "",
         (
             "Apprise URL of a shared channel (e.g. a RocketChat or Matrix room) "
-            "that receives the ledger's daily digest: the head hash of the "
-            "transaction chain. Anyone who keeps these messages can detect a "
-            "later edit of the books. Empty: digests are only kept in the app."
+            "that receives the ledger's daily digest: the head hashes of the "
+            "transaction and receipt chains. Anyone who keeps these messages "
+            "can detect a later edit of the books. REQUIRED: while it is empty, "
+            "or a digest cannot be sent, the ledger shows a warning to everyone."
         ),
     ),
     "COMMUNITY_IBAN": (

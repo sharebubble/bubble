@@ -23,6 +23,7 @@ import {
   ledgerCategoriesList,
   ledgerCategoriesPartialUpdate,
   ledgerChainExportRetrieve,
+  ledgerChainReceiptsExportRetrieve,
   ledgerChainRetrieve,
   ledgerDisputesUpholdCreate,
   ledgerDisputesWithdrawCreate,
@@ -519,6 +520,18 @@ export const useDownloadChainCsv = () => {
     mutationFn: async () => {
       const response = await ledgerChainExportRetrieve({ parseAs: 'blob' });
       saveBlob(response.data as Blob, 'ledger-chain.csv');
+    },
+    onError: () => notifications.show({ message: t('ledger.downloadFailed'), color: 'red' }),
+  });
+};
+
+/** The receipt chain: every receipt's metadata and file hash, linked like the entries. */
+export const useDownloadReceiptChainCsv = () => {
+  const { t } = useLanguage();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await ledgerChainReceiptsExportRetrieve({ parseAs: 'blob' });
+      saveBlob(response.data as Blob, 'ledger-receipt-chain.csv');
     },
     onError: () => notifications.show({ message: t('ledger.downloadFailed'), color: 'red' }),
   });

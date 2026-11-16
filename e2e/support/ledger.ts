@@ -117,6 +117,21 @@ export async function postIntent(
   });
 }
 
+/** Post "I paid for the community" with one receipt file (multipart). */
+export async function postIntentWithReceipt(
+  api: ApiClient,
+  body: { amount: string; description: string; category: string; receipt: Buffer },
+): Promise<LedgerTransaction> {
+  return api.postMultipart<LedgerTransaction>('/api/ledger/transactions/', {
+    intent: 'expense_for_community',
+    amount: body.amount,
+    description: body.description,
+    category: body.category,
+    occurred_on: today(),
+    receipts: { name: 'receipt.pdf', mimeType: 'application/pdf', buffer: body.receipt },
+  });
+}
+
 export async function categoryByCode(api: ApiClient, code: string): Promise<LedgerCategory> {
   const categories = await api.getJson<LedgerCategory[]>('/api/ledger/categories/');
   const category = categories.find(c => c.code === code);

@@ -5,6 +5,7 @@ import hashlib
 from decimal import Decimal
 
 import pytest
+from constance.test import override_config
 from django.contrib.auth.models import Group
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
@@ -419,6 +420,7 @@ class TestReading:
         assert detail["kind"] == "member_transfer"
         assert detail["category"]["code"] == "member-transfer"
 
+    @override_config(LEDGER_DIGEST_APPRISE_URL="rocket://x/#ledger")
     def test_health(self, members, client_for):
         post_intent(client_for(members["bob"]), intent="top_up", amount="5")
         health = client_for(members["bob"]).get("/api/ledger/health/").data
@@ -428,6 +430,8 @@ class TestReading:
             "mismatched_accounts": 0,
             "chain_ok": None,  # no digest yet
             "chain_checked_at": None,
+            "digest_ok": True,
+            "digest_channel": True,
         }
 
     def test_categories_and_projects(self, members, client_for):
