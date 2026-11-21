@@ -10,7 +10,9 @@ import {
   VisibilityEnum,
 } from '@/services/django';
 import { Checkbox, NumberInput, Select, Text, Textarea, TextInput } from '@mantine/core';
+import { HOURS_PER_UNIT, unitForHours, type DurationUnit } from '@/lib/rentalDuration';
 import { Check, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 /** Right-section indicator for the field auto-save state (spinner while saving, check on success). */
 const getFieldRightSection = (fieldName: string, fieldStates?: FieldStates) => {
@@ -192,6 +194,8 @@ interface PricingFieldsProps {
     rental_period: RentalPeriodEnum | '';
     rental_self_service: boolean;
     rental_open_end: boolean;
+    /** Shortest booking allowed, in hours; '' or null for any length. */
+    rental_min_hours?: number | '' | null;
     /** Charge bookings through the community ledger; omitted where unsupported. */
     payment_enabled?: boolean;
   };
@@ -243,6 +247,7 @@ export const PricingFields = ({
       updates.rental_period = '';
       updates.rental_self_service = false;
       updates.rental_open_end = false;
+      updates.rental_min_hours = '';
     }
     setFormData(updates);
     onFieldChange?.('sales_type', value);
@@ -370,9 +375,93 @@ export const PricingFields = ({
               </div>
             </div>
           </div>
+
+          {formData.rental_min_hours !== undefined && (
+            <MinRentalDurationField
+              hours={formData.rental_min_hours || null}
+              defaultUnit={(formData.rental_period || 'd') as DurationUnit}
+              onChange={hours => setFormData({ ...formData, rental_min_hours: hours ?? '' })}
+              onCommit={hours => onFieldChange?.('rental_min_hours', hours)}
+              disabled={disabled}
+              fieldStates={fieldStates}
+            />
+          )}
         </div>
       )}
     </>
+  );
+};
+
+interface MinRentalDurationFieldProps {
+  hours: number | null;
+  defaultUnit: DurationUnit;
+  onChange: (hours: number | null) => void;
+  /** Called once the owner is done editing (blur or unit change), for autosave. */
+  onCommit: (hours: number | null) => void;
+  disabled?: boolean;
+  fieldStates?: FieldStates;
+}
+
+/**
+ * "Minimum booking: [ 1 ] [ days ]" — stored as hours, so a guest room can
+ * require at least one night while a drill stays bookable by the hour.
+ */
+const MinRentalDurationField = ({
+  hours,
+  defaultUnit,
+  onChange,
+  onCommit,
+  disabled,
+  fieldStates,
+}: MinRentalDurationFieldProps) => {
+  const { t } = useLanguage();
+  const [chosenUnit, setChosenUnit] = useState<DurationUnit>(
+    hours ? unitForHours(hours) : defaultUnit in HOURS_PER_UNIT ? defaultUnit : 'd',
+  );
+  // A value loaded later (or 36 h while "days" is picked) may not fit the
+  // chosen unit; fall back to a unit that shows it exactly.
+  const unit = hours && hours % HOURS_PER_UNIT[chosenUnit] !== 0 ? unitForHours(hours) : chosenUnit;
+  const amount = hours ? hours / HOURS_PER_UNIT[unit] : '';
+
+  return (
+    <div className="grid grid-cols-[1fr_auto] gap-2 md:max-w-sm">
+      <NumberInput
+        id="rental_min_hours"
+        label={t('editItem.rentalMinDuration')}
+        description={t('editItem.rentalMinDurationHint')}
+        value={amount}
+        min={1}
+        allowDecimal={false}
+        allowNegative={false}
+        onChange={value => {
+          const count = typeof value === 'number' ? value : parseInt(value, 10);
+          onChange(count > 0 ? count * HOURS_PER_UNIT[unit] : null);
+        }}
+        onBlur={() => onCommit(hours)}
+        disabled={disabled}
+        rightSection={getFieldRightSection('rental_min_hours', fieldStates)}
+        error={getFieldError('rental_min_hours', fieldStates)}
+        styles={getFieldStyles('rental_min_hours', fieldStates)}
+      />
+      <Select
+        aria-label={t('editItem.rentalMinDurationUnit')}
+        className="self-end w-28"
+        value={unit}
+        allowDeselect={false}
+        onChange={value => {
+          if (!value) return;
+          const next = value as DurationUnit;
+          setChosenUnit(next);
+          if (amount !== '') {
+            const nextHours = amount * HOURS_PER_UNIT[next];
+            onChange(nextHours);
+            onCommit(nextHours);
+          }
+        }}
+        data={(['h', 'd', 'w'] as const).map(u => ({ value: u, label: t(`duration.unit.${u}`) }))}
+        disabled={disabled}
+      />
+    </div>
   );
 };
 

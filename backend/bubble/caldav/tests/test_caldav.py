@@ -134,6 +134,29 @@ class CalDAVProtocolTests(TestCase):
         booking = Booking.objects.get(item=open_item, user=self.user)
         assert booking.time_to is None
 
+    def test_put_shorter_than_the_minimum_rejected(self):
+        room = BorrowItemFactory(
+            user=self.owner, name="Guest Room", rental_min_hours=24
+        )
+        url = f"{self.home}{room.id}/short.ics"
+        resp = self.client.generic(
+            "PUT",
+            url,
+            data=self._ics("short", "20260616T120000Z", "20260616T180000Z"),
+            content_type="text/calendar",
+        )
+        assert resp.status_code == status.HTTP_403_FORBIDDEN
+        assert "at least 1 day" in resp.content.decode()
+        assert not Booking.objects.filter(item=room).exists()
+
+        resp = self.client.generic(
+            "PUT",
+            url,
+            data=self._ics("long", "20260616T120000Z", "20260617T120000Z"),
+            content_type="text/calendar",
+        )
+        assert resp.status_code == status.HTTP_201_CREATED, resp.content
+
     def test_duplicate_pending_request_rejected(self):
         first = self.client.generic(
             "PUT",

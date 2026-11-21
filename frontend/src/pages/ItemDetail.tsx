@@ -23,6 +23,7 @@ import { useDownloadQuickRentPdf } from '@/hooks/useQuickRent';
 import { useItemCollections } from '@/hooks/useCollections';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
+import { formatDuration } from '@/lib/rentalDuration';
 import { cn } from '@/lib/utils';
 import { getCategoryIcon } from '@/lib/categoryIcons';
 import { ActionIcon, Badge, Button, Text, Tooltip } from '@mantine/core';
@@ -207,6 +208,7 @@ const ItemDetail = () => {
       salesType={sales_type}
       rentalPeriod={item.rental_period}
       rentalOpenEnd={item.rental_open_end ?? false}
+      rentalMinHours={item.rental_min_hours ?? null}
       preselectedStartDate={selectedStartDate}
       preselectedEndDate={selectedEndDate}
       controlledOpen={showBookingDialog}
@@ -319,6 +321,14 @@ const ItemDetail = () => {
                 )}
               </p>
             )}
+
+            {isRental && item.rental_min_hours ? (
+              <Text size="sm" c="dimmed" data-testid="item-min-duration">
+                {t('booking.minDuration', {
+                  duration: formatDuration(item.rental_min_hours, t),
+                })}
+              </Text>
+            ) : null}
 
             <ItemComments
               itemId={item.id}

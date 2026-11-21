@@ -68,6 +68,7 @@ class ItemAdmin(GuardedModelAdminMixin, SimpleHistoryAdmin):
                     "rental_period",
                     "rental_self_service",
                     "rental_open_end",
+                    "rental_min_hours",
                 ),
             },
         ),

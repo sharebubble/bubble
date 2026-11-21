@@ -443,6 +443,10 @@ export type Book = {
      */
     rental_open_end?: boolean;
     /**
+     * Kürzeste erlaubte Buchung in Stunden (z. B. 24 für mindestens einen Tag). Leer: beliebige Dauer.
+     */
+    rental_min_hours?: number | null;
+    /**
      * Charge bookings of this item through the community ledger. Without it, bookings never post a charge, whatever the price.
      */
     payment_enabled?: boolean;
@@ -587,6 +591,10 @@ export type BookList = {
      * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
+    /**
+     * Kürzeste erlaubte Buchung in Stunden (z. B. 24 für mindestens einen Tag). Leer: beliebige Dauer.
+     */
+    rental_min_hours?: number | null;
     /**
      * Charge bookings of this item through the community ledger. Without it, bookings never post a charge, whatever the price.
      */
@@ -1016,6 +1024,10 @@ export type Item = {
      */
     rental_open_end?: boolean;
     /**
+     * Kürzeste erlaubte Buchung in Stunden (z. B. 24 für mindestens einen Tag). Leer: beliebige Dauer.
+     */
+    rental_min_hours?: number | null;
+    /**
      * Charge bookings of this item through the community ledger. Without it, bookings never post a charge, whatever the price.
      */
     payment_enabled?: boolean;
@@ -1168,6 +1180,10 @@ export type ItemList = {
      * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
+    /**
+     * Kürzeste erlaubte Buchung in Stunden (z. B. 24 für mindestens einen Tag). Leer: beliebige Dauer.
+     */
+    rental_min_hours?: number | null;
     /**
      * Charge bookings of this item through the community ledger. Without it, bookings never post a charge, whatever the price.
      */
@@ -2422,6 +2438,10 @@ export type PatchedBook = {
      */
     rental_open_end?: boolean;
     /**
+     * Kürzeste erlaubte Buchung in Stunden (z. B. 24 für mindestens einen Tag). Leer: beliebige Dauer.
+     */
+    rental_min_hours?: number | null;
+    /**
      * Charge bookings of this item through the community ledger. Without it, bookings never post a charge, whatever the price.
      */
     payment_enabled?: boolean;
@@ -2685,6 +2705,10 @@ export type PatchedItem = {
      * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
+    /**
+     * Kürzeste erlaubte Buchung in Stunden (z. B. 24 für mindestens einen Tag). Leer: beliebige Dauer.
+     */
+    rental_min_hours?: number | null;
     /**
      * Charge bookings of this item through the community ledger. Without it, bookings never post a charge, whatever the price.
      */
@@ -3496,6 +3520,10 @@ export type BookWritable = {
      */
     rental_open_end?: boolean;
     /**
+     * Kürzeste erlaubte Buchung in Stunden (z. B. 24 für mindestens einen Tag). Leer: beliebige Dauer.
+     */
+    rental_min_hours?: number | null;
+    /**
      * Charge bookings of this item through the community ledger. Without it, bookings never post a charge, whatever the price.
      */
     payment_enabled?: boolean;
@@ -3595,6 +3623,10 @@ export type BookListWritable = {
      * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
+    /**
+     * Kürzeste erlaubte Buchung in Stunden (z. B. 24 für mindestens einen Tag). Leer: beliebige Dauer.
+     */
+    rental_min_hours?: number | null;
     /**
      * Charge bookings of this item through the community ledger. Without it, bookings never post a charge, whatever the price.
      */
@@ -3813,6 +3845,10 @@ export type ItemWritable = {
      */
     rental_open_end?: boolean;
     /**
+     * Kürzeste erlaubte Buchung in Stunden (z. B. 24 für mindestens einen Tag). Leer: beliebige Dauer.
+     */
+    rental_min_hours?: number | null;
+    /**
      * Charge bookings of this item through the community ledger. Without it, bookings never post a charge, whatever the price.
      */
     payment_enabled?: boolean;
@@ -3912,6 +3948,10 @@ export type ItemListWritable = {
      * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
+    /**
+     * Kürzeste erlaubte Buchung in Stunden (z. B. 24 für mindestens einen Tag). Leer: beliebige Dauer.
+     */
+    rental_min_hours?: number | null;
     /**
      * Charge bookings of this item through the community ledger. Without it, bookings never post a charge, whatever the price.
      */
@@ -4368,6 +4408,10 @@ export type PatchedBookWritable = {
      */
     rental_open_end?: boolean;
     /**
+     * Kürzeste erlaubte Buchung in Stunden (z. B. 24 für mindestens einen Tag). Leer: beliebige Dauer.
+     */
+    rental_min_hours?: number | null;
+    /**
      * Charge bookings of this item through the community ledger. Without it, bookings never post a charge, whatever the price.
      */
     payment_enabled?: boolean;
@@ -4542,6 +4586,10 @@ export type PatchedItemWritable = {
      * Unbefristete Vermietungen ohne Rückgabedatum erlauben
      */
     rental_open_end?: boolean;
+    /**
+     * Kürzeste erlaubte Buchung in Stunden (z. B. 24 für mindestens einen Tag). Leer: beliebige Dauer.
+     */
+    rental_min_hours?: number | null;
     /**
      * Charge bookings of this item through the community ledger. Without it, bookings never post a charge, whatever the price.
      */

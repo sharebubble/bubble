@@ -133,6 +133,18 @@ class BookingSerializer(serializers.ModelSerializer):
                 }
             )
 
+        # The owner may require a minimum length (e.g. at least one day for a
+        # guest room). Checked whenever the booking's times are set.
+        if item and (not self.instance or {"time_from", "time_to"} & attrs.keys()):
+            time_from = (
+                attrs.get("time_from")
+                if "time_from" in attrs
+                else getattr(self.instance, "time_from", None) or timezone.now()
+            )
+            too_short = item.rental_too_short(time_from, time_to)
+            if too_short:
+                raise serializers.ValidationError({"time_to": too_short})
+
         # check that no pending booking request for the same item and user exists
         user = self.context["request"].user
         if (

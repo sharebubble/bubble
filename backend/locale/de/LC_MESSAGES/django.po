@@ -1877,3 +1877,37 @@ msgstr "Es gibt Neuigkeiten in der Gemeinschaftskasse."
 #: bubble/bookings/services.py
 msgid "Receipt confirmed automatically: no answer within {days} days."
 msgstr "Erhalt automatisch bestätigt: keine Antwort innerhalb von {days} Tagen."
+
+#: bubble/items/models.py
+#, python-format
+msgid "%(count)d week"
+msgid_plural "%(count)d weeks"
+msgstr[0] "%(count)d Woche"
+msgstr[1] "%(count)d Wochen"
+
+#: bubble/items/models.py
+#, python-format
+msgid "%(count)d day"
+msgid_plural "%(count)d days"
+msgstr[0] "%(count)d Tag"
+msgstr[1] "%(count)d Tage"
+
+#: bubble/items/models.py
+#, python-format
+msgid "%(count)d hour"
+msgid_plural "%(count)d hours"
+msgstr[0] "%(count)d Stunde"
+msgstr[1] "%(count)d Stunden"
+
+#: bubble/items/models.py
+msgid ""
+"Shortest booking allowed, in hours (e.g. 24 for at least one day). Empty: any "
+"length."
+msgstr ""
+"Kürzeste erlaubte Buchung in Stunden (z. B. 24 für mindestens einen Tag). "
+"Leer: beliebige Dauer."
+
+#: bubble/items/models.py
+#, python-format
+msgid "This item can only be booked for at least %(duration)s."
+msgstr "Dieser Gegenstand kann nur für mindestens %(duration)s gebucht werden."
