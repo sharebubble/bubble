@@ -10,10 +10,12 @@
  *
  * Caching rules, in order of precedence:
  *
- *   1. Anything dynamic or user-scoped is never touched — API, auth, admin,
+ *   1. Anything dynamic or user-scoped is never cached — API, auth, admin,
  *      caldav, Django statics, the Sentry tunnel, /env-config.js and
- *      /version.json all go straight to the network. Stale API responses are far
- *      worse than a slow one, and /version.json backs the release gate.
+ *      /version.json all go straight to the network (navigations to them via
+ *      the navigation preload, so they are not requested twice). Stale API
+ *      responses are far worse than a slow one, and /version.json backs the
+ *      release gate.
  *   2. Navigations are network-first and fall back to the cached app shell, so a
  *      new deploy is picked up on the next load instead of being pinned by the
  *      cache (the previous worker cache-firsted "/", which served an index.html
@@ -102,6 +104,23 @@ async function precache() {
       failed.map(result => String(result.reason)).join(', '),
     );
   }
+}
+
+/**
+ * Hand a bypassed navigation straight to the network, via the preload request.
+ *
+ * With navigation preload enabled the browser has already sent this request by
+ * the time the fetch handler runs. Not calling `respondWith` does not reuse that
+ * response: the browser cancels it and requests the URL a second time. For the
+ * OAuth callback under /accounts/ that is fatal — the preload completes the
+ * login and rotates the session, the duplicate arrives with the old session
+ * cookie, finds its state already spent and fails, and its response signs the
+ * browser out again (BUBBLE-BACKEND-2J).
+ */
+async function passThroughNavigation(event) {
+  const preloaded = await event.preloadResponse;
+  if (preloaded) return preloaded;
+  return fetch(event.request);
 }
 
 /** Network-first, falling back to the cached shell and finally the offline page. */
@@ -200,7 +219,11 @@ self.addEventListener('fetch', event => {
     return;
   }
   if (url.origin !== self.location.origin) return;
-  if (isBypassed(url)) return;
+  if (isBypassed(url)) {
+    // Navigations still have to consume the preload, see passThroughNavigation.
+    if (request.mode === 'navigate') event.respondWith(passThroughNavigation(event));
+    return;
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith(handleNavigation(event));

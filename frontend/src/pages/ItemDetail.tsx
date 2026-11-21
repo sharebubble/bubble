@@ -16,8 +16,10 @@ import { BackButton } from '@/components/layout/BackButton';
 import OwnerLink from '@/components/users/OwnerLink';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
-import { useItem } from '@/hooks/useItem';
+import { ItemNotFoundError, useItem } from '@/hooks/useItem';
+import { ItemNotFound } from '@/components/items/ItemNotFound';
 import { useDeleteItem } from '@/hooks/useMyItems';
+import { useDownloadQuickRentPdf } from '@/hooks/useQuickRent';
 import { useItemCollections } from '@/hooks/useCollections';
 import { convertLineBreaks } from '@/lib/convertLineBreaks';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
@@ -26,7 +28,7 @@ import { getCategoryIcon } from '@/lib/categoryIcons';
 import { ActionIcon, Badge, Button, Text, Tooltip } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { formatDistanceToNow } from 'date-fns';
-import { BookMarked, Calendar, Edit3, History, MapPin, Trash2, Zap } from 'lucide-react';
+import { BookMarked, Calendar, Edit3, History, MapPin, QrCode, Trash2, Zap } from 'lucide-react';
 import { createElement, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 
@@ -37,6 +39,7 @@ const ItemDetail = () => {
   const { t } = useLanguage();
   const { data: item, isLoading, error } = useItem(itemUuid);
   const deleteItemMutation = useDeleteItem();
+  const downloadQuickRentPdf = useDownloadQuickRentPdf();
   const { data: itemCollections } = useItemCollections(user ? itemUuid : undefined);
 
   const [selectedStartDate, setSelectedStartDate] = useState<Date | undefined>();
@@ -94,12 +97,14 @@ const ItemDetail = () => {
     );
   }
 
+  if (error instanceof ItemNotFoundError || (!error && !item)) {
+    return <ItemNotFound />;
+  }
+
   if (error || !item) {
     return (
       <div className="container mx-auto px-4 py-16 text-center">
-        <Text c={error ? 'red' : undefined}>
-          {error ? error.message : t('itemDetail.notFound')}
-        </Text>
+        <Text c="red">{error?.message}</Text>
         <Button component={Link} to="/" mt="md" variant="light">
           {t('common.back')}
         </Button>
@@ -182,6 +187,9 @@ const ItemDetail = () => {
       ? false
       : (isOwner && !!price && !isRental) || (!buyingAllowed && !!price && !isRental));
   const showBookingAction = !isOwner || isRental || isWanted;
+  // Scan-to-rent QR codes need auto-approval (nobody confirms a scan by hand)
+  // and open-ended rentals (the return time is only known at the next scan).
+  const supportsQuickRent = isRental && !!item.rental_self_service && !!item.rental_open_end;
 
   const formatPropertyValue = (value: unknown) => {
     if (value === null || value === undefined) return '—';
@@ -221,7 +229,11 @@ const ItemDetail = () => {
         </div>
       </div>
 
-      <div className={cn('grid gap-8', hasImages ? 'md:grid-cols-2' : 'grid-cols-1')}>
+      {/* `grid-cols-1` (minmax(0, 1fr)) on mobile rather than the implicit `auto`
+          track: an auto track grows to its content's min-content, so the weekly
+          calendar's 700px inner width would widen the page past the screen
+          instead of scrolling inside its own overflow container. */}
+      <div className={cn('grid grid-cols-1 gap-8', hasImages && 'md:grid-cols-2')}>
         {hasImages && <ItemImageCarousel images={images} itemName={name} />}
 
         {/* Item details */}
@@ -362,6 +374,23 @@ const ItemDetail = () => {
                   >
                     <Trash2 size={16} />
                   </ActionIcon>
+                  {supportsQuickRent && (
+                    <Tooltip label={t('quickRent.downloadPdfTooltip')} multiline w={240}>
+                      <Button
+                        variant="outline"
+                        leftSection={<QrCode size={16} />}
+                        loading={downloadQuickRentPdf.isPending}
+                        onClick={() =>
+                          downloadQuickRentPdf.mutate({
+                            itemId: item.id,
+                            fileName: `quick-rent-${item.slug || item.id}.pdf`,
+                          })
+                        }
+                      >
+                        {t('quickRent.downloadPdf')}
+                      </Button>
+                    </Tooltip>
+                  )}
                 </>
               )}
 

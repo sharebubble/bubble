@@ -39,8 +39,8 @@ if (dsn) {
   Sentry.init({
     dsn: dsn,
     // Adds request headers and IP for users, for more info visit:
-    // https://docs.sentry.io/platforms/javascript/guides/react/configuration/options/#sendDefaultPii
-    sendDefaultPii: true,
+    // https://docs.sentry.io/platforms/javascript/guides/react/configuration/options/#dataCollection
+    dataCollection: { userInfo: true },
     tracesSampleRate: isMobile ? 0.1 : 1.0,
     integrations: [
       Sentry.browserTracingIntegration(),

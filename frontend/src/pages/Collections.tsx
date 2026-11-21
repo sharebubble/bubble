@@ -95,7 +95,7 @@ const Collections = () => {
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <BackButton />
           <Title order={1} size="h3">

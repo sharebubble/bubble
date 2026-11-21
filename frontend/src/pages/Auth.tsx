@@ -6,7 +6,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppConfig } from '@/hooks/useAppConfig';
 import { authAPI, LoginCredentials } from '@/services/custom/auth';
-import { getSsoReturn, getSsoSuppression, redirectToSocialProvider } from '@/lib/sso';
+import {
+  getSsoAttemptAgeMs,
+  getSsoReturn,
+  getSsoSuppression,
+  redirectToSocialProvider,
+} from '@/lib/sso';
+import { isStandalone } from '@/lib/serviceWorker';
 import { client } from '@/services/django/client.gen';
 import { Alert, Button, Card, Divider, PasswordInput, Text, TextInput, Title } from '@mantine/core';
 import { Eye, EyeOff, Loader } from 'lucide-react';
@@ -58,6 +64,8 @@ const Auth = () => {
   // per render would flip the screen back to the button the moment this screen
   // records its own forward, while the browser is already navigating away.
   const [suppression] = useState(getSsoSuppression);
+  // Also read at mount, before this screen can record a new attempt.
+  const [attemptAgeMs] = useState(getSsoAttemptAgeMs);
 
   /**
    * Why the automatic forward is held back, or null when it may go ahead.
@@ -151,7 +159,12 @@ const Auth = () => {
           sso_error_code: ssoError,
           provider_id: singleProvider?.id,
           provider_name: singleProvider?.name,
-          has_return_marker: ssoReturn.returned,
+          returned: ssoReturn.returned,
+          // False with an error: allauth lost the OAuth state on the callback.
+          has_return_marker: ssoReturn.hasReturnMarker,
+          attempt_age_ms: attemptAgeMs,
+          cookies_enabled: navigator.cookieEnabled,
+          standalone: isStandalone(),
           has_session_error: sessionError,
           pending_flows: pendingFlows.map(flow => flow.id),
         },

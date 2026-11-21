@@ -168,13 +168,20 @@ export const BookingDialog = ({
     e.preventDefault();
 
     // Allow empty / null values — backend accepts nulls for offer/time fields
-    const booking = await createBookingMutation.mutateAsync({
-      item: itemUuid,
-      offer: offerPrice === '' ? null : offerPrice,
-      time_from: timeFrom === '' ? null : timeFrom,
-      time_to: timeTo === '' ? null : timeTo,
-      status: 1, // Pending status
-    });
+    let booking;
+    try {
+      booking = await createBookingMutation.mutateAsync({
+        item: itemUuid,
+        offer: offerPrice === '' ? null : offerPrice,
+        time_from: timeFrom === '' ? null : timeFrom,
+        time_to: timeTo === '' ? null : timeTo,
+        status: 1, // Pending status
+      });
+    } catch {
+      // Already reported to the user via the mutation's onError toast (e.g.
+      // overlapping booking); keep the dialog open so they can adjust the dates.
+      return;
+    }
 
     // Reset form and close dialog
     setOfferPrice('');

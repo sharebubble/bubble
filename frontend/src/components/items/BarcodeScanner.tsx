@@ -1,8 +1,18 @@
-import { ActionIcon, Alert, Button, Group, Loader, Modal, Stack, Text } from '@mantine/core';
-import { BarcodeDetector, prepareZXingModule } from 'barcode-detector/ponyfill';
+import {
+  ActionIcon,
+  type ActionIconProps,
+  Alert,
+  Button,
+  Group,
+  Loader,
+  Modal,
+  Stack,
+  Text,
+} from '@mantine/core';
+import { BarcodeDetector, type BarcodeFormat, prepareZXingModule } from 'barcode-detector/ponyfill';
 
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Scan, X } from 'lucide-react';
+import { Scan, X, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 // Log library versions for debugging (values injected at build time by Vite define)
@@ -13,27 +23,100 @@ console.info(
     `zxing-wasm v${__ZXING_WASM_VERSION__}`,
 );
 
-// Override the locateFile function
+// Load the WASM binary from our own origin. The filename carries the library
+// version (see the zxing-wasm plugin in vite.config.ts) so a new version never
+// hits a stale copy — the service worker caches /lib/wasm/ forever.
 prepareZXingModule({
   overrides: {
     locateFile: (path, prefix) => {
       if (path.endsWith('.wasm')) {
-        return `/lib/wasm/${path}`;
+        return `/lib/wasm/${path.replace(/\.wasm$/, `-${__ZXING_WASM_VERSION__}.wasm`)}`;
       }
       return prefix + path;
     },
   },
 });
+
+// What the scan loop needs from either detector implementation.
+type Detector = { detect: (source: HTMLVideoElement) => Promise<{ rawValue: string }[]> };
+
+type NativeBarcodeDetectorClass = {
+  new (options: { formats: BarcodeFormat[] }): Detector;
+  getSupportedFormats: () => Promise<string[]>;
+};
+
+/** The ZXing-based ponyfill. It must not pick up the browser's own
+ *  BarcodeDetector, so that is shadowed while the ponyfill is constructed. */
+const createZxingDetector = (formats: BarcodeFormat[]): Detector => {
+  const nativeDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'BarcodeDetector');
+  try {
+    (globalThis as any).BarcodeDetector = undefined;
+    return new BarcodeDetector({ formats });
+  } finally {
+    // Restore the native implementation so other code is unaffected
+    if (nativeDescriptor) {
+      Object.defineProperty(globalThis, 'BarcodeDetector', nativeDescriptor);
+    } else {
+      delete (globalThis as any).BarcodeDetector;
+    }
+  }
+};
+
+/** The browser's built-in BarcodeDetector (Chrome on Android), or null when the
+ *  device isn't Android, has none, or it can't read every requested format
+ *  (e.g. Android without Google Play services reports no formats). */
+const createNativeDetector = async (formats: BarcodeFormat[]): Promise<Detector | null> => {
+  const Native = (globalThis as { BarcodeDetector?: NativeBarcodeDetectorClass }).BarcodeDetector;
+  if (!Native || !/Android/i.test(navigator.userAgent)) return null;
+  try {
+    const supported = await Native.getSupportedFormats();
+    if (!formats.every(format => supported.includes(format))) return null;
+    return new Native({ formats });
+  } catch {
+    return null;
+  }
+};
+// Book barcodes: ISBN-13 is encoded as EAN-13, plus the common 1D formats.
+const DEFAULT_FORMATS: BarcodeFormat[] = [
+  'ean_13',
+  'ean_8',
+  'upc_a',
+  'upc_e',
+  'code_128',
+  'code_39',
+  'code_93',
+];
+
 interface BarcodeScannerProps {
   onScan: (barcode: string) => void;
   title?: string; // optional override for dialog title
+  description?: string; // optional override for the dialog's instructions
   fullWidth?: boolean; // render as a full-width button with label text
+  // Formats to detect. Keep the array stable (module-level constant): the
+  // detector is created once on mount.
+  formats?: BarcodeFormat[];
+  // Use the browser's built-in detector on Android when available (fast and
+  // reliable for QR codes), with ZXing as fallback. Off by default: native
+  // EAN detection is unreliable, so the ISBN scanner always uses ZXing.
+  preferNative?: boolean;
+  icon?: LucideIcon; // trigger icon
+  iconSize?: number;
+  triggerProps?: Partial<ActionIconProps>; // extra props for the icon trigger
 }
 
-export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, title, fullWidth }) => {
+export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
+  onScan,
+  title,
+  description,
+  fullWidth,
+  formats = DEFAULT_FORMATS,
+  preferNative = false,
+  icon: Icon = Scan,
+  iconSize = 16,
+  triggerProps,
+}) => {
   const { t } = useLanguage();
-  // Always use the ZXing polyfill — native BarcodeDetector is unreliable for ISBN/EAN
-  const isNativeBarcodeDetector = false;
+  const [isNativeBarcodeDetector, setIsNativeBarcodeDetector] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,41 +126,26 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, title, f
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const detectorRef = useRef<BarcodeDetector | null>(null);
+  const detectorRef = useRef<Detector | null>(null);
+  // Mirrors isNativeBarcodeDetector for the scan loop, which runs outside renders.
+  const isNativeRef = useRef(false);
 
   useEffect(() => {
-    // Initialize detector when component mounts.
-    // Always use the ZXing-based ponyfill — the native BarcodeDetector API is unreliable
-    // for ISBN/EAN scanning, so we shadow it before constructing the detector.
+    // Initialize detector when component mounts: the native one if requested
+    // and usable, otherwise the ZXing-based ponyfill.
     const initDetector = async () => {
-      const nativeDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'BarcodeDetector');
       try {
-        (globalThis as any).BarcodeDetector = undefined;
-        detectorRef.current = new BarcodeDetector({
-          formats: [
-            'ean_13', // ISBN-13 is encoded as EAN-13
-            'ean_8',
-            'upc_a',
-            'upc_e',
-            'code_128',
-            'code_39',
-            'code_93',
-          ],
-        });
+        const native = preferNative ? await createNativeDetector(formats) : null;
+        detectorRef.current = native ?? createZxingDetector(formats);
+        isNativeRef.current = native !== null;
+        setIsNativeBarcodeDetector(native !== null);
         setIsInitialized(true);
       } catch (err) {
         setError('Failed to initialize barcode detector');
-      } finally {
-        // Restore the native implementation so other code is unaffected
-        if (nativeDescriptor) {
-          Object.defineProperty(globalThis, 'BarcodeDetector', nativeDescriptor);
-        } else {
-          delete (globalThis as any).BarcodeDetector;
-        }
       }
     };
     initDetector();
-  }, []);
+  }, [formats, preferNative]);
 
   const startScanning = async () => {
     // Wait for detector to be initialized
@@ -230,7 +298,14 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, title, f
         return;
       }
     } catch (err) {
-      // Silent error handling
+      // The native detector can fail at runtime (e.g. "Barcode detection
+      // service unavailable"); switch to ZXing for the rest of the session.
+      if (isNativeRef.current) {
+        console.warn('[BarcodeScanner] native detector failed, falling back to ZXing:', err);
+        detectorRef.current = createZxingDetector(formats);
+        isNativeRef.current = false;
+        setIsNativeBarcodeDetector(false);
+      }
     }
 
     // Continue scanning
@@ -295,7 +370,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, title, f
           onClick={() => handleOpenChange(true)}
           disabled={!isInitialized}
           fullWidth
-          leftSection={!isInitialized ? <Loader size={16} /> : <Scan size={16} />}
+          leftSection={!isInitialized ? <Loader size={16} /> : <Icon size={16} />}
         >
           {title ?? t('scanner.open')}
         </Button>
@@ -308,8 +383,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, title, f
           aria-label={title ?? t('scanner.open')}
           disabled={!isInitialized}
           loading={!isInitialized}
+          {...triggerProps}
         >
-          <Scan size={16} />
+          <Icon size={iconSize} />
         </ActionIcon>
       )}
 
@@ -322,7 +398,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({ onScan, title, f
         <Stack gap="md">
           <div>
             <Text size="sm" c="dimmed">
-              {t('scanner.description')}
+              {description ?? t('scanner.description')}
             </Text>
             <Text size="xs" c="dimmed" mt={8}>
               {isNativeBarcodeDetector ? t('scanner.usingNative') : t('scanner.usingPolyfill')}

@@ -10,10 +10,12 @@ from django.contrib.auth.models import Group
 from django.core.files.base import ContentFile
 from django.db import models
 from django.db.models import Q
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from guardian.shortcuts import (
     assign_perm,
     get_groups_with_perms,
@@ -33,8 +35,15 @@ from rest_framework.permissions import (
 )
 from rest_framework.response import Response
 
-from bubble.bookings.api.serializers import ItemBookingHistorySerializer
+from bubble.bookings.api.serializers import (
+    ItemBookingHistorySerializer,
+    QuickRentSerializer,
+)
 from bubble.bookings.models import Booking, BookingStatus
+from bubble.bookings.quick_rent import (
+    supports_quick_rent,
+    toggle_quick_rent,
+)
 from bubble.collections.models import Collection
 from bubble.core.storage import absolute_media_url
 from bubble.federation.models import RemoteItem
@@ -60,6 +69,7 @@ from bubble.items.models import (
     SalesType,
     VisibilityType,
 )
+from bubble.items.qr_pdf import render_quick_rent_pdf
 
 from .filters import ItemFilter
 
@@ -410,6 +420,25 @@ class PublicItemViewSet(viewsets.ReadOnlyModelViewSet, ItemBaseViewSet):
         )
         return Response(serializer.data)
 
+    @extend_schema(request=None, responses=QuickRentSerializer)
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="quick-rent",
+        permission_classes=[IsAuthenticated],
+    )
+    def quick_rent(self, request, id=None):  # noqa: A002
+        """Rent the item right now, or return it if the user already has it.
+
+        Called when a user scans the item's QR code. If someone else currently
+        has the item, nothing changes and the response names who has it.
+        Only self-service (auto-approved) rental items that allow open-ended
+        rentals support this.
+        """
+        item = self.get_object()
+        outcome = toggle_quick_rent(item, request.user)
+        return Response(QuickRentSerializer(outcome).data)
+
 
 class ItemViewSet(viewsets.ModelViewSet, ItemBaseViewSet):
     """
@@ -509,6 +538,39 @@ class ItemViewSet(viewsets.ModelViewSet, ItemBaseViewSet):
 
         serializer = self.get_serializer(item, context={"request": request})
         return Response(serializer.data)
+
+    @extend_schema(
+        request=None,
+        responses={
+            (200, "application/pdf"): OpenApiResponse(
+                OpenApiTypes.BINARY, description="Printable QR code sheet"
+            )
+        },
+    )
+    @action(detail=True, methods=["get"], url_path="quick-rent-pdf")
+    def quick_rent_pdf(self, request, id=None):  # noqa: A002
+        """Download a printable PDF with the item's quick-rent QR code.
+
+        Available to owners and co-owners of self-service (auto-approved)
+        rental items that allow open-ended rentals. The sheet is written in the
+        request language, i.e. the UI language the frontend sends as
+        ``Accept-Language``.
+        """
+        item = self.get_object()
+        if not supports_quick_rent(item):
+            raise ValidationError(
+                _(
+                    "QR code rental is only available for rental items with"
+                    " self-service (auto-approved) and open-ended rentals"
+                    " enabled."
+                )
+            )
+        response = HttpResponse(
+            render_quick_rent_pdf(item), content_type="application/pdf"
+        )
+        filename = f"quick-rent-{item.slug or item.id}.pdf"
+        response["Content-Disposition"] = f'attachment; filename="{filename}"'
+        return response
 
     def _require_owner(self, item):
         """Raise PermissionDenied if the request user is not the item owner."""

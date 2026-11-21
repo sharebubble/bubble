@@ -10,6 +10,7 @@ from bubble.bookings.models import (
     BookingStatus,
     Message,
 )
+from bubble.bookings.quick_rent import QuickRentResult, is_open_ended_running
 from bubble.bookings.services import sale_auto_approve_at
 from bubble.items.api.serializers import ItemMinimalSerializer
 from bubble.items.models import Item, SalesType
@@ -215,6 +216,16 @@ class BookingSerializer(serializers.ModelSerializer):
             msg = _("This booking has already ended and can no longer be cancelled.")
             raise serializers.ValidationError(msg)
 
+        # A running rental without an end date did happen: it is ended by
+        # returning the item (the ``return`` action), not by cancelling it.
+        if (
+            self.instance
+            and value == BookingStatus.CANCELLED
+            and is_open_ended_running(self.instance)
+        ):
+            msg = _("A running rental is ended by returning the item.")
+            raise serializers.ValidationError(msg)
+
         user = self.context["request"].user
 
         # An accepted sale has changed hands (ledger plan D17/D18): the seller
@@ -417,3 +428,30 @@ class ItemBookingHistorySerializer(serializers.ModelSerializer):
 
     def get_counter_offer(self, obj) -> str | None:
         return _money_amount(obj.counter_offer)
+
+
+class QuickRentSerializer(serializers.Serializer):
+    """Outcome of scanning an item's quick-rent QR code.
+
+    ``renter_name`` is the person holding the item: the scanning user for
+    ``rented``/``returned``, someone else for ``unavailable``.
+    """
+
+    result = serializers.ChoiceField(choices=QuickRentResult.choices)
+    booking_id = serializers.UUIDField(source="booking.id")
+    item_id = serializers.UUIDField(source="booking.item_id")
+    item_name = serializers.CharField(source="booking.item.name")
+    renter_id = serializers.UUIDField(source="booking.user_id", allow_null=True)
+    renter_name = serializers.SerializerMethodField()
+    time_from = serializers.DateTimeField(source="booking.time_from", allow_null=True)
+    time_to = serializers.DateTimeField(source="booking.time_to", allow_null=True)
+    next_booking_at = serializers.DateTimeField(allow_null=True)
+
+    def get_renter_name(self, obj) -> str | None:
+        booking = obj.booking
+        if booking.user_id:
+            return booking.user.name or booking.user.username
+        actor = booking.remote_booker_actor
+        if actor is not None:
+            return actor.display_name or actor.username
+        return None

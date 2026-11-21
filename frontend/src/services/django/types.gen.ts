@@ -3291,6 +3291,24 @@ export type PushSubscriptionStatus = {
 };
 
 /**
+ * Outcome of scanning an item's quick-rent QR code.
+ *
+ * ``renter_name`` is the person holding the item: the scanning user for
+ * ``rented``/``returned``, someone else for ``unavailable``.
+ */
+export type QuickRent = {
+    result: ResultEnum;
+    booking_id: string;
+    item_id: string;
+    item_name: string;
+    renter_id: string | null;
+    readonly renter_name: string | null;
+    time_from: string | null;
+    time_to: string | null;
+    next_booking_at: string | null;
+};
+
+/**
  * Why the buyer rejects an accepted sale (ledger plan D18).
  */
 export type RejectFulfillment = {
@@ -3312,6 +3330,13 @@ export type RemoteActorMinimal = {
  * * `w` - Wöchentlich
  */
 export type RentalPeriodEnum = 'h' | 'd' | 'w';
+
+/**
+ * * `rented` - rented
+ * * `returned` - returned
+ * * `unavailable` - unavailable
+ */
+export type ResultEnum = 'rented' | 'returned' | 'unavailable';
 
 /**
  * * `sell` - Sell
@@ -4677,6 +4702,23 @@ export type ProfileWritable = {
     pwa_install_dismissed?: boolean;
 };
 
+/**
+ * Outcome of scanning an item's quick-rent QR code.
+ *
+ * ``renter_name`` is the person holding the item: the scanning user for
+ * ``rented``/``returned``, someone else for ``unavailable``.
+ */
+export type QuickRentWritable = {
+    result: ResultEnum;
+    booking_id: string;
+    item_id: string;
+    item_name: string;
+    renter_id: string | null;
+    time_from: string | null;
+    time_to: string | null;
+    next_booking_at: string | null;
+};
+
 export type UserWritable = {
     /**
      * Benutzername
@@ -4857,6 +4899,21 @@ export type BookingsRejectFulfillmentCreateResponses = {
 };
 
 export type BookingsRejectFulfillmentCreateResponse = BookingsRejectFulfillmentCreateResponses[keyof BookingsRejectFulfillmentCreateResponses];
+
+export type BookingsReturnCreateData = {
+    body?: never;
+    path: {
+        id: string;
+    };
+    query?: never;
+    url: '/api/bookings/{id}/return/';
+};
+
+export type BookingsReturnCreateResponses = {
+    200: Booking;
+};
+
+export type BookingsReturnCreateResponse = BookingsReturnCreateResponses[keyof BookingsReturnCreateResponses];
 
 export type BooksListData = {
     body?: never;
@@ -6062,6 +6119,27 @@ export type ItemsCoOwnersCreateResponses = {
 };
 
 export type ItemsCoOwnersCreateResponse = ItemsCoOwnersCreateResponses[keyof ItemsCoOwnersCreateResponses];
+
+export type ItemsQuickRentPdfRetrieveData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der item identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/items/{id}/quick-rent-pdf/';
+};
+
+export type ItemsQuickRentPdfRetrieveResponses = {
+    /**
+     * Printable QR code sheet
+     */
+    200: Blob | File;
+};
+
+export type ItemsQuickRentPdfRetrieveResponse = ItemsQuickRentPdfRetrieveResponses[keyof ItemsQuickRentPdfRetrieveResponses];
 
 export type ItemsReorderImagesUpdateData = {
     body: ItemWritable;
@@ -7783,6 +7861,24 @@ export type PublicItemsBookingHistoryRetrieveResponses = {
 };
 
 export type PublicItemsBookingHistoryRetrieveResponse = PublicItemsBookingHistoryRetrieveResponses[keyof PublicItemsBookingHistoryRetrieveResponses];
+
+export type PublicItemsQuickRentCreateData = {
+    body?: never;
+    path: {
+        /**
+         * Ein UUID-String, der item identifiziert.
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/api/public-items/{id}/quick-rent/';
+};
+
+export type PublicItemsQuickRentCreateResponses = {
+    200: QuickRent;
+};
+
+export type PublicItemsQuickRentCreateResponse = PublicItemsQuickRentCreateResponses[keyof PublicItemsQuickRentCreateResponses];
 
 export type PublicItemsFacetsRetrieveData = {
     body?: never;

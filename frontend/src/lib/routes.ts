@@ -38,3 +38,18 @@ export const LEDGER_BANK_PATH = `${LEDGER_PATH}/bank`;
 export const MY_STATEMENT_PATH = `${MY_LEDGER_PATH}/statement`;
 
 export const ledgerStatementPath = (accountId: string) => `${LEDGER_PATH}/a/${accountId}/statement`;
+
+const ITEM_PATH_PATTERN =
+  /^\/item\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\/quick-rent)?\/?$/i;
+
+/** In-app path of a scanned bubble item QR code (quick-rent sheet or plain
+ *  item link), or null when the code isn't one. The host is ignored so codes
+ *  printed with another bubble URL (e.g. before a domain change) still work. */
+export const itemPathFromScan = (raw: string): string | null => {
+  try {
+    const { pathname } = new URL(raw.trim());
+    return ITEM_PATH_PATTERN.test(pathname) ? pathname.replace(/\/$/, '') : null;
+  } catch {
+    return null;
+  }
+};

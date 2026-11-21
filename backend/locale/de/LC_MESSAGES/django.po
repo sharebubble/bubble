@@ -815,6 +815,46 @@ msgstr ""
 msgid "Deutsch"
 msgstr "Deutsch"
 
+#: bubble/bookings/quick_rent.py
+msgid "This item cannot be rented via QR code."
+msgstr "Dieser Gegenstand kann nicht per QR-Code ausgeliehen werden."
+
+#: bubble/bookings/quick_rent.py
+msgid "This item is currently not available for rent."
+msgstr "Dieser Gegenstand kann gerade nicht ausgeliehen werden."
+
+#: bubble/bookings/quick_rent.py
+msgid "Item returned via QR code."
+msgstr "Gegenstand per QR-Code zurückgegeben."
+
+#: bubble/bookings/quick_rent.py
+msgid "This item is already reserved by someone else."
+msgstr "Dieser Gegenstand ist bereits von jemand anderem reserviert."
+
+#: bubble/bookings/quick_rent.py
+msgid "Item rented via QR code."
+msgstr "Gegenstand per QR-Code ausgeliehen."
+
+#: bubble/items/api/views.py
+msgid "QR code rental is only available for rental items with self-service (auto-approved) and open-ended rentals enabled."
+msgstr "Ausleihen per QR-Code ist nur für Mietgegenstände mit aktivierter Selbstbedienung (automatische Bestätigung) und offenem Mietende möglich."
+
+#: bubble/items/qr_pdf.py
+msgid "Scan to rent"
+msgstr "Scannen zum Ausleihen"
+
+#: bubble/items/qr_pdf.py
+msgid "Item"
+msgstr "Gegenstand"
+
+#: bubble/items/qr_pdf.py
+msgid "Scan once to rent this item right away."
+msgstr "Einmal scannen, um den Gegenstand sofort auszuleihen."
+
+#: bubble/items/qr_pdf.py
+msgid "Scan again when you bring it back to return it."
+msgstr "Bei der Rückgabe erneut scannen."
+
 #~ msgid "Author"
 #~ msgstr "Autor"
 
@@ -1618,9 +1658,6 @@ msgstr "Deutsch"
 
 #~ msgid "Your Items"
 #~ msgstr "Ihre Artikel"
-
-#~ msgid "Item"
-#~ msgstr "Artikel"
 
 #~ msgid "Active"
 #~ msgstr "Aktiv"

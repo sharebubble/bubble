@@ -19,6 +19,22 @@ export const TERMINAL_BOOKING_STATUSES: number[] = [
   BOOKING_STATUS.rejected,
 ];
 
+type BookingTimes = {
+  status?: number | null;
+  time_from?: string | null;
+  time_to?: string | null;
+};
+
+/** An approved rental without an end date that has already started (e.g. an
+ *  instant rental by QR code). It runs until the item is returned, so it is
+ *  ended with "Return" rather than cancelled. Mirrors the backend's
+ *  ``is_open_ended_running``. */
+export const isOpenEndedRunning = (booking: BookingTimes, now: Date = new Date()): boolean =>
+  (booking.status === BOOKING_STATUS.confirmed || booking.status === BOOKING_STATUS.inProgress) &&
+  !booking.time_to &&
+  !!booking.time_from &&
+  new Date(booking.time_from) <= now;
+
 export type BookingStatusBadge = Pick<BadgeProps, 'color' | 'variant'> & {
   /** Translation key for the status label. */
   labelKey: string;

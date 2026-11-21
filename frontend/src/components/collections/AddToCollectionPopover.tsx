@@ -105,7 +105,19 @@ export const AddToCollectionPopover = ({
   );
 
   return (
-    <Popover opened={open} onChange={setOpen} position="bottom-end" width={260} shadow="md">
+    // `hideDetached={false}`: by default Mantine hides the dropdown once its
+    // target leaves the viewport. On phones the soft keyboard opened by the
+    // "new collection" input covers the bookmark button at the bottom of an
+    // item tile, so the dropdown was hidden, the input lost focus, the keyboard
+    // closed again — and the popover looked frozen.
+    <Popover
+      opened={open}
+      onChange={setOpen}
+      position="bottom-end"
+      width={260}
+      shadow="md"
+      hideDetached={false}
+    >
       <Popover.Target>
         {iconOnly ? (
           <Tooltip label={t('collections.addToCollection')} position="top">

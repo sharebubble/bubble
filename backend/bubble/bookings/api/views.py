@@ -23,6 +23,7 @@ from bubble.bookings.api.serializers import (
     RejectFulfillmentSerializer,
 )
 from bubble.bookings.models import Booking, BookingStatus, Message
+from bubble.bookings.quick_rent import end_booking_now, is_open_ended_running
 from bubble.core.api.pagination import SelectablePageSizePagination
 from bubble.items.models import ItemStatus, SalesType
 
@@ -87,8 +88,12 @@ class PublicBookingViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         """Return only confirmed bookings."""
-        return Booking.objects.filter(status=BookingStatus.CONFIRMED).select_related(
-            "item", "user", "accepted_by"
+        # ``item_details`` serializes ``first_image``; prefetching the images
+        # avoids one query per booking (N+1).
+        return (
+            Booking.objects.filter(status=BookingStatus.CONFIRMED)
+            .select_related("item", "user", "accepted_by")
+            .prefetch_related("item__images")
         )
 
 
@@ -106,6 +111,7 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
         return (
             Booking.objects.get_for_user(self.request.user)
             .select_related("item", "user", "accepted_by")
+            .prefetch_related("item__images")
             .annotate(
                 unread_messages_count=Count(
                     "messages",
@@ -325,6 +331,33 @@ class BookingViewSet(viewsets.ModelViewSet, PublicBookingViewSet):
         except booking_services.SaleError as exc:
             raise ValidationError({"non_field_errors": [exc.user_message]}) from exc
         return Response(self.get_serializer(booking).data, status=status.HTTP_200_OK)
+
+    @extend_schema(request=None, responses=BookingSerializer)
+    @action(detail=True, methods=["post"], url_path="return")
+    def return_item(self, request, id=None):  # noqa: A002
+        """Return the item of a running open-ended rental, ending it now.
+
+        Open-ended rentals (e.g. started by scanning an item's QR code) have no
+        end date, so instead of being cancelled they are ended here. The booker
+        and the item's owners/co-owners may return the item; the booking is
+        COMPLETED with ``time_to`` set to now and the item becomes available.
+        """
+        booking = self.get_object()
+
+        if request.user != booking.user and not request.user.has_perm(
+            "change_item", booking.item
+        ):
+            raise PermissionDenied(
+                _("Only the booker or the item owner can return the item.")
+            )
+        if not is_open_ended_running(booking):
+            raise ValidationError(
+                _("Only a running rental without an end date can be returned.")
+            )
+
+        end_booking_now(booking, request.user, _("Item returned."))
+        serializer = self.get_serializer(booking)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class MessageViewSet(viewsets.ModelViewSet):

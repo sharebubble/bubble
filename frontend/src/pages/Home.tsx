@@ -59,8 +59,11 @@ const Home = () => {
       <PwaInstallBanner />
 
       {/* Single column on small screens (bookings/favorites first); on large
-          screens the sidebar sits beside the item grid. */}
-      <div className="grid gap-5 lg:grid-cols-3 lg:items-start">
+          screens the sidebar sits beside the item grid. The explicit
+          `grid-cols-1` (minmax(0, 1fr)) matters: the implicit `auto` track
+          would grow to its content's min-content — the widgets' single-line
+          truncated titles — and widen the page past the screen. */}
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:items-start">
         <div className="flex flex-col gap-5 lg:sticky lg:top-4">
           <UpcomingBookingsWidget />
           <FavoritesWidget />

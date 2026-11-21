@@ -1,5 +1,9 @@
 import BookingConversationPanel from '@/components/bookings/BookingConversationPanel';
-import { BOOKING_STATUS, TERMINAL_BOOKING_STATUSES } from '@/components/bookings/status';
+import {
+  BOOKING_STATUS,
+  isOpenEndedRunning,
+  TERMINAL_BOOKING_STATUSES,
+} from '@/components/bookings/status';
 import { BackButton } from '@/components/layout/BackButton';
 import {
   Badge,
@@ -16,18 +20,21 @@ import {
   Title,
 } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
+import { modals } from '@mantine/modals';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import {
   type BookingsFilterParams,
   useMyBookingsInfinite,
+  useReturnBooking,
   useUpdateBooking,
 } from '@/hooks/useBookings';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
 import { cn } from '@/lib/utils';
 import type { BookingList } from '@/services/django';
-import { format, formatDuration, intervalToDuration, isAfter, isBefore, parseISO } from 'date-fns';
-import { Calendar, Clock, Package, Search, Square, User } from 'lucide-react';
+import { formatBookedDuration } from '@/lib/date';
+import { format, isAfter, isBefore, parseISO } from 'date-fns';
+import { Calendar, Clock, Package, Search, Square, Undo2, User } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
@@ -45,16 +52,6 @@ const APPROVED_STATUSES = [
 ];
 
 // ─── helpers ────────────────────────────────────────────────────────────────
-
-const formatBookedDuration = (from: string, to: string | null | undefined): string => {
-  const start = parseISO(from);
-  const end = to ? parseISO(to) : new Date();
-  if (isAfter(start, end)) return '—';
-  const duration = intervalToDuration({ start, end });
-  return (
-    formatDuration(duration, { format: ['days', 'hours', 'minutes'], delimiter: ' ' }) || '< 1 min'
-  );
-};
 
 type BookingState = 'active' | 'upcoming' | 'past';
 
@@ -90,6 +87,7 @@ interface BookingRowProps {
   selected: boolean;
   onClick: (id: string) => void;
   onEnd: (id: string) => void;
+  onReturn: (booking: BookingList) => void;
   isEnding: boolean;
 }
 
@@ -101,6 +99,7 @@ const BookingRow = ({
   selected,
   onClick,
   onEnd,
+  onReturn,
   isEnding,
 }: BookingRowProps) => {
   const isOwner = booking.user?.username !== currentUsername;
@@ -209,22 +208,43 @@ const BookingRow = ({
           </Text>
         </div>
 
-        {/* End booking button — only for active bookings owned by the current user.
-            Sales never "end": the buyer confirms receipt or reports a problem. */}
-        {state === 'active' && isOwner && !isPending && !isSale && (
+        {/* Running open-ended rental (e.g. instant rental by QR code): either
+            side returns the item, which ends the rental now. */}
+        {isOpenEndedRunning(booking) ? (
           <Button
             size="xs"
-            color="red"
+            color="teal"
             className="shrink-0"
             disabled={isEnding}
-            leftSection={<Square size={12} />}
+            leftSection={<Undo2 size={12} />}
             onClick={e => {
               e.stopPropagation();
-              onEnd(booking.id!);
+              onReturn(booking);
             }}
           >
-            <span className="hidden sm:inline">{t('bookings.endBooking')}</span>
+            <span className="hidden sm:inline">{t('requests.return')}</span>
           </Button>
+        ) : (
+          /* End booking button — only for active bookings owned by the current user.
+             Sales never "end": the buyer confirms receipt or reports a problem. */
+          state === 'active' &&
+          isOwner &&
+          !isPending &&
+          !isSale && (
+            <Button
+              size="xs"
+              color="red"
+              className="shrink-0"
+              disabled={isEnding}
+              leftSection={<Square size={12} />}
+              onClick={e => {
+                e.stopPropagation();
+                onEnd(booking.id!);
+              }}
+            >
+              <span className="hidden sm:inline">{t('bookings.endBooking')}</span>
+            </Button>
+          )
         )}
       </div>
     </Card>
@@ -243,6 +263,7 @@ const MyBookingsPage = () => {
   const location = useLocation();
   const { bookingId: bookingIdParam } = useParams<{ bookingId?: string }>();
   const updateBookingMutation = useUpdateBooking();
+  const returnBookingMutation = useReturnBooking();
   const [endingId, setEndingId] = useState<string | null>(null);
 
   // ── selection (right-hand conversation panel) ─────────────────────────────
@@ -322,6 +343,27 @@ const MyBookingsPage = () => {
     // just a guard against a redundant no-op update, not a dependency.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
+
+  const handleReturnBooking = (booking: BookingList) =>
+    modals.openConfirmModal({
+      title: t('requests.returnConfirmTitle'),
+      children: (
+        <Text size="sm">
+          {t('requests.returnConfirmDescription', { item: booking.item_details?.name ?? '' })}
+        </Text>
+      ),
+      labels: { confirm: t('requests.return'), cancel: t('common.cancel') },
+      onConfirm: async () => {
+        setEndingId(booking.id!);
+        try {
+          await returnBookingMutation.mutateAsync(booking.id!);
+        } catch {
+          // Already reported by the mutation's error toast.
+        } finally {
+          setEndingId(null);
+        }
+      },
+    });
 
   const handleEndBooking = async (id: string) => {
     setEndingId(id);
@@ -523,6 +565,7 @@ const MyBookingsPage = () => {
                           selected={selectedBookingId === booking.id}
                           onClick={handleSelectBooking}
                           onEnd={handleEndBooking}
+                          onReturn={handleReturnBooking}
                           isEnding={endingId === booking.id}
                           currentUsername={user?.username}
                         />

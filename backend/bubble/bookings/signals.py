@@ -42,8 +42,10 @@ def notify_new_message(sender, instance: Message, created, **kwargs):
         else (str(remote_sender) if remote_sender else _("Remote user"))
     )
     notification_context = {
-        "message": instance.message,
-        "item_title": item.name,
+        # Plain strings: lazy translation proxies cannot be serialised by the
+        # channel layer (msgpack) or the notification task queue.
+        "message": str(instance.message),
+        "item_title": str(item.name),
         "sender": sender_display,
         # Lets a browser-push notification open the conversation it is about
         # (see notifications.messages.notification_path).

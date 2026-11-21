@@ -5,18 +5,21 @@ import {
   BookingChargeInfo,
   ReportProblemButton,
 } from '@/components/bookings/SaleFulfillment';
-import { getBookingStatusBadge } from '@/components/bookings/status';
+import { getBookingStatusBadge, isOpenEndedRunning } from '@/components/bookings/status';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/hooks/useAuth';
 import {
   useBooking,
   useConfirmReceived,
   useConfirmReturned,
+  useReturnBooking,
   useUpdateBooking,
 } from '@/hooks/useBookings';
+import { useNow } from '@/hooks/useNow';
 import { useItem } from '@/hooks/useItem';
 import { useCreateMessage, useMarkMessageAsRead, useMessages } from '@/hooks/useMessages';
 import { formatPrice, getRentalPeriodSuffixKey } from '@/lib/currency';
+import { formatBookedDuration } from '@/lib/date';
 import { isAcceptedSale } from '@/lib/ledger';
 import { cn } from '@/lib/utils';
 import {
@@ -31,7 +34,17 @@ import {
 } from '@mantine/core';
 import { modals } from '@mantine/modals';
 import { format } from 'date-fns';
-import { ArrowLeft, Calendar, Clock, Package, RefreshCw, Send, User } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  Hourglass,
+  Package,
+  RefreshCw,
+  Send,
+  Undo2,
+  User,
+} from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
@@ -54,6 +67,9 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
   const updateBookingMutation = useUpdateBooking();
   const confirmReceivedMutation = useConfirmReceived();
   const confirmReturnedMutation = useConfirmReturned();
+  const returnBookingMutation = useReturnBooking();
+  // Ticks the elapsed time of a running open-ended rental.
+  const now = useNow();
   const {
     data: messagesData,
     refetch: refetchMessages,
@@ -255,6 +271,27 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
               </Text>
             </div>
           )}
+          {/* Open-ended rental (e.g. instant rental by QR code): there is no end
+              date, so show the start and, while it runs, the time elapsed. */}
+          {selectedBooking.time_from && !selectedBooking.time_to && (
+            <div>
+              <Text size="sm" fw={500} className="mb-1">
+                {t('requests.rentalPeriod')}
+              </Text>
+              <Text size="sm">
+                <Clock className="inline h-3 w-3 mr-1" />
+                {t('requests.since', { time: formatDateTime(selectedBooking.time_from) })}
+              </Text>
+              <Text size="sm" c="dimmed">
+                <Hourglass className="inline h-3 w-3 mr-1" />
+                {isOpenEndedRunning(selectedBooking, now)
+                  ? t('requests.elapsed', {
+                      duration: formatBookedDuration(selectedBooking.time_from, null, now),
+                    })
+                  : t('requests.noEndDate')}
+              </Text>
+            </div>
+          )}
           {selectedBooking.time_from && selectedBooking.time_to && (
             <div>
               <Text size="sm" fw={500} className="mb-1">
@@ -446,6 +483,22 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
             // cancelling it now wouldn't undo anything that already happened.
             const isPast =
               !!selectedBooking.time_to && new Date(selectedBooking.time_to) <= new Date();
+            // A running rental without an end date is ended by returning the
+            // item; cancelling would erase a rental that really happened.
+            const isReturnable = isOpenEndedRunning(selectedBooking, now);
+            const openReturnConfirm = () =>
+              modals.openConfirmModal({
+                title: t('requests.returnConfirmTitle'),
+                children: (
+                  <Text size="sm">
+                    {t('requests.returnConfirmDescription', {
+                      item: selectedBooking.item_details?.name ?? '',
+                    })}
+                  </Text>
+                ),
+                labels: { confirm: t('requests.return'), cancel: t('common.cancel') },
+                onConfirm: () => returnBookingMutation.mutate(selectedBooking.id),
+              });
 
             return (
               <>
@@ -463,7 +516,19 @@ const BookingConversationPanel = ({ bookingId, onBack }: BookingConversationPane
                     </Button>
                   )}
                   {acceptedSale && isBuyer && <ReportProblemButton booking={selectedBooking} />}
-                  {!isPast && !acceptedSale && (
+                  {isReturnable && (
+                    <Button
+                      color="teal"
+                      leftSection={<Undo2 size={16} />}
+                      onClick={openReturnConfirm}
+                      disabled={returnBookingMutation.isPending}
+                    >
+                      {returnBookingMutation.isPending
+                        ? t('common.submitting')
+                        : t('requests.return')}
+                    </Button>
+                  )}
+                  {!isPast && !acceptedSale && !isReturnable && (
                     <Button
                       variant="outline"
                       onClick={async () => {

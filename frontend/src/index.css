@@ -156,6 +156,11 @@
 
   body {
     @apply bg-background text-foreground;
+    /* User-written text (item names, descriptions, messages) can contain long
+       unbroken strings such as URLs. Without this they overflow their box and,
+       on Android Chrome, widen the layout viewport: the page opens zoomed in
+       and the fixed bottom nav ends up below the visible area. */
+    overflow-wrap: break-word;
   }
 }
 

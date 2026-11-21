@@ -31,6 +31,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
   libpq-dev \
   # Translations dependencies
   gettext \
+  # font with umlauts for the quick-rent QR-code PDF
+  fonts-dejavu-core \
   # entrypoint
   wait-for-it \
   # cleaning up unused files

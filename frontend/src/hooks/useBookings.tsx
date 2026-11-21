@@ -8,6 +8,7 @@ import {
   bookingsPartialUpdate,
   bookingsRejectFulfillmentCreate,
   bookingsRetrieve,
+  bookingsReturnCreate,
   type BookingWritable,
   type PatchedBooking,
 } from '@/services/django';
@@ -157,7 +158,10 @@ const fulfillmentErrorMessage = (error: unknown, fallback: string) => {
 };
 
 const useFulfillmentMutation = (
-  action: typeof bookingsConfirmReceivedCreate | typeof bookingsConfirmReturnedCreate,
+  action:
+    | typeof bookingsConfirmReceivedCreate
+    | typeof bookingsConfirmReturnedCreate
+    | typeof bookingsReturnCreate,
   successKey: string,
 ) => {
   const { toast } = useToast();
@@ -230,3 +234,7 @@ export const useRejectFulfillment = () => {
     },
   });
 };
+
+/** Booker or owner returns the item of a running open-ended rental, ending it now. */
+export const useReturnBooking = () =>
+  useFulfillmentMutation(bookingsReturnCreate, 'booking.successReturnedNow');

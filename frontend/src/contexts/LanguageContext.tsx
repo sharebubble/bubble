@@ -380,6 +380,7 @@ const translations = {
     'booking.errorUpdate': 'Failed to update booking. Please try again.',
     'booking.successReceived': 'Receipt confirmed.',
     'booking.successReturned': 'Return confirmed. The rental is complete.',
+    'booking.successReturnedNow': 'Item returned. The rental is complete.',
     'requests.acceptWarningTitle': 'Confirm acceptance',
     'requests.acceptWarningDescription':
       'You are accepting an offer of {amount}. This will be finalized when the request is confirmed.',
@@ -412,6 +413,12 @@ const translations = {
     'requests.offerAmount': 'Offer Amount',
     'requests.counterOffer': 'Counter Offer',
     'requests.rentalPeriod': 'Rental Period',
+    'requests.since': 'Since {{time}}',
+    'requests.elapsed': 'Running for {{duration}}',
+    'requests.noEndDate': 'No end date',
+    'requests.return': 'Return',
+    'requests.returnConfirmTitle': 'Return item?',
+    'requests.returnConfirmDescription': 'This ends the rental of {{item}} now.',
     'requests.accept': 'Accept',
     'requests.acceptCounterOffer': 'Accept counteroffer',
     'requests.reject': 'Reject',
@@ -493,6 +500,18 @@ const translations = {
     'itemDetail.deleteConfirmDescription':
       'This action cannot be undone. This will permanently delete your item.',
     'itemDetail.notFound': 'Item not found',
+    'itemDetail.notFoundTitle': 'Item not found',
+    'itemDetail.notFoundBack': 'Back to browsing',
+    'itemDetail.notFoundJoke1':
+      'This item has wandered off. Maybe someone borrowed it and forgot to return it.',
+    'itemDetail.notFoundJoke2':
+      'We looked under the couch, in the attic and behind the sofa cushions. Nothing.',
+    'itemDetail.notFoundJoke3': 'Plot twist: this item was never here in the first place.',
+    'itemDetail.notFoundJoke4': 'It popped like a bubble. Poof! Gone.',
+    'itemDetail.notFoundJoke5':
+      'Our hamsters searched the whole warehouse and came back empty-pawed.',
+    'itemDetail.notFoundJoke6':
+      'Someone probably lent it to a neighbour who lent it to a neighbour...',
     'itemDetail.availability': 'Availability',
     'itemDetail.properties': 'Properties',
     'itemDetail.previousImage': 'Previous image',
@@ -520,6 +539,27 @@ const translations = {
     // Item booking history
     'itemBookings.title': 'Booking history',
     'itemBookings.viewHistory': 'Booking history',
+
+    // QR-code quick rental
+    'quickRent.downloadPdf': 'QR code',
+    'quickRent.downloadPdfTooltip':
+      'Download a printable QR code. Scanning it rents the item right away, scanning it again returns it.',
+    'quickRent.pdfError': 'Could not create the QR code PDF.',
+    'quickRent.processing': 'Processing your scan…',
+    'quickRent.rentedTitle': 'You rented {{item}}',
+    'quickRent.rentedDescription':
+      'Rented since {{time}}. Scan the QR code again when you bring it back to return it.',
+    'quickRent.nextBooking':
+      'Please return it before {{time}} – it is booked by someone else then.',
+    'quickRent.returnedTitle': '{{item}} returned',
+    'quickRent.returnedDescription': 'Returned at {{time}}. Thank you!',
+    'quickRent.unavailableTitle': '{{item}} is currently rented out',
+    'quickRent.unavailableDescription': '{{renter}} has had it since {{time}}.',
+    'quickRent.someoneElse': 'Someone else',
+    'quickRent.errorTitle': 'Could not rent this item',
+    'quickRent.errorDescription': 'Something went wrong. Please try again.',
+    'quickRent.viewItem': 'View item',
+    'quickRent.viewBooking': 'View booking',
     'itemBookings.empty': 'This item has no past bookings yet.',
     'itemBookings.loadError': 'Could not load the booking history.',
     'itemBookings.period': 'Period',
@@ -652,6 +692,12 @@ const translations = {
     'scanner.usingPolyfill': 'Using barcode-detector polyfill',
     'scanner.initializingCamera': 'Initializing camera...',
     'scanner.detected': 'Detected',
+
+    // QR-code scan (header)
+    'qrScan.title': 'Scan QR code',
+    'qrScan.description': "Point the camera at an item's QR code to rent or return it.",
+    'qrScan.unknownTitle': 'Unknown QR code',
+    'qrScan.unknownDescription': 'This QR code does not belong to a bubble item.',
 
     // Favorites
     'favorites.title': 'Favorites',
@@ -1667,6 +1713,7 @@ const translations = {
     'booking.successUpdated': 'Buchung erfolgreich aktualisiert!',
     'booking.successReceived': 'Erhalt bestätigt.',
     'booking.successReturned': 'Rückgabe bestätigt. Die Vermietung ist abgeschlossen.',
+    'booking.successReturnedNow': 'Gegenstand zurückgegeben. Die Vermietung ist abgeschlossen.',
     'booking.errorUpdate': 'Aktualisierung der Buchung fehlgeschlagen. Bitte versuche es erneut.',
     'requests.acceptWarningTitle': 'Bestätigung erforderlich',
     'requests.acceptWarningDescription':
@@ -1701,6 +1748,12 @@ const translations = {
     'requests.offerAmount': 'Angebot',
     'requests.counterOffer': 'Gegenangebot',
     'requests.rentalPeriod': 'Mietzeitraum',
+    'requests.since': 'Seit {{time}}',
+    'requests.elapsed': 'Läuft seit {{duration}}',
+    'requests.noEndDate': 'Kein Enddatum',
+    'requests.return': 'Zurückgeben',
+    'requests.returnConfirmTitle': 'Gegenstand zurückgeben?',
+    'requests.returnConfirmDescription': 'Damit endet die Ausleihe von {{item}} jetzt.',
     'requests.accept': 'Annehmen',
     'requests.acceptCounterOffer': 'Gegenvorschlag akzeptieren',
     'requests.reject': 'Ablehnen',
@@ -1783,6 +1836,18 @@ const translations = {
     'itemDetail.deleteConfirmDescription':
       'Diese Aktion kann nicht rückgängig gemacht werden. Dieser Artikel wird dauerhaft gelöscht.',
     'itemDetail.notFound': 'Artikel nicht gefunden',
+    'itemDetail.notFoundTitle': 'Artikel nicht gefunden',
+    'itemDetail.notFoundBack': 'Zurück zum Stöbern',
+    'itemDetail.notFoundJoke1':
+      'Dieser Artikel ist spazieren gegangen. Vielleicht hat ihn jemand geliehen und vergessen zurückzubringen.',
+    'itemDetail.notFoundJoke2':
+      'Wir haben unterm Sofa, auf dem Dachboden und hinter den Kissen gesucht. Nichts.',
+    'itemDetail.notFoundJoke3': 'Plot Twist: Dieser Artikel war nie da.',
+    'itemDetail.notFoundJoke4': 'Er ist wie eine Seifenblase zerplatzt. Puff! Weg.',
+    'itemDetail.notFoundJoke5':
+      'Unsere Hamster haben das ganze Lager durchsucht und kamen mit leeren Pfoten zurück.',
+    'itemDetail.notFoundJoke6':
+      'Bestimmt hat ihn jemand an die Nachbarin verliehen, die ihn an den Nachbarn verliehen hat...',
     'itemDetail.availability': 'Verfügbarkeit',
     'itemDetail.properties': 'Eigenschaften',
     'itemDetail.previousImage': 'Vorheriges Bild',
@@ -1810,6 +1875,27 @@ const translations = {
     // Item booking history
     'itemBookings.title': 'Buchungsverlauf',
     'itemBookings.viewHistory': 'Buchungsverlauf',
+
+    // QR-Code-Schnellmiete
+    'quickRent.downloadPdf': 'QR-Code',
+    'quickRent.downloadPdfTooltip':
+      'Druckbaren QR-Code herunterladen. Scannen leiht den Gegenstand sofort aus, erneutes Scannen gibt ihn zurück.',
+    'quickRent.pdfError': 'Das QR-Code-PDF konnte nicht erstellt werden.',
+    'quickRent.processing': 'Scan wird verarbeitet…',
+    'quickRent.rentedTitle': 'Du hast {{item}} ausgeliehen',
+    'quickRent.rentedDescription':
+      'Ausgeliehen seit {{time}}. Scanne den QR-Code erneut, wenn du den Gegenstand zurückbringst.',
+    'quickRent.nextBooking':
+      'Bitte bis {{time}} zurückgeben – danach ist der Gegenstand von jemand anderem gebucht.',
+    'quickRent.returnedTitle': '{{item}} zurückgegeben',
+    'quickRent.returnedDescription': 'Zurückgegeben um {{time}}. Danke!',
+    'quickRent.unavailableTitle': '{{item}} ist gerade verliehen',
+    'quickRent.unavailableDescription': 'Ausgeliehen von {{renter}} seit {{time}}.',
+    'quickRent.someoneElse': 'Jemand anderes',
+    'quickRent.errorTitle': 'Ausleihen nicht möglich',
+    'quickRent.errorDescription': 'Etwas ist schiefgelaufen. Bitte versuche es erneut.',
+    'quickRent.viewItem': 'Gegenstand ansehen',
+    'quickRent.viewBooking': 'Buchung ansehen',
     'itemBookings.empty': 'Dieser Artikel hat noch keine vergangenen Buchungen.',
     'itemBookings.loadError': 'Buchungsverlauf konnte nicht geladen werden.',
     'itemBookings.period': 'Zeitraum',
@@ -1943,6 +2029,13 @@ const translations = {
     'scanner.usingPolyfill': 'Verwendet barcode-detector Polyfill',
     'scanner.initializingCamera': 'Kamera wird initialisiert...',
     'scanner.detected': 'Erkannt',
+
+    // QR-Code-Scan (Kopfzeile)
+    'qrScan.title': 'QR-Code scannen',
+    'qrScan.description':
+      'Richte die Kamera auf den QR-Code eines Gegenstands, um ihn auszuleihen oder zurückzugeben.',
+    'qrScan.unknownTitle': 'Unbekannter QR-Code',
+    'qrScan.unknownDescription': 'Dieser QR-Code gehört zu keinem bubble-Gegenstand.',
 
     // Favorites
     'favorites.title': 'Favoriten',

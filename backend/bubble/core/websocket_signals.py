@@ -70,11 +70,13 @@ def send_user_notification(user_id: int, message: str, title: str | None = None)
         "type": "user.notification",
         "data": {
             "type": "notification",
-            "data": {"message": message},
+            # Coerce lazy translation proxies: the channel layer serialises
+            # payloads with msgpack, which cannot handle a ``__proxy__`` object.
+            "data": {"message": str(message)},
         },
     }
     if title is not None:
-        payload["data"]["title"] = title
+        payload["data"]["title"] = str(title)
 
     async_to_sync(channel_layer.group_send)(user_channel, payload)
 
@@ -93,9 +95,9 @@ def send_message_notification(
     channel_layer = get_channel_layer()
     user_channel = f"user_{user_id}"
 
-    data = {"message": message}
+    data = {"message": str(message)}
     if booking_uuid:
-        data["booking"] = booking_uuid
+        data["booking"] = str(booking_uuid)
 
     payload = {
         "type": "notification.message",
