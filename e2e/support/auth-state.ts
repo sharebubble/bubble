@@ -2,7 +2,7 @@ import { existsSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import type { Browser, BrowserContext } from '@playwright/test';
+import type { Browser, BrowserContext, BrowserContextOptions } from '@playwright/test';
 
 import type { Role } from './config';
 
@@ -21,7 +21,11 @@ export function ensureAuthDir(): void {
 }
 
 /** Open a browser context authenticated as `role` from its saved storageState. */
-export async function contextForRole(browser: Browser, role: Role): Promise<BrowserContext> {
+export async function contextForRole(
+  browser: Browser,
+  role: Role,
+  options: BrowserContextOptions = {},
+): Promise<BrowserContext> {
   const statePath = roleStatePath(role);
   if (!existsSync(statePath)) {
     throw new Error(
@@ -29,5 +33,5 @@ export async function contextForRole(browser: Browser, role: Role): Promise<Brow
         'The `setup` project must run first and credentials must be configured.',
     );
   }
-  return browser.newContext({ storageState: statePath });
+  return browser.newContext({ ...options, storageState: statePath });
 }

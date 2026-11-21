@@ -7,8 +7,9 @@ import {
   getRentalPeriodSuffixKey,
   type RentalPeriod,
 } from '@/lib/currency';
+import { formatDuration, hoursBetween } from '@/lib/rentalDuration';
 import { SalesTypeEnum } from '@/services/django';
-import { addDays } from 'date-fns';
+import { addDays, addHours } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DateHourPicker } from './DateHourPicker';
@@ -25,6 +26,8 @@ interface BookingDialogProps {
   salesType?: SalesTypeEnum;
   rentalPeriod?: RentalPeriod;
   rentalOpenEnd?: boolean;
+  /** Shortest booking the owner allows, in hours (null: any length). */
+  rentalMinHours?: number | null;
   buttonSize?: 'default' | 'sm' | 'lg' | 'icon';
   buttonClassName?: string;
   triggerLabel?: string;
@@ -64,6 +67,7 @@ export const BookingDialog = ({
   salesType,
   rentalPeriod,
   rentalOpenEnd = false,
+  rentalMinHours = null,
   buttonSize = 'lg',
   buttonClassName = 'w-full md:w-auto',
   preselectedStartDate,
@@ -91,6 +95,12 @@ export const BookingDialog = ({
   const [offerPrice, setOfferPrice] = useState('');
   const [timeFrom, setTimeFrom] = useState('');
   const [timeTo, setTimeTo] = useState('');
+
+  // Same rule as the backend: only a booking with both ends can be checked.
+  const minHours = isRental && rentalMinHours ? rentalMinHours : null;
+  const bookedHours = hoursBetween(timeFrom, timeTo);
+  const tooShort = minHours !== null && !!timeFrom && !!timeTo && bookedHours < minHours;
+  const minDurationText = minHours !== null ? formatDuration(minHours, t) : '';
 
   // Calculate total price based on time period
   const calculateTotalPrice = (): string => {
@@ -136,7 +146,8 @@ export const BookingDialog = ({
       const checkIn = now < todayNoon ? todayNoon : addDays(todayNoon, 1);
       setTimeFrom(formatDateLocal(checkIn));
       if (!preselectedEndDate && !timeTo) {
-        setTimeTo(formatDateLocal(addDays(checkIn, 1)));
+        const nights = Math.max(1, Math.ceil((minHours ?? 0) / 24));
+        setTimeTo(formatDateLocal(addDays(checkIn, nights)));
       }
       return;
     }
@@ -144,6 +155,9 @@ export const BookingDialog = ({
     const now = new Date();
     now.setMinutes(0, 0, 0);
     setTimeFrom(formatDateLocal(now));
+    if (minHours !== null && !preselectedEndDate && !timeTo) {
+      setTimeTo(formatDateLocal(addHours(now, minHours)));
+    }
   }, [dialogOpen]);
 
   // Set preselected dates when they change
@@ -166,6 +180,7 @@ export const BookingDialog = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (tooShort) return;
 
     // Allow empty / null values — backend accepts nulls for offer/time fields
     let booking;
@@ -230,6 +245,11 @@ export const BookingDialog = ({
                   {formatPrice(price, priceCurrency)}
                 </Text>
               ) : null}
+              {minHours !== null && (
+                <Text size="sm" c="dimmed" data-testid="booking-min-duration">
+                  {t('booking.minDuration', { duration: minDurationText })}
+                </Text>
+              )}
             </div>
 
             {/* Rental Duration */}
@@ -261,6 +281,11 @@ export const BookingDialog = ({
                     min={timeFrom}
                     placeholder={t('booking.rentalEnd')}
                   />
+                  {tooShort && (
+                    <Text size="sm" c="red" role="alert" data-testid="booking-too-short">
+                      {t('booking.tooShort', { duration: minDurationText })}
+                    </Text>
+                  )}
                 </div>
               </>
             )}
@@ -305,7 +330,7 @@ export const BookingDialog = ({
             >
               {t('common.cancel')}
             </Button>
-            <Button type="submit" disabled={createBookingMutation.isPending}>
+            <Button type="submit" disabled={createBookingMutation.isPending || tooShort}>
               {createBookingMutation.isPending
                 ? t('common.submitting')
                 : t('booking.submitRequest')}

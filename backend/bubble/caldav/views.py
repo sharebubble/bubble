@@ -288,6 +288,9 @@ class CalDAVView(View):
             return None, HttpResponseForbidden(
                 "This item does not allow open-ended rentals; an end time is required."
             )
+        too_short = self.item.rental_too_short(event.dtstart, event.dtend)
+        if too_short:
+            return None, HttpResponseForbidden(str(too_short))
         return event, None
 
     def _create_booking(self, event):

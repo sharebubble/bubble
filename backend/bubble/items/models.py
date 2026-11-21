@@ -1,10 +1,13 @@
 import uuid
+from datetime import timedelta
 from pathlib import Path
 
 from django.conf import settings
+from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
+from django.utils.translation import ngettext
 from djmoney.models.fields import MoneyField
 from guardian.models import GroupObjectPermissionBase, UserObjectPermissionBase
 from guardian.shortcuts import assign_perm, get_objects_for_user
@@ -73,6 +76,17 @@ class ItemStatus(models.IntegerChoices):
         return tuple(cls.values)
 
 
+def format_hours(hours: int) -> str:
+    """``24`` → "1 day", ``36`` → "36 hours", ``336`` → "2 weeks"."""
+    if hours % (24 * 7) == 0:
+        weeks = hours // (24 * 7)
+        return ngettext("%(count)d week", "%(count)d weeks", weeks) % {"count": weeks}
+    if hours % 24 == 0:
+        days = hours // 24
+        return ngettext("%(count)d day", "%(count)d days", days) % {"count": days}
+    return ngettext("%(count)d hour", "%(count)d hours", hours) % {"count": hours}
+
+
 class RentalPeriodType(models.TextChoices):
     HOURLY = "h", _("Hourly")
     DAILY = "d", _("Daily")
@@ -93,6 +107,13 @@ class SalesType(models.TextChoices):
     BORROW = "borrow", _("Borrow")
     WANT_BUY = "want_buy", _("Want to Buy")
     WANT_RENT = "want_rent", _("Want to Rent")
+
+
+class LedgerBeneficiary(models.TextChoices):
+    """Who is credited when a booking of the item is charged (ledger plan D4/D16)."""
+
+    OWNER = "owner", _("Owner")
+    COMMUNITY = "community", _("Community")
 
 
 class CategoryType(models.TextChoices):
@@ -288,10 +309,32 @@ class Item(models.Model):
         default=False,
         help_text=_("Allow open-ended rentals without a return date"),
     )
+    rental_min_hours = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1)],
+        help_text=_(
+            "Shortest booking allowed, in hours (e.g. 24 for at least one day). "
+            "Empty: any length."
+        ),
+    )
 
     payment_enabled = models.BooleanField(
         default=False,
-        help_text=_("Enable payment via internal payment system"),
+        help_text=_(
+            "Charge bookings of this item through the community ledger. "
+            "Without it, bookings never post a charge, whatever the price."
+        ),
+    )
+    ledger_beneficiary = models.CharField(
+        max_length=20,
+        choices=LedgerBeneficiary,
+        default=LedgerBeneficiary.OWNER,
+        help_text=_(
+            "Owner: booking charges credit the owner. Community: the community "
+            "owns the item and its charges go to the community; the owner looks "
+            "after it. Set by the treasurer."
+        ),
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -448,6 +491,23 @@ class Item(models.Model):
             return images[0] if images else None
         return self.images.order_by("ordering").first()
 
+    def rental_too_short(self, time_from, time_to) -> str | None:
+        """Why a booking from ``time_from`` to ``time_to`` is shorter than this
+        item allows, or None. Open-ended bookings (no ``time_to``) are not
+        checked: their length is only known when the item is returned."""
+        if (
+            not self.rental_min_hours
+            or self.sales_type not in (SalesType.RENT, SalesType.BORROW)
+            or time_from is None
+            or time_to is None
+        ):
+            return None
+        if time_to - time_from >= timedelta(hours=self.rental_min_hours):
+            return None
+        return _("This item can only be booked for at least %(duration)s.") % {
+            "duration": format_hours(self.rental_min_hours)
+        }
+
     def transfer_ownership(self, new_owner):
         """Transfer the item to ``new_owner`` after a completed sale.
 
@@ -462,6 +522,9 @@ class Item(models.Model):
 
             self.user = new_owner
             self.status = ItemStatus.DRAFT
+            # A sold item belongs to its buyer privately, even if the
+            # community owned it before.
+            self.ledger_beneficiary = LedgerBeneficiary.OWNER
             self.publish_notification_sent = False
             self.federation_visibility = "local_only"
             self.save()

@@ -239,6 +239,11 @@ const EditBook = () => {
       formData.sales_type !== 'rent' && formData.sales_type !== 'borrow'
         ? undefined
         : formData.rental_open_end,
+    rental_min_hours:
+      (formData.sales_type === 'rent' || formData.sales_type === 'borrow') &&
+      formData.rental_min_hours !== ''
+        ? formData.rental_min_hours
+        : null,
     isbn_write: (formData.isbn as string) || undefined,
     year_write: (formData.year as string) === '' ? null : parseInt(formData.year as string),
     topic_write: (formData.topic as string) || undefined,

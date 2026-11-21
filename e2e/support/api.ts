@@ -1,5 +1,6 @@
 import type { APIRequest, APIRequestContext } from '@playwright/test';
 
+import { roleStatePath } from './auth-state';
 import { credentialsFor, env, type Role } from './config';
 
 /**
@@ -53,6 +54,8 @@ export interface ItemInput {
   rental_period?: string;
   rental_self_service?: boolean;
   visibility?: number;
+  /** Charge bookings of this item through the community ledger. */
+  payment_enabled?: boolean;
 }
 
 export interface BookingInput {
@@ -138,6 +141,56 @@ export class ApiClient {
     return body as Record<string, unknown>;
   }
 
+  // --- Public JSON helpers (for domain modules such as support/ledger.ts) -------
+
+  /** GET a JSON endpoint; throws on a non-2xx answer. */
+  async getJson<T = unknown>(path: string, params?: Record<string, string>): Promise<T> {
+    const res = await this.request.get(`${this.apiURL}${path}`, { params });
+    if (!res.ok()) {
+      throw new Error(`GET ${path} → ${res.status()}: ${await res.text()}`);
+    }
+    return (await res.json()) as T;
+  }
+
+  /** GET raw bytes (downloads such as CSV exports); throws on a non-2xx answer. */
+  async getBytes(path: string, params?: Record<string, string>): Promise<Buffer> {
+    const res = await this.request.get(`${this.apiURL}${path}`, { params });
+    if (!res.ok()) {
+      throw new Error(`GET ${path} → ${res.status()}: ${await res.text()}`);
+    }
+    return res.body();
+  }
+
+  /** POST JSON and expect one of `okStatuses`; returns the parsed body. */
+  async postJson<T = Record<string, unknown>>(
+    path: string,
+    data: unknown = {},
+    okStatuses: number[] = [200, 201],
+  ): Promise<T> {
+    return (await this.expectOk('post', path, data, okStatuses)) as T;
+  }
+
+  /** POST a multipart form (file uploads); throws unless the answer is 2xx. */
+  async postMultipart<T = Record<string, unknown>>(
+    path: string,
+    multipart: Record<string, string | { name: string; mimeType: string; buffer: Buffer }>,
+  ): Promise<T> {
+    const csrf = await this.csrfToken();
+    const res = await this.request.post(`${this.apiURL}${path}`, {
+      headers: { 'X-CSRFToken': csrf },
+      multipart,
+    });
+    if (!res.ok()) {
+      throw new Error(`POST ${path} → ${res.status()}: ${await res.text()}`);
+    }
+    return (await res.json()) as T;
+  }
+
+  /** POST JSON without throwing; for asserting on refusals. */
+  async tryPostJson(path: string, data: unknown = {}): Promise<{ status: number; body: unknown }> {
+    return this.send('post', path, data);
+  }
+
   // --- Domain helpers ----------------------------------------------------------
 
   /** Create an item; owner is the authenticated user. Sensible rental defaults. */
@@ -191,5 +244,22 @@ export async function authedApi(
   const api = new ApiClient(context, env.apiURL);
   const { username, password } = credentialsFor(role);
   await api.login(username, password);
+  return { api, dispose: () => context.dispose() };
+}
+
+/**
+ * An API client for a pooled role that reuses the session the `setup` project
+ * saved, instead of logging in again (allauth rate-limits repeated logins).
+ * Caller must `await handle.dispose()` when done.
+ */
+export async function sessionApi(
+  apiRequest: APIRequest,
+  role: Role,
+): Promise<{ api: ApiClient; dispose: () => Promise<void> }> {
+  const context = await apiRequest.newContext({
+    baseURL: env.apiURL,
+    storageState: roleStatePath(role),
+  });
+  const api = new ApiClient(context, env.apiURL);
   return { api, dispose: () => context.dispose() };
 }

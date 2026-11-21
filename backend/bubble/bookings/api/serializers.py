@@ -1,11 +1,20 @@
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from bubble.bookings.models import Booking, BookingStatus, Message
+from bubble.bookings.models import (
+    Booking,
+    BookingLedgerState,
+    BookingStatus,
+    Message,
+)
 from bubble.bookings.quick_rent import QuickRentResult, is_open_ended_running
+from bubble.bookings.services import sale_auto_approve_at
 from bubble.items.api.serializers import ItemMinimalSerializer
 from bubble.items.models import Item, SalesType
+from bubble.ledger.models import Transaction
 from bubble.users.api.serializers import UserSerializer
 
 
@@ -25,6 +34,8 @@ class BookingSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     remote_booker_actor = RemoteActorMinimalSerializer(read_only=True)
     unread_messages_count = serializers.SerializerMethodField()
+    ledger_transaction = serializers.SerializerMethodField()
+    sale_auto_approve_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Booking
@@ -40,6 +51,14 @@ class BookingSerializer(serializers.ModelSerializer):
             "offer",
             "counter_offer",
             "accepted_by",
+            "seller",
+            "sale_accepted_at",
+            "agreed_price",
+            "agreed_price_currency",
+            "ledger_state",
+            "ledger_note",
+            "ledger_transaction",
+            "sale_auto_approve_at",
             "created_at",
             "updated_at",
             "unread_messages_count",
@@ -48,9 +67,35 @@ class BookingSerializer(serializers.ModelSerializer):
             "id",
             "user",
             "remote_booker_actor",
+            "seller",
+            "sale_accepted_at",
+            "agreed_price",
+            "agreed_price_currency",
+            "ledger_state",
+            "ledger_note",
             "created_at",
             "updated_at",
         ]
+
+    @extend_schema_field(OpenApiTypes.UUID)
+    def get_ledger_transaction(self, obj) -> str | None:
+        """The ledger transaction that charged this booking, if any."""
+        if obj.ledger_state != BookingLedgerState.POSTED:
+            return None
+        tx_id = (
+            Transaction.objects.filter(source_type="booking", source_id=str(obj.pk))
+            .values_list("id", flat=True)
+            .first()
+        )
+        return str(tx_id) if tx_id else None
+
+    @extend_schema_field(serializers.DateTimeField(allow_null=True))
+    def get_sale_auto_approve_at(self, obj) -> str | None:
+        """When an accepted sale is confirmed automatically (ledger plan D19)."""
+        if obj.status != BookingStatus.CONFIRMED:
+            return None
+        when = sale_auto_approve_at(obj)
+        return serializers.DateTimeField().to_representation(when) if when else None
 
     def get_unread_messages_count(self, obj) -> int | None:
         """Return unread_messages_count if it exists as an annotated field."""
@@ -87,6 +132,18 @@ class BookingSerializer(serializers.ModelSerializer):
                     )
                 }
             )
+
+        # The owner may require a minimum length (e.g. at least one day for a
+        # guest room). Checked whenever the booking's times are set.
+        if item and (not self.instance or {"time_from", "time_to"} & attrs.keys()):
+            time_from = (
+                attrs.get("time_from")
+                if "time_from" in attrs
+                else getattr(self.instance, "time_from", None) or timezone.now()
+            )
+            too_short = item.rental_too_short(time_from, time_to)
+            if too_short:
+                raise serializers.ValidationError({"time_to": too_short})
 
         # check that no pending booking request for the same item and user exists
         user = self.context["request"].user
@@ -183,6 +240,20 @@ class BookingSerializer(serializers.ModelSerializer):
 
         user = self.context["request"].user
 
+        # An accepted sale has changed hands (ledger plan D17/D18): the seller
+        # can no longer cancel it, and the buyer approves or rejects the
+        # hand-over with the dedicated actions instead of a status change.
+        if (
+            self.instance
+            and self.instance.is_accepted_sale
+            and value != self.instance.status
+        ):
+            msg = _(
+                "This sale has been accepted. The buyer confirms receipt or "
+                "reports a problem; it can no longer be cancelled otherwise."
+            )
+            raise serializers.ValidationError(msg)
+
         if (
             self.instance
             and user == self.instance.user
@@ -234,6 +305,12 @@ class BookingListSerializer(BookingSerializer):
             "time_to",
             "unread_messages_count",
         ]
+
+
+class RejectFulfillmentSerializer(serializers.Serializer):
+    """Why the buyer rejects an accepted sale (ledger plan D18)."""
+
+    reason = serializers.CharField(max_length=200, trim_whitespace=True)
 
 
 class MessageSerializer(serializers.ModelSerializer):
@@ -328,9 +405,12 @@ class ItemBookingHistorySerializer(serializers.ModelSerializer):
     def _paid_money(self, obj):
         """The amount that applied to this booking.
 
-        Prefers an agreed counter-offer, then the booker's offer, then the
-        computed rental total, falling back to the item's listed price.
+        Prefers the amount the ledger charged or froze, then an agreed
+        counter-offer, then the booker's offer, then the computed rental
+        total, falling back to the item's listed price.
         """
+        if obj.agreed_price is not None:
+            return obj.agreed_price
         if obj.counter_offer is not None:
             return obj.counter_offer
         if obj.offer is not None:
