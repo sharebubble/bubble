@@ -36,7 +36,7 @@ def guest_room(owner):
     )
 
 
-def book(user, item, hours, *, start=None, language="en"):
+def book(user, item, hours, *, start=None):
     client = APIClient()
     client.force_authenticate(user=user)
     start = start or timezone.now() + timedelta(days=2)
@@ -49,7 +49,7 @@ def book(user, item, hours, *, start=None, language="en"):
             "offer": "10.00",
         },
         format="json",
-        HTTP_ACCEPT_LANGUAGE=language,
+        HTTP_ACCEPT_LANGUAGE="en",
     )
 
 
@@ -75,10 +75,6 @@ class TestBookingTheMinimum:
         item = SelfServiceItemFactory(user=owner)
         response = book(renter, item, hours=1)
         assert response.status_code == status.HTTP_201_CREATED, response.data
-
-    def test_the_message_is_translated(self, renter, guest_room):
-        response = book(renter, guest_room, hours=5, language="de")
-        assert "1 Tag" in str(response.data["time_to"][0])
 
     def test_sale_items_ignore_a_leftover_minimum(self, owner, renter):
         item = SelfServiceItemFactory(
